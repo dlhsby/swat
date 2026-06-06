@@ -1,0 +1,12 @@
+.DS_Store
+
+# Local Docker env (contains credentials/ports) — keep only the .example template
+infra/.env
+
+application/cache/*
+!application/cache/index.html
+!application/cache/.htaccess
+
+application/logs/*
+!application/logs/index.html
+!application/logs/.htaccess

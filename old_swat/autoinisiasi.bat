@@ -1,0 +1,1 @@
+c:\xampp\php\php.exe -f C:\xampp\htdocs\swat\application\controllers\transaksi\autoinisiasi.php

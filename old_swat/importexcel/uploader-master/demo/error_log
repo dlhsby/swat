@@ -1,0 +1,48 @@
+[25-Jan-2018 08:25:00 UTC] PHP Fatal error:  Uncaught exception 'PHPExcel_Reader_Exception' with message 'Could not open files/5a69945b7084c_MARET_2017_Proses.xlsx for reading! File does not exist.' in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php:73
+Stack trace:
+#0 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(269): PHPExcel_Reader_Excel2007->canRead('files/5a69945b7...')
+#1 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(191): PHPExcel_IOFactory::createReaderForFile('files/5a69945b7...')
+#2 /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php(13): PHPExcel_IOFactory::load('files/5a69945b7...')
+#3 {main}
+  thrown in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php on line 73
+[25-Jan-2018 08:27:53 UTC] PHP Fatal error:  Uncaught exception 'PHPExcel_Reader_Exception' with message 'Could not open files/5a699508f00cf_MARET_2017_Proses.xlsx for reading! File does not exist.' in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php:73
+Stack trace:
+#0 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(269): PHPExcel_Reader_Excel2007->canRead('files/5a699508f...')
+#1 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(191): PHPExcel_IOFactory::createReaderForFile('files/5a699508f...')
+#2 /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php(13): PHPExcel_IOFactory::load('files/5a699508f...')
+#3 {main}
+  thrown in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php on line 73
+[25-Jan-2018 08:29:52 UTC] PHP Fatal error:  Uncaught exception 'PHPExcel_Reader_Exception' with message 'Could not open ./files/5a699580215d7_MARET_2017_Proses.xlsx for reading! File does not exist.' in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php:73
+Stack trace:
+#0 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(269): PHPExcel_Reader_Excel2007->canRead('./files/5a69958...')
+#1 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(191): PHPExcel_IOFactory::createReaderForFile('./files/5a69958...')
+#2 /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php(13): PHPExcel_IOFactory::load('./files/5a69958...')
+#3 {main}
+  thrown in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php on line 73
+[25-Jan-2018 08:32:52 UTC] PHP Fatal error:  Uncaught exception 'PHPExcel_Reader_Exception' with message 'Could not open /files/5a699634192f1_MARET_2017_Proses.xlsx for reading! File does not exist.' in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php:73
+Stack trace:
+#0 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(269): PHPExcel_Reader_Excel2007->canRead('/files/5a699634...')
+#1 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(191): PHPExcel_IOFactory::createReaderForFile('/files/5a699634...')
+#2 /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php(13): PHPExcel_IOFactory::load('/files/5a699634...')
+#3 {main}
+  thrown in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php on line 73
+[25-Jan-2018 09:22:35 UTC] PHP Fatal error:  Uncaught exception 'PHPExcel_Exception' with message 'Column string index can not be empty' in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Cell.php:824
+Stack trace:
+#0 /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php(20): PHPExcel_Cell::columnIndexFromString(NULL)
+#1 {main}
+  thrown in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Cell.php on line 824
+[27-Jan-2018 00:24:51 UTC] PHP Warning:  mysql_query(): Access denied for user ''@'localhost' (using password: NO) in /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php on line 18
+[27-Jan-2018 00:24:51 UTC] PHP Warning:  mysql_query(): A link to the server could not be established in /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php on line 18
+[27-Jan-2018 01:44:00 UTC] PHP Fatal error:  Can't use function return value in write context in /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php on line 95
+[27-Jan-2018 01:44:57 UTC] PHP Warning:  Invalid argument supplied for foreach() in /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php on line 6
+[27-Jan-2018 01:44:57 UTC] PHP Fatal error:  Uncaught exception 'PHPExcel_Reader_Exception' with message 'Could not open  for reading! File does not exist.' in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php:73
+Stack trace:
+#0 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(281): PHPExcel_Reader_Excel2007->canRead('')
+#1 /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/IOFactory.php(191): PHPExcel_IOFactory::createReaderForFile('')
+#2 /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php(21): PHPExcel_IOFactory::load('')
+#3 {main}
+  thrown in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Reader/Excel2007.php on line 73
+[01-Feb-2018 05:08:35 UTC] PHP Warning:  Empty row packet body in /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php on line 179
+[01-Feb-2018 05:08:36 UTC] PHP Warning:  mysql_query(): Unable to save result set in /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php on line 179
+[01-Feb-2018 05:08:36 UTC] PHP Warning:  Error while sending QUERY packet. PID=9710 in /home/try123/public_html/swat/importexcel/uploader-master/demo/prosesexcel.php on line 181
+[11-May-2018 07:27:55 UTC] PHP Fatal error:  Allowed memory size of 536870912 bytes exhausted (tried to allocate 134217728 bytes) in /home/try123/public_html/swat/importexcel/uploader-master/demo/PHPExcel/Worksheet.php on line 1213

@@ -1,0 +1,12 @@
+# Local Claude Code agent state
+.claude/
+
+# Env files with secrets — keep only .example templates
+**/.env
+!**/.env.example
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*~

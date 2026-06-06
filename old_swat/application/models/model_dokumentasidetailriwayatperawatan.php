@@ -1,0 +1,3 @@
+dokumentasidetailriwayatperawatan	<?php
+
+?>

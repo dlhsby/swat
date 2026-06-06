@@ -1,0 +1,184 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');?>
+<script type="text/javascript">
+    $(document).ready(function () {
+				
+            console.log("kosong");   
+    });
+</script>
+<nav class="breadcrumbs">
+    <ul>
+		<li><a href="<?php echo base_url(); ?>"><i class="icon-home"></i></a></li>
+        <li><a href="<?php echo base_url(); ?>">Home</a></li>
+        <li><a href="<?php echo base_url(); ?>">Transaksi</a></li>
+		<li><a href="<?php echo base_url().'index.php/transaksi/monitoringpengangkutansampah'; ?>">Monitoring</a></li>
+		<li><a href="<?php echo base_url().'index.php/transaksi/monitoringpengangkutansampah/monitoringtransaksi'; ?>">Transaksi</a></li>
+        <li><a href="<?php echo base_url().'index.php/transaksi/monitoringpengangkutansampah/monitoringdetailtransaksi'; ?>">Detail Transaksi</a></li>
+        <li><a href="<?php echo base_url().'index.php/transaksi/monitoringpengangkutansampah/monitoringtrayek'; ?>">Trayek</a></li>
+		<li class="active"><a href="#">Tambah Trayek</a></li>
+    </ul>
+</nav>
+</br>
+<?php 
+	echo form_open('transaksi/monitoringpengangkutansampah/tambahtrayek');
+?>
+	<legend>Tambah Trayek Baru</legend>
+	<table cellspacing="200" >
+	<tr>
+		<td align="left">
+			<label class="control-label">Detail Transaksi</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control select">
+			   	<?php
+               		foreach($all_detailtransaksi->result() as $row)
+               		{
+                  		$array_detailtransaksi[$row->DETAILTRANSAKSIANGKUTSAMPAH_ID] = $row->DETAILTRANSAKSIANGKUTSAMPAH_ID;
+               		}
+               		echo form_dropdown('detailtransaksi',$array_detailtransaksi,set_value('detailtransaksi'));
+            	?>
+			</div>
+			
+		</td>
+	</tr>
+	<tr>
+		<td align="left">
+			<label class="control-label">Kategori Rute</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control select">
+			   	<?php
+               		foreach($all_kategorirute->result() as $row)
+               		{
+                  		$array_kategorirute[$row->KATEGORIRUTE_ID] = $row->KATEGORIRUTE_NAMA;
+               		}
+               		echo form_dropdown('kategorirute',$array_kategorirute,set_value('kategorirute'),'id="kategorirute"');
+            	?>
+			</div>
+			
+		</td>
+	</tr>
+<!--	<tr>
+		<td align="left">
+			<label class="control-label">Nama Trayek</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control text">
+				<?php echo form_input(['name' => 'namatrayek', 'id' => 'namatrayek','value' => set_value('namatrayek'), 'placeholder' => 'Nama Trayek']); echo form_error('namatrayek');?>
+			</div>
+		</td>
+	</tr>-->
+	<tr>
+		<td align="left">
+			<label class="control-label">Rute</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control select">
+			   	<?php
+               		foreach($all_rute->result() as $row)
+               		{
+                  		$array_rute[$row->RUTE_ID] = $row->RUTE_ASAL." ke ".$row->RUTE_TUJUAN;
+               		}
+               		echo form_dropdown('rute',$array_rute,set_value('rute'));
+            	?>
+			</div>
+			
+		</td>
+	</tr>
+	<tr>
+		<td align="left">
+			<label class="control-label">Waktu Target</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control text">
+				<?php echo form_input(['name' => 'waktutarget', 'id' => 'waktutarget','value' => set_value('waktutarget'), 'placeholder' => 'Jam:Menit:Detik']); echo form_error('waktutarget');?>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td align="left">
+			<label class="control-label">Waktu Realisasi</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control text">
+				<?php echo form_input(['name' => 'wakturealisasi', 'id' => 'wakturealisasi','value' => set_value('wakturealisasi'), 'placeholder' => 'Jam:Menit:Detik']); echo form_error('wakturealisasi');?>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td align="left">
+			<label class="control-label">KM Target</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control text">
+				<?php echo form_input(['name' => 'kmtarget', 'id' => 'kmtarget','value' => set_value('kmtarget'), 'placeholder' => 'KM Target']); echo form_error('kmtarget');?>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td align="left">
+			<label class="control-label">BBM Diajukan</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control text">
+				<?php echo form_input(['name' => 'bbmdiajukan', 'id' => 'bbmdiajukan','value' => set_value('bbmdiajukan'), 'placeholder' => 'BBM Diajukan']); echo form_error('bbmdiajukan');?>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td align="left">
+			<label class="control-label">Status Trayek</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control select">
+			   	<?php
+               		foreach($all_statustrayek->result() as $row)
+               		{
+                  		$array_statustrayek[$row->STATUSTRAYEK_ID] = $row->STATUSTRAYEK_NAMA;
+               		}
+               		echo form_dropdown('statustrayek',$array_statustrayek,set_value('statustrayek'));
+            	?>
+			</div>
+			
+		</td>
+	</tr>
+	<tr>
+		<td align="left">
+			<label class="control-label">Keterangan</label>			
+		</td>
+		<td width="50px" align="center">:
+		</td>
+		<td>
+			<div class="input-control text">
+				<?php echo form_input(['name' => 'keterangan', 'id' => 'keterangan','value' => set_value('keterangan'), 'placeholder' => 'Keterangan']); echo form_error('keterangan');?>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td>
+			<button class="primary" type="submit">Simpan</button>
+		</td>
+	</tr>
+	</table>
+<?php	
+	echo form_close();
+?>

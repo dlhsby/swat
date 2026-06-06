@@ -1,0 +1,35 @@
+# Build context is the app root, but the image only installs PHP + extensions
+# (the app itself is bind-mounted at runtime), so keep the context small/fast.
+
+# Infra / tooling — not needed inside the image
+infra
+scripts
+
+# Large / irrelevant payloads
+db_backup
+user_guide
+under_construction.gif
+
+# VCS & editor cruft
+.git
+.gitignore
+.idea
+.vscode
+*.swp
+*.bak
+*~
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Windows-only launchers from the legacy project
+*.bat
+swat.clpprj
+.travis.yml
+
+# Runtime-writable dirs (recreated in the container)
+application/cache/*
+application/logs/*
+!application/cache/index.html
+!application/logs/index.html
