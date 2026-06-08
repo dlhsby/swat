@@ -82,7 +82,7 @@ pending live infra not on the critical path).
 ### Epic 0.6 — CI/CD & docs
 | Task | Title | Status | Notes |
 |------|-------|--------|-------|
-| T-022 | GitHub Actions CI | ⚠️ | `.github/workflows/ci.yml` (Node 20, pnpm) — valid YAML, mirrors local gates. **Not yet exercised on a real PR** (no GitHub remote configured). |
+| T-022 | GitHub Actions CI | ✅ | `.github/workflows/ci.yml` (Node 24, pnpm via `packageManager`) — mirrors local gates. **Exercised live**: first push to `dlhsby/swat` `main` ran green (Lint·Typecheck·Test·Build). Same workflow runs on PRs. |
 | T-023 | `.env.example` + README | ✅ | Root `.env.example` (all keys, commented) + `swat/README.md` setup guide. |
 
 ### Epic 0.7 — Storage, cache, rollups
@@ -112,7 +112,7 @@ pending live infra not on the critical path).
 | `pnpm test` ≥ 3 packages | backend + schemas + web (42 tests) | ✅ |
 | **Partition pruning** | `EXPLAIN … WHERE operationDate='2026-06-05'` → scans **only `trip_y2026m06`** | ✅ |
 | Redis get/set/del | live `PING`→PONG; unit tests cover ops | ✅ |
-| CI green on a PR | workflow valid; **pending** a real PR (no remote yet) | ⏳ |
+| CI green | `dlhsby/swat` remote configured; first push to `main` ran CI green (Lint·Typecheck·Test·Build, 2m10s). Same workflow triggers on PRs. | ✅ |
 | MinIO buckets via presigned URL | live round-trip OK: `presigned-put` → PUT → `presigned-get` → GET byte-for-byte match | ✅ |
 
 > **Spec note:** [`phase-0.md`](./phase-0.md) exit list says *"bcrypt hash"*. The implementation uses
@@ -143,7 +143,8 @@ pending live infra not on the critical path).
 
 - [x] ~~Pull `minio`, `adminer`, `nginx` images → run the **MinIO presigned-URL round-trip**.~~
       Done 2026-06-08 — full stack (Postgres/Redis/MinIO/Adminer) up; presigned round-trip verified.
-- [ ] Configure a GitHub remote and open a PR to exercise **CI** end-to-end.
+- [x] ~~Configure a GitHub remote and exercise **CI** end-to-end.~~ Done 2026-06-08 —
+      `dlhsby/swat` (private); first push to `main` ran CI green. CI now on Node 24.
 - [ ] (Optional) add `packages/types` + `scripts/` skeletons when Phase 1 first needs them.
 
 ---
