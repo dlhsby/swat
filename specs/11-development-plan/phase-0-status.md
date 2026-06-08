@@ -145,7 +145,12 @@ pending live infra not on the critical path).
       Done 2026-06-08 — full stack (Postgres/Redis/MinIO/Adminer) up; presigned round-trip verified.
 - [x] ~~Configure a GitHub remote and exercise **CI** end-to-end.~~ Done 2026-06-08 —
       `dlhsby/swat` (private); first push to `main` ran CI green. CI now on Node 24.
-- [ ] (Optional) add `packages/types` + `scripts/` skeletons when Phase 1 first needs them.
+- [x] ~~`scripts/` skeleton~~ — done (`scripts/setup.sh` + `scripts/start.sh`).
+- **`packages/types` is intentionally not created** — it is referenced nowhere
+  (`@swat/schemas` covers validation) and belongs to **Phase 1** scope per deviation #6.
+  Adding an empty package now would be dead code. **Not a Phase 0 item.**
+
+**No Phase 0 items remain open.**
 
 ---
 
