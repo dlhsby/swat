@@ -1,8 +1,8 @@
 # Phase 1 — MVP · Implementation Status
 
 **Status:** 🚧 **IN PROGRESS** — Milestones **M1 (Auth & RBAC)**, **M2 (backend master data)**,
-**M3 (design-system component library)** and **M4 (transactions backend)** complete and on `main`
-under green gates; **M5–M8** not yet started.
+**M3 (design-system component library)**, **M4 (transactions backend)** and **M5 (frontend —
+Epics 1.9–1.12)** complete and on `main` under green gates; **M6–M8** not yet started.
 
 > Build-side progress record for [`phase-1.md`](./phase-1.md), sequenced by
 > [`phase-1-plan.md`](./phase-1-plan.md). Where this diverges from the spec, the divergence is
@@ -12,8 +12,8 @@ under green gates; **M5–M8** not yet started.
 |---|---|
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
-| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) — all on `main` |
+| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
@@ -27,8 +27,8 @@ under green gates; **M5–M8** not yet started.
 | **M2** | 1.2–1.6 backend master data | ✅ Complete |
 | **M3** | 1.8.5 component library (34 components) | ✅ Complete |
 | **M4** | 1.7–1.8 transactions backend | ✅ Complete |
-| **M5** | 1.9–1.12 frontend | ⏳ Not started — **next** |
-| **M6** | 1.17 legacy parity | ⏳ Not started |
+| **M5** | 1.9–1.12 frontend | ✅ Complete |
+| **M6** | 1.17 legacy parity | ⏳ Not started — **next** |
 | **M7** | 1.13 migration scripts (dry-run) | ⏳ Not started |
 | **M8** | 1.14–1.16 hardening / docs / cutover | ⏳ Not started |
 
@@ -42,7 +42,8 @@ under green gates; **M5–M8** not yet started.
 | Typecheck | `pnpm typecheck` | ✅ 0 errors |
 | Unit tests | `pnpm --filter @swat/backend test` | ✅ **271 tests, 36 suites** (+46 for M4) |
 | Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ **96.5% stmts · 81.5% branch · 95.3% funcs**; every M4 transactions service at **100% stmts/funcs** (≥90% trip-path gate met) |
-| Web tests | `pnpm --filter @swat/web test` | ✅ **78 tests, 7 suites** |
+| Web tests | `pnpm --filter @swat/web test` | ✅ **100 tests, 12 suites** (+22 for M5: permissions matcher, password strength, dashboard metrics, ProtectedAction, format) |
+| Web build | `pnpm --filter @swat/web build` | ✅ **all 13 app routes** compile (App Router; login/change-password/profile/dashboard, 11 master-data + transaction screens) |
 | Schemas tests | `pnpm --filter @swat/schemas test` | ✅ **17 tests** |
 | E2E (live stack) | `pnpm --filter @swat/backend test:e2e` | ✅ auth + master-data pass; transactions e2e written, **deferred** (needs Docker + synthetic seed) |
 | Build | `pnpm build` | ✅ 4/4 |
@@ -140,6 +141,15 @@ class-validator DTOs (Zod `@swat/schemas` reserved for frontend sharing).
 6. **Per-category trip permission enforced in the service** (M4) — the `PUT /trips/:id` permission
    depends on the trip's route category, which a static `@RequirePermissions` decorator can't express;
    the service resolves and enforces the right key against the caller's cached grants instead.
+7. **Client-side route guard, not Next middleware** (M5) — the spec names "middleware route guards",
+   but the session cookie is httpOnly on the backend origin (cross-origin in dev), so Next middleware
+   cannot read it. Guarding is an `AuthProvider` + `AuthGuard` that calls `/auth/me` and redirects
+   unauthenticated users to login / forced-change. The **server remains the authoritative gate**;
+   client gating is UX only. Next middleware still handles locale routing.
+8. **`pnpm dedupe` toolchain fix** (M5) — a fresh install resolved two distinct peer-copies of
+   `eslint-plugin-import` (one via `eslint-config-next`, one via `@swat/eslint-config`), which ESLint 8
+   rejects as a plugin conflict, breaking `next lint`. `pnpm dedupe` collapses them; the lockfile change
+   is committed with the M5 foundation.
 
 ---
 
@@ -249,9 +259,32 @@ in the correct monthly partition. BigInt ids serialize to strings in every DTO.
 
 ---
 
-## What's next — M5 (Epics 1.9–1.12 frontend)
+## M5 · Epics 1.9–1.12 — Frontend (T-133 … T-150)
 
-App shell (topbar + sidebar + recessed canvas), login + forced-change + profile + dashboard; 7
-master-data CRUD pages (DataTable + Dialog forms); Haul Board + Trip Sheet + record/verify forms;
-`usePermissions()` + `ProtectedAction` + middleware route guards. Composes the M3 component library per
-the hi-fi spec. See [`phase-1-plan.md`](./phase-1-plan.md) § M5.
+The web back-office, composing the M3 component library per the hi-fi spec. Built in three verified
+slices (`75fe6ee` foundation, `8469bf4` master-data, `0bdf7d3` transactions). All data fetching is
+client-side against the `ApiResponse<T>` envelope via the cookie-auth `apiClient`; every action and
+nav item is permission-gated.
+
+| Area | Status | Notes |
+|------|--------|-------|
+| App shell (1.9) | ✅ | Topbar (brand, theme, notif, user menu + logout confirm), role-driven Sidebar (hide-not-disable, "Segera" pills), recessed canvas, mobile drawer; locale-aware navigation; reusable `PageHead`. |
+| Auth UI (1.9/1.12) | ✅ | `AuthProvider` (`/auth/me`), client `AuthGuard` (→ login / forced-change), `usePermissions()` + `ProtectedAction` over a wildcard matcher mirroring the backend. Login, forced + voluntary change-password (5-level strength meter), Profile. |
+| Dashboard (1.9) | ✅ | Greeting + Inisiasi Hari Ini, 4-metric grid, recent day + Perlu Perhatian — derived from the live `GET /transaction-days?date=` tree. |
+| Master-data CRUD (1.10) | ✅ | **11 screens** on a reusable scaffold (`makeResourceApi`, `useResourceManager`, RHF+Zod field wrappers, `CrudListShell`/`CrudFormDialog`, `RowActions`): Kendaraan, Model/Aplikasi Kendaraan, Bahan Bakar, Pengemudi (+ SIM sheet), Spot & Rute (tabbed), Sumber Sampah, Jadwal Kru (+ Trayek sheet), Jatah Kitir. |
+| Users & Access (1.12) | ✅ | Pengguna (temp-password capture on create + admin force-reset) and Hak Akses (RBAC master-detail: grouped permission toggles → Simpan Izin). |
+| Transaction workflow (1.11) | ✅ | Hari Transaksi (idempotent Inisiasi + by-date finder), Haul Board, Trip Sheet, category-driven Record dialog (DISPOSAL net=gross−tare gate, REFUEL approved≤requested gate), Verify, Reconcile depart/return. |
+
+- **Server-side 422 → inline field errors:** `CrudFormDialog` maps `ApiError.details` onto the form.
+- **Coverage:** M5 unit tests target the pure logic (permission matcher, password strength, dashboard
+  metric derivation, `ProtectedAction`, formatters); the screens themselves are exercised by the
+  build + manual QA (Playwright E2E is M8).
+
+---
+
+## What's next — M6 (Epic 1.17 legacy parity)
+
+Reference-master CRUD (delete-blocked-when-referenced), kitir bulk import, refuel log, inspection
+(12-item + result derivation), maintenance (nested items + totalCost + approval) — backend + frontend.
+The four parity screens already appear in the sidebar as "Segera" placeholders. See
+[`phase-1-plan.md`](./phase-1-plan.md) § M6.
