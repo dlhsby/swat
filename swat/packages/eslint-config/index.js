@@ -53,6 +53,13 @@ module.exports = {
       'error',
       {
         groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+        // Classify the `@/*` alias as `internal` by PATTERN, not by the import
+        // resolver (which is off — see import/no-unresolved below). Pattern-based
+        // grouping is deterministic, so the ordering is identical whether eslint
+        // runs via `next lint` (resolver present) or via lint-staged from the
+        // repo root (resolver absent) — they no longer disagree on `@/…` vs `./…`.
+        pathGroups: [{ pattern: '@/**', group: 'internal', position: 'before' }],
+        pathGroupsExcludedImportTypes: ['builtin'],
         'newlines-between': 'always',
         alphabetize: { order: 'asc', caseInsensitive: true },
       },

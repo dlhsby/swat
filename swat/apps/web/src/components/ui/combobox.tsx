@@ -3,10 +3,10 @@
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useState } from 'react';
 
+import { cn } from '@/lib/cn';
+
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from './command';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
-
-import { cn } from '@/lib/cn';
 
 export interface ComboboxOption {
   value: string;

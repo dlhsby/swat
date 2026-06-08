@@ -11,9 +11,9 @@ import {
   useFormContext,
 } from 'react-hook-form';
 
-import { Label } from './label';
-
 import { cn } from '@/lib/cn';
+
+import { Label } from './label';
 
 /**
  * Form (design-system §3.9) — react-hook-form bindings. <FormField> wires a

@@ -3,15 +3,18 @@
 import { ImageIcon, RotateCw, UploadCloud, X } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 
-import { Progress } from './progress';
-
 import { cn } from '@/lib/cn';
+
+import { Progress } from './progress';
 
 const DEFAULT_ACCEPT = 'image/jpeg,image/png';
 const DEFAULT_MAX_MB = 5;
 
 export interface DropzoneProps {
-  onFilesAccepted: (files: File[]) => void;
+  /** Receives the files that pass the client-side type/size guard. Optional so a
+   *  server component may render the dropzone shell; interactive use always
+   *  supplies it (mirrors react-dropzone's optional `onDrop`). */
+  onFilesAccepted?: (files: File[]) => void;
   /** Comma-separated MIME list. Defaults to JPG/PNG. */
   accept?: string;
   maxSizeMb?: number;
@@ -60,7 +63,7 @@ export function Dropzone({
   const handle = (list: FileList | null): void => {
     if (!list || disabled) return;
     const ok = validate(Array.from(list));
-    if (ok.length) onFilesAccepted(multiple ? ok : ok.slice(0, 1));
+    if (ok.length) onFilesAccepted?.(multiple ? ok : ok.slice(0, 1));
   };
 
   return (

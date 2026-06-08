@@ -1,9 +1,9 @@
 import { Minus, Plus } from 'lucide-react';
 import { forwardRef, type ReactNode } from 'react';
 
-import { Input, type InputProps } from './input';
-
 import { cn } from '@/lib/cn';
+
+import { Input, type InputProps } from './input';
 
 export interface NumberInputProps extends Omit<InputProps, 'type' | 'leading'> {
   /** Show ± stepper buttons (icon-sm). Off by default — keyboard entry. */

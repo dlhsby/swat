@@ -1,11 +1,14 @@
-'use client';
-
+// No 'use client' directive: every export here is a pure forwarding wrapper over
+// @radix-ui/react-alert-dialog (which carries its own 'use client') or the
+// controlled, hook-free `ConfirmDialog`. Keeping this a shared module avoids the
+// RSC-serialization guard firing on ConfirmDialog's required callbacks while it
+// still renders correctly inside the client screens that consume it.
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 import { type ComponentPropsWithoutRef, type ElementRef, forwardRef, type ReactNode } from 'react';
 
-import { buttonVariants } from './button';
-
 import { cn } from '@/lib/cn';
+
+import { buttonVariants } from './button';
 
 /**
  * Confirm dialog (design-system §3.13) — gates destructive/irreversible actions.

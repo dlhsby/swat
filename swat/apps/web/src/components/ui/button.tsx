@@ -2,9 +2,9 @@ import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { type ButtonHTMLAttributes, forwardRef } from 'react';
 
-import { Spinner } from './spinner';
-
 import { cn } from '@/lib/cn';
+
+import { Spinner } from './spinner';
 
 /**
  * Button — primary action trigger (design-system §3.1).

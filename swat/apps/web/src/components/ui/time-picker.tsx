@@ -1,10 +1,10 @@
 import { Clock } from 'lucide-react';
 import { forwardRef } from 'react';
 
+import { cn } from '@/lib/cn';
+
 import { Button } from './button';
 import { Input, type InputProps } from './input';
-
-import { cn } from '@/lib/cn';
 
 const PRESETS = ['08:00', '12:00', '16:00'] as const;
 

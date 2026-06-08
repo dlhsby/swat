@@ -15,6 +15,8 @@ import {
 import { ArrowDown, ArrowUp, ChevronsUpDown, Search, SlidersHorizontal } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 
+import { cn } from '@/lib/cn';
+
 import { Button } from './button';
 import {
   DropdownMenu,
@@ -29,8 +31,6 @@ import { Input } from './input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
 import { Skeleton } from './skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
-
-import { cn } from '@/lib/cn';
 
 // Surface a human label per column for the column-toggle menu and mobile cards.
 declare module '@tanstack/react-table' {
