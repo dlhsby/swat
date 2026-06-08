@@ -21,12 +21,17 @@ COPY . .
 RUN pnpm --filter @swat/web build
 
 # --- runtime ----------------------------------------------------------------
+# Next standalone output (next.config.mjs `output: 'standalone'`): a self-contained
+# server with only its traced deps — no full node_modules, no pnpm at runtime.
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production
+ENV PORT=3001
+ENV HOSTNAME=0.0.0.0
 WORKDIR /app
-COPY --from=build /app/apps/web/.next ./.next
-COPY --from=build /app/apps/web/public ./public
-COPY --from=build /app/apps/web/package.json ./package.json
-COPY --from=build /app/node_modules ./node_modules
+# The standalone bundle (traced node_modules + server.js, monorepo-rooted).
+COPY --from=build /app/apps/web/.next/standalone ./
+# Static assets + public dir are not traced into standalone; copy them alongside.
+COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build /app/apps/web/public ./apps/web/public
 EXPOSE 3001
-CMD ["pnpm", "start"]
+CMD ["node", "apps/web/server.js"]

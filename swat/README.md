@@ -2,8 +2,12 @@
 
 Fleet & solid-waste-transport operations platform for **DLH Kota Surabaya**.
 A TypeScript monorepo rebuilding the legacy CodeIgniter app (`../old_swat`) on a
-modern stack. **Phase 0 (foundation) is complete** — see the status report at
-`../specs/11-development-plan/phase-0-status.md` (spec: `../specs/11-development-plan/phase-0.md`).
+modern stack. **Phase 0 (foundation) is complete**; **Phase 1** (auth/RBAC, master
+data, transactions, frontend, legacy parity, migration toolkit, hardening — M1–M8)
+is delivered under green gates. Status ledgers:
+`../specs/11-development-plan/phase-1-status.md` (spec: `phase-1.md`) and
+`phase-0-status.md`. Live infra steps (Docker stack, `migrate deploy`, the
+multi-TB transactional migration, cutover) are the operator's on-prem steps.
 
 ## Stack
 
@@ -107,6 +111,44 @@ If you change `POSTGRES_PORT`, `REDIS_PORT`, or `MINIO_API_PORT`, update the mat
 | `pnpm db:generate`                  | `prisma generate`                |
 | `pnpm db:migrate`                   | `prisma migrate deploy`          |
 | `pnpm db:seed`                      | Seed reference + synthetic data  |
+
+## Production deployment
+
+A fully-containerised stack (single public origin behind Nginx) lives in
+[`infra/`](./infra/):
+
+```bash
+cp infra/docker-compose.prod.env.example infra/docker-compose.prod.env   # set REAL secrets
+docker compose -f infra/docker-compose.prod.yml --env-file infra/docker-compose.prod.env up -d --build
+#   Postgres · Redis · MinIO · backend (multi-stage) · web (Next standalone) · Nginx :80
+#   backend runs `prisma migrate deploy` on boot; seed the admin once (runbook).
+```
+
+Nginx (`infra/nginx.prod.conf`) serves one origin: `/api`, `/health`, `/api/docs`
+→ backend; everything else → web. Same-origin makes the httpOnly `swat.sid` session
+cookie first-party, enabling a true server-side route guard. Front it with TLS.
+
+## Migration (legacy MySQL → PostgreSQL)
+
+Scripts in [`apps/backend/scripts/migration/`](./apps/backend/scripts/migration/)
+(`migrate:discovery` · `migrate:legacy` · `migrate:images` · `migrate:verify` ·
+`migrate:delta-sync`). Pure transform/mapper logic is unit-tested; the end-to-end
+run against the live DB + image filesystem is the operator's on-prem step. See that
+folder's README (incl. the deferred **T-155** transactional bulk load — revisit with
+live data).
+
+## Cutover & operations docs
+
+In [`../docs/`](../docs/): [`CUTOVER-RUNBOOK.md`](../docs/CUTOVER-RUNBOOK.md),
+[`ROLLBACK-PLAN.md`](../docs/ROLLBACK-PLAN.md), [`USER-GUIDE.md`](../docs/USER-GUIDE.md)
+(Bahasa, role-based), [`LEGACY-TO-NEW-REFERENCE.md`](../docs/LEGACY-TO-NEW-REFERENCE.md),
+[`KNOWN-ISSUES-AND-WORKAROUNDS.md`](../docs/KNOWN-ISSUES-AND-WORKAROUNDS.md).
+
+## API docs
+
+With the backend running, Swagger UI is at `http://localhost:3000/api/docs` — every
+endpoint is decorated (`@ApiTags`/`@ApiOperation`) and wrapped in the `ApiResponse<T>`
+envelope.
 
 ## Database & partitioning
 
