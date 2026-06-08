@@ -10,10 +10,15 @@ import { HealthModule } from './health/health.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CacheModule } from './modules/cache/cache.module';
+import { FleetModule } from './modules/fleet/fleet.module';
+import { GeographyModule } from './modules/geography/geography.module';
+import { PersonnelModule } from './modules/personnel/personnel.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { RolesModule } from './modules/roles/roles.module';
+import { SchedulingModule } from './modules/scheduling/scheduling.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { UsersModule } from './modules/users/users.module';
+import { WasteModule } from './modules/waste/waste.module';
 import { SessionModule } from './session.module';
 
 /**
@@ -37,6 +42,11 @@ import { SessionModule } from './session.module';
     AuthModule,
     UsersModule,
     RolesModule,
+    GeographyModule,
+    WasteModule,
+    FleetModule,
+    PersonnelModule,
+    SchedulingModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },
