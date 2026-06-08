@@ -6,11 +6,13 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
 import { AppConfigService } from './config';
+import { configureApp } from './configure-app';
 
 /**
  * Application entrypoint. Boots NestJS, mounts the global `/api/v1` prefix
- * (health stays at `/health` for orchestrator probes), publishes Swagger UI at
- * `/api/docs`, and listens on the configured port.
+ * (health stays at `/health` for orchestrator probes), wires the Redis session
+ * middleware, publishes Swagger UI at `/api/docs`, and listens on the
+ * configured port.
  */
 async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
@@ -19,13 +21,7 @@ async function bootstrap(): Promise<void> {
   const config = app.get(AppConfigService);
 
   app.enableShutdownHooks();
-  app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-
-  // CORS for the Next.js dev server.
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
+  await configureApp(app, config);
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('SWAT API')

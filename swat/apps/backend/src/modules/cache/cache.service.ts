@@ -60,6 +60,23 @@ export class CacheService implements OnModuleDestroy {
     }
   }
 
+  /**
+   * Atomically increment a counter, (re)setting its TTL on first write. Returns
+   * the new value, or 0 if Redis is unreachable (callers treat 0 as "no prior
+   * activity" so a cache outage never blocks the request path).
+   */
+  async increment(key: string, ttlSeconds: number): Promise<number> {
+    try {
+      const value = await this.client.incr(key);
+      if (value === 1 && ttlSeconds > 0) {
+        await this.client.expire(key, ttlSeconds);
+      }
+      return value;
+    } catch {
+      return 0;
+    }
+  }
+
   /** Delete every key matching a glob pattern (e.g. `cache:reference:*`). */
   async invalidatePattern(pattern: string): Promise<number> {
     try {

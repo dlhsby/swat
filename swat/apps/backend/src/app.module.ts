@@ -4,11 +4,17 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
+import { SecurityModule } from './common/security.module';
 import { AppConfigModule } from './config';
 import { HealthModule } from './health/health.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { CacheModule } from './modules/cache/cache.module';
+import { PrismaModule } from './modules/prisma/prisma.module';
+import { RolesModule } from './modules/roles/roles.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { UsersModule } from './modules/users/users.module';
+import { SessionModule } from './session.module';
 
 /**
  * Root application module.
@@ -19,7 +25,19 @@ import { StorageModule } from './modules/storage/storage.module';
  *  - {@link AppValidationPipe} — strict DTO validation (422 on failure).
  */
 @Module({
-  imports: [AppConfigModule, HealthModule, StorageModule, CacheModule, AnalyticsModule],
+  imports: [
+    AppConfigModule,
+    PrismaModule,
+    CacheModule,
+    SessionModule,
+    SecurityModule,
+    HealthModule,
+    StorageModule,
+    AnalyticsModule,
+    AuthModule,
+    UsersModule,
+    RolesModule,
+  ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
