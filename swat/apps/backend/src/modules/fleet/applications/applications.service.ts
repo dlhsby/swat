@@ -51,14 +51,25 @@ export class ApplicationsService {
   }
 
   async create(dto: CreateApplicationDto): Promise<ApplicationDto> {
+    await this.assertNameAvailable(dto.name);
     return toDto(await this.repo.create({ name: dto.name }));
   }
 
   async update(id: number, dto: UpdateApplicationDto): Promise<ApplicationDto> {
     await this.getById(id);
+    if (dto.name !== undefined) {
+      await this.assertNameAvailable(dto.name, id);
+    }
     return toDto(
       await this.repo.update(id, { ...(dto.name !== undefined ? { name: dto.name } : {}) }),
     );
+  }
+
+  private async assertNameAvailable(name: string, exceptId?: number): Promise<void> {
+    const existing = await this.repo.findByName(name);
+    if (existing && existing.id !== exceptId) {
+      throw new ConflictException('Nama aplikasi kendaraan sudah digunakan.');
+    }
   }
 
   async remove(id: number): Promise<{ message: string }> {

@@ -32,6 +32,13 @@ export class ApplicationsRepository {
     return this.prisma.vehicleApplication.findUnique({ where: { id } });
   }
 
+  findByName(name: string): Promise<{ id: number } | null> {
+    return this.prisma.vehicleApplication.findFirst({
+      where: { name: { equals: name, mode: 'insensitive' } },
+      select: { id: true },
+    });
+  }
+
   countModels(id: number): Promise<number> {
     return this.prisma.vehicleModel.count({ where: { applicationId: id } });
   }

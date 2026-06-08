@@ -23,6 +23,6 @@ export class CreateRouteDto {
   @ApiProperty({ minimum: 0, description: 'Distance in km' })
   @Type(() => Number)
   @IsInt()
-  @Min(0, { message: 'Jarak tidak boleh negatif' })
+  @Min(0.1, { message: 'Jarak harus lebih dari nol' })
   distanceKm!: number;
 }

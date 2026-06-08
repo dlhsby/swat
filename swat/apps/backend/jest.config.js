@@ -25,13 +25,18 @@ module.exports = {
     '!**/session.ts',
     '!**/configure-app.ts',
     '!**/prisma.service.ts',
+    // Thin external-SDK wrapper (AWS S3 presign/put/delete) — no branching logic;
+    // exercised against live MinIO in integration, like the repositories above.
+    '!**/storage.service.ts',
     '!**/index.ts',
     '!**/common/pipes/validation.pipe.ts',
     '!**/common/decorators/current-user.decorator.ts',
   ],
   coverageDirectory: '../coverage',
+  // Ratcheted to lock in the achieved logic-layer coverage (≈97.8/82.6/98/97.7);
+  // a small margin below avoids CI flakiness on unrelated refactors.
   coverageThreshold: {
-    global: { statements: 90, branches: 78, functions: 90, lines: 90 },
+    global: { statements: 96, branches: 81, functions: 96, lines: 96 },
   },
   testEnvironment: 'node',
   moduleNameMapper: {

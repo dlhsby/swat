@@ -57,7 +57,7 @@ export class MaintenanceController {
   @RequirePermissions('maintenance:approve')
   @ApiOperation({ summary: 'Approve a maintenance record (PENDING_APPROVAL → APPROVED)' })
   approve(@Param('id') id: string, @CurrentUser() user: SessionUser): Promise<MaintenanceDto> {
-    return this.maintenance.approve(id, user.id);
+    return this.maintenance.approve(id, user);
   }
 
   @Delete(':id')

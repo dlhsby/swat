@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 
 import { type RolePermissionsService } from '../../../common/auth/role-permissions.service';
 import { type SessionUser } from '../../../common/auth/session.types';
+import { type AuditService } from '../../audit/audit.service';
 
 import { type TripsRepository } from './trips.repository';
 import { TripsService } from './trips.service';
@@ -53,6 +54,7 @@ function buildTrip(overrides: Record<string, unknown> = {}): Record<string, unkn
 describe('TripsService', () => {
   let repo: { findForRecording: jest.Mock; findFull: jest.Mock; update: jest.Mock };
   let rolePermissions: { getPermissionKeys: jest.Mock };
+  let audit: { record: jest.Mock };
   let service: TripsService;
 
   beforeEach(() => {
@@ -73,9 +75,11 @@ describe('TripsService', () => {
           'trip:update',
         ]),
     };
+    audit = { record: jest.fn().mockResolvedValue(undefined) };
     service = new TripsService(
       repo as unknown as TripsRepository,
       rolePermissions as unknown as RolePermissionsService,
+      audit as unknown as AuditService,
     );
   });
 

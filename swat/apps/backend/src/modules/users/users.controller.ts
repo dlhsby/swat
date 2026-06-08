@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { type SessionUser } from '../../common/auth/session.types';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { type PaginationMeta } from '../../common/types/api-response';
 
@@ -42,21 +44,28 @@ export class UsersController {
   @Post()
   @RequirePermissions('user:create')
   @ApiOperation({ summary: 'Create a user (issues a temporary password)' })
-  create(@Body() dto: CreateUserDto): Promise<CreatedUserDto> {
-    return this.users.create(dto);
+  create(@Body() dto: CreateUserDto, @CurrentUser() actor: SessionUser): Promise<CreatedUserDto> {
+    return this.users.create(dto, actor);
   }
 
   @Patch(':id')
   @RequirePermissions('user:update')
   @ApiOperation({ summary: 'Update a user' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUserDto): Promise<UserDto> {
-    return this.users.update(id, dto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() actor: SessionUser,
+  ): Promise<UserDto> {
+    return this.users.update(id, dto, actor);
   }
 
   @Delete(':id')
   @RequirePermissions('user:delete')
   @ApiOperation({ summary: 'Soft-delete a user' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
-    return this.users.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() actor: SessionUser,
+  ): Promise<{ message: string }> {
+    return this.users.remove(id, actor);
   }
 }

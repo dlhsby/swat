@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { type SessionUser } from '../../common/auth/session.types';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -30,21 +32,28 @@ export class RolesController {
   @Post()
   @RequirePermissions('role:create')
   @ApiOperation({ summary: 'Create a role' })
-  create(@Body() dto: CreateRoleDto): Promise<RoleDto> {
-    return this.roles.create(dto);
+  create(@Body() dto: CreateRoleDto, @CurrentUser() actor: SessionUser): Promise<RoleDto> {
+    return this.roles.create(dto, actor);
   }
 
   @Patch(':id')
   @RequirePermissions('role:update')
   @ApiOperation({ summary: 'Update a role (replaces permission set)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRoleDto): Promise<RoleDto> {
-    return this.roles.update(id, dto);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateRoleDto,
+    @CurrentUser() actor: SessionUser,
+  ): Promise<RoleDto> {
+    return this.roles.update(id, dto, actor);
   }
 
   @Delete(':id')
   @RequirePermissions('role:delete')
   @ApiOperation({ summary: 'Delete a role (blocked while assigned to users)' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
-    return this.roles.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() actor: SessionUser,
+  ): Promise<{ message: string }> {
+    return this.roles.remove(id, actor);
   }
 }

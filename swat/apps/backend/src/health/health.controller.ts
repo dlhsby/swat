@@ -3,6 +3,8 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Public } from '../common/decorators/public.decorator';
 
+import { type ReadinessStatus, HealthService } from './health.service';
+
 interface HealthStatus {
   readonly status: 'ok';
   readonly service: string;
@@ -10,13 +12,16 @@ interface HealthStatus {
 }
 
 /**
- * Liveness endpoint. Always returns `ok` when the process is serving traffic;
- * it performs no dependency checks (readiness/DB checks arrive in Phase 1).
- * Unguarded by design so orchestrators can probe it without credentials.
+ * Liveness + readiness endpoints. `/health` always returns `ok` while the
+ * process serves traffic (no dependency checks) so orchestrators can probe it
+ * without credentials; `/ready` additionally verifies the database is
+ * reachable and 503s when it is not. Both are unguarded by design.
  */
 @ApiTags('health')
 @Controller('health')
 export class HealthController {
+  constructor(private readonly health: HealthService) {}
+
   @Get()
   @Public()
   @ApiOperation({ summary: 'Liveness check' })
@@ -26,5 +31,12 @@ export class HealthController {
       service: 'swat-backend',
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @Get('ready')
+  @Public()
+  @ApiOperation({ summary: 'Readiness check (verifies database connectivity)' })
+  ready(): Promise<ReadinessStatus> {
+    return this.health.checkReadiness();
   }
 }

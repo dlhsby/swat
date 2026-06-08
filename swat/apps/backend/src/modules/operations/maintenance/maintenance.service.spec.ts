@@ -1,8 +1,13 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { MaintenanceStatus, MaintenanceType } from '@prisma/client';
 
+import { type SessionUser } from '../../../common/auth/session.types';
+import { type AuditService } from '../../audit/audit.service';
+
 import { type MaintenanceRepository } from './maintenance.repository';
 import { MaintenanceService } from './maintenance.service';
+
+const APPROVER: SessionUser = { id: 7, username: 'spv', roleId: 2, mustChangePassword: false };
 
 function buildRecord(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -39,6 +44,7 @@ describe('MaintenanceService', () => {
     update: jest.Mock;
     delete: jest.Mock;
   };
+  let audit: { record: jest.Mock };
   let service: MaintenanceService;
 
   beforeEach(() => {
@@ -53,7 +59,11 @@ describe('MaintenanceService', () => {
       update: jest.fn().mockResolvedValue(buildRecord()),
       delete: jest.fn().mockResolvedValue(undefined),
     };
-    service = new MaintenanceService(repo as unknown as MaintenanceRepository);
+    audit = { record: jest.fn().mockResolvedValue(undefined) };
+    service = new MaintenanceService(
+      repo as unknown as MaintenanceRepository,
+      audit as unknown as AuditService,
+    );
   });
 
   const dto = {
@@ -115,14 +125,17 @@ describe('MaintenanceService', () => {
   it('approves a pending record', async () => {
     repo.findById.mockResolvedValue(buildRecord());
     repo.update.mockResolvedValue(buildRecord({ status: MaintenanceStatus.APPROVED }));
-    const result = await service.approve('5', 7);
+    const result = await service.approve('5', APPROVER);
     expect(result.status).toBe(MaintenanceStatus.APPROVED);
     expect(repo.update.mock.calls[0][1]).toMatchObject({ status: MaintenanceStatus.APPROVED });
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'maintenance.approve', entityType: 'MaintenanceRecord' }),
+    );
   });
 
   it('rejects approving an already-approved record', async () => {
     repo.findById.mockResolvedValue(buildRecord({ status: MaintenanceStatus.APPROVED }));
-    await expect(service.approve('5', 7)).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.approve('5', APPROVER)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('recomputes totalCost when items change on update', async () => {

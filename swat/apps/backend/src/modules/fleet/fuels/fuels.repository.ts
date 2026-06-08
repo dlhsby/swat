@@ -50,6 +50,13 @@ export class FuelsRepository {
     return this.prisma.fuelCategory.findUnique({ where: { id }, select: { id: true } });
   }
 
+  findByNameInCategory(fuelCategoryId: number, name: string): Promise<{ id: number } | null> {
+    return this.prisma.fuel.findFirst({
+      where: { fuelCategoryId, name: { equals: name, mode: 'insensitive' } },
+      select: { id: true },
+    });
+  }
+
   countModels(id: number): Promise<number> {
     return this.prisma.vehicleModel.count({ where: { fuelId: id } });
   }

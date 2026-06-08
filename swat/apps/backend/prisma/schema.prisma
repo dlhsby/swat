@@ -180,6 +180,26 @@ model AuthAuditLog {
   @@index([action])
 }
 
+// Generic audit trail for sensitive, non-auth mutations (user/role CRUD, trip
+// verification, fuel over-approval, maintenance approval) — the `AuthAuditLog`
+// above stays scoped to authentication events. Append-only; writes never block
+// the request (a failed audit is logged, not raised). See specs/10-nonfunctional §1.
+model AuditLog {
+  id         BigInt   @id @default(autoincrement())
+  actorId    Int?
+  actorName  String   @db.VarChar(100)
+  action     String   @db.VarChar(64)
+  entityType String   @db.VarChar(48)
+  entityId   String   @db.VarChar(64)
+  details    String?  @db.VarChar(512)
+  timestamp  DateTime @default(now()) @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([timestamp])
+}
+
 // ===========================================================================
 // Fleet
 // ===========================================================================

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { RolePermissionsService } from '../../common/auth/role-permissions.service';
+import { type AuditActor, AuditService } from '../audit/audit.service';
 
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -28,6 +29,7 @@ export class RolesService {
   constructor(
     private readonly repo: RolesRepository,
     private readonly rolePermissions: RolePermissionsService,
+    private readonly audit: AuditService,
   ) {}
 
   async list(): Promise<RoleDto[]> {
@@ -47,7 +49,7 @@ export class RolesService {
     };
   }
 
-  async create(dto: CreateRoleDto): Promise<RoleDto> {
+  async create(dto: CreateRoleDto, actor: AuditActor): Promise<RoleDto> {
     const nameTaken = await this.repo.findByName(dto.name);
     if (nameTaken) {
       throw new ConflictException('Nama peran sudah digunakan.');
@@ -55,10 +57,17 @@ export class RolesService {
     await this.assertPermissionsExist(dto.permissionIds);
 
     const role = await this.repo.create(dto.name, dto.permissionIds);
+    await this.audit.record({
+      actor,
+      action: 'role.create',
+      entityType: 'Role',
+      entityId: role.id,
+      details: `Membuat peran ${role.name} dengan ${dto.permissionIds.length} izin`,
+    });
     return toRoleDto(role);
   }
 
-  async update(id: number, dto: UpdateRoleDto): Promise<RoleDto> {
+  async update(id: number, dto: UpdateRoleDto, actor: AuditActor): Promise<RoleDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Peran tidak ditemukan.');
@@ -78,10 +87,17 @@ export class RolesService {
     if (dto.permissionIds) {
       await this.rolePermissions.invalidate(id);
     }
+    await this.audit.record({
+      actor,
+      action: 'role.update',
+      entityType: 'Role',
+      entityId: role.id,
+      details: dto.permissionIds ? `Mengubah ${dto.permissionIds.length} izin` : 'Mengubah nama',
+    });
     return toRoleDto(role);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: number, actor: AuditActor): Promise<{ message: string }> {
     const role = await this.repo.findById(id);
     if (!role) {
       throw new NotFoundException('Peran tidak ditemukan.');
@@ -93,6 +109,13 @@ export class RolesService {
     }
     await this.repo.delete(id);
     await this.rolePermissions.invalidate(id);
+    await this.audit.record({
+      actor,
+      action: 'role.delete',
+      entityType: 'Role',
+      entityId: id,
+      details: `Menghapus peran ${role.name}`,
+    });
     return { message: 'Peran telah dihapus.' };
   }
 

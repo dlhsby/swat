@@ -18,6 +18,7 @@ describe('ApplicationsService', () => {
     list: jest.Mock;
     findById: jest.Mock;
     countModels: jest.Mock;
+    findByName: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
@@ -30,6 +31,7 @@ describe('ApplicationsService', () => {
       list: jest.fn(),
       findById: jest.fn(),
       countModels: jest.fn().mockResolvedValue(0),
+      findByName: jest.fn().mockResolvedValue(null),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -47,6 +49,17 @@ describe('ApplicationsService', () => {
   it('creates', async () => {
     repo.create.mockResolvedValue(buildRow({ name: 'Arm Roll' }));
     await expect(service.create({ name: 'Arm Roll' })).resolves.toMatchObject({ name: 'Arm Roll' });
+  });
+
+  it('rejects a duplicate name on create', async () => {
+    repo.findByName.mockResolvedValue({ id: 2 });
+    await expect(service.create({ name: 'Compactor' })).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('allows renaming to the same row but blocks colliding with another', async () => {
+    repo.findById.mockResolvedValue(buildRow());
+    repo.findByName.mockResolvedValue({ id: 2 });
+    await expect(service.update(1, { name: 'Taken' })).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('404s an unknown row on get/update', async () => {

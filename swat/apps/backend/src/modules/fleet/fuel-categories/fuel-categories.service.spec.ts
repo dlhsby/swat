@@ -18,6 +18,7 @@ describe('FuelCategoriesService', () => {
     list: jest.Mock;
     findById: jest.Mock;
     countFuels: jest.Mock;
+    findByName: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
@@ -30,6 +31,7 @@ describe('FuelCategoriesService', () => {
       list: jest.fn(),
       findById: jest.fn(),
       countFuels: jest.fn().mockResolvedValue(0),
+      findByName: jest.fn().mockResolvedValue(null),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -46,6 +48,11 @@ describe('FuelCategoriesService', () => {
     await expect(service.create({ name: 'Non-Subsidi' })).resolves.toMatchObject({
       name: 'Non-Subsidi',
     });
+  });
+
+  it('rejects a duplicate category name', async () => {
+    repo.findByName.mockResolvedValue({ id: 9 });
+    await expect(service.create({ name: 'Bersubsidi' })).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('404s unknown on get and update', async () => {

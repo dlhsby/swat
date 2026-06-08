@@ -57,6 +57,7 @@ export class FuelsService {
 
   async create(dto: CreateFuelDto): Promise<FuelDto> {
     await this.assertCategoryExists(dto.fuelCategoryId);
+    await this.assertNameAvailable(dto.fuelCategoryId, dto.name);
     const fuel = await this.repo.create({
       name: dto.name,
       pricePerLiter: dto.pricePerLiter,
@@ -66,9 +67,16 @@ export class FuelsService {
   }
 
   async update(id: number, dto: UpdateFuelDto): Promise<FuelDto> {
-    await this.getById(id);
+    const current = await this.getById(id);
     if (dto.fuelCategoryId !== undefined) {
       await this.assertCategoryExists(dto.fuelCategoryId);
+    }
+    if (dto.name !== undefined || dto.fuelCategoryId !== undefined) {
+      await this.assertNameAvailable(
+        dto.fuelCategoryId ?? current.fuelCategoryId,
+        dto.name ?? current.name,
+        id,
+      );
     }
     const fuel = await this.repo.update(id, {
       ...(dto.name !== undefined ? { name: dto.name } : {}),
@@ -94,6 +102,17 @@ export class FuelsService {
     const category = await this.repo.categoryExists(id);
     if (!category) {
       throw new BadRequestException('Kategori bahan bakar tidak ditemukan.');
+    }
+  }
+
+  private async assertNameAvailable(
+    fuelCategoryId: number,
+    name: string,
+    exceptId?: number,
+  ): Promise<void> {
+    const existing = await this.repo.findByNameInCategory(fuelCategoryId, name);
+    if (existing && existing.id !== exceptId) {
+      throw new ConflictException('Nama bahan bakar sudah digunakan pada kategori ini.');
     }
   }
 }

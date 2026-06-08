@@ -78,6 +78,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SESSION_SECRET: ${SESSION_SECRET}
       JWT_SECRET: ${JWT_SECRET}
+      # Optional CORS allowlist (comma-separated). Unset → reflect request origin
+      # (fine behind the same-origin Nginx). Set to lock the API to known hosts.
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
       S3_REGION: ${S3_REGION:-us-east-1}

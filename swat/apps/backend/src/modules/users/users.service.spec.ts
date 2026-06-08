@@ -1,8 +1,12 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
+import { type AuditActor, type AuditService } from '../audit/audit.service';
+
 import { type CreateUserDto } from './dto/create-user.dto';
 import { type UsersRepository, type UserWithRole } from './users.repository';
 import { UsersService } from './users.service';
+
+const actor: AuditActor = { id: 1, username: 'admin' };
 
 jest.mock('../../common/auth/password', () => ({
   generateTempPassword: jest.fn(() => 'Aa1!generatedxx'),
@@ -42,6 +46,7 @@ describe('UsersService', () => {
     softDelete: jest.Mock;
     roleExists: jest.Mock;
   };
+  let audit: { record: jest.Mock };
   let service: UsersService;
 
   beforeEach(() => {
@@ -55,7 +60,11 @@ describe('UsersService', () => {
       softDelete: jest.fn(),
       roleExists: jest.fn(),
     };
-    service = new UsersService(repo as unknown as UsersRepository);
+    audit = { record: jest.fn().mockResolvedValue(undefined) };
+    service = new UsersService(
+      repo as unknown as UsersRepository,
+      audit as unknown as AuditService,
+    );
   });
 
   it('lists users with pagination meta and no password hash', async () => {
@@ -78,13 +87,13 @@ describe('UsersService', () => {
 
     it('rejects an unknown role', async () => {
       repo.roleExists.mockResolvedValue(null);
-      await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.create(dto, actor)).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('rejects a duplicate username', async () => {
       repo.roleExists.mockResolvedValue({ id: 4 });
       repo.findByUsername.mockResolvedValue(buildUser());
-      await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.create(dto, actor)).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('creates and returns the temporary password', async () => {
@@ -92,10 +101,13 @@ describe('UsersService', () => {
       repo.findByUsername.mockResolvedValue(null);
       repo.create.mockResolvedValue(buildUser({ username: 'newopr' }));
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, actor);
       expect(result.temporaryPassword).toBe('Aa1!generatedxx');
       expect(repo.create).toHaveBeenCalledWith(
         expect.objectContaining({ username: 'newopr', passwordHash: '$argon2id$hash' }),
+      );
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({ actor, action: 'user.create', entityType: 'User' }),
       );
     });
   });
@@ -103,35 +115,47 @@ describe('UsersService', () => {
   describe('update', () => {
     it('404s on a missing user', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.update(1, { name: 'X' })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.update(1, { name: 'X' }, actor)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('rejects an unknown role', async () => {
       repo.findById.mockResolvedValue(buildUser());
       repo.roleExists.mockResolvedValue(null);
-      await expect(service.update(1, { roleId: 99 })).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.update(1, { roleId: 99 }, actor)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
 
     it('updates name and role', async () => {
       repo.findById.mockResolvedValue(buildUser());
       repo.roleExists.mockResolvedValue({ id: 5 });
       repo.update.mockResolvedValue(buildUser({ name: 'Renamed' }));
-      const result = await service.update(1, { name: 'Renamed', roleId: 5 });
+      const result = await service.update(1, { name: 'Renamed', roleId: 5 }, actor);
       expect(result.name).toBe('Renamed');
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'user.update', entityType: 'User' }),
+      );
     });
   });
 
   describe('remove', () => {
     it('404s on a missing user', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.remove(1)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.remove(1, actor)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('soft-deletes an existing user', async () => {
       repo.findById.mockResolvedValue(buildUser());
       repo.softDelete.mockResolvedValue(buildUser());
-      await expect(service.remove(1)).resolves.toEqual({ message: 'Pengguna telah dihapus.' });
+      await expect(service.remove(1, actor)).resolves.toEqual({
+        message: 'Pengguna telah dihapus.',
+      });
       expect(repo.softDelete).toHaveBeenCalledWith(1);
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'user.delete', entityType: 'User' }),
+      );
     });
   });
 });

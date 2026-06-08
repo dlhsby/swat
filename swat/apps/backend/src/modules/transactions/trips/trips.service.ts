@@ -10,6 +10,7 @@ import { hasPermission } from '../../../common/auth/permission-matcher';
 import { RolePermissionsService } from '../../../common/auth/role-permissions.service';
 import { type SessionUser } from '../../../common/auth/session.types';
 import { parseBigIntId } from '../../../common/parse-bigint';
+import { AuditService } from '../../audit/audit.service';
 
 import { type RecordTripDto } from './dto/record-trip.dto';
 import { type TripDto, toTripDto } from './trip.mapper';
@@ -70,6 +71,7 @@ export class TripsService {
   constructor(
     private readonly repo: TripsRepository,
     private readonly rolePermissions: RolePermissionsService,
+    private readonly audit: AuditService,
   ) {}
 
   async getById(idParam: string): Promise<TripDetailDto> {
@@ -103,6 +105,7 @@ export class TripsService {
     // Recording (including an authorized override of a verified trip) lands the
     // trip back at DONE — an edit invalidates any prior verification, so it must
     // be re-verified.
+    const categoryData = this.categoryData(category, dto, trip, granted);
     const data: Prisma.TripUpdateInput = {
       status: 'DONE',
       actualTime: new Date(dto.actualTime),
@@ -111,10 +114,27 @@ export class TripsService {
       recordedBy: { connect: { id: user.id } },
       updatedBy: { connect: { id: user.id } },
       ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
-      ...this.categoryData(category, dto, trip, granted),
+      ...categoryData,
     };
 
     const updated = await this.repo.update(trip.id, data);
+
+    // A fuel over-approval is a sensitive, permission-gated action — audit it.
+    if (
+      category === 'REFUEL' &&
+      typeof categoryData.fuelApprovedLiters === 'number' &&
+      typeof categoryData.fuelRequestedLiters === 'number' &&
+      categoryData.fuelApprovedLiters > categoryData.fuelRequestedLiters
+    ) {
+      await this.audit.record({
+        actor: user,
+        action: 'trip.fuel-override',
+        entityType: 'Trip',
+        entityId: trip.id,
+        details: `Disetujui ${categoryData.fuelApprovedLiters} L > diminta ${categoryData.fuelRequestedLiters} L`,
+      });
+    }
+
     return toTripDto(updated);
   }
 
@@ -131,6 +151,12 @@ export class TripsService {
       status: 'VERIFIED',
       verifiedBy: { connect: { id: user.id } },
       verifiedAt: new Date(),
+    });
+    await this.audit.record({
+      actor: user,
+      action: 'trip.verify',
+      entityType: 'Trip',
+      entityId: id,
     });
     return toTripDto(updated);
   }

@@ -1,9 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { MaintenanceStatus, type MaintenanceType, type Prisma } from '@prisma/client';
 
+import { type SessionUser } from '../../../common/auth/session.types';
 import { formatDateOnly, parseDateOnly } from '../../../common/dates';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { AuditService } from '../../audit/audit.service';
 
 import { type CreateMaintenanceDto } from './dto/create-maintenance.dto';
 import { type ListMaintenanceQueryDto } from './dto/list-maintenance.query.dto';
@@ -81,7 +83,10 @@ function toDto(record: MaintenanceWithRefs): MaintenanceDto {
 
 @Injectable()
 export class MaintenanceService {
-  constructor(private readonly repo: MaintenanceRepository) {}
+  constructor(
+    private readonly repo: MaintenanceRepository,
+    private readonly audit: AuditService,
+  ) {}
 
   async list(
     query: ListMaintenanceQueryDto,
@@ -158,7 +163,7 @@ export class MaintenanceService {
     return toDto(record);
   }
 
-  async approve(id: string, userId: number): Promise<MaintenanceDto> {
+  async approve(id: string, actor: SessionUser): Promise<MaintenanceDto> {
     const existing = await this.repo.findById(this.toBigInt(id));
     if (!existing) {
       throw new NotFoundException('Perawatan tidak ditemukan.');
@@ -168,7 +173,14 @@ export class MaintenanceService {
     }
     const record = await this.repo.update(this.toBigInt(id), {
       status: MaintenanceStatus.APPROVED,
-      updatedBy: { connect: { id: userId } },
+      updatedBy: { connect: { id: actor.id } },
+    });
+    await this.audit.record({
+      actor,
+      action: 'maintenance.approve',
+      entityType: 'MaintenanceRecord',
+      entityId: id,
+      details: `Menyetujui ${record.code}`,
     });
     return toDto(record);
   }

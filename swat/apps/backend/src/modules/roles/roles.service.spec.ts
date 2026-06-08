@@ -1,9 +1,12 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
 import { type RolePermissionsService } from '../../common/auth/role-permissions.service';
+import { type AuditActor, type AuditService } from '../audit/audit.service';
 
 import { type RolesRepository, type RoleWithRelations } from './roles.repository';
 import { RolesService } from './roles.service';
+
+const actor: AuditActor = { id: 1, username: 'admin' };
 
 function buildRole(overrides: Partial<RoleWithRelations> = {}): RoleWithRelations {
   return {
@@ -30,6 +33,7 @@ describe('RolesService', () => {
     delete: jest.Mock;
   };
   let rolePermissions: { invalidate: jest.Mock };
+  let audit: { record: jest.Mock };
   let service: RolesService;
 
   beforeEach(() => {
@@ -45,9 +49,11 @@ describe('RolesService', () => {
       delete: jest.fn(),
     };
     rolePermissions = { invalidate: jest.fn().mockResolvedValue(undefined) };
+    audit = { record: jest.fn().mockResolvedValue(undefined) };
     service = new RolesService(
       repo as unknown as RolesRepository,
       rolePermissions as unknown as RolePermissionsService,
+      audit as unknown as AuditService,
     );
   });
 
@@ -71,24 +77,24 @@ describe('RolesService', () => {
   describe('create', () => {
     it('rejects a duplicate name', async () => {
       repo.findByName.mockResolvedValue({ id: 2 });
-      await expect(service.create({ name: 'Checker', permissionIds: [10] })).rejects.toBeInstanceOf(
-        ConflictException,
-      );
+      await expect(
+        service.create({ name: 'Checker', permissionIds: [10] }, actor),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('rejects unknown permission ids', async () => {
       repo.findByName.mockResolvedValue(null);
       repo.permissionsByIds.mockResolvedValue([{ id: 10 }]); // only 1 of 2 found
-      await expect(service.create({ name: 'New', permissionIds: [10, 11] })).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.create({ name: 'New', permissionIds: [10, 11] }, actor),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('creates a role', async () => {
       repo.findByName.mockResolvedValue(null);
       repo.permissionsByIds.mockResolvedValue([{ id: 10 }, { id: 11 }]);
       repo.create.mockResolvedValue(buildRole({ name: 'New' }));
-      const result = await service.create({ name: 'New', permissionIds: [10, 11] });
+      const result = await service.create({ name: 'New', permissionIds: [10, 11] }, actor);
       expect(result.name).toBe('New');
     });
   });
@@ -96,13 +102,15 @@ describe('RolesService', () => {
   describe('update', () => {
     it('404s on a missing role', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.update(1, { name: 'X' })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.update(1, { name: 'X' }, actor)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('rejects a name collision with another role', async () => {
       repo.findById.mockResolvedValue(buildRole({ name: 'Checker' }));
       repo.findByName.mockResolvedValue({ id: 2 });
-      await expect(service.update(1, { name: 'Supervisor' })).rejects.toBeInstanceOf(
+      await expect(service.update(1, { name: 'Supervisor' }, actor)).rejects.toBeInstanceOf(
         ConflictException,
       );
     });
@@ -111,14 +119,14 @@ describe('RolesService', () => {
       repo.findById.mockResolvedValue(buildRole());
       repo.permissionsByIds.mockResolvedValue([{ id: 12 }]);
       repo.update.mockResolvedValue(buildRole({ permissions: [{ permissionId: 12 }] }));
-      await service.update(1, { permissionIds: [12] });
+      await service.update(1, { permissionIds: [12] }, actor);
       expect(rolePermissions.invalidate).toHaveBeenCalledWith(1);
     });
 
     it('does not invalidate the cache on a name-only edit', async () => {
       repo.findById.mockResolvedValue(buildRole());
       repo.update.mockResolvedValue(buildRole({ name: 'Renamed' }));
-      await service.update(1, { name: 'Renamed' });
+      await service.update(1, { name: 'Renamed' }, actor);
       expect(rolePermissions.invalidate).not.toHaveBeenCalled();
     });
   });
@@ -126,14 +134,14 @@ describe('RolesService', () => {
   describe('remove', () => {
     it('blocks deletion while users are assigned', async () => {
       repo.findById.mockResolvedValue(buildRole({ _count: { users: 2 } }));
-      await expect(service.remove(1)).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.remove(1, actor)).rejects.toBeInstanceOf(ConflictException);
       expect(repo.delete).not.toHaveBeenCalled();
     });
 
     it('deletes an unused role and invalidates the cache', async () => {
       repo.findById.mockResolvedValue(buildRole({ _count: { users: 0 } }));
       repo.delete.mockResolvedValue({ id: 1 });
-      await expect(service.remove(1)).resolves.toEqual({ message: 'Peran telah dihapus.' });
+      await expect(service.remove(1, actor)).resolves.toEqual({ message: 'Peran telah dihapus.' });
       expect(rolePermissions.invalidate).toHaveBeenCalledWith(1);
     });
   });
