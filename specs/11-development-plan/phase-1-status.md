@@ -13,7 +13,7 @@ Epics 1.9–1.12)** complete and on `main` under green gates; **M6–M8** not ye
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
 | **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) — all on `main` |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
@@ -279,6 +279,30 @@ nav item is permission-gated.
 - **Coverage:** M5 unit tests target the pure logic (permission matcher, password strength, dashboard
   metric derivation, `ProtectedAction`, formatters); the screens themselves are exercised by the
   build + manual QA (Playwright E2E is M8).
+
+### M5 review fixes (`b15b41c`)
+
+Adversarial code review of the frontend; the legitimate findings fixed, the rest triaged with reasons.
+
+1. **`SelectField` placeholder lost at `0`** — a `0` FK default ("nothing chosen") suppressed the
+   placeholder, so create forms opened with a blank trigger; the value now treats `0`/`''`/`null` as
+   unselected and keeps the placeholder.
+2. **`NumberField` couldn't be cleared** — `NumberInput` only emits `onValueChange` for real numbers,
+   so emptying the field stranded the old value; a native `onChange` now writes `undefined` when the
+   input is blank.
+3. **Select / Date / Time label association (a11y)** — the trigger controls weren't wrapped in
+   `FormControl`, so the `FormLabel`/`aria-describedby`/`aria-invalid` wiring didn't reach them;
+   wrapped all three and made `DatePicker` `forwardRef` so the ref/aria props land on the trigger.
+4. **REFUEL non-approver stuck state** — a pre-filled over-approval could block a user without
+   `fuel:approve`; the "disetujui" field now mirrors "diminta" for non-approvers and is omitted from
+   the payload (the server defaults it), with a hint replacing the danger alert.
+5. **Haul Board affordance** — the disabled "Tandai Hari Selesai" button gained a `title` explaining
+   that all hauls must be done first.
+
+**Triaged, deliberately not changed:** hardcoded Indonesian strings on transaction/master screens
+(Bahasa-first product; `en-US` is partial scaffolding), the client-side 100-row list cap (needs
+server-side pagination — flagged for M8; dev data is well under 100), and the two `AuthProvider`
+instances across the `(app)`/`(auth)` route groups (never co-mount, so no double-fetch).
 
 ---
 
