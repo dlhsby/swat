@@ -138,6 +138,25 @@
     "viewBoard": "Lihat Board",
     "emptyDays": "Belum ada hari transaksi. Mulai dengan \"Inisiasi Hari Ini\"."
   },
+  "crud": {
+    "created": "Data berhasil dibuat.",
+    "updated": "Perubahan berhasil disimpan.",
+    "deleted": "Data berhasil dihapus.",
+    "saveError": "Gagal menyimpan data.",
+    "deleteError": "Gagal menghapus data.",
+    "loadError": "Gagal memuat data.",
+    "confirmDeleteTitle": "Hapus data ini?",
+    "confirmDeleteBody": "Tindakan ini tidak dapat dibatalkan.",
+    "actions": "Aksi",
+    "view": "Lihat",
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "new": "Buat Baru",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "search": "Cari…",
+    "allStatuses": "Semua status"
+  },
   "forms": {
     "required": "Wajib diisi",
     "invalid": "Nilai tidak valid",

@@ -138,6 +138,25 @@
     "viewBoard": "View Board",
     "emptyDays": "No transaction days yet. Start with \"Initialize Today\"."
   },
+  "crud": {
+    "created": "Created successfully.",
+    "updated": "Changes saved.",
+    "deleted": "Deleted successfully.",
+    "saveError": "Failed to save.",
+    "deleteError": "Failed to delete.",
+    "loadError": "Failed to load data.",
+    "confirmDeleteTitle": "Delete this item?",
+    "confirmDeleteBody": "This action cannot be undone.",
+    "actions": "Actions",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "new": "New",
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search…",
+    "allStatuses": "All statuses"
+  },
   "forms": {
     "required": "Required",
     "invalid": "Invalid value",
