@@ -102,6 +102,13 @@ describe('InspectionsService', () => {
     expect(arg.passedCount).toBe(0);
   });
 
+  it('passes through notes + inspector on create', async () => {
+    await service.create({ ...dto, inspectorId: 3, notes: 'periksa ulang' }, 1);
+    const arg = repo.create.mock.calls[0][0];
+    expect(arg.notes).toBe('periksa ulang');
+    expect(arg.inspector).toEqual({ connect: { id: 3 } });
+  });
+
   it('serializes BigInt ids to strings on read', async () => {
     repo.findById.mockResolvedValue(buildInspection());
     const result = await service.getById('7');

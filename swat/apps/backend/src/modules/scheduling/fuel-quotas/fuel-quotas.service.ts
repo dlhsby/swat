@@ -163,6 +163,11 @@ export class FuelQuotasService {
           updated += 1;
         } else {
           imported += 1;
+          // A legacyId just created in this batch is now "existing" — a later
+          // duplicate row must upsert/skip, not re-create (which would 409).
+          if (row.legacyId !== undefined) {
+            existingLegacy.add(row.legacyId);
+          }
         }
       } catch {
         errors.push({ row: rowNumber, reason: 'Gagal menyimpan baris.' });

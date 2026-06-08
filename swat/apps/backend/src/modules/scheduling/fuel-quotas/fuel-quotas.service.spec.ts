@@ -203,5 +203,36 @@ describe('FuelQuotasService', () => {
         expect.any(Object),
       );
     });
+
+    it('treats an in-batch duplicate of a new legacyId as an upsert, not a 409', async () => {
+      const result = await service.bulkImport(
+        {
+          strategy: BulkImportStrategy.UPSERT,
+          rows: [
+            { ...row, legacyId: 900 },
+            { ...row, legacyId: 900 },
+          ],
+        },
+        7,
+      );
+      // First row creates (imported); the second sees it as existing → upsert.
+      expect(result).toMatchObject({ imported: 1, updated: 1, errorCount: 0 });
+      expect(repo.createPlain).toHaveBeenCalledTimes(1);
+      expect(repo.upsertByLegacyId).toHaveBeenCalledTimes(1);
+    });
+
+    it('skips an in-batch duplicate of a new legacyId under the SKIP strategy', async () => {
+      const result = await service.bulkImport(
+        {
+          strategy: BulkImportStrategy.SKIP,
+          rows: [
+            { ...row, legacyId: 901 },
+            { ...row, legacyId: 901 },
+          ],
+        },
+        7,
+      );
+      expect(result).toMatchObject({ imported: 1, skipped: 1, errorCount: 0 });
+    });
   });
 });

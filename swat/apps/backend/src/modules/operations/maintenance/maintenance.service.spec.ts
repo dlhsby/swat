@@ -85,6 +85,28 @@ describe('MaintenanceService', () => {
     expect(repo.create.mock.calls[0][0].totalCost).toBe(0);
   });
 
+  it('passes through optional header fields on create', async () => {
+    await service.create(
+      { ...dto, odometer: 12000, workshop: 'Bengkel A', description: 'Servis', notes: 'catatan' },
+      7,
+    );
+    expect(repo.create.mock.calls[0][0]).toMatchObject({
+      odometer: 12000,
+      workshop: 'Bengkel A',
+      description: 'Servis',
+      notes: 'catatan',
+    });
+  });
+
+  it('updates header fields without touching items when items omitted', async () => {
+    repo.findById.mockResolvedValue(buildRecord());
+    await service.update('5', { workshop: 'Bengkel B', odometer: 13000 }, 7);
+    const arg = repo.update.mock.calls[0][1];
+    expect(arg).toMatchObject({ workshop: 'Bengkel B', odometer: 13000 });
+    expect(arg.items).toBeUndefined();
+    expect(arg.totalCost).toBeUndefined();
+  });
+
   it('404s an unknown record', async () => {
     repo.findById.mockResolvedValue(null);
     await expect(service.getById('99')).rejects.toBeInstanceOf(NotFoundException);
