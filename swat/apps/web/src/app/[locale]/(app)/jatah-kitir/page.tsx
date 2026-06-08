@@ -1,16 +1,19 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
+import { Upload } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { z } from 'zod';
 
+import { ProtectedAction } from '@/components/auth/protected-action';
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
 import { CrudListShell } from '@/components/crud/crud-list-shell';
 import { DateField, type SelectOption, SelectField, TextField } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
-import { StatusPill } from '@/components/ui';
-import { useOptions } from '@/hooks/use-options';
+import { KitirBulkImportDialog } from '@/components/scheduling/kitir-bulk-import-dialog';
+import { Button, StatusPill } from '@/components/ui';
+import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { formatDateDisplay } from '@/lib/format';
 import {
@@ -71,8 +74,11 @@ const vehicleOption = (v: VehicleDto): SelectOption => ({ value: v.id, label: v.
 export default function FuelQuotasPage(): JSX.Element {
   const t = useTranslations('nav');
   const manager = useResourceManager(fuelQuotasApi, (r) => r.id);
-  const { options: sites } = useOptions(sitesApi.list, siteOption);
-  const { options: vehicles } = useOptions(vehiclesApi.list, vehicleOption);
+  const { rows: siteRows } = useResourceList(sitesApi.list);
+  const { rows: vehicleRows } = useResourceList(vehiclesApi.list);
+  const sites = useMemo(() => siteRows.map(siteOption), [siteRows]);
+  const vehicles = useMemo(() => vehicleRows.map(vehicleOption), [vehicleRows]);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const columns = useMemo<ColumnDef<FuelQuotaDto, unknown>[]>(
     () => [
@@ -139,6 +145,14 @@ export default function FuelQuotasPage(): JSX.Element {
       columns={columns}
       searchPlaceholder="Cari kode / kendaraan…"
       createLabel="Terbitkan Kitir"
+      toolbar={
+        <ProtectedAction permission="fuel-quota:create">
+          <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)}>
+            <Upload className="h-4 w-4" aria-hidden />
+            Impor Massal
+          </Button>
+        </ProtectedAction>
+      }
     >
       <CrudFormDialog
         manager={manager}
@@ -177,6 +191,14 @@ export default function FuelQuotasPage(): JSX.Element {
           <TextField name="code" label="Kode (opsional)" placeholder="Otomatis bila kosong" />
         ) : null}
       </CrudFormDialog>
+
+      <KitirBulkImportDialog
+        open={bulkOpen}
+        vehicles={vehicleRows}
+        sites={siteRows}
+        onOpenChange={setBulkOpen}
+        onImported={() => void manager.reload()}
+      />
     </CrudListShell>
   );
 }
