@@ -15,7 +15,7 @@ scripts + tested pure logic; live run deferred)** complete and on `main` under g
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
 | **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) · M6 (Epic 1.17) · M7 (Epic 1.13 scripts) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) · `89d3a15` (M6 review fix) · `fc07541` (M7 migration toolkit) — all on `main` |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) · `89d3a15` (M6 review fix) · `fc07541` (M7 migration toolkit) · `1436b9b` (M7 review fix) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
@@ -382,7 +382,7 @@ the live transactional history is the streamed phase to run on-prem.
 | T-152 | Loader setup (streamed/resumable/idempotent) | ✅ | `migrate-legacy.ts` + `lib/runtime.ts` (mysql2 conn, typed query, flags) + `lib/pagination.ts` (keyset batches + watermark). Idempotency guard on `legacyId`; `--force-reset` truncates; `--resume`. |
 | T-153 | Master-data migration | ✅ | applications · fuels/categories · license classes · sites (GPS fix) · routes (**deduped** + remap) · waste sources · models (year fix) · vehicles · vehicle-waste-sources · drivers · licenses. |
 | T-154 | User & role migration | ✅ | roles tagged with `legacyId` (canonical-name map); RBAC grants derived from legacy `menu`/`hakaksesmenu` via `permission-map`; users get **random Argon2id + `mustChangePassword`** — **MD5 never copied**. |
-| T-155 | Transactional (high-volume, partitioned) | ◐ | Loader structured for the streamed keyset phase (oldest→newest, watermark-resumable); empty in the snapshot, so the bulk run is the live-only on-prem step. |
+| T-155 | Transactional (high-volume, partitioned) | ◐ **deferred — revisit with live data** | Empty in the snapshot, so the streamed loader can't be written/verified against real data here. Building blocks ready + unit-tested (keyset batches, watermark, status maps, PK-preserve); `TODO(T-155)` in `migrate-legacy.ts` + README §"Deferred — T-155" enumerate the steps for when the live DB is available. |
 | T-156 | Image migration (filesystem → S3) | ✅ | `migrate-images.ts` — enumerate path columns + `dokumentasi*`, bounded-concurrency upload, **SHA-256** verify, `Photo` rows, orphan logging, resumable; `lib/images.ts` (key/content-type) tested. |
 | T-157 | Crew schedule & template migration | ✅ | `masterdetailtransaksiangkutsampah` → CrewSchedule, `mastertrayek` → TripTemplate (route-remap applied; `@db.Time` parsing). |
 | T-158 | FuelQuota (kitir) migration | ✅ | `jatahkitir` → FuelQuota, BigInt id preserved for TPA matching, status + validity mapped. |
@@ -393,6 +393,25 @@ the live transactional history is the streamed phase to run on-prem.
   (tolerance + report), `permission-map` (longest-prefix), `pagination` (keyset + watermark), `images`.
 - **npm tasks:** `migrate:discovery` · `migrate:legacy` · `migrate:images` · `migrate:verify`. Run
   order + env vars in [`apps/backend/scripts/migration/README.md`](../../swat/apps/backend/scripts/migration/README.md).
+
+### M7 review fixes (`1436b9b`)
+
+Adversarial review of the toolkit against the legacy structure SQL + sample dump. Two real defects
+fixed; the two top-ranked agent findings were **false positives** and left unchanged.
+
+1. **Route dedupe non-determinism** (HIGH) — `migrateMasterData` and `migrateScheduling` each read
+   `rute` with no `ORDER BY`, so the "kept" route per `(origin,dest,category)` could differ between the
+   dedupe and the template remap → a dangling `TripTemplate.routeId`. Both queries now
+   `ORDER BY RUTE_ID` (deterministic + identical across passes).
+2. **Image resume dropped multi-photo owners** (HIGH) — the skip-if-exists check keyed on
+   `(ownerType, ownerId)` skipped every `dokumentasikendaraan`/`dokumentasitrayek` photo after the
+   first. Now keyed on the file's **SHA-256 + owner** (read → checksum → skip), so each distinct file
+   migrates and re-runs stay idempotent; object-key suffix uses `randomUUID`.
+
+**Verified correct, not changed (false positives):** `mapLevy`/`mapDailyTonnage` preserving the legacy
+PK — `retribusi.ID_KATEGORI_RETRIBUSI` and `tonase.TONASE_ID` are unique surrogate `PRIMARY KEY`s
+(the dump's rows 28,29,30… confirm), so there is no collision. The `NOT IN` FK checks are safe (all
+checked columns are `NOT NULL`); enum maps already carry their dump-verified provenance comment.
 
 ---
 
