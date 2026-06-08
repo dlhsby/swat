@@ -13,7 +13,7 @@ under green gates; **M5–M8** not yet started.
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
 | **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) — all on `main` |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
@@ -40,7 +40,7 @@ under green gates; **M5–M8** not yet started.
 |------|---------|--------|
 | Lint | `pnpm lint` | ✅ 0 warnings/errors (all 5 packages) |
 | Typecheck | `pnpm typecheck` | ✅ 0 errors |
-| Unit tests | `pnpm --filter @swat/backend test` | ✅ **270 tests, 36 suites** (+45 for M4) |
+| Unit tests | `pnpm --filter @swat/backend test` | ✅ **271 tests, 36 suites** (+46 for M4) |
 | Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ **96.5% stmts · 81.5% branch · 95.3% funcs**; every M4 transactions service at **100% stmts/funcs** (≥90% trip-path gate met) |
 | Web tests | `pnpm --filter @swat/web test` | ✅ **78 tests, 7 suites** |
 | Schemas tests | `pnpm --filter @swat/schemas test` | ✅ **17 tests** |
@@ -153,7 +153,7 @@ pnpm install
 pnpm --filter @swat/backend prisma:deploy               # migrate deploy (NOT migrate dev)
 pnpm --filter @swat/backend prisma:seed                 # admin / ChangeMe!2026
 pnpm lint && pnpm typecheck
-pnpm --filter @swat/backend test -- --coverage          # 270 unit tests + coverage gate
+pnpm --filter @swat/backend test -- --coverage          # 271 unit tests + coverage gate
 pnpm --filter @swat/backend test:e2e                    # live auth + master-data + transactions e2e
 ```
 
@@ -236,6 +236,16 @@ in the correct monthly partition. BigInt ids serialize to strings in every DTO.
 
 **Coverage (M4 services):** daily-init, transaction-days, haul-assignments and trips services all at
 **100% stmts / 100% funcs**; trips service 98.5% stmts overall — comfortably past the ≥90% trip-path gate.
+
+### M4 review fixes (`cfa4a33`)
+
+1. **Daily-init skips soft-deleted masters** — `crewSchedule.findMany` now filters
+   `vehicle.deletedAt: null` + `driver.deletedAt: null`, so a retired vehicle / resigned driver whose
+   standing schedule still exists no longer spawns a Haul/HaulAssignment each morning. Regression test
+   added.
+2. **Override-edit semantics pinned** — documented and test-locked that an authorized override
+   (`trip:override`) of a **VERIFIED** trip lands it back at **DONE**: an edit invalidates the prior
+   verification, so the trip must be re-verified.
 
 ---
 
