@@ -44,8 +44,8 @@ the T-155 transactional bulk migration, Playwright E2E run, and the actual cutov
 |------|---------|--------|
 | Lint | `pnpm lint` | ✅ 0 warnings/errors (all 5 packages) |
 | Typecheck | `pnpm typecheck` | ✅ 0 errors |
-| Unit tests | `pnpm --filter @swat/backend test` | ✅ **363 tests, 46 suites** (+53 for M7: migration transforms, enum maps, row mappers, route dedupe, reconciliation, permission-map, keyset pagination, image helpers) |
-| Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ aggregate **96.98% stmts · 80.26% branch · 97.28% funcs** (gate passes); M6 operations + bulk-import services at **100%/91%/100% stmts** — comfortably past the ≥80% bar |
+| Unit tests | `pnpm --filter @swat/backend test` | ✅ **399 tests, 52 suites** (+36 over M8 for the gap-closure pass: audit service, readiness, CORS resolver, cache service, password/parse-bigint helpers, reference-master uniqueness) |
+| Coverage gate | `--coverage` (threshold **96/81/96/96**, ratcheted) | ✅ aggregate **97.8% stmts · 82.6% branch · 98% funcs · 97.7% lines** (gate passes) |
 | Web tests | `pnpm --filter @swat/web test` | ✅ **106 tests, 13 suites** (+6 for M6: CSV parser) |
 | Web build | `pnpm --filter @swat/web build` | ✅ **all 16 app routes** compile (App Router; +`/pengisian-bbm`, `/pemeriksaan`, `/perawatan` for M6) |
 | Schemas tests | `pnpm --filter @swat/schemas test` | ✅ **17 tests** |
@@ -457,6 +457,51 @@ Adversarial review of the prod config + scaffolding against the backend source. 
 (`@Controller('health')` + main.ts), so the container healthcheck and the nginx `= /health` route both
 resolve; the Next-standalone Dockerfile copy layout; nginx service-name upstreams; busybox `wget`
 follows the `/ → /id-ID` redirect for the web healthcheck.
+
+---
+
+## Post-review gap closure (full-Phase-1 audit)
+
+A comprehensive spec-vs-code gap analysis (every milestone, independently
+re-verified against the source — not the status doc) surfaced a short list of
+in-repo gaps against `10-nonfunctional.md` and a few validation deviations. All
+closable items were closed; the agent-reported "missing rate-limit / missing
+`fuel:approve` / missing `levy:delete`" findings were **false positives**
+(verified present in `auth`/`seed.ts`).
+
+| Gap | Severity | Fix |
+|-----|----------|-----|
+| **G1 — no security headers** | MED | `helmet` wired in `configure-app.ts` (frameguard `deny`, noSniff, HSTS, CORP; CSP off on the JSON+Swagger API). CSP + `X-Frame-Options`/`X-Content-Type-Options`/`Referrer-Policy` added to the Nginx web responses. CORS origin now an env-driven allowlist (`resolveCorsOrigin`, unit-tested) instead of always reflecting. |
+| **G2 — no readiness probe** | MED | `GET /health/ready` (`HealthService` pings the DB via `SELECT 1`, 503 when unreachable); excluded from the `/api/v1` prefix + a dedicated Nginx location. |
+| **G3 — audit only covered auth** | MED | New generic `AuditLog` table + global `AuditService` (append-only, never throws). Wired into user CRUD, role CRUD, trip verify, **fuel over-approval**, and maintenance approve. Migration `20260608000300_add_audit_log`. |
+| **G5 — reference-master name not unique** | LOW | Service-layer uniqueness (409) for vehicle-application / fuel-category / fuel (per-category) names. DB constraints deferred (legacy data must be deduped first). |
+| **G6 — route `distanceKm` allowed 0** | LOW | DTO `@Min(0)` → `@Min(0.1)` ("Jarak harus lebih dari nol"). |
+| **payload cap** | LOW | Nginx `client_max_body_size` 25m → **10m** (matches `§1`). |
+
+Deferred-with-reason (not closed this pass): API verb drift (consolidated
+`PUT /trips/:id` vs the spec's per-action `POST` — front+back consistent, no
+runtime defect; G4), the trip *Tolak*/reject flow (never tasked in T-131), the
+inspection/maintenance list filter dropdowns, client-side 100-row list cap, and
+the migration encoding/per-year-reconciliation refinements (tied to the T-155
+live run).
+
+**Coverage ratcheted:** threshold lifted 90/78/90/90 → **96/81/96/96**; achieved
+97.8/82.6/98/97.7 across 399 tests. `storage.service.ts` (pure S3-SDK passthrough)
+joined the infra-exclusion list alongside repositories/session; `cache.service.ts`
+(degradation logic behind the login throttle) is now fully unit-tested.
+
+### New deviations
+
+12. **Generic `AuditLog` separate from `AuthAuditLog`** — auth events stay in the
+    auth-scoped table (required `username`, `AuthAction` enum); all other sensitive
+    mutations write to the new generic `AuditLog` (actor/action/entity/details).
+13. **Reference-master name uniqueness enforced in the service, not the DB** — a
+    DB `@unique` on legacy-sourced names could fail `migrate deploy` on un-deduped
+    data, so the guard is service-level (409) for now; add the constraint after the
+    migration dedupes names.
+14. **CSP at the Nginx layer, not helmet** — the API serves JSON + Swagger UI (a
+    default CSP would block Swagger's inline assets); CSP belongs on the HTML the
+    web app returns, so it's set on the Nginx `/` location.
 
 ---
 
