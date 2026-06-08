@@ -122,7 +122,11 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
             <StatusPill domain="day" value={day.status} />
             {day.status !== 'DONE' ? (
               <ProtectedAction permission="transaction-day:manage">
-                <Button onClick={() => setMarkDone(true)} disabled={openHauls}>
+                <Button
+                  onClick={() => setMarkDone(true)}
+                  disabled={openHauls}
+                  title={openHauls ? 'Semua haul harus selesai terlebih dahulu.' : undefined}
+                >
                   Tandai Hari Selesai
                 </Button>
               </ProtectedAction>

@@ -75,13 +75,10 @@ export function RecordTripDialog({
 
   const net = gross !== '' && tare !== '' ? Number(gross) - Number(tare) : null;
   const grossInvalid = category === 'DISPOSAL' && (gross === '' || (net !== null && net < 0));
-  const refuelOverApproved =
-    category === 'REFUEL' &&
-    approved !== '' &&
-    requested !== '' &&
-    Number(approved) > Number(requested);
-  const refuelInvalid =
-    category === 'REFUEL' && (requested === '' || (refuelOverApproved && !canApprove));
+  // A non-approver can't set "disetujui" (field disabled, omitted from the
+  // payload → server defaults it to "diminta"), so the only client block is a
+  // missing requested amount. Over-approval is allowed for fuel:approve holders.
+  const refuelInvalid = category === 'REFUEL' && requested === '';
 
   const canSubmit =
     trip !== null && time !== '' && odometer !== '' && !grossInvalid && !refuelInvalid;
@@ -105,7 +102,8 @@ export function RecordTripDialog({
       if (volume !== '') payload.wasteVolume = Number(volume);
     } else if (category === 'REFUEL') {
       payload.fuelRequestedLiters = Number(requested);
-      if (approved !== '') payload.fuelApprovedLiters = Number(approved);
+      // Only an approver submits "disetujui"; otherwise the server defaults it.
+      if (canApprove && approved !== '') payload.fuelApprovedLiters = Number(approved);
     }
     try {
       await recordTrip(trip.id, payload);
@@ -228,19 +226,19 @@ export function RecordTripDialog({
                 <div className="space-y-1.5">
                   <Label>Jumlah Disetujui</Label>
                   <NumberInput
-                    value={approved}
+                    value={canApprove ? approved : requested}
                     onValueChange={(v) => setApproved(Number.isNaN(v) ? '' : v)}
                     unit="L"
                     min={0}
                     disabled={!canApprove}
-                    error={refuelOverApproved && !canApprove}
                   />
                 </div>
               </div>
-              {refuelOverApproved && !canApprove ? (
-                <Alert variant="danger">
-                  Jumlah disetujui tidak boleh melebihi jumlah yang diminta.
-                </Alert>
+              {!canApprove ? (
+                <p className="text-tiny text-neutral-400">
+                  Jumlah disetujui mengikuti jumlah diminta (perlu izin persetujuan BBM untuk
+                  mengubah).
+                </p>
               ) : null}
             </>
           ) : null}

@@ -87,6 +87,13 @@ export function NumberField({
               ref={field.ref}
               onBlur={field.onBlur}
               value={(field.value as number | undefined) ?? ''}
+              // Clearing the input yields NaN → store undefined so the field can
+              // be emptied (NumberInput only fires onValueChange for real numbers).
+              onChange={(e) => {
+                if (e.target.value === '') {
+                  field.onChange(undefined);
+                }
+              }}
               onValueChange={(v) => field.onChange(Number.isNaN(v) ? undefined : v)}
               unit={unit}
               min={min}
@@ -130,13 +137,20 @@ export function SelectField({
         <FormItem>
           <FormLabel required={required}>{label}</FormLabel>
           <Select
-            value={field.value != null && field.value !== '' ? String(field.value) : undefined}
+            // A `0` FK default means "nothing chosen yet" → keep the placeholder.
+            value={
+              field.value != null && field.value !== '' && field.value !== 0
+                ? String(field.value)
+                : undefined
+            }
             onValueChange={(v) => field.onChange(numeric ? Number(v) : v)}
             disabled={disabled}
           >
-            <SelectTrigger error={Boolean(fieldState.error)}>
-              <SelectValue placeholder={placeholder ?? '—'} />
-            </SelectTrigger>
+            <FormControl>
+              <SelectTrigger error={Boolean(fieldState.error)}>
+                <SelectValue placeholder={placeholder ?? '—'} />
+              </SelectTrigger>
+            </FormControl>
             <SelectContent>
               {options.map((o) => (
                 <SelectItem key={String(o.value)} value={String(o.value)}>
@@ -160,11 +174,13 @@ export function DateField({ name, label, required, description }: BaseProps): JS
       render={({ field, fieldState }) => (
         <FormItem>
           <FormLabel required={required}>{label}</FormLabel>
-          <DatePicker
-            value={(field.value as string | undefined) ?? undefined}
-            onValueChange={(v) => field.onChange(v ?? '')}
-            error={Boolean(fieldState.error)}
-          />
+          <FormControl>
+            <DatePicker
+              value={(field.value as string | undefined) ?? undefined}
+              onValueChange={(v) => field.onChange(v ?? '')}
+              error={Boolean(fieldState.error)}
+            />
+          </FormControl>
           {description ? <FormDescription>{description}</FormDescription> : null}
           <FormMessage />
         </FormItem>
@@ -186,12 +202,14 @@ export function TimeField({
       render={({ field, fieldState }) => (
         <FormItem>
           <FormLabel required={required}>{label}</FormLabel>
-          <TimePicker
-            value={(field.value as string | undefined) ?? ''}
-            onValueChange={(v) => field.onChange(v)}
-            presets={presets}
-            error={Boolean(fieldState.error)}
-          />
+          <FormControl>
+            <TimePicker
+              value={(field.value as string | undefined) ?? ''}
+              onValueChange={(v) => field.onChange(v)}
+              presets={presets}
+              error={Boolean(fieldState.error)}
+            />
+          </FormControl>
           {description ? <FormDescription>{description}</FormDescription> : null}
           <FormMessage />
         </FormItem>

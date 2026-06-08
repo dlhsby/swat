@@ -3,7 +3,7 @@
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 
 import { cn } from '@/lib/cn';
 
@@ -18,6 +18,10 @@ export interface DatePickerProps {
   disabled?: boolean;
   error?: boolean;
   className?: string;
+  /** Form-control wiring (id + aria) forwarded onto the trigger button. */
+  id?: string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean;
 }
 
 /** ISO yyyy-MM-dd ⇄ Date, anchored to local midnight (display only). */
@@ -32,23 +36,32 @@ function parseIso(value?: string): Date | undefined {
  * DatePicker (design-system §3.6) — display & entry dd/MM/yyyy, stored ISO.
  * Trigger = Input + calendar icon; Indonesian calendar.
  */
-export function DatePicker({
-  value,
-  onValueChange,
-  placeholder = 'dd/mm/yyyy',
-  disabled,
-  error,
-  className,
-}: DatePickerProps): JSX.Element {
+export const DatePicker = forwardRef<HTMLButtonElement, DatePickerProps>(function DatePicker(
+  {
+    value,
+    onValueChange,
+    placeholder = 'dd/mm/yyyy',
+    disabled,
+    error,
+    className,
+    id: controlId,
+    'aria-describedby': ariaDescribedBy,
+    'aria-invalid': ariaInvalid,
+  },
+  ref,
+) {
   const [open, setOpen] = useState(false);
   const selected = parseIso(value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
+        ref={ref}
+        id={controlId}
         type="button"
         disabled={disabled}
-        aria-invalid={error || undefined}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={error || ariaInvalid || undefined}
         className={cn(
           'flex h-10 w-full items-center justify-between gap-2 rounded-base border bg-neutral-0 px-3 py-2.5 text-body text-neutral-900 transition-[border-color,color] hover:border-neutral-300 focus:border-primary-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400',
           error && 'border-danger-500 focus:border-danger-500',
@@ -73,4 +86,4 @@ export function DatePicker({
       </PopoverContent>
     </Popover>
   );
-}
+});
