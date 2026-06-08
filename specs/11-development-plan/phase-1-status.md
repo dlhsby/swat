@@ -2,8 +2,9 @@
 
 **Status:** 🚧 **IN PROGRESS** — Milestones **M1 (Auth & RBAC)**, **M2 (backend master data)**,
 **M3 (design-system component library)**, **M4 (transactions backend)**, **M5 (frontend —
-Epics 1.9–1.12)** and **M6 (legacy parity — Epic 1.17)** complete and on `main` under green gates;
-**M7–M8** not yet started.
+Epics 1.9–1.12)**, **M6 (legacy parity — Epic 1.17)** and **M7 (migration toolkit — Epic 1.13,
+scripts + tested pure logic; live run deferred)** complete and on `main` under green gates;
+**M8** not yet started.
 
 > Build-side progress record for [`phase-1.md`](./phase-1.md), sequenced by
 > [`phase-1-plan.md`](./phase-1-plan.md). Where this diverges from the spec, the divergence is
@@ -13,8 +14,8 @@ Epics 1.9–1.12)** and **M6 (legacy parity — Epic 1.17)** complete and on `ma
 |---|---|
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
-| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) · M6 (Epic 1.17) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) · `89d3a15` (M6 review fix) — all on `main` |
+| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) · M6 (Epic 1.17) · M7 (Epic 1.13 scripts) |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) · `89d3a15` (M6 review fix) · `fc07541` (M7 migration toolkit) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
@@ -30,8 +31,8 @@ Epics 1.9–1.12)** and **M6 (legacy parity — Epic 1.17)** complete and on `ma
 | **M4** | 1.7–1.8 transactions backend | ✅ Complete |
 | **M5** | 1.9–1.12 frontend | ✅ Complete |
 | **M6** | 1.17 legacy parity | ✅ Complete |
-| **M7** | 1.13 migration scripts (dry-run) | ⏳ Not started — **next** |
-| **M8** | 1.14–1.16 hardening / docs / cutover | ⏳ Not started |
+| **M7** | 1.13 migration scripts (dry-run) | ✅ Complete (live run deferred) |
+| **M8** | 1.14–1.16 hardening / docs / cutover | ⏳ Not started — **next** |
 
 ---
 
@@ -41,7 +42,7 @@ Epics 1.9–1.12)** and **M6 (legacy parity — Epic 1.17)** complete and on `ma
 |------|---------|--------|
 | Lint | `pnpm lint` | ✅ 0 warnings/errors (all 5 packages) |
 | Typecheck | `pnpm typecheck` | ✅ 0 errors |
-| Unit tests | `pnpm --filter @swat/backend test` | ✅ **310 tests, 39 suites** (+39 for M6: inspection result-derivation, maintenance totalCost/approve, refuel cost/anomaly, kitir bulk-import incl. in-batch dedup) |
+| Unit tests | `pnpm --filter @swat/backend test` | ✅ **363 tests, 46 suites** (+53 for M7: migration transforms, enum maps, row mappers, route dedupe, reconciliation, permission-map, keyset pagination, image helpers) |
 | Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ aggregate **96.98% stmts · 80.26% branch · 97.28% funcs** (gate passes); M6 operations + bulk-import services at **100%/91%/100% stmts** — comfortably past the ≥80% bar |
 | Web tests | `pnpm --filter @swat/web test` | ✅ **106 tests, 13 suites** (+6 for M6: CSV parser) |
 | Web build | `pnpm --filter @swat/web build` | ✅ **all 16 app routes** compile (App Router; +`/pengisian-bbm`, `/pemeriksaan`, `/perawatan` for M6) |
@@ -158,6 +159,16 @@ class-validator DTOs (Zod `@swat/schemas` reserved for frontend sharing).
    existence + date order and upserts by `legacyId`. This keeps the backend free of a multipart/Excel
    parsing dependency while the server stays authoritative over validation + idempotency. (`.xlsx`
    files are exported to CSV by the user; native Excel parsing is deferrable.)
+10. **Migration scripts live under `apps/backend/scripts/migration/`** (M7) — the spec sketches them at
+   the monorepo root `scripts/`. They sit in the backend instead so they reuse its generated Prisma
+   client, `argon2`, the S3 client, the `tsconfig`, and the Jest runner (so the pure transform/mapper/
+   enum/reconcile/pagination/image logic is unit-tested in CI). The app build (`tsconfig.build.json`,
+   `src/**` only) still excludes them.
+11. **Identity = preserve legacy integer PKs as new PKs** (M7) — rather than autoincrement + a
+   `legacyId→newId` remap table, the loader inserts each row with its legacy id as the PK *and* stores
+   `legacyId`, so intra-batch FKs resolve directly (sequences are reset to `max(id)+1` after load). The
+   one deduplicated table (routes) carries a remap so trip templates that referenced a dropped duplicate
+   point at the kept route; `verify` is drop-aware so the variance check stays fair.
 
 ---
 
@@ -356,8 +367,38 @@ reorder). Reusing `fuel-quota:create` for bulk-import is spec-aligned (T-175 def
 
 ---
 
-## What's next — M7 (Epic 1.13 migration, scripts + dry-run)
+## M7 · Epic 1.13 — Migration toolkit (T-151 … T-159)
 
-Discovery / migrate / images / verify scripts; idempotent by `legacyId`; dry-run vs the sample dump
-with a reconciliation report. **Live multi-TB run is the user's on-prem step** (Docker deferred). See
-[`phase-1-plan.md`](./phase-1-plan.md) § M7.
+Legacy MySQL (`dkp_swat`) → PostgreSQL migration scripts in
+`apps/backend/scripts/migration/`. Following the Phase-0/1 defer-live-infra posture (Docker / a live
+MySQL / a live PostgreSQL are unavailable here): the **pure logic is unit-tested + typechecked +
+linted locally**; the **end-to-end run is the operator's on-prem step**. Column/enum maps were derived
+from the legacy structure + sample dump (`old_swat/db_backup/`); the snapshot is master-data-only, so
+the live transactional history is the streamed phase to run on-prem.
+
+| Task | Title | Status | Notes |
+|------|-------|--------|-------|
+| T-151 | Migration discovery (read-only) | ✅ | `migrate-discovery.ts` — per-table + per-year counts, data-quality scans (zero-GPS, bogus years, dup routes), image-path inventory → JSON+MD report. |
+| T-152 | Loader setup (streamed/resumable/idempotent) | ✅ | `migrate-legacy.ts` + `lib/runtime.ts` (mysql2 conn, typed query, flags) + `lib/pagination.ts` (keyset batches + watermark). Idempotency guard on `legacyId`; `--force-reset` truncates; `--resume`. |
+| T-153 | Master-data migration | ✅ | applications · fuels/categories · license classes · sites (GPS fix) · routes (**deduped** + remap) · waste sources · models (year fix) · vehicles · vehicle-waste-sources · drivers · licenses. |
+| T-154 | User & role migration | ✅ | roles tagged with `legacyId` (canonical-name map); RBAC grants derived from legacy `menu`/`hakaksesmenu` via `permission-map`; users get **random Argon2id + `mustChangePassword`** — **MD5 never copied**. |
+| T-155 | Transactional (high-volume, partitioned) | ◐ | Loader structured for the streamed keyset phase (oldest→newest, watermark-resumable); empty in the snapshot, so the bulk run is the live-only on-prem step. |
+| T-156 | Image migration (filesystem → S3) | ✅ | `migrate-images.ts` — enumerate path columns + `dokumentasi*`, bounded-concurrency upload, **SHA-256** verify, `Photo` rows, orphan logging, resumable; `lib/images.ts` (key/content-type) tested. |
+| T-157 | Crew schedule & template migration | ✅ | `masterdetailtransaksiangkutsampah` → CrewSchedule, `mastertrayek` → TripTemplate (route-remap applied; `@db.Time` parsing). |
+| T-158 | FuelQuota (kitir) migration | ✅ | `jatahkitir` → FuelQuota, BigInt id preserved for TPA matching, status + validity mapped. |
+| T-159 | Validation & report | ✅ | `verify-migration.ts` — per-table reconciliation (≤1%, route-drop-aware), FK spot-checks, security invariants (no non-Argon2, all `mustChangePassword`), markdown report, **exit 1 on critical**. |
+
+- **Tested core (53 unit tests):** `transforms` (date/year/GPS/encoding/clamp/time/dedupe), `enums`
+  (verified against the dump's lookup rows), `mappers` (PK-preserve + data-quality), `reconcile`
+  (tolerance + report), `permission-map` (longest-prefix), `pagination` (keyset + watermark), `images`.
+- **npm tasks:** `migrate:discovery` · `migrate:legacy` · `migrate:images` · `migrate:verify`. Run
+  order + env vars in [`apps/backend/scripts/migration/README.md`](../../swat/apps/backend/scripts/migration/README.md).
+
+---
+
+## What's next — M8 (Epics 1.14–1.16 hardening / docs / cutover)
+
+Playwright E2E for the critical flows; README + Swagger decorators + prod Dockerfiles +
+`docker-compose.prod.yml` + Nginx; cutover runbook + rollback (docs + staging dry-run). Same-origin
+Nginx also resolves the M5 deviation #7 (server-side route guard). **Live cutover execution is the
+user's on-prem step.** See [`phase-1-plan.md`](./phase-1-plan.md) § M8.
