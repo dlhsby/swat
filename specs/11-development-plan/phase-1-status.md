@@ -14,7 +14,7 @@ Epics 1.9–1.12)** and **M6 (legacy parity — Epic 1.17)** complete and on `ma
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
 | **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) · M6 (Epic 1.17) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) — all on `main` |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) · `89d3a15` (M6 review fix) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
@@ -41,8 +41,8 @@ Epics 1.9–1.12)** and **M6 (legacy parity — Epic 1.17)** complete and on `ma
 |------|---------|--------|
 | Lint | `pnpm lint` | ✅ 0 warnings/errors (all 5 packages) |
 | Typecheck | `pnpm typecheck` | ✅ 0 errors |
-| Unit tests | `pnpm --filter @swat/backend test` | ✅ **305 tests, 39 suites** (+34 for M6: inspection result-derivation, maintenance totalCost/approve, refuel cost/anomaly, kitir bulk-import) |
-| Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ M6 operations services (inspection/maintenance/refuel) at **≥80%** per gate; transactions at **100%** stmts/funcs |
+| Unit tests | `pnpm --filter @swat/backend test` | ✅ **310 tests, 39 suites** (+39 for M6: inspection result-derivation, maintenance totalCost/approve, refuel cost/anomaly, kitir bulk-import incl. in-batch dedup) |
+| Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ aggregate **96.98% stmts · 80.26% branch · 97.28% funcs** (gate passes); M6 operations + bulk-import services at **100%/91%/100% stmts** — comfortably past the ≥80% bar |
 | Web tests | `pnpm --filter @swat/web test` | ✅ **106 tests, 13 suites** (+6 for M6: CSV parser) |
 | Web build | `pnpm --filter @swat/web build` | ✅ **all 16 app routes** compile (App Router; +`/pengisian-bbm`, `/pemeriksaan`, `/perawatan` for M6) |
 | Schemas tests | `pnpm --filter @swat/schemas test` | ✅ **17 tests** |
@@ -334,6 +334,25 @@ frontend promotes the three "Segera" placeholders to live screens and adds the k
   bulk-import (validation + UPSERT/SKIP) unit tests.
 - **Result/totalCost are server-authoritative** — the client never sets them; inspections derive from
   item statuses, maintenance from line items.
+
+### M6 review fixes (`89d3a15`)
+
+Adversarial review of the M6 implementation. One real defect found + fixed; the rest verified correct.
+
+1. **Bulk-import in-batch duplicate `legacyId`** (HIGH) — when two rows in one file shared a *new*
+   `legacyId`, the first created the row but the second still saw the pre-fetch `existingLegacy` set
+   (stale) and attempted `createPlain` → a `P2002` unique-violation surfaced as a spurious error row.
+   Fix: a freshly-created `legacyId` is added to the in-memory set inside the loop, so a later
+   duplicate upserts (UPSERT) or is skipped (SKIP) instead of failing. Two regression tests added.
+2. **Coverage hardening** — added optional-field-passthrough tests for maintenance create/update and
+   inspection create (notes + inspector), lifting per-file branch coverage on the new services.
+
+**Reviewed and confirmed correct (no change):** server-derived inspection result/counts + maintenance
+`totalCost`; APPROVED → edit/delete guards; per-endpoint `@RequirePermissions`; the paginated
+`{data, meta}` list shape vs the frontend `apiClient` unwrap; refuel relation filters
+(`haulAssignment.haul.vehicle.model.fuelId`) and BigInt→string serialization; the React dialogs'
+controlled state (the inspection checklist's `key={label}` is stable — labels are unique and never
+reorder). Reusing `fuel-quota:create` for bulk-import is spec-aligned (T-175 defined no separate key).
 
 ---
 
