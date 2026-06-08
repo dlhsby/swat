@@ -1,7 +1,8 @@
 # Phase 1 — MVP · Implementation Status
 
-**Status:** 🚧 **IN PROGRESS** — Milestones **M1 (Auth & RBAC)** and **M2 (backend master data)**
-complete and on `main` under green gates; **M3–M8** not yet started.
+**Status:** 🚧 **IN PROGRESS** — Milestones **M1 (Auth & RBAC)**, **M2 (backend master data)** and
+**M3 (design-system component library)** complete and on `main` under green gates; **M4–M8** not yet
+started.
 
 > Build-side progress record for [`phase-1.md`](./phase-1.md), sequenced by
 > [`phase-1-plan.md`](./phase-1-plan.md). Where this diverges from the spec, the divergence is
@@ -11,8 +12,8 @@ complete and on `main` under green gates; **M3–M8** not yet started.
 |---|---|
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
-| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (review fixes + coverage) — all on `main` |
+| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (review fixes + coverage) · `566859c` (M3 component library) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · class-validator DTOs |
 
@@ -24,8 +25,8 @@ complete and on `main` under green gates; **M3–M8** not yet started.
 |---|---------------|--------|
 | **M1** | 1.1 Auth & RBAC | ✅ Complete |
 | **M2** | 1.2–1.6 backend master data | ✅ Complete |
-| **M3** | 1.8.5 component library (28 components) | ⏳ Not started — **next** |
-| **M4** | 1.7–1.8 transactions backend | ⏳ Not started |
+| **M3** | 1.8.5 component library (34 components) | ✅ Complete |
+| **M4** | 1.7–1.8 transactions backend | ⏳ Not started — **next** |
 | **M5** | 1.9–1.12 frontend | ⏳ Not started |
 | **M6** | 1.17 legacy parity | ⏳ Not started |
 | **M7** | 1.13 migration scripts (dry-run) | ⏳ Not started |
@@ -150,8 +151,37 @@ Import `apps/backend/postman/SWAT.postman_collection.json` +
 
 ---
 
-## What's next — M3 (Epic 1.8.5 component library)
+## M3 · Epic 1.8.5 — Design-system component library (T-132a/b)
 
-28 token-driven components (13 primitives + 15 composites) in `apps/web/components/ui/`, dark-mode +
-`:focus-visible` verified, DataTable across all states. **Hard gate before any screen (1.9–1.12).**
-See [`phase-1-plan.md`](./phase-1-plan.md) § M3 for the component list.
+34 token-driven components in `apps/web/src/components/ui/` (one barrel export `@/components/ui`),
+each dark-mode-ready and keyboard-accessible (`:focus-visible` ring via the global token layer).
+
+| Task | Scope | Status | Notes |
+|------|-------|--------|-------|
+| T-132a | 19 primitives | ✅ | button, input, textarea, select, combobox, checkbox, radio-group, switch, number-input, date-picker, time-picker, form, badge, card, alert, tooltip, avatar, breadcrumb, skeleton (+ support: spinner, label, popover, command, calendar). |
+| T-132b | 15 composites | ✅ | dialog, alert-dialog (Confirm, no ✕), sheet, dropdown-menu, tabs, table + DataTable, pagination, stepper, dropzone, progress, description-list, empty-state, toast. |
+
+- **DataTable** (TanStack Table + shadcn Table): toolbar search (300 ms debounce) · column-toggle ·
+  sortable headers (`aria-sort`) · client pagination ("Menampilkan x–y dari n", rows-per-page) · the
+  full state matrix — 10-row loading skeleton, illustration-aware empty / no-results / error+retry —
+  and collapses to stacked cards below `md`.
+- **Form**: react-hook-form bindings (`FormField`/`FormControl`/`FormMessage`) threading
+  `aria-describedby` + `aria-invalid`.
+- **Deps added**: Radix primitives, `cmdk`, `sonner`, `react-day-picker`, `date-fns`,
+  `react-hook-form` + `@hookform/resolvers`, `zod`, `@tanstack/react-table`, `tailwindcss-animate`.
+- **Tests**: 77 vitest specs (jsdom + Testing Library); **component library 98.8% stmts · 87.1%
+  branch · 94.6% funcs**. A dev-only `/[locale]/components` showcase renders every component across
+  its states (the "states story" acceptance) for light/dark visual QA — not part of the production
+  surface.
+
+**Verification:** `pnpm lint && pnpm typecheck && pnpm test && pnpm --filter @swat/web build` all
+green.
+
+---
+
+## What's next — M4 (Epics 1.7–1.8 transactions backend)
+
+daily-init `@Cron` (idempotent) + TransactionDay CRUD; depart/return; REFUEL/PICKUP/DISPOSAL
+(server-authoritative `netWeight = gross − tare`, reject `gross<tare`) / passive trips; verify + lock
+(edits need `trip:verify:override`); partition-aware writes set `operationDate`. ≥90% on trip paths.
+See [`phase-1-plan.md`](./phase-1-plan.md) § M4.
