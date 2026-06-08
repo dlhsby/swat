@@ -91,3 +91,19 @@ export function formatFuel(liters: number): string {
 export function formatTonnage(ton: number): string {
   return `${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(ton)} ton`;
 }
+
+/** Plain integer with id-ID grouping (e.g. `1.250`). */
+export function formatNumber(value: number): string {
+  return integerFormatter.format(value);
+}
+
+/** Initials for an avatar fallback — first letters of the first two words. */
+export function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return '?';
+  }
+  const first = words[0]?.[0] ?? '';
+  const second = words.length > 1 ? (words[words.length - 1]?.[0] ?? '') : '';
+  return `${first}${second}`.toUpperCase();
+}
