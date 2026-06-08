@@ -253,6 +253,16 @@ Examples:
 - `trip:record-fuel` — record fuel (request/approve liters)
 - `trip:verify` — move trip to VERIFIED status
 
+**Vehicle operations (Phase 1 — legacy parity):**
+- `inspection:read`, `inspection:create`, `inspection:update`, `inspection:delete` (Pemeriksaan Kendaraan)
+- `maintenance:read`, `maintenance:create`, `maintenance:update`, `maintenance:delete` (Perawatan)
+- `maintenance:approve` — approve a maintenance record (`PENDING_APPROVAL → APPROVED`)
+
+**Monitoring & Reporting (read-gated; built in Phase 2/3):**
+- `monitoring:read` — view monitoring dashboards (Phase 2)
+- `report:read`, `report:generate` — view & generate report exports (Phase 3)
+- `levy:read`, `levy:create`, `levy:update`, `levy:delete` — retribusi/levy management (Phase 3)
+
 ## 2.2.1 Notes on `transaction-day` permissions
 
 - **`transaction-day:read`** — view transaction days, haul board, trip summaries

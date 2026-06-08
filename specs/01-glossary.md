@@ -30,7 +30,10 @@ this table, this table wins.
 | Bahan bakar (BBM) | Fuel | `Fuel` | Bahan Bakar |
 | Jatah kitir / Kitir | Fuel quota voucher issued to a vehicle for a date range; the code is matched at the weighbridge during weighing | `FuelQuota` | Jatah Kitir |
 | Retribusi | Waste-collection fee / levy | `Levy` | Retribusi |
-| Riwayat perawatan | Maintenance history | `MaintenanceRecord` | Riwayat Perawatan |
+| Riwayat perawatan / Perawatan | Maintenance history (servicing & repairs) | `MaintenanceRecord` / `MaintenanceItem` | Perawatan |
+| Pemeriksaan kendaraan | Vehicle inspection (checklist) | `VehicleInspection` / `InspectionItem` | Pemeriksaan Kendaraan |
+| Aktivitas pool | Pool/depot vehicle-readiness activity (covered by the Haul Board + depart/return reconciliation; no separate entity) | — | Aktivitas Pool |
+| Pengisian bahan bakar | Refuel record/log (per-trip REFUEL recording + the standalone refuel log) | `Trip` (REFUEL) | Pengisian Bahan Bakar |
 | SIM | Driver's license | `DriverLicense` (entity); `LicenseClass` (classification) | SIM |
 | Jembatan timbang | Weighbridge (at TPA) | weighbridge | Jembatan Timbang |
 | Timbangan / Berat | Weighing / weight | weighing / weight | Timbangan / Berat |

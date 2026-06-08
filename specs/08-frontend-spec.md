@@ -6,7 +6,19 @@
 - Next.js App Router (React 18+) with Server Components for data reads
 - React Query (TanStack Query v4+) for client-state mutations and cache management
 - react-hook-form + zod for form validation (schemas shared from `packages/schemas`)
-- Tailwind CSS + shadcn/ui for components
+- Tailwind CSS + shadcn/ui for components, extended by the **SWAT design system** (see
+  [`13-design/01-design-system.md`](./13-design/01-design-system.md) and the canonical
+  [`../designs/`](../designs/) bundle). All UI is built from a **reusable token-driven component
+  library** in `apps/web/src/components/ui` (28 components) — no one-off styling.
+- **Design tokens** ported verbatim from `designs/design_handoff_swat_webapp/swat-tokens.css` into
+  `src/app/globals.css` (light + `.dark`); `tailwind.config.ts` from the design system.
+- **Dark mode:** `darkMode: ['class']`; toggle persists to `localStorage('swat-theme')`, follows
+  `prefers-color-scheme`, applied pre-paint via an inline `<head>` script (no flash). Light is the
+  Phase-1 baseline; dark visual QA is Phase 2.
+- **Icons:** `lucide-react` (24×24 stroke). **Spot illustrations:** 11 brand SVGs in
+  `public/illustrations/` via an `<Illustration>` component (decorative/`aria-hidden`).
+- **Charts (Phase 2):** **Recharts** using the prototype's data shapes; the dependency-free SVG charts
+  in the design bundle are the visual contract, not the implementation.
 - TanStack Table (React Table) for data grids
 - next-intl v9+ for i18n (default & only locale: **Indonesian** `id-ID`)
 
@@ -27,6 +39,9 @@ Menu visibility derives from user permissions (fetched via `GET /api/current-use
 | Menu group | Subitem | UI label | Permission key |
 |-----------|---------|----------|-----------------|
 | Dashboard | — | Dasbor | `dashboard:read` |
+| Monitoring | TonnageDashboard | Volume per Hari | `monitoring:read` (Phase 2) |
+| | FuelDashboard | Konsumsi BBM | `monitoring:read` (Phase 2) |
+| | Reports | Laporan | `report:read` (Phase 3) |
 | Master Data | Vehicle | Kendaraan | `vehicle:read` |
 | | VehicleModel | Model Kendaraan | `vehicle-model:read` |
 | | VehicleApplication | Aplikasi | `vehicle-application:read` |
@@ -39,14 +54,50 @@ Menu visibility derives from user permissions (fetched via `GET /api/current-use
 | Scheduling | CrewSchedule | Jadwal Kru | `crew-schedule:read` |
 | | TripTemplate | Template Trayek | `trip-template:read` |
 | | FuelQuota | Jatah Kitir | `fuel-quota:read` |
-| Transactions | TransactionDay | Hari Transaksi | `transaction-day:read` |
-| | Trip (Pickup) | Pengambilan Sampah | `trip:record-pickup` |
-| | Trip (Disposal) | Pembuangan Sampah | `trip:record-disposal` |
-| | Trip (Refuel) | Pengisian Bahan Bakar | `trip:record-fuel` |
+| Master Data | VehicleApplication | Aplikasi Kendaraan | `vehicle-application:read` |
+| | WasteSource | Sumber Sampah | `waste-source:read` |
+| Scheduling | FuelQuota | Jatah Kitir | `fuel-quota:read` |
+| Transactions | TransactionDay | Hari Transaksi (→ Haul Board → Trip Sheet) | `transaction-day:read` |
+| | RefuelLog | Pengisian Bahan Bakar | `trip:record-fuel` |
+| | VehicleInspection | Pemeriksaan Kendaraan | `inspection:read` |
+| | MaintenanceRecord | Perawatan | `maintenance:read` |
 | Users & Access | User | Pengguna | `user:read` |
 | | Role | Hak Akses | `role:read` |
 
-Example: sidebar collapses on mobile; sticky on desktop. Indonesian labels pulled from glossary. Hide menu items where user lacks permission.
+> Pickup / Disposal / Refuel / Verify / Reconcile are **dialogs/sheets within the Haul Board + Trip
+> Sheet** (not separate sidebar items); their permission keys remain `trip:record-pickup`,
+> `trip:record-disposal`, `trip:record-fuel`, `trip:verify`. Model Kendaraan / Aplikasi Kendaraan /
+> Bahan Bakar are reference-master items (parity G1–G3; see `09-modules/master-fleet.md` & `…/master-waste-fuel.md`).
+
+Example: sidebar collapses on mobile; sticky on desktop. Indonesian labels pulled from glossary.
+Sidebar items the user's role lacks `:read` on are **hidden** (not disabled).
+
+### Screen → Module → Phase traceability (full coverage; no orphan, no silent drop)
+
+Every designed screen (`13-design/03-hifi-spec.md`) and every legacy feature maps to a module + build
+phase. This is the parity contract.
+
+| Screen (id-ID) | Module spec | Legacy origin | Phase |
+|---|---|---|---|
+| Login · Ubah Kata Sandi · Profil | `auth.md` | `welcome`,`profil`,`home` | 1 |
+| Dasbor | `auth.md`/`monitoring.md` | `home` | 1 |
+| Kendaraan (list+form) | `master-fleet.md` | `kendaraan` | 1 |
+| Model Kendaraan · Aplikasi Kendaraan · Bahan Bakar *(G1–G3)* | `master-fleet.md` / `master-waste-fuel.md` | `kategorikendaraan`,`aplikasikendaraan`,`bahanbakar` | 1 |
+| Pengemudi (+ SIM tab) | `master-personnel.md` | `pengemudi`,`sim`,`kepemilikansim` | 1 |
+| Spot & Rute | `master-geography.md` | `spot`,`rute`,`kategori*` | 1 |
+| Sumber Sampah | `master-waste-fuel.md` | `kategorisumbersampah*` | 1 |
+| Jadwal Kru · Template Trayek | `scheduling.md` | `masterdetailtransaksi`,`mastertrayek` | 1 |
+| Jatah Kitir (+ Impor Massal) *(G6,G8)* | `fuel-quota-kitir.md` | `jatahkitir`,`importexcel` | 1 |
+| Hari Transaksi · Haul Board · Trip Sheet · Pickup/Disposal/Refuel/Verify/Reconcile | `transactions.md` | `transaksi/*`,`inisiasi*`,`monitoringpengangkutan*` | 1 |
+| Pengisian Bahan Bakar (log) *(G7)* | `transactions.md` | `pengisianbahanbakar` | 1 |
+| Pemeriksaan Kendaraan *(G4)* | `inspection.md` | `pemeriksaankendaraan` | 1 |
+| Perawatan *(G5)* | `maintenance.md` | `riwayatperawatan` | 1 |
+| Pengguna · Hak Akses (RBAC) | `auth.md` | `pengguna`,`hakakses`,`menu`(superseded) | 1 |
+| Volume per Hari (+ Total/Dinas/Swasta) *(G9)* · Konsumsi BBM | `monitoring.md` | `monitoring/tonase*`,`bahanbakar`,`rute*` | 2 |
+| Laporan (Tonase/BBM/Rute/Retribusi) · Retribusi/Levy CRUD *(G11,G12)* | `reports.md` | `laporan/*`,`retribusi`,`rekapitulasi` | 3 |
+| Weighbridge (no UI; REST API) · Excel weighing upload *(G13,G14)* | `integration-weighbridge.md` | `Soapservers.php`,`importexcel`,`konversi_si_swat` | 4 |
+| Aktivitas Pool *(G10)* | covered by Haul Board + reconcile (no separate screen) | `aktivitaspool` | 1 (covered) |
+| Menu / Hak Akses Menu / status-enum CRUDs *(G15)* | superseded by permission RBAC + Prisma enums | `menu`,`hakaksesmenu`,`status*` | — (doc-only) |
 
 ---
 
@@ -292,16 +343,21 @@ apps/web/
 │   │   │   └── proxy endpoints (forward to backend)
 │   │   ├── layout.tsx (root)
 │   │   └── page.tsx (redirect to /dashboard)
+│   ├── app/
+│   │   └── globals.css (design tokens ported VERBATIM from swat-tokens.css: :root + .dark + shadcn HSL)
 │   ├── components/
-│   │   ├── ui/ (shadcn + form)
-│   │   │   ├── button.tsx
-│   │   │   ├── form.tsx (FormField, useFormField)
-│   │   │   ├── input.tsx
-│   │   │   ├── select.tsx
-│   │   │   ├── table.tsx
-│   │   │   ├── dialog.tsx
-│   │   │   ├── toast.tsx
-│   │   │   └── ... (20+ shadcn components)
+│   │   ├── ui/ (the SWAT design system — 28 reusable shadcn/ui extensions, token-driven)
+│   │   │   ├── button.tsx, input.tsx, textarea.tsx, select.tsx, combobox.tsx
+│   │   │   ├── checkbox.tsx, radio-group.tsx, switch.tsx, number-input.tsx
+│   │   │   ├── date-picker.tsx, time-picker.tsx, form.tsx (FormField)
+│   │   │   ├── table.tsx (DataTable), pagination.tsx, dialog.tsx, alert-dialog.tsx (Confirm)
+│   │   │   ├── sheet.tsx, tabs.tsx, card.tsx, badge.tsx (status pill), toast.tsx, alert.tsx
+│   │   │   ├── breadcrumb.tsx, tooltip.tsx, avatar.tsx, dropdown-menu.tsx
+│   │   │   ├── stepper.tsx, dropzone.tsx, progress.tsx, description-list.tsx
+│   │   │   ├── skeleton.tsx, empty-state.tsx (illustration-aware)
+│   │   │   └── (matches 13-design/01-design-system.md §3 exactly)
+│   │   ├── charts/ (Phase 2 — Recharts: StackedColumns, GroupedColumns, AreaTrend, Donut, KpiCard)
+│   │   ├── illustrations/ (Illustration.tsx + Icon.tsx wrapping lucide-react)
 │   │   ├── forms/
 │   │   │   ├── LoginForm.tsx
 │   │   │   ├── VehicleForm.tsx

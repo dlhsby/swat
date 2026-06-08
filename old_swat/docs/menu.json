@@ -1,0 +1,756 @@
+[
+  {
+    "id": 1,
+    "name": "Root Helper",
+    "uri": "home",
+    "hidden": false,
+    "children": [
+      {
+        "id": 2,
+        "name": "CRUD",
+        "uri": "home/crud",
+        "hidden": true,
+        "children": [
+          {
+            "id": 6,
+            "name": "CRUD Aplikasi Kendaraan",
+            "uri": "crud/aplikasikendaraan",
+            "hidden": false
+          },
+          {
+            "id": 7,
+            "name": "CRUD Bahan Bakar",
+            "uri": "crud/bahanbakar",
+            "hidden": false
+          },
+          {
+            "id": 8,
+            "name": "CRUD Detail Riwayat Perawatan",
+            "uri": "crud/detailriwayatperawatan",
+            "hidden": false
+          },
+          {
+            "id": 9,
+            "name": "CRUD Detail Transaksi Angkut Sampah",
+            "uri": "crud/detailtransaksiangkutsampah",
+            "hidden": false
+          },
+          {
+            "id": 10,
+            "name": "CRUD Dokumentasi Detail Riwayat Perawatan",
+            "uri": "crud/dokumentasidetailriwayatperawatan",
+            "hidden": false
+          },
+          {
+            "id": 11,
+            "name": "CRUD Dokumentasi Trayek",
+            "uri": "crud/dokumentasitrayek",
+            "hidden": false
+          },
+          {
+            "id": 12,
+            "name": "CRUD Hak Akses",
+            "uri": "crud/hakakses",
+            "hidden": false
+          },
+          {
+            "id": 13,
+            "name": "CRUD Hak Akses Menu",
+            "uri": "crud/hakaksesmenu",
+            "hidden": false
+          },
+          {
+            "id": 14,
+            "name": "CRUD Hari Transaksi",
+            "uri": "crud/haritransaksi",
+            "hidden": false
+          },
+          {
+            "id": 15,
+            "name": "CRUD Kategori Bahan Bakar",
+            "uri": "crud/kategoribahanbakar",
+            "hidden": false
+          },
+          {
+            "id": 16,
+            "name": "CRUD Kategori Kendaraan",
+            "uri": "crud/kategorikendaraan",
+            "hidden": false
+          },
+          {
+            "id": 17,
+            "name": "CRUD Kategori Rute",
+            "uri": "crud/kategorirute",
+            "hidden": false
+          },
+          {
+            "id": 18,
+            "name": "CRUD Kategori Spot",
+            "uri": "crud/kategorispot",
+            "hidden": false
+          },
+          {
+            "id": 19,
+            "name": "CRUD Kategori Sumber Sampah",
+            "uri": "crud/kategorisumbersampah",
+            "hidden": false
+          },
+          {
+            "id": 20,
+            "name": "CRUD Kendaraan",
+            "uri": "crud/kendaraan",
+            "hidden": false
+          },
+          {
+            "id": 21,
+            "name": "CRUD Kepemilikan SIM",
+            "uri": "crud/kepemilikansim",
+            "hidden": false
+          },
+          {
+            "id": 22,
+            "name": "CRUD Master Detail Transaksi Angkut Sampah",
+            "uri": "crud/masterdetailtransaksiangkutsampah",
+            "hidden": false
+          },
+          {
+            "id": 23,
+            "name": "CRUD Master Detail Trayek",
+            "uri": "crud/masterdetailtrayek",
+            "hidden": false
+          },
+          {
+            "id": 24,
+            "name": "CRUD Master Trayek",
+            "uri": "crud/mastertrayek",
+            "hidden": false
+          },
+          {
+            "id": 25,
+            "name": "CRUD Menu",
+            "uri": "crud/menu",
+            "hidden": false
+          },
+          {
+            "id": 26,
+            "name": "CRUD Pengemudi",
+            "uri": "crud/pengemudi",
+            "hidden": false
+          },
+          {
+            "id": 27,
+            "name": "CRUD Pengguna",
+            "uri": "crud/pengguna",
+            "hidden": false
+          },
+          {
+            "id": 28,
+            "name": "CRUD Riwayat Perawatan",
+            "uri": "crud/riwayatperawatan",
+            "hidden": false
+          },
+          {
+            "id": 29,
+            "name": "CRUD Rute",
+            "uri": "crud/rute",
+            "hidden": false
+          },
+          {
+            "id": 30,
+            "name": "CRUD SIM",
+            "uri": "crud/sim",
+            "hidden": false
+          },
+          {
+            "id": 31,
+            "name": "CRUD Spot",
+            "uri": "crud/spot",
+            "hidden": true
+          },
+          {
+            "id": 32,
+            "name": "CRUD Status Detail Transaksi Angkut Sampah",
+            "uri": "crud/statusdetailtransaksiangkutsampah",
+            "hidden": false
+          },
+          {
+            "id": 33,
+            "name": "CRUD Status Hari Transaksi",
+            "uri": "crud/statusharitransaksi",
+            "hidden": false
+          },
+          {
+            "id": 34,
+            "name": "CRUD Status Kendaraan",
+            "uri": "crud/statuskendaraan",
+            "hidden": false
+          },
+          {
+            "id": 35,
+            "name": "CRUD Status Kepegawaian",
+            "uri": "crud/statuskepegawaian",
+            "hidden": false
+          },
+          {
+            "id": 36,
+            "name": "CRUD Status Menu",
+            "uri": "crud/statusmenu",
+            "hidden": false
+          },
+          {
+            "id": 37,
+            "name": "CRUD Status Riwayat Perawatan",
+            "uri": "crud/statusriwayatperawatan",
+            "hidden": false
+          },
+          {
+            "id": 38,
+            "name": "CRUD Status Transaksi Angkut Sampah",
+            "uri": "crud/statustransaksiangkutsampah",
+            "hidden": false
+          },
+          {
+            "id": 39,
+            "name": "CRUD Status Trayek",
+            "uri": "crud/statustrayek",
+            "hidden": false
+          },
+          {
+            "id": 40,
+            "name": "CRUD Transaksi Angkut Sampah",
+            "uri": "crud/transaksiangkutsampah",
+            "hidden": false
+          },
+          {
+            "id": 41,
+            "name": "CRUD Trayek",
+            "uri": "crud/trayek",
+            "hidden": false
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Master Data",
+        "uri": "home/masterdata",
+        "hidden": false,
+        "children": [
+          {
+            "id": 49,
+            "name": "Pengemudi & SIM",
+            "hidden": false,
+            "children": [
+              {
+                "id": 52,
+                "name": "Tambah Pengemudi",
+                "uri": "masterdata/pengemudi/tambahpengemudi",
+                "hidden": true
+              },
+              {
+                "id": 68,
+                "name": "SIM",
+                "uri": "masterdata/sim",
+                "hidden": true
+              },
+              {
+                "id": 69,
+                "name": "Kepemilikan SIM",
+                "uri": "masterdata/kepemilikansim",
+                "hidden": false
+              },
+              {
+                "id": 70,
+                "name": "Pengemudi",
+                "uri": "masterdata/pengemudi",
+                "hidden": false
+              }
+            ]
+          },
+          {
+            "id": 50,
+            "name": "Kendaraan",
+            "hidden": false,
+            "children": [
+              {
+                "id": 64,
+                "name": "Kendaraan",
+                "uri": "masterdata/kendaraan",
+                "hidden": false
+              },
+              {
+                "id": 65,
+                "name": "Aplikasi Kendaraan",
+                "uri": "masterdata/aplikasikendaraan",
+                "hidden": false
+              },
+              {
+                "id": 66,
+                "name": "Kategori Kendaraan",
+                "uri": "masterdata/kategorikendaraan",
+                "hidden": false
+              },
+              {
+                "id": 76,
+                "name": "Kategori Sumber Sampah",
+                "uri": "masterdata/kategorisumbersampah",
+                "hidden": false
+              },
+              {
+                "id": 93,
+                "name": "Kategori Sumber Sampah Kendaraan",
+                "uri": "masterdata/kategorisumbersampahkendaraan",
+                "hidden": false
+              }
+            ]
+          },
+          {
+            "id": 51,
+            "name": "Master Detail Transaksi",
+            "uri": "masterdata/masterdetailtransaksi",
+            "hidden": false,
+            "children": [
+              {
+                "id": 99,
+                "name": "Master Trayek",
+                "uri": "masterdata/mastertrayek",
+                "hidden": true
+              }
+            ]
+          },
+          {
+            "id": 59,
+            "name": "Menu & Hak Akses",
+            "hidden": false,
+            "children": [
+              {
+                "id": 60,
+                "name": "Menu",
+                "uri": "masterdata/menu",
+                "hidden": false
+              },
+              {
+                "id": 61,
+                "name": "Hak Akses",
+                "uri": "masterdata/hakakses",
+                "hidden": false
+              },
+              {
+                "id": 62,
+                "name": "Pengguna",
+                "uri": "masterdata/pengguna",
+                "hidden": false
+              },
+              {
+                "id": 63,
+                "name": "Hak Akses Menu",
+                "uri": "masterdata/hakaksesmenu",
+                "hidden": false
+              }
+            ]
+          },
+          {
+            "id": 71,
+            "name": "Spot & Rute",
+            "hidden": false,
+            "children": [
+              {
+                "id": 72,
+                "name": "Spot",
+                "uri": "masterdata/spot",
+                "hidden": false
+              },
+              {
+                "id": 73,
+                "name": "Rute",
+                "uri": "masterdata/rute",
+                "hidden": false
+              },
+              {
+                "id": 74,
+                "name": "Kategori Spot",
+                "uri": "masterdata/kategorispot",
+                "hidden": false
+              },
+              {
+                "id": 75,
+                "name": "Kategori Rute",
+                "uri": "masterdata/kategorirute",
+                "hidden": false
+              }
+            ]
+          },
+          {
+            "id": 84,
+            "name": "Status",
+            "hidden": true,
+            "children": [
+              {
+                "id": 85,
+                "name": "Status Detail Transaksi",
+                "uri": "masterdata/statusdetailtransaksiangkutsampah",
+                "hidden": false
+              },
+              {
+                "id": 86,
+                "name": "Status Hari Transaksi",
+                "uri": "masterdata/statusharitransaksi",
+                "hidden": false
+              },
+              {
+                "id": 87,
+                "name": "Status Kendaraan",
+                "uri": "masterdata/statuskendaraan",
+                "hidden": false
+              },
+              {
+                "id": 88,
+                "name": "Status Kepegawaian",
+                "uri": "masterdata/statuskepegawaian",
+                "hidden": false
+              },
+              {
+                "id": 89,
+                "name": "Status Menu",
+                "uri": "masterdata/statusmenu",
+                "hidden": false
+              },
+              {
+                "id": 90,
+                "name": "Status Riwayat Perawatan",
+                "uri": "masterdata/statusriwayatperawatan",
+                "hidden": false
+              },
+              {
+                "id": 91,
+                "name": "Status Transaksi",
+                "uri": "masterdata/statustransaksiangkutsampah",
+                "hidden": false
+              },
+              {
+                "id": 92,
+                "name": "Status Trayek",
+                "uri": "masterdata/statustrayek",
+                "hidden": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Transaksi",
+        "uri": "home/transaksi",
+        "hidden": false,
+        "children": [
+          {
+            "id": 42,
+            "name": "Pengangkutan Sampah",
+            "uri": "transaksi/transaksi/pengangkutansampah",
+            "hidden": false,
+            "children": [
+              {
+                "id": 44,
+                "name": "Pengambilan Sampah TPS",
+                "uri": "transaksi/pengambilansampah",
+                "hidden": false
+              },
+              {
+                "id": 45,
+                "name": "Pembuangan Sampah TPA",
+                "uri": "transaksi/pembuangansampah",
+                "hidden": false
+              },
+              {
+                "id": 46,
+                "name": "Inisiasi Pengangkutan Harian",
+                "uri": "transaksi/inisiasipengangkutanharian",
+                "hidden": false
+              },
+              {
+                "id": 47,
+                "name": "Monitoring Pengangkutan Sampah",
+                "uri": "transaksi/monitoringpengangkutansampah",
+                "hidden": true,
+                "children": [
+                  {
+                    "id": 53,
+                    "name": "Monitoring Transaksi",
+                    "uri": "transaksi/monitoringpengangkutansampah/monitoringtransaksi",
+                    "hidden": false,
+                    "children": [
+                      {
+                        "id": 56,
+                        "name": "Tambah Transaksi",
+                        "uri": "transaksi/monitoringpengangkutansampah/tambahtransaksi",
+                        "hidden": true
+                      }
+                    ]
+                  },
+                  {
+                    "id": 54,
+                    "name": "Monitoring Detail Transaksi",
+                    "uri": "transaksi/monitoringpengangkutansampah/monitoringdetailtransaksi",
+                    "hidden": true,
+                    "children": [
+                      {
+                        "id": 57,
+                        "name": "Tambah Detail Transaksi",
+                        "uri": "transaksi/monitoringpengangkutansampah/tambahdetailtransaksi",
+                        "hidden": true
+                      }
+                    ]
+                  },
+                  {
+                    "id": 55,
+                    "name": "Monitoring Trayek",
+                    "uri": "transaksi/monitoringpengangkutansampah/monitoringtrayek",
+                    "hidden": true,
+                    "children": [
+                      {
+                        "id": 58,
+                        "name": "Tambah Trayek",
+                        "uri": "transaksi/monitoringpengangkutansampah/tambahtrayek",
+                        "hidden": true
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": 48,
+                "name": "Aktivitas Pool",
+                "uri": "transaksi/aktivitaspool",
+                "hidden": false
+              },
+              {
+                "id": 79,
+                "name": "Penjadwalan",
+                "uri": "transaksi/penjadwalan/hari",
+                "hidden": false,
+                "children": [
+                  {
+                    "id": 80,
+                    "name": "Penjadwalan Transaksi",
+                    "uri": "transaksi/penjadwalan/transaksi",
+                    "hidden": true
+                  },
+                  {
+                    "id": 81,
+                    "name": "Penjadwalan Hari",
+                    "uri": "transaksi/penjadwalan/hari",
+                    "hidden": true
+                  },
+                  {
+                    "id": 82,
+                    "name": "Penjadwalan Detail Transaksi",
+                    "uri": "transaksi/penjadwalan/detailtransaksi",
+                    "hidden": true
+                  },
+                  {
+                    "id": 83,
+                    "name": "Penjadwalan Trayek",
+                    "uri": "transaksi/penjadwalan/trayek",
+                    "hidden": true
+                  }
+                ]
+              },
+              {
+                "id": 94,
+                "name": "Rekapitulasi",
+                "uri": "transaksi/rekapitulasi/hari",
+                "hidden": false,
+                "children": [
+                  {
+                    "id": 95,
+                    "name": "Rekapitulasi Hari",
+                    "uri": "transaksi/rekapitulasi/hari",
+                    "hidden": true
+                  },
+                  {
+                    "id": 96,
+                    "name": "Rekapitulasi Transaksi",
+                    "uri": "transaksi/rekapitulasi/transaksi",
+                    "hidden": true
+                  },
+                  {
+                    "id": 97,
+                    "name": "Rekapitulasi Detail Transaksi",
+                    "uri": "transaksi/rekapitulasi/detailtransaksi",
+                    "hidden": true
+                  },
+                  {
+                    "id": 98,
+                    "name": "Rekapitulasi Trayek",
+                    "uri": "transaksi/rekapitulasi/trayek",
+                    "hidden": true
+                  }
+                ]
+              },
+              {
+                "id": 106,
+                "name": "Pembuangan Sampah TPA per Bulan",
+                "uri": "transaksi/pembuangansampahbulantahun",
+                "hidden": false
+              }
+            ]
+          },
+          {
+            "id": 43,
+            "name": "Pengisian Bahan Bakar",
+            "uri": "transaksi/pengisianbahanbakar",
+            "hidden": false
+          },
+          {
+            "id": 77,
+            "name": "Perawatan",
+            "uri": "transaksi/perawatan",
+            "hidden": true
+          },
+          {
+            "id": 100,
+            "name": "Pemeriksaan Kendaraan",
+            "uri": "transaksi/pemeriksaankendaraan",
+            "hidden": false
+          },
+          {
+            "id": 101,
+            "name": "Jatah Kitir",
+            "uri": "transaksi/jatahkitir",
+            "hidden": false
+          },
+          {
+            "id": 108,
+            "name": "Retribusi",
+            "uri": "transaksi/retribusi",
+            "hidden": false
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Laporan",
+        "uri": "home/laporan",
+        "hidden": true
+      },
+      {
+        "id": 78,
+        "name": "Monitoring",
+        "uri": "home/monitoring",
+        "hidden": false,
+        "children": [
+          {
+            "id": 103,
+            "name": "Tonase",
+            "uri": "home/monitoringtonase",
+            "hidden": false
+          },
+          {
+            "id": 104,
+            "name": "Tonase Swasta",
+            "uri": "home/monitoringtonaseswasta",
+            "hidden": true
+          },
+          {
+            "id": 105,
+            "name": "Konsumsi BBM",
+            "uri": "home/monitoringkonsumsi",
+            "hidden": false
+          },
+          {
+            "id": 107,
+            "name": "Tonase Total",
+            "uri": "home/monitoring",
+            "hidden": true
+          },
+          {
+            "id": 121,
+            "name": "Volume Sampah",
+            "hidden": false,
+            "children": [
+              {
+                "id": 124,
+                "name": "Volume Sampah per Hari",
+                "hidden": false,
+                "children": [
+                  {
+                    "id": 128,
+                    "name": "Swasta",
+                    "uri": "home/monitoringtonaseswasta",
+                    "hidden": false
+                  },
+                  {
+                    "id": 129,
+                    "name": "Dinas",
+                    "uri": "home/monitoringtonase",
+                    "hidden": false
+                  },
+                  {
+                    "id": 130,
+                    "name": "Total",
+                    "uri": "home/monitoring",
+                    "hidden": false
+                  }
+                ]
+              },
+              {
+                "id": 125,
+                "name": "Rekap Volume Sampah",
+                "uri": "analisadata/tonasesumbersampah",
+                "hidden": false
+              },
+              {
+                "id": 126,
+                "name": "Volume Sampah di TPS / Sumber Sampah",
+                "uri": "analisadata/tonasetps",
+                "hidden": false
+              },
+              {
+                "id": 127,
+                "name": "Upload Data Penimbangan",
+                "uri": "transaksi/importexcel",
+                "hidden": false
+              }
+            ]
+          },
+          {
+            "id": 122,
+            "name": "Konsumsi BBM",
+            "uri": "home/monitoringkonsumsi",
+            "hidden": false
+          },
+          {
+            "id": 123,
+            "name": "Retribusi",
+            "uri": "transaksi/retribusi",
+            "hidden": false
+          }
+        ]
+      },
+      {
+        "id": 109,
+        "name": "Rekapitulasi",
+        "hidden": true,
+        "children": [
+          {
+            "id": 110,
+            "name": "Tonase Sumber Sampah",
+            "uri": "analisadata/tonasesumbersampah",
+            "hidden": false
+          },
+          {
+            "id": 111,
+            "name": "Tonase TPS",
+            "uri": "analisadata/tonasetps",
+            "hidden": false
+          },
+          {
+            "id": 120,
+            "name": "Import Excel Data SI",
+            "uri": "transaksi/importexcel",
+            "hidden": false
+          }
+        ]
+      }
+    ]
+  }
+]

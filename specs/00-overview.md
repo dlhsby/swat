@@ -48,6 +48,7 @@ process** and **migrating the existing data**.
 | Master — Waste sources | `masterdata/kategorisumbersampah…` | 1 ✅ |
 | Scheduling (crew schedules, trip templates, fuel quota) | `mastertrayek`, `jatahkitir`, `penjadwalan` | 1 ✅ |
 | Transactions (daily init, pickup, disposal/weighing, fuel) | `transaksi/*` | 1 ✅ |
+| Refuel log, Vehicle inspection, Maintenance | `transaksi/pengisianbahanbakar`, `pemeriksaankendaraan`, `riwayatperawatan` | 1 ✅ |
 | Monitoring dashboards (tonnage, fuel, routes) | `monitoring/*` | 2 🔜 |
 | Reporting & exports (Excel/PDF), levies | `laporan/*`, `retribusi` | 3 🔜 |
 | Weighbridge integration (kitir match + weight post, TPA log ingest) | `webservice/*` (SOAP) | 4 🔜 |
@@ -93,6 +94,14 @@ process** and **migrating the existing data**.
 | Reports | FPDF / PHPExcel | server-side PDF + ExcelJS (Phase 3) |
 | Packaging | Apache/XAMPP, `.bat` cron | Docker Compose, scheduled jobs |
 | Tests/CI | none | Jest/Vitest + Supertest + Playwright, CI gates |
+
+## Design
+
+The UI is fully designed (hi-fi). The **canonical design source** is the vendored bundle in
+[`../designs/`](../designs/) (tokens, 28 components, 21 screens, illustrations); the engineering-facing
+mirror is [`13-design/`](./13-design/) (design system, wireframes, hi-fi spec). On any conflict, the
+bundle wins. Components are reusable shadcn/ui extensions built from the token layer; dark mode ships
+as a token layer in Phase 1 (visual QA in Phase 2).
 
 ## Next
 

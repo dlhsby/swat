@@ -1,5 +1,12 @@
 # Phase 3 — Reporting & Exports
 
+> **Design ready.** The **Laporan** screen is designed (hi-fi) — report-type card grid + generate
+> dialog (date range + format radio + async note) + history table (download / "Diproses" spinner). See
+> [`13-design/03-hifi-spec.md`](../13-design/03-hifi-spec.md) screen "Laporan" and
+> [`09-modules/reports.md`](../09-modules/reports.md). Keep **Levy/Retribusi CRUD** here (parity G12);
+> rekapitulasi/monthly summaries map to the report exports (parity G11). Reuse the Phase-1 component
+> library.
+
 ## Goal
 Provide exportable, offline-ready reports in Excel and PDF formats for management review, auditing, and compliance. Reports include tonnage trends, fuel consumption analysis, route summaries, and levy/retribusi transactions—all with Indonesian labels, DLH branding, and async job handling for large datasets.
 

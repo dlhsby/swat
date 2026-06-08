@@ -396,7 +396,16 @@ export default registerAs('app', () => ({
 - **API Routes** (`app/api/*`): thin proxies to backend; authentication via cookies.
 - **i18n:** `next-intl` (Indonesian-first; URL prefix `/id/` optional if monolingual).
 - **PWA:** `@ducanh2912/next-pwa` or **Serwist** (manifest, service worker, offline shell).
-- **Styling:** Tailwind CSS + shadcn/ui.
+- **Styling:** Tailwind CSS + shadcn/ui, extended by the **SWAT design system**. The reusable,
+  token-driven component library (28 components) lives in **`apps/web/src/components/ui`**; tokens are
+  ported verbatim from `designs/design_handoff_swat_webapp/swat-tokens.css` into `src/app/globals.css`
+  (`:root` + `.dark` + shadcn HSL), with `tailwind.config.ts` from `13-design/01-design-system.md`.
+  **No separate `packages/ui` workspace package** — there is a single web consumer, so the design
+  system is co-located in the app (still fully reusable app-wide). Revisit only if a second consumer
+  (e.g. a standalone weighbridge client) appears.
+- **Dark mode:** `darkMode: ['class']`; token layer ships Phase 1, visual QA Phase 2.
+- **Icons/illustrations:** `lucide-react` + 11 brand SVGs in `public/illustrations/` (`<Illustration>`).
+- **Charts (Phase 2):** Recharts with the prototype's data shapes.
 - **Form handling:** React Hook Form + Zod validation.
 - **Client caching:** React Query (`@tanstack/react-query`).
 
@@ -423,22 +432,26 @@ app/
 │   │   │   └── EditForm.tsx       # client component + React Query
 │   │   └── create/
 │   │       └── page.tsx
+│   ├── vehicle-models/ · vehicle-applications/ · fuels/   # reference masters (parity G1–G3)
 │   ├── drivers/
-│   │   └── ...
+│   │   └── ...                    # + licenses (SIM) tab
 │   ├── geography/
-│   │   ├── sites/
-│   │   │   └── ...
-│   │   └── routes/
-│   │       └── ...
+│   │   ├── sites/ · routes/       # "Spot & Rute" tabs
+│   ├── waste-sources/
+│   ├── monitoring/                # Phase 2 build (designed)
+│   │   ├── tonnage/ · fuel/ · reports/   # Volume per Hari · Konsumsi BBM · Laporan(Phase 3)
+│   ├── scheduling/
+│   │   ├── crew-schedules/        # Jadwal Kru → Template Trayek
+│   │   └── fuel-quotas/           # Jatah Kitir (issue + bulk import) — parity G6/G8
 │   ├── transactions/
 │   │   ├── transaction-days/
 │   │   │   ├── page.tsx
-│   │   │   └── [id]/
-│   │   │       ├── page.tsx       # day details + trip list
-│   │   │       └── CreateTripForm.tsx
-│   │   └── ...
-│   └── users/                     # admin-only user management
-│       └── ...
+│   │   │   └── [id]/page.tsx      # Haul Board + Trip Sheet (record/verify/reconcile dialogs)
+│   │   ├── refuel/                # Pengisian Bahan Bakar log — parity G7
+│   │   ├── inspections/           # Pemeriksaan Kendaraan — parity G4
+│   │   └── maintenance/           # Perawatan — parity G5
+│   └── users/                     # Pengguna + Hak Akses (RBAC)
+│       └── roles/
 ├── (public)/
 │   ├── page.tsx                   # public home / info
 │   └── help/

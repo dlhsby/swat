@@ -631,6 +631,29 @@ Response 200:
 **Example — GET /reports/download/:jobId:**
 Returns the report file (xlsx/pdf) with `Content-Disposition: attachment` header.
 
+### 2.12 Vehicle operations — Refuel log, Inspection, Maintenance (Phase 1 — legacy parity)
+
+See [`09-modules/inspection.md`](./09-modules/inspection.md) and
+[`09-modules/maintenance.md`](./09-modules/maintenance.md).
+
+| Method | Path | Permission | Description |
+|--------|------|-----------|---|
+| GET | `/refuels` | `trip:read` | Refuel log (read view over REFUEL trips; filter date/vehicle/fuel/status; derived cost + anomaly flag) |
+| GET | `/vehicle-inspections` | `inspection:read` | List inspections (filter vehicle/result/date) |
+| GET | `/vehicle-inspections/:id` | `inspection:read` | Inspection detail + checklist items |
+| POST | `/vehicle-inspections` | `inspection:create` | Create inspection (nested items; server derives result + counts) |
+| PATCH | `/vehicle-inspections/:id` | `inspection:update` | Update inspection |
+| DELETE | `/vehicle-inspections/:id` | `inspection:delete` | Delete inspection |
+| GET | `/maintenance-records` | `maintenance:read` | List maintenance (filter vehicle/type/status/date) |
+| GET | `/maintenance-records/:id` | `maintenance:read` | Maintenance detail + items |
+| POST | `/maintenance-records` | `maintenance:create` | Create maintenance (nested items; totalCost server-computed) |
+| PATCH | `/maintenance-records/:id` | `maintenance:update` | Update maintenance |
+| PATCH | `/maintenance-records/:id/approve` | `maintenance:approve` | Approve (`PENDING_APPROVAL → APPROVED`) |
+| DELETE | `/maintenance-records/:id` | `maintenance:delete` | Delete maintenance |
+
+Kitir bulk import is `POST /fuel-quotas/bulk-import` (`fuel-quota:create`) — see
+[`09-modules/fuel-quota-kitir.md`](./09-modules/fuel-quota-kitir.md) §4.
+
 ## 3. Special endpoints (Phase 4 — Weighbridge integration)
 
 **FUTURE / NOT Phase 1.** Contract documented here; implementation in Phase 4.

@@ -53,6 +53,9 @@ enum FuelQuotaStatus { ACTIVE INACTIVE }
 enum VehicleStatus   { GOOD MINOR_DAMAGE MAJOR_DAMAGE LOST }
 enum EmploymentStatus{ SATGAS PNS HONORER }
 enum MaintenanceStatus { PENDING_APPROVAL APPROVED }
+enum MaintenanceType   { SERVICE REPAIR }                  // Servis / Perbaikan
+enum InspectionResult  { PASS ATTENTION FAIL }             // overall result (Lolos / Perlu Perhatian / Tidak Lolos)
+enum InspectionItemStatus { OK ATTENTION FAIL }            // per checklist item
 enum AuthAction      { LOGIN LOGOUT FAILED_LOGIN PASSWORD_CHANGE ACCOUNT_LOCK FORCE_RESET PERMISSION_DENIED }
 ```
 
@@ -94,6 +97,8 @@ model User {
   leviesUpdatedBy     Levy[]                         @relation("LevyUpdatedBy")
   maintenanceRecordsCreatedBy MaintenanceRecord[]   @relation("MaintenanceRecordCreatedBy")
   maintenanceRecordsUpdatedBy MaintenanceRecord[]   @relation("MaintenanceRecordUpdatedBy")
+  inspectionsInspector        VehicleInspection[]   @relation("VehicleInspectionInspector")
+  inspectionsCreatedBy        VehicleInspection[]   @relation("VehicleInspectionCreatedBy")
 }
 
 model Role {
@@ -218,6 +223,7 @@ model Vehicle {
   fuelQuotas          FuelQuota[]
   wasteSources        VehicleWasteSource[]
   maintenance         MaintenanceRecord[]
+  inspections         VehicleInspection[]
   @@index([poolSiteId])
   @@index([modelId])
 }
@@ -494,7 +500,7 @@ model Photo {
   width       Int?
   height      Int?
   checksum    String   @db.VarChar(64)
-  ownerType   String   @db.VarChar(40)            // 'trip' | 'site' | 'driver' | 'user' | 'vehicle' | 'maintenanceItem'
+  ownerType   String   @db.VarChar(40)            // 'trip' | 'site' | 'driver' | 'user' | 'vehicle' | 'maintenanceItem' | 'inspectionItem'
   ownerId     String                              // polymorphic FK: Int or BigInt serialized as string. User/Vehicle/Driver/Site enforce 0..1 photo (via relation cardinality); Trip allows 0..many. App must validate (ownerType, ownerId) FK.
   createdAt   DateTime @default(now()) @db.Timestamptz(6)
   @@index([ownerType, ownerId])
@@ -504,10 +510,15 @@ model Photo {
 model MaintenanceRecord {
   id        BigInt   @id @default(autoincrement())
   legacyId  BigInt?  @unique
+  code      String?  @unique @db.VarChar(30)   // e.g. "PRW-202606-0042" (mono in UI)
   vehicleId Int
   vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+  type      MaintenanceType @default(SERVICE)  // Servis / Perbaikan
   status    MaintenanceStatus @default(PENDING_APPROVAL)
   date      DateTime @db.Date
+  odometer  Int?                                // km at service
+  workshop  String?  @db.VarChar(256)           // bengkel
+  description String? @db.VarChar(512)          // uraian pekerjaan (summary)
   totalCost Int      @default(0)
   notes     String?  @db.VarChar(512)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -517,6 +528,8 @@ model MaintenanceRecord {
   updatedById Int?
   updatedBy User?   @relation("MaintenanceRecordUpdatedBy", fields: [updatedById], references: [id])
   items     MaintenanceItem[]
+  @@index([vehicleId])
+  @@index([date])
 }
 
 model MaintenanceItem {
@@ -530,6 +543,41 @@ model MaintenanceItem {
   totalPrice Int     @default(0)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  // documentation photos via polymorphic Photo (ownerType='maintenanceItem', ownerId=itemId)
+}
+
+// ---------- Vehicle inspection (legacy: transaksi/pemeriksaankendaraan) ----------
+model VehicleInspection {
+  id           BigInt   @id @default(autoincrement())
+  legacyId     BigInt?  @unique
+  vehicleId    Int
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  date         DateTime @db.Date
+  inspectorId  Int?
+  inspector    User?    @relation("VehicleInspectionInspector", fields: [inspectorId], references: [id])
+  result       InspectionResult @default(PASS)   // derived from items (any FAIL → FAIL; any ATTENTION → ATTENTION)
+  passedCount  Int      @default(0)               // # items OK
+  totalCount   Int      @default(0)               // total checklist items
+  notes        String?  @db.VarChar(512)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+  createdById  Int?
+  createdBy    User?    @relation("VehicleInspectionCreatedBy", fields: [createdById], references: [id])
+  items        InspectionItem[]
+  @@index([vehicleId])
+  @@index([date])
+}
+
+model InspectionItem {
+  id           BigInt   @id @default(autoincrement())
+  inspectionId BigInt
+  inspection   VehicleInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  label        String   @db.VarChar(128)          // checklist item name (e.g. "Rem", "Lampu", "Ban")
+  status       InspectionItemStatus @default(OK)  // OK / ATTENTION / FAIL
+  notes        String?  @db.VarChar(256)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+  // documentation photos via polymorphic Photo (ownerType='inspectionItem', ownerId=itemId)
 }
 
 // ---------- External / aggregates ----------
@@ -628,6 +676,16 @@ Every legacy table maps to a model above (or is intentionally dropped). Tables e
 - `status*` lookup tables → enums.
 - `dokumentasikendaraan`, `dokumentasitrayek`, `dokumentasidetailriwayatperawatan` → generalized to
   the unified `Photo` model (see §8; all empty in legacy, low priority).
+
+**Newly modeled (legacy had behavior but no clean table):**
+- **`VehicleInspection` + `InspectionItem`** model the legacy `transaksi/pemeriksaankendaraan`
+  controller (which had no dedicated table). Required for parity (design screen "Pemeriksaan
+  Kendaraan"). Migration: backfill from legacy inspection rows if any exist; otherwise greenfield.
+
+**Deferred to Phase 4 (weighbridge):**
+- **`konversi_si_swat`** (SI ↔ SWAT unit/name conversion used by the weighbridge Excel import) — handled
+  in [`09-modules/integration-weighbridge.md`](./09-modules/integration-weighbridge.md) alongside
+  `LegacyNameMap`; model it when Phase 4 is built (kept out of the Phase-1 schema deliberately).
 
 The complete table-by-table reconciliation is in [`04-migration.md`](./04-migration.md).
 

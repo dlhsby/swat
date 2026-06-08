@@ -22,6 +22,21 @@ phase is now a self-contained, turnkey execution doc.
 > **Backlog / not-yet-committed:** see [`../14-proposals/`](../14-proposals/). An accepted RFC
 > graduates into a `../09-modules/` spec and a new phase/epic here.
 
+## Design & legacy parity (read before Phase 1 frontend)
+
+- **Design source of truth:** the vendored bundle in [`../../designs/`](../../designs/) and its mirror
+  [`../13-design/`](../13-design/). Phase 0 **ports `swat-tokens.css` verbatim** (light + dark) and
+  Phase 1 leads with **Epic 1.8.5 — Design-System Component Library** (28 reusable shadcn/ui
+  extensions) **before** any screen epic. All UI composes those components.
+- **Parity-first.** This is a rewrite of `old_swat`: **every legacy feature must ship**. The Part-0
+  audit (in the plan doc) closes gaps **G1–G15**; the parity additions live in **Epic 1.17**
+  (reference masters G1–G3, kitir bulk import G6/G8, refuel log G7, inspection G4, maintenance G5) and
+  the Screen→Phase traceability table in [`../08-frontend-spec.md`](../08-frontend-spec.md). Monitoring
+  Swasta/Dinas split (G9) = P2; reports/levy (G11/G12) = P3; weighbridge SOAP→REST + Excel upload
+  (G13/G14) = P4. Menu-grant/status tables (G15) are **superseded** (permission RBAC + enums), documented.
+- **Priority order when sequencing:** (1) legacy parity, (2) design system + dark mode, (3) genuinely
+  new ideas (after parity, clearly marked).
+
 ## How to execute (read before starting)
 
 1. **Order:** phases are sequential; within a phase, epics may parallelize where marked. Respect each
@@ -102,12 +117,17 @@ Per-domain backend module = `apps/backend/src/modules/<domain>/` containing
 
 | Milestone | Phases | Deliverables | Effort (weeks) |
 |-----------|--------|--------------|----------------|
-| Infrastructure ready | 0 | Monorepo, Docker (PG/Redis/MinIO), schema+partitioning, CI | 1–2 |
+| Infrastructure ready | 0 | Monorepo, Docker (PG/Redis/MinIO), schema+partitioning, CI, **design tokens (light+dark) + assets + formatters** | 1–2 |
+| Design system + component library | 1 (Epic 1.8.5) | 28 reusable shadcn/ui components from tokens, light + dark | 1–1.5 |
 | MVP v1 (auth + master CRUD) | 1 (first half) | User/role mgmt; vehicle/driver/site/route/crew/fuel CRUD | 3–4 |
 | MVP v2 (transactions + migration) | 1 (second half) | Daily init, trip recording/verification, data+image migration, cutover | 5–6 |
+| Legacy-parity additions | 1 (Epic 1.17) | Reference masters, kitir bulk import, refuel log, inspection, maintenance | 1–2 |
 | Monitoring | 2 | Rollups, dashboards, aggregate caching, archiving job | 2–3 |
 | Reporting | 3 | Excel/PDF exports, levy mgmt | 2 |
 | Weighbridge | 4 | TPA API, kitir resolution, post-weighing ingest | 2–3 |
 | Field/GPS | 5 | Offline PWA, live tracking, push notifications | 3–4 |
 
-**To MVP (Phases 0–1): ~15–18 weeks. To full Phase 5: ~25–30 weeks.**
+**To MVP (Phases 0–1, incl. full legacy parity + design system/dark tokens): ~17–21 weeks.
+To full Phase 5: ~27–33 weeks.** (The component-library + parity epics add ~2–3.5 weeks over the
+original estimate; if the calendar is fixed, Epic 1.17 can ship as a "Phase 1.5" immediately after MVP
+but **before** cutover, since cutover requires legacy parity.)

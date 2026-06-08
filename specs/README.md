@@ -37,8 +37,14 @@ Read in order for the full picture; jump to a module spec when implementing a fe
 | [`10-nonfunctional.md`](./10-nonfunctional.md) | Security, testing, observability, performance | All engineers |
 | [`11-development-plan/README.md`](./11-development-plan/README.md) | Phased roadmap + task breakdown | PM, all engineers |
 | [`12-scalability-archiving.md`](./12-scalability-archiving.md) | **Data growth (since 2013), partitioning, archiving, caching, object storage** | Backend, DBA, DevOps |
-| [`13-design/`](./13-design/) | UI/UX handoff: brief, design system, wireframes, hi-fi brief | Designers / Claude Design |
+| [`13-design/`](./13-design/) | UI/UX: brief, **design system (28 components, light+dark)**, wireframes, hi-fi (21 screens) — **complete**, mirrors [`../designs/`](../designs/) | Frontend |
 | [`14-proposals/`](./14-proposals/) | **Future-feature RFCs & backlog** (not-yet-committed ideas) | PM, architects |
+
+> **Design is done.** The canonical visual source is the vendored Claude Design bundle in
+> [`../designs/`](../designs/) (tokens `swat-tokens.css`, 28 components, 21 hi-fi screens,
+> illustrations, brand marks). `13-design/` mirrors it and binds it to the glossary, data model, and
+> phases. On any conflict, **the bundle wins**. Implementation ports `swat-tokens.css` verbatim and
+> builds the component library first (dev-plan Phase 0 T-016 + Phase 1 Epic 1.8.5).
 
 > **Migration scope note:** [`04-migration.md`](./04-migration.md) covers **both** the data
 > migration (legacy MySQL → PostgreSQL) **and** the application cutover (old PHP app → new stack):

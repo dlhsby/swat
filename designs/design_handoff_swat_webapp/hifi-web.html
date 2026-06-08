@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0f172a" />
+<title>SWAT — Hi-Fi (Web) · DLH Surabaya</title>
+<script>
+  /* apply saved theme before paint to avoid a flash */
+  (function () { try { if (localStorage.getItem('swat-theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) { } })();
+  /* spot illustrations live under assets/ in this hand-off bundle */
+  window.__SWAT_ILL_BASE = 'assets/illustrations/';
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<!-- ===== SWAT Design System (source of truth: tokens + components) ===== -->
+<link rel="stylesheet" href="swat-tokens.css" />
+<link rel="stylesheet" href="swat-components.css" />
+<!-- ===== Hi-fi app shell + layout polish ===== -->
+<link rel="stylesheet" href="prototype_src/hifi.css" />
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- data (plain JS) -->
+<script src="prototype_src/data.js"></script>
+<script src="prototype_src/data2.js"></script>
+<!-- components + screens (Babel JSX, order matters: primitives first) -->
+<script type="text/babel" src="prototype_src/components.jsx"></script>
+<script type="text/babel" src="prototype_src/charts.jsx"></script>
+<script type="text/babel" src="prototype_src/screens-auth.jsx"></script>
+<script type="text/babel" src="prototype_src/screens-master.jsx"></script>
+<script type="text/babel" src="prototype_src/screens-master2.jsx"></script>
+<script type="text/babel" src="prototype_src/screens-sched.jsx"></script>
+<script type="text/babel" src="prototype_src/screens-txn.jsx"></script>
+<script type="text/babel" src="prototype_src/screens-monitor.jsx"></script>
+<script type="text/babel" src="prototype_src/screens-txn2.jsx"></script>
+<script type="text/babel" src="prototype_src/screens-users.jsx"></script>
+<script type="text/babel" src="prototype_src/library.jsx"></script>
+<script type="text/babel" src="prototype_src/mobile.jsx"></script>
+<script type="text/babel" src="prototype_src/app.jsx"></script>
+</body>
+</html>

@@ -4,6 +4,14 @@
 
 The fleet module manages vehicle master data: vehicle registration (plate number, chassis, engine number, condition), vehicle models (brand + specifications), vehicle applications (body types: Compactor, Dump Truck, Arm Roll), fuels (products + pricing), and the M:N mapping of waste sources to vehicles. This is the foundation for scheduling and daily operations; all transaction records reference vehicles here.
 
+> **Reference-master screens (parity G1–G3).** **Model Kendaraan** (`VehicleModel`), **Aplikasi
+> Kendaraan** (`VehicleApplication`), and **Bahan Bakar** (`Fuel`, with read-only `FuelCategory`) are
+> legacy CRUD screens (`kategorikendaraan`, `aplikasikendaraan`, `bahanbakar`). The new hi-fi gallery
+> did **not** mock them (they were folded into selects), but they are **required for parity** and ship
+> as dedicated **List + Modal** screens using the standard CRUD pattern in `13-design/02-wireframes.md`
+> (no bespoke layout). They appear in the Master Data sidebar group and have Phase-1 build tasks.
+> Delete is **blocked when referenced** ("Tidak dapat dihapus: masih dipakai oleh {n} …").
+
 ## Entities
 
 ### Vehicle

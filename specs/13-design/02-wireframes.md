@@ -717,3 +717,267 @@ Low-fidelity functional wireframes using ASCII/box-drawing. Each wireframe inclu
 
 ---
 
+# Additional Screens — parity + design completion
+
+These complete coverage to the full IA in `03-hifi-spec.md` (21 designed screens + the legacy-parity
+reference masters). Screens 1–13 above remain valid; the items below add the rest. All reuse the
+**CRUD List**, **Create/Edit Modal**, and **Delete Confirmation** patterns at the top of this file
+unless noted. Labels are Indonesian (glossary); tokens/components per `01-design-system.md`.
+
+## Reference Master CRUD (parity G1–G3) — Model Kendaraan · Aplikasi Kendaraan · Bahan Bakar
+
+Each is a plain **List + Modal** (no bespoke layout):
+
+```
+┌ Master Data / {Model Kendaraan | Aplikasi Kendaraan | Bahan Bakar} ─────────┐
+│ {Title}                                              [Buat Baru]            │
+│ [Cari...]                                                [Filter] [Kolom]   │
+│ ┌──────────────────────────────────────────────────────────────────────┐  │
+│ │ Nama        │ {specs / kategori / harga}    │ Dipakai │ Aksi          │  │
+│ │ Hino FM260  │ Tangki 200 L · Tare 8.500 kg  │ 14      │ ⋮ Ubah/Hapus  │  │
+│ └──────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+- **Model Kendaraan** (`kategorikendaraan`): Nama/Merek, tangki (L), tare (kg), daya angkut, volume;
+  fuel compatibility. **Aplikasi Kendaraan** (`aplikasikendaraan`): Nama (Compactor, Dump Truck, Arm
+  Roll, Tipper, Flatbed). **Bahan Bakar** (`bahanbakar`): Nama, **Harga/Liter (Rp)** editable,
+  read-only **Kategori** (Bersubsidi / Non-Subsidi).
+- Modal: simple fields per above. **Delete blocked when referenced** → "Tidak dapat dihapus: masih
+  dipakai oleh {n} {kendaraan/model}." Toasts on save/delete.
+
+## Pengemudi (+ SIM tab)
+
+```
+┌ Master Data / Pengemudi ───────────────────────────────────────────────────┐
+│ Pengemudi                                              [Buat Baru]          │
+│ ⚠ 3 pengemudi memiliki SIM yang segera/sudah kedaluwarsa.                   │
+│ [Cari...]  [Pool ▼] [Status ▼]                                  [Kolom]     │
+│ ┌──────────────────────────────────────────────────────────────────────┐  │
+│ │ Nama        │ KTP(mono) │ Status   │ Pool   │ Kontak │ SIM │ Status SIM │ │
+│ │ ●Budi S.    │ 3578...01 │ Satgas   │ Pool 1 │ 0812.. │ 2   │ Segera Habis│ │  ← row tinted yellow
+│ │ ●Citra W.   │ 3578...02 │ PNS      │ Pool 2 │ 0813.. │ 1   │ Kedaluwarsa │ │  ← row tinted red
+│ └──────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Form = **tabbed dialog (640px)**: **Data Pribadi** (KTP* 16-digit, Nama*, Status kepegawaian, Tgl
+lahir, Pool*, Kontak*, alamat asal/sekarang, pelatihan K3) · **Lisensi (SIM)** (sub-table: Kelas /
+Nomor / Berlaku s.d. / Status; [Terbitkan SIM] + revoke; empty → `no-results` illustration).
+
+## Spot & Rute (tabbed)
+
+```
+┌ Master Data / Spot & Rute ──────────────────────────────────────────────────┐
+│ [ Lokasi ] [ Rute ]                                       [Buat Baru]        │
+│ — Lokasi tab —                                                               │
+│ 🏭 TPS Ketintang   [TPS]   Jl. Ketintang ...    -7.31, 112.72   ⋮           │
+│ ⛽ SPBU Wonokromo  [SPBU]  Jl. Wonokromo ...    -7.30, 112.74   ⋮           │
+│ — Rute tab —                                                                 │
+│ Pool 1 → TPS Ketintang   [PICKUP]    8 km    ⋮                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Site form: Nama, **Tipe** segmented (POOL/SPBU/TPS/TPA), Alamat, optional Lat/Lng (**both-or-neither**)
++ map-picker dropzone. Route form: Asal / Tujuan / Kategori / Jarak (km), with uniqueness +
+distinct-endpoints validation alert.
+
+## Sumber Sampah
+
+```
+┌ Master Data / Sumber Sampah ────────────────────────────────────────────────┐
+│ Sumber Sampah                                          [Buat Baru]          │
+│ Kode │ Nama            │ Catatan        │ Kendaraan │ Aksi                   │
+│ [D]  │ Dinas           │ ...            │ 22        │ ⋮                       │
+│ [PS] │ Pasar           │ ...            │ 8         │ ⋮                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Add/edit dialog: Kode (≤5, unique), Nama, Catatan. Kode chip is mono, primary-tinted.
+
+## Jadwal Kru (Penjadwalan)
+
+```
+┌ Penjadwalan / Jadwal Kru ───────────────────────────────────────────────────┐
+│ Jadwal Kru                                             [Buat Baru]          │
+│ Kendaraan │ Pengemudi │ Pool   │ Berangkat │ Kembali │ Trayek │ Status      │
+│ L 1234 AB │ Budi S.   │ Pool 1 │ 06:00     │ 14:00   │ 5      │ Aktif       │ → Template Trayek
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Row → **Template Trayek**; row menu: Kelola Trayek / Hapus.
+
+## Template Trayek
+
+```
+┌ Penjadwalan / Jadwal Kru / Template Trayek ─────────────────────────────────┐
+│ L 1234 AB · Budi S.                                                          │
+│ ┌ Waktu Jadwal ─────────────┐                                               │
+│ │ Berangkat [06:00]  Kembali [14:00] │                                      │
+│ └────────────────────────────┘                                              │
+│ Trayek Terencana                                          [Tambah Trayek]   │
+│ # │ Jenis      │ Rute                  │ Target │ BBM(L) │ ⠿               │
+│ 1 │ DEPART_POOL│ Pool 1 → —            │ 06:00  │ —      │ ⠿               │
+│ 2 │ REFUEL     │ → SPBU Wonokromo      │ 06:15  │ 50     │ ⠿               │
+│ 3 │ PICKUP     │ TPS Ketintang         │ 07:30  │ —      │ ⠿               │
+│ ℹ Urutan trayek mengikuti urutan penambahan.                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Drag handle (⠿) reorders. Jenis = RouteCategory pill.
+
+## Jatah Kitir (parity G6)
+
+```
+┌ Penjadwalan / Jatah Kitir ──────────────────────────────────────────────────┐
+│ Jatah Kitir                            [Impor Massal] [Terbitkan Kitir]     │
+│ [Cari...] [Status ▼] [Berlaku pada 📅]                                      │
+│ Kode(mono)      │ Kendaraan │ Lokasi      │ Dari      │ Sampai    │ Status   │
+│ KT-202606-0042  │ L 1234 AB │ TPA Benowo  │ 01/06/26  │ 30/06/26  │ Berlaku  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Issue dialog (560px): Kendaraan* (GOOD only) · Lokasi* (TPA) · Berlaku Dari* / Sampai* · Status radio
+(Berlaku / Tidak Berlaku). Validation: Sampai ≥ Dari; warn on duplicate active kitir. **Impor Massal**
+opens a dropzone for spreadsheet bulk issuance.
+
+## Trip Sheet (right-side Sheet, from Haul Board)
+
+```
+                                         ┌ Trip · L 1234 AB ─────────────[✕]┐
+                                         │ 🟦 inbox  Pengambilan TPS Ket.    │
+                                         │           Target 07:30  • Selesai │ [Verifikasi]
+                                         │ 🟩 scale  Pembuangan TPA Benowo   │
+                                         │           Target 08:45  • Blm sel.│ [Catat]
+                                         │ 🟨 fuel   Pengisian BBM SPBU      │
+                                         │           Target 06:15  • Terverif.│
+                                         └────────────────────────────────────┘
+```
+Type icon chip per RouteCategory; status pill; contextual action **Catat** (`IN_PROGRESS`) /
+**Verifikasi** (`DONE`).
+
+## Pengisian Bahan Bakar — Refuel Log (parity G7)
+
+```
+┌ Transaksi / Pengisian Bahan Bakar ──────────────────────────────────────────┐
+│ [142 pengisian] [3.250 L disetujui] [Rp 32.500.000] [2 ditandai]            │
+│ Waktu  │ Kendaraan │ Pengemudi │ BBM   │ Diminta │ Disetujui │ Biaya │ SPBU │ Status │
+│ 06:20  │ L 1234 AB │ Budi      │ Solar │ 50,00   │ 45,00 ⚠   │ Rp .. │ ..   │Ditandai│
+│                                                              [Catat Pengisian]│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Record dialog: BBM (filtered by vehicle), Diminta L, Disetujui L (**role-gated**), SPBU, waktu,
+odometer; **estimated cost** = approved × price/L in a primary panel; gate Disetujui ≤ Diminta.
+
+## Pemeriksaan Kendaraan — Inspection (parity G4)
+
+```
+┌ Transaksi / Pemeriksaan Kendaraan ──────────────────────────────────────────┐
+│ Pemeriksaan Kendaraan                                  [Periksa]            │
+│ Tanggal │ Kendaraan │ Model    │ Pemeriksa │ Lolos │ Hasil                  │
+│ 07/06/26│ L 1234 AB │ Hino FM  │ Andi      │ 11/12 │ Perlu Perhatian        │ → detail Sheet
+└─────────────────────────────────────────────────────────────────────────────┘
+   detail Sheet: [11/12 lolos] + 12-item checklist (✓/⚠/✗ chip + label + status badge)
+```
+Create dialog: vehicle, date, inspector, **switch per checklist item** (OK/Attention/Fail), notes,
+documentation dropzone. Result PASS/ATTENTION/FAIL pill computed from item results.
+
+## Perawatan — Maintenance (parity G5)
+
+```
+┌ Transaksi / Perawatan ──────────────────────────────────────────────────────┐
+│ [38 total] [4 berjalan] [Rp 18.500.000 bln ini] [6 terjadwal]               │
+│ Kode(mono) │ Tanggal │ Kendaraan │ Jenis   │ Pekerjaan │ Bengkel │ Biaya │ Status  │
+│ PRW-0042   │ 05/06/26│ L 1234 AB │ Servis  │ Ganti oli │ ..      │ Rp .. │ Berjalan│
+│                                                              [Catat Perawatan]│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Record/edit dialog: Kendaraan, Tanggal, **Jenis** (Servis/Perbaikan), Odometer, Bengkel, Biaya (Rp),
+Uraian Pekerjaan (line items) + documentation dropzone. Status pill Terjadwal/Berjalan/Selesai;
+approval status Belum Disetujui/Disetujui.
+
+## Pengguna (Users)
+
+```
+┌ Pengguna & Akses / Pengguna ────────────────────────────────────────────────┐
+│ Pengguna                                               [Buat Baru]          │
+│ Nama          │ Username(mono) │ Peran          │ Status                     │
+│ ●Ali R.       │ @ali           │ Administrasi   │ Aktif                      │
+│ ●Siti N.      │ @siti          │ Checker        │ Wajib ganti sandi          │
+│   row menu: Ubah / Reset paksa kata sandi / Hapus (nonaktifkan)             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Form: Nama*, Nama pengguna*, Peran* select. **No password field** — new users auto
+`mustChangePassword`; info alert: "Bagikan kata sandi sementara secara langsung." Delete = soft-delete.
+
+## Hak Akses — RBAC (master-detail)
+
+```
+┌ Pengguna & Akses / Hak Akses ───────────────────────────────────────────────┐
+│ ┌ Peran (320px) ─┐ ┌ {Peran} ───────────────────────────────────────────┐  │
+│ │ 🛡 Administrasi  │ │ Administrasi Data · "Entri transaksi harian"        │  │
+│ │   12 izin   <-- │ │ ┌ Kendaraan ──────────────────────────────────────┐ │  │
+│ │ Checker          │ │ │ vehicle:read     [ on ●]                          │ │  │
+│ │   8 izin         │ │ │ vehicle:create   [○ off]                         │ │  │
+│ │ 🛡 Operator Pool │ │ └─────────────────────────────────────────────────┘ │  │
+│ └─────────────────┘ │ ℹ Mengubah izin memperbarui menu samping peran ini. │  │
+│                     │                                          [Simpan Izin]│  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Permission rows grouped by resource; **Switch** per permission (label + mono key `trip:verify`).
+
+## Profil
+
+```
+┌ Profil ─────────────────────────────────────────────────────────────────────┐
+│ ┌ Akun ──────────────┐  ┌ Keamanan ──────────────────────────────────────┐ │
+│ │ (avatar 64px)       │  │ [Ubah Kata Sandi]                              │ │
+│ │ Ali Rahman          │  └────────────────────────────────────────────────┘ │
+│ │ @ali · Administrasi │  ┌ Sesi ──────────────────────────────────────────┐ │
+│ │ [dropzone foto]     │  │ [Keluar]  (destructive → confirm)              │ │
+│ │ Nama [Ali Rahman]   │  └────────────────────────────────────────────────┘ │
+│ │ Username @ali (ro)  │                                                      │
+│ └─────────────────────┘                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Monitoring — Volume per Hari (Phase 2 build)
+
+```
+┌ Monitoring / Volume per Hari ──────────────[ Total ▾ Dinas / Swasta ] [📅] ─┐
+│ [Tonase 7 hari] [Bulan ini vs lalu] [Haul selesai] [Rata-rata/haul]         │
+│ ┌ Tonase per Hari (stacked, by sumber) ┐ ┌ Komposisi Sumber (donut+legend) ┐│
+│ └───────────────────────────────────────┘ └─────────────────────────────────┘│
+│ Peringkat Tonase per TPS  (ranked table)                                     │
+│ ℹ Agregasi: leg DISPOSAL, status DONE/VERIFIED, rekonsiliasi TPA tiap malam. │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+The **Total / Dinas / Swasta** toggle is the legacy source-type split (parity G9).
+
+## Monitoring — Konsumsi BBM (Phase 2 build)
+
+```
+┌ Monitoring / Konsumsi BBM ──────────────────────────────────────────[📅] ──┐
+│ [Disetujui L] [Diminta L] [Rasio %] [Rata-rata/haul]                        │
+│ ┌ Diminta vs Disetujui per Kendaraan (grouped bars; merah bila < −5%) ────┐ │
+│ └──────────────────────────────────────────────────────────────────────────┘│
+│ Kendaraan │ Diminta │ Disetujui │ Selisih % │ Status (Sesuai/Di bawah/Anomali)│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Laporan — Reports (Phase 3 build)
+
+```
+┌ Monitoring / Laporan ───────────────────────────────────────────────────────┐
+│ ┌ Tonase ┐ ┌ Konsumsi BBM ┐ ┌ Ringkasan Rute ┐ ┌ Retribusi ┐                │
+│ │ Periode│ │ Periode      │ │ Periode        │ │ Periode   │  each: [Hasilkan]│
+│ │ xlsx/pdf│ │ xlsx/pdf     │ │ xlsx/pdf       │ │ xlsx/pdf  │                │
+│ └────────┘ └──────────────┘ └────────────────┘ └───────────┘                │
+│ Riwayat: Laporan │ Format │ Ukuran │ Oleh │ Waktu │ Status [⬇ / spinner]     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+Generate dialog: rentang tanggal + format radio (Excel/PDF) + async note. DONE rows → download;
+PROCESSING rows → spinner + "Diproses" pill.
+
+## Global — Offline / Install banner & "Segera" placeholder
+
+- **Offline banner** (`.app-banner`, warning): "Anda sedang offline — perubahan disinkronkan saat
+  daring." Dismissible; theme-color stays slate-900.
+- **"Segera"** placeholder: `maintenance` illustration + "Fitur ini akan segera tersedia." for any
+  not-yet-built menu item the role can see.
+
+---
+

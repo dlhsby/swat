@@ -6,6 +6,13 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
 
 **Effort:** 2–3 weeks. **Dependencies:** Phase 1 complete; FuelQuota, trip recording, and TransactionDay operational.
 
+> **Parity scope (see [`09-modules/integration-weighbridge.md`](../09-modules/integration-weighbridge.md)):**
+> the new REST API must cover **all 5 legacy SOAP methods** (`insertDB`, `insertPenimbanganTerverifikasi`,
+> `updatePembuanganTerverifikasi`, `insertJatahKitir`, `getpembuangansampahbyfilter`) per the SOAP→REST
+> mapping table (G13). Also model **`konversi_si_swat`** (SI↔SWAT unit/name conversion) and build the
+> **Excel weighing upload** ("Upload Data Penimbangan", legacy `importexcel`) ingest into `TpaInboundLog`
+> (G14) — distinct from the Phase-1 kitir bulk import.
+
 **Key deliverables:**
 - Service account / API key authentication for the TPA desktop client.
 - Resolve-kitir endpoint (by code or plate) → vehicle details, tare weight, authorization.

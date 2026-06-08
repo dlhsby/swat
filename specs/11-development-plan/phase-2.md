@@ -1,5 +1,14 @@
 # Phase 2 — Monitoring & Analytics
 
+> **Design ready.** All monitoring dashboards are already designed (hi-fi) — see
+> [`13-design/03-hifi-spec.md`](../13-design/03-hifi-spec.md) "Volume per Hari" & "Konsumsi BBM" and
+> [`09-modules/monitoring.md`](../09-modules/monitoring.md). Build charts with **Recharts using the
+> prototype's data shapes** (the dependency-free SVG charts in `designs/.../prototype_src/charts.jsx`
+> are the visual contract). Reuse the Phase-1 component library (KpiCard/ChartCard/DataTable). Add the
+> legacy **Total / Dinas / Swasta** source-type toggle (filter on `WasteSource.code`; parity G9) to the
+> tonnage dashboard. **Dark-mode visual QA/sign-off across all screens is a Phase-2 gate** (the token
+> layer shipped in Phase 1).
+
 ## Goal
 Provide operational dashboards and aggregated reporting for management and supervisors. Real-time KPI monitoring, historical trend analysis, and TPA reconciliation—all reading from pre-aggregated rollups and Redis cache so dashboards stay fast across all years (including archived data).
 

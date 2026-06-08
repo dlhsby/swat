@@ -100,8 +100,12 @@ The rebuilt system is written in **NestJS (backend) + Next.js (frontend)**, UI i
 ### Color palette strategy
 - **Primary green:** aligned to DLH (environmental stewardship) + Pemkot Surabaya government identity
   - Reference: `pemkotsby.ico` shows blue-based government branding
-  - Proposal: green-forward palette (`emerald-600` or `green-700` as primary) with cool neutrals
+  - **Committed:** the **emerald** ramp `50 #ecfdf5 … 950 #022c22` with cool slate neutrals.
+    `primary-600 #059669` is the brand reference, focus-ring, and tint source; **white-on-green fills,
+    links, and primary text use `primary-700 #047857` (AA 5.49:1)** — `primary-600` fails AA for text.
   - Avoid: bright neons, pastels, low-contrast combos
+  - Full token table: [`01-design-system.md`](./01-design-system.md); CSS source of truth:
+    `designs/design_handoff_swat_webapp/swat-tokens.css`.
 
 - **Neutral grays:** for typography, backgrounds, borders
   - Text: `slate-900` on light; `slate-50` on dark
@@ -123,7 +127,8 @@ The rebuilt system is written in **NestJS (backend) + Next.js (frontend)**, UI i
   - `FuelQuotaStatus.ACTIVE` → green, `INACTIVE` → gray
 
 ### Typography
-- **Font family:** Inter or Plus Jakarta Sans (clean, approachable, supports Indonesian diacritics)
+- **Font family (committed):** **Plus Jakarta Sans** (UI; fallback Inter, system-ui) +
+  **JetBrains Mono** (plate numbers, kitir codes, IDs, timestamps, numeric cells; `tabular-nums`)
 - **Scale:**
   - Headline 1 (H1): 32px / 1.25 (page title)
   - Headline 2 (H2): 24px / 1.33 (section title)
@@ -156,7 +161,10 @@ The rebuilt system is written in **NestJS (backend) + Next.js (frontend)**, UI i
 ### PWA & dark mode
 - **Theme color:** `#0f172a` (slate-900, used in manifest, status bar)
 - **Install prompt:** show after 30s on supported browsers (Chrome/Edge/Safari)
-- **Dark mode:** optional; light theme is primary
+- **Dark mode (in scope):** the dark **token layer ships in Phase 1** (ported verbatim from
+  `swat-tokens.css` `.dark`), so components flip correctly via CSS variables; dedicated dark-mode
+  visual QA/sign-off is a **Phase 2** gate. Light theme is the Phase-1 baseline. Toggle persists to
+  `localStorage('swat-theme')` and follows `prefers-color-scheme`.
 
 ---
 
@@ -174,11 +182,15 @@ The rebuilt system is written in **NestJS (backend) + Next.js (frontend)**, UI i
 
 The designer will produce:
 
-1. **Design System** (Figma component library or Storybook):
-   - Atomic components: Button (variants/sizes/states), Input, Select, Combobox, DatePicker, TimePicker
-   - Composite: Form field (label/help/error), DataTable (with toolbar, pagination, empty states)
-   - Patterns: card, modal, sheet, badge, toast, breadcrumb, avatar, alert
-   - All mapped to shadcn/ui so frontend can build directly from specs
+1. **Design System** (delivered — see `designs/` + `01-design-system.md`): tokens (light + **dark**),
+   28 components, brand marks, and **11 spot illustrations** (`assets/illustrations/`: login, empty,
+   no-results, server-error, maintenance, success, offline, error, no-access, not-found, loading).
+   - Atomic components: Button (variants/sizes/states), Input, Textarea, Select, Combobox, DatePicker,
+     TimePicker, NumberInput, Checkbox, Radio, Switch
+   - Composite: Form field (label/help/error), DataTable (toolbar, pagination, empty/loading/error),
+     Dialog, Confirm, Sheet, Tabs, Stepper, Dropzone, Progress, Description List, Dropdown Menu
+   - Patterns: card, badge/status-pill, toast, breadcrumb, avatar, alert, tooltip
+   - All are **reusable shadcn/ui extensions** built from the token layer (no one-off styling)
 
 2. **Wireframes** (low-fi, ASCII/box-drawing, functional):
    - Login, Change Password (forced)

@@ -86,10 +86,15 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 const GROUPS = [
-  { title: "▶ Design Prompts (run in order)", items: [
-    ["prompts/01-design-system-prompt.md", "1 · Design System prompt", "start here"],
-    ["prompts/02-wireframes-prompt.md", "2 · Wireframes prompt"],
-    ["prompts/03-hifi-mockup-prompt.md", "3 · Hi-Fi Mockups prompt"],
+  { title: "★ Start here", items: [
+    ["specs/README.md", "Specs Index / README", "read first"],
+    ["specs/11-development-plan/README.md", "Development Plan"],
+  ]},
+  { title: "Design Bundle (designs/ — canonical)", items: [
+    ["designs/INDEX.md", "designs · INDEX"],
+    ["designs/README.md", "designs · bundle README"],
+    ["designs/design_handoff_swat_webapp/README.md", "Hi-Fi handoff (21 screens)", "source of truth"],
+    ["designs/design_handoff_swat_webapp/design-system.md", "design-system.md (tokens + 28 components)"],
   ]},
   { title: "Design Package (13-design)", items: [
     ["specs/13-design/00-design-brief.md", "00 · Design Brief"],
@@ -120,6 +125,8 @@ const GROUPS = [
     ["specs/09-modules/scheduling.md", "scheduling"],
     ["specs/09-modules/fuel-quota-kitir.md", "fuel-quota (kitir)"],
     ["specs/09-modules/transactions.md", "transactions"],
+    ["specs/09-modules/inspection.md", "inspection (pemeriksaan)"],
+    ["specs/09-modules/maintenance.md", "maintenance (perawatan)"],
     ["specs/09-modules/monitoring.md", "monitoring"],
     ["specs/09-modules/reports.md", "reports"],
     ["specs/09-modules/integration-weighbridge.md", "integration-weighbridge"],
@@ -193,7 +200,7 @@ document.getElementById('filter').addEventListener('input', e => {
   });
 });
 
-const start = decodeURIComponent(location.hash.slice(1)) || 'prompts/01-design-system-prompt.md';
+const start = decodeURIComponent(location.hash.slice(1)) || 'specs/README.md';
 load(start);
 </script>
 </body>

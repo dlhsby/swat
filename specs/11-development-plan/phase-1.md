@@ -769,25 +769,59 @@ Deliver a production-ready operational system with complete RBAC, all master-dat
 
 ---
 
+## Epic 1.8.5 — Design-System Component Library (Size: L) — **build before screen epics**
+
+Build the **28 reusable shadcn/ui-extended components** from the token layer (Phase-0 T-016), exactly
+per [`13-design/01-design-system.md`](../13-design/01-design-system.md) §3. Every component is
+token-driven (no one-off styling), documents variants/sizes/states, is keyboard-accessible
+(`:focus-visible` ring, ARIA, focus-trap where relevant), and **renders correctly in `.dark`**.
+This epic is a hard dependency for Epics 1.9–1.12.
+
+#### T-132a. UI primitives (Size: M · Coverage: component tests)
+- **Depends on:** T-016, T-016a, T-016b
+- **Files (in `apps/web/src/components/ui/`):** `button`, `input`, `textarea`, `select`, `combobox`,
+  `checkbox`, `radio-group`, `switch`, `number-input`, `date-picker`, `time-picker`, `form` (FormField),
+  `badge` (status pill, consumes `lib/status-pill.ts`), `card`, `alert`, `tooltip`, `avatar`,
+  `breadcrumb`, `skeleton`.
+- **Acceptance:** each matches §3 (sizes/variants/states); pill colors per §1.4; focus ring on
+  `:focus-visible`; light + `.dark` verified; a states story per component.
+
+#### T-132b. UI composites (Size: M · Coverage: component tests)
+- **Depends on:** T-132a
+- **Files:** `dialog`, `alert-dialog` (Confirm), `sheet`, `dropdown-menu`, `tabs`, `table` (DataTable:
+  toolbar search/filter/column-toggle, sortable headers, pagination, row actions, empty/loading/error
+  states + `< md` table-cards), `pagination`, `stepper`, `dropzone`, `progress`, `description-list`,
+  `empty-state` (illustration-aware), `toast` (sonner).
+- **Acceptance:** DataTable shows all states (loading skeleton ×10, empty/no-results/error with
+  illustrations); Dialog/Sheet focus-trap + Esc; Confirm has no ✕; light + `.dark` verified.
+
+---
+
 ## Epic 1.9 — Frontend UI Framework (Size: L)
 
-#### T-133. Layout & shell
-- **Size:** S · **Coverage:** N/A
-- **Depends on:** Phase-0 Next.js bootstrap
+> All screens in Epics 1.9–1.12 must match the hi-fi design ([`13-design/03-hifi-spec.md`](../13-design/03-hifi-spec.md))
+> and compose the Epic-1.8.5 components. Indonesian labels verbatim from `01-glossary.md`.
+
+#### T-133. App shell (topbar + sidebar) — per hi-fi
+- **Size:** M · **Coverage:** N/A
+- **Depends on:** T-132b
 - **Files:**
-  - `apps/web/app/layout.tsx` (modify)
-  - `apps/web/src/components/Header.tsx` (create)
-  - `apps/web/src/components/Sidebar.tsx` (create)
-  - `apps/web/src/components/UserMenu.tsx` (create)
-- **Steps:**
-  1. **Design:** persistent header (logo, user menu, logout), sidebar (navigation), main content area.
-  2. **Implement:** use shadcn/ui components (e.g., Sheet for mobile sidebar, Dropdown for user menu).
-  3. **Styling:** Tailwind, dark-mode support.
-- **Acceptance criteria:**
-  - [ ] Layout renders; header + sidebar visible on all pages.
-  - [ ] User menu shows current user name, logout button.
-  - [ ] Mobile responsive (sidebar → Sheet on small screens).
-  - [ ] lint/typecheck clean.
+  - `apps/web/app/(app)/layout.tsx` (modify)
+  - `apps/web/src/components/layout/Topbar.tsx` (create)
+  - `apps/web/src/components/layout/Sidebar.tsx` (create)
+  - `apps/web/src/components/layout/UserMenu.tsx` (create)
+  - `apps/web/src/components/layout/ThemeToggle.tsx` (create)
+- **Steps (match `03-hifi-spec.md` "App Shell"):**
+  1. Topbar **h76**, `neutral-0` bg + bottom border + subtle shadow: hamburger, brand mark (40×40,
+     radius 10) + "SWAT · DLH Surabaya"; right: **theme toggle** (uses `lib/theme.ts`), notification
+     bell (red-dot), user menu (avatar + name + role → Profil / Ubah Kata Sandi / Keluar).
+  2. **Recessed content canvas** (`neutral-100` light / `neutral-50` dark), max-w 1400, pad 2xl/xl.
+  3. Sidebar 256px: group headers (uppercase) + leaf links; **active** = `primary-50` bg/`primary-700`
+     text/3px `primary-600` left border; "Segera" pill for not-yet-built; **drawer < lg** with scrim.
+- **Acceptance:**
+  - [ ] Matches the hi-fi shell (heights, recessed canvas, active styles) in light + dark.
+  - [ ] Theme toggle persists + no flash on reload; bell + user menu work.
+  - [ ] Drawer + scrim < lg; ≥44px touch targets on coarse pointers; lint/typecheck clean.
 
 #### T-134. Navigation & permission-based UI
 - **Size:** M · **Coverage:** N/A
@@ -806,35 +840,53 @@ Deliver a production-ready operational system with complete RBAC, all master-dat
   - [ ] Data-entry role sees only data entry menus.
   - [ ] lint/typecheck clean.
 
-#### T-135. Login page
+#### T-135. Login page — per hi-fi (`LoginScreen`)
 - **Size:** M · **Coverage:** N/A
-- **Depends on:** T-102
+- **Depends on:** T-102, T-132b
 - **Files:**
   - `apps/web/app/(auth)/login/page.tsx` (create)
-  - `apps/web/src/components/LoginForm.tsx` (create)
+  - `apps/web/src/components/forms/LoginForm.tsx` (create)
   - `apps/web/src/i18n/messages/id.json` (modify)
-- **Steps:**
-  1. **Design:** form with username, password, submit button.
-  2. **Implement:** POST /api/v1/auth/login, handle errors (toast), redirect to home on success.
-  3. **Validation:** Zod schema for inputs.
-- **Acceptance criteria:**
-  - [ ] Login form renders.
-  - [ ] Valid credentials → 200, redirect to home.
-  - [ ] Invalid credentials → toast error "Invalid credentials".
-  - [ ] Form validation (required fields).
-  - [ ] lint/typecheck clean.
+- **Steps (match `03-hifi-spec.md` screen 1):**
+  1. Centered **400px** card on `neutral-50` with faint emerald radial glow; logo lockup (56px mark,
+     "SWAT", org subtitle) + `login` illustration above the card.
+  2. Username + password fields; full-width primary submit shows "Memuat…" + spinner while loading.
+  3. POST `/api/v1/auth/login`; on error show **danger Alert** "Nama pengguna dan kata sandi wajib
+     diisi." / "Nama pengguna atau kata sandi salah."; on success advance to forced-password (first
+     login) or app. Zod validation.
+- **Acceptance:** matches hi-fi (card, illustration, loading label, danger alert); valid creds → app;
+  forced-password redirect when `mustChangePassword`; lint/typecheck clean.
 
-#### T-136. Home / dashboard stub
-- **Size:** S · **Coverage:** N/A
-- **Depends on:** T-133
+#### T-136. Dashboard (Dasbor) — per hi-fi (`DashboardScreen`)
+- **Size:** M · **Coverage:** N/A
+- **Depends on:** T-133, T-132b
 - **Files:**
-  - `apps/web/app/page.tsx` (modify)
-- **Steps:**
-  1. **Design:** welcome banner, quick links to data entry / monitoring (TBD Phase 2).
-  2. **Implement:** simple layout with welcome message.
-- **Acceptance criteria:**
-  - [ ] Home page loads, shows welcome banner + quick links.
-  - [ ] lint/typecheck clean.
+  - `apps/web/app/(app)/dashboard/page.tsx` (create)
+  - `apps/web/src/components/dashboard/MetricCard.tsx` (create)
+- **Steps (match `03-hifi-spec.md` screen 4):**
+  1. `PageHead` (greeting + date + "Inisiasi Hari Ini" primary).
+  2. **4-metric grid** (Kendaraan Aktif, Haul Berjalan, BBM Hari Ini L, Tonase Hari Ini ton): icon chip
+     36px, label, value 32px/700 `tabular-nums` + unit, delta line.
+  3. **2-col** row: "Hari Transaksi Terakhir" table (rows → Haul Board) + "Perlu Perhatian" alerts.
+- **Acceptance:** matches hi-fi layout; metrics from API; rows navigate to Haul Board; light + dark.
+
+#### T-136a. Ubah Kata Sandi (forced + voluntary) — per hi-fi (`ChangePasswordScreen`)
+- **Size:** S · **Coverage:** N/A
+- **Depends on:** T-103 (change-password endpoint), T-132b
+- **Files:** `apps/web/app/(auth)/change-password/page.tsx`, `…/forms/ChangePasswordForm.tsx`.
+- **Steps:** current/new/confirm fields + **strength meter** (5 levels via `Progress`, danger→success);
+  warning Alert when forced (`mustChangePassword`). Valid = new ≥ 8 AND strength ≥ "Sedang" AND
+  confirm === new; submit disabled until valid; success toast "Kata sandi telah diperbarui."
+- **Acceptance:** matches hi-fi; forced redirect honored; gates enforced.
+
+#### T-136b. Profil — per hi-fi (`ProfileScreen`)
+- **Size:** S · **Coverage:** N/A
+- **Depends on:** T-133, T-132b
+- **Files:** `apps/web/app/(app)/profile/page.tsx`, `…/forms/ProfileForm.tsx`.
+- **Steps:** 2-col grid — left: avatar 64px + name + `@username` + role badge + photo dropzone +
+  editable name + read-only username; right: Keamanan ("Ubah Kata Sandi") + Sesi ("Keluar" destructive
+  → Confirm). PATCH `/api/v1/users/me`.
+- **Acceptance:** matches hi-fi; name/photo edit persists; logout confirm works.
 
 ---
 
@@ -1524,6 +1576,86 @@ Full requirements in [`04-migration.md`](../04-migration.md) §11.
   - [ ] Support channel live (monitored).
   - [ ] Training session scheduled + attended (or video recorded).
   - [ ] Hypercare window defined (e.g., 1 week of 24/7 support).
+
+---
+
+## Epic 1.17 — Legacy-parity additions (Size: L) — **HIGH priority (parity)**
+
+Closes the legacy feature gaps the new design surfaced (see the plan's Part 0 audit, G1–G8). These are
+**not new features** — they existed in `old_swat` — so they are HIGH priority alongside the design
+system. Backend + frontend tasks together. **Estimated ≈1–2 weeks on top of the base Phase-1 estimate;**
+if the timeline is fixed, this epic may be split into a **"Phase 1.5"** delivered immediately after MVP
+(but before declaring legacy parity / cutover, since cutover requires parity).
+
+> **Reconciliation of existing epics (no new task, just align to the hi-fi design):**
+> - **Epic 1.10 (master CRUD)** screens follow the designed forms: Kendaraan = sectioned **Dialog**
+>   (unit affixes + duplicate-plate gate); Pengemudi = **tabbed** Data Pribadi / **SIM** sub-table
+>   (expiry tinting); Spot & Rute = **tabbed** with both-or-neither lat/lng + map dropzone; Sumber
+>   Sampah = code-chip table.
+> - **Epic 1.11 (transactions)** = **Haul Board** (card-like haul rows + verification badges + "Tandai
+>   Hari Selesai") + **Trip Sheet** (right `Sheet`, type chips, contextual Catat/Verifikasi) + the
+>   dialogs with gates: T-146 covers Pickup (Stepper), Disposal (live net, gross≥tare), Refuel
+>   (approved≤requested, role-gated approve); T-147 = Verify (DescriptionList); T-144/T-145 = Reconcile.
+
+#### T-170. Reference-master CRUD: Model Kendaraan, Aplikasi Kendaraan, Bahan Bakar *(G1–G3)*
+- **Size:** M · **Coverage:** ≥80% (backend services)
+- **Depends on:** T-112 (fleet backend), T-132b
+- **Backend:** `VehicleModel`, `VehicleApplication`, `Fuel` (+ read-only `FuelCategory`) CRUD endpoints
+  under `/api/v1` (list/get/create/update/delete) with **delete-blocked-when-referenced** (409 +
+  "Tidak dapat dihapus: masih dipakai oleh {n} …"). Fuel update includes `pricePerLiter`.
+- **Frontend:** three List+Modal screens (`/vehicle-models`, `/vehicle-applications`, `/fuels`) using
+  the standard DataTable + Dialog; sidebar items in Master Data group; permission keys
+  `vehicle-model:*`, `vehicle-application:*`, `fuel:*`.
+- **Acceptance:** CRUD works; delete blocked when referenced; screens match the `02-wireframes.md`
+  reference-master pattern; ≥80% service coverage.
+
+#### T-171. Jatah Kitir bulk import ("Impor Massal") *(G6/G8)*
+- **Size:** S · **Coverage:** ≥80%
+- **Depends on:** T-142 (FuelQuota CRUD), T-132b
+- **Backend:** `POST /api/v1/fuel-quotas/bulk-import` (CSV/Excel; upsert by legacyId; validate vehicle/
+  site exist + validTo≥validFrom; return imported/duplicate/error counts + error CSV) per
+  `fuel-quota-kitir.md` §3.4/§4. **Phase 1** (not P2).
+- **Frontend:** "Impor Massal" dropzone + preview + strategy + progress + summary on the Jatah Kitir screen.
+- **Acceptance:** 10k-row import upserts correctly; error rows reported; matches design.
+
+#### T-172. Pengisian Bahan Bakar — Refuel log *(G7)*
+- **Size:** M · **Coverage:** ≥80%
+- **Depends on:** T-127–T-130 (trip recording), T-132b
+- **Backend:** `GET /api/v1/refuels` — read view over REFUEL trips (filters: date, vehicle, fuel,
+  status) with derived cost = approvedLiters × fuel.pricePerLiter and anomaly flag (approved<requested).
+- **Frontend:** `/transactions/refuel` — KPI grid + table (per `03-hifi-spec.md` screen 22); record
+  dialog auto-computes estimated cost + gates approved≤requested (reuses the trip refuel flow).
+- **Acceptance:** KPIs + table correct; anomaly rows flagged; matches design.
+
+#### T-173. Pemeriksaan Kendaraan — Vehicle inspection *(G4)*
+- **Size:** M · **Coverage:** ≥80% (incl. result-derivation unit test)
+- **Depends on:** T-016b, T-132b; **Prisma** `VehicleInspection`/`InspectionItem` (added to
+  `03-data-model.md`); seed the 12-item checklist template.
+- **Backend:** CRUD per `09-modules/inspection.md` §4; **server-derives** `result`/`passedCount`/
+  `totalCount` from items; permission keys `inspection:*`.
+- **Frontend:** `/transactions/inspections` list + **detail Sheet** (pass-count panel + 12-item
+  checklist) + create dialog (switch/segmented per item) per `03-hifi-spec.md` screen 23.
+- **Acceptance:** result derivation correct (any FAIL→FAIL; any ATTENTION→ATTENTION; else PASS); detail
+  sheet + create dialog match design; ≥80% coverage.
+
+#### T-174. Perawatan — Maintenance *(G5)*
+- **Size:** M · **Coverage:** ≥80%
+- **Depends on:** T-132b; uses existing `MaintenanceRecord`/`MaintenanceItem` (enhanced in
+  `03-data-model.md`: type, odometer, workshop, description, code).
+- **Backend:** CRUD per `09-modules/maintenance.md` §4 (nested items; `totalCost` server-computed;
+  `PATCH …/approve` permission-gated `maintenance:approve`); documentation photos via Photo flow.
+- **Frontend:** `/transactions/maintenance` — KPI grid + table + record/edit dialog (Jenis Servis/
+  Perbaikan, odometer, workshop, cost, line items + dropzone) per `03-hifi-spec.md` screen 24.
+- **Acceptance:** totalCost = Σ items; approval transition works + gated; matches design; ≥80% coverage.
+
+#### T-175. RBAC permission seed additions
+- **Size:** S · **Coverage:** N/A
+- **Depends on:** T-101 (RBAC), T-170–T-174
+- **Steps:** add permission keys to the seed (`06-auth-rbac.md`): `vehicle-model:*`,
+  `vehicle-application:*`, `fuel:*`, `inspection:*`, `maintenance:*`, `maintenance:approve`,
+  `monitoring:read` (P2), `report:read` (P3); assign to default roles. Ensure the sidebar hides items
+  the role lacks `:read` on.
+- **Acceptance:** new screens are permission-gated end-to-end; sidebar visibility correct per role.
 
 ---
 

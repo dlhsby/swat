@@ -15,9 +15,31 @@
 **Vendor:** PT. Surveyor Indonesia (landfill operations contractor) operates the TPA and the weighbridge desktop app.
 
 **New in Phase 4:**
-- Replace legacy SOAP-based endpoints (`getKitir`, `getBkosong`, `getNomorPolisiKendaraan`) with RESTful API.
+- Replace legacy SOAP-based endpoints with a RESTful API.
 - Explicit contract for kitir resolution, weighing POST, and legacy name mapping.
 - `TpaInboundLog` ingestion for reconciliation (Phase 2 reporting).
+
+### Legacy SOAP → new REST mapping (parity G13)
+
+The legacy `Soapservers.php` (NuSOAP) exposed these methods; every one maps to a modern REST endpoint
+or an existing flow — **none is dropped silently**:
+
+| Legacy SOAP method | Purpose | New REST equivalent |
+|---|---|---|
+| `getKitir` / `getBkosong` / `getNomorPolisiKendaraan` (read helpers) | Resolve kitir + tare + plate | `POST /api/v1/weighbridge/resolve-kitir` (§1.1) |
+| `insertDB` | Submit a weighing/disposal row | `POST /api/v1/weighbridge/post-weighing` (§1.2) |
+| `insertPenimbanganTerverifikasi` | Submit a **verified** weighing | `POST /api/v1/weighbridge/post-weighing` with `verified:true` (sets Trip → VERIFIED) + `TpaInboundLog` |
+| `updatePembuanganTerverifikasi` | Update a disposal with net weight after verification | `PATCH /api/v1/weighbridge/weighings/:tripId` (idempotent update of the DISPOSAL Trip + log) |
+| `insertJatahKitir` | TPA-side kitir push | `POST /api/v1/fuel-quotas` (service-account auth) — see `fuel-quota-kitir.md` §4 |
+| `getpembuangansampahbyfilter` | Query disposals by filter | `GET /api/v1/weighbridge/weighings?date=&plateNumber=&siteId=` (paginated; reads `TpaInboundLog`/`Trip`) |
+
+**Unit/name conversion (parity G14):** the legacy `konversi_si_swat` table (SI ↔ SWAT unit/name
+conversion used by the Excel weighing import) is handled here alongside `LegacyNameMap` (§3.2). Model
+`konversi_si_swat` when Phase 4 is built (kept out of the Phase-1 schema deliberately;
+see `03-data-model.md` §7). The **bulk Excel weighing upload** ("Upload Data Penimbangan",
+legacy `transaksi/importexcel`) is a **Phase 4** ingest path that writes `TpaInboundLog` (and `Trip`
+where resolvable) using these conversions — distinct from the Phase-1 **kitir** bulk import
+(`fuel-quota-kitir.md`).
 
 ---
 

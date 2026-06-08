@@ -6,6 +6,18 @@ The Monitoring module provides real-time operational dashboards for management a
 
 **Scope:** Dashboards only (data visualization). Reporting/export covered in Phase 3.
 
+> **Legacy-parity notes (design-ready; build in Phase 2):**
+> - **Source-type split (Total / Dinas / Swasta)** — legacy had separate tonnage dashboards for
+>   government (`Dinas`) vs private (`Swasta`) sources (`monitoring/tonase`, `tonaseswasta`,
+>   `tonasesemua`). In the new model these are **filters on `WasteSource.code`** (`D` = Dinas,
+>   `S` = Swasta; see `01-glossary.md` §3), exposed as a **Total / Dinas / Swasta toggle** on the
+>   "Volume per Hari" dashboard. No new entity required.
+> - **Rekapitulasi / monthly disposal** (legacy `transaksi/rekapitulasi`, `pembuangansampahbulantahun`)
+>   maps to the monthly tonnage aggregates here (Phase 2) + the report exports in Phase 3
+>   (`reports.md`) — not a separate module.
+> - **Charts:** build with **Recharts** using the prototype's data shapes; the dependency-free SVG
+>   charts in `designs/.../prototype_src/charts.jsx` are the visual contract, not the implementation.
+
 ---
 
 ## Data Sources

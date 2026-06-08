@@ -352,29 +352,69 @@
   - [ ] `pnpm --filter=web dev` starts on port 3001 (default Next.js dev port).
   - [ ] `http://localhost:3001` loads and displays home page stub.
 
-#### T-016. Tailwind + shadcn/ui (Size: S · Coverage: N/A)
+#### T-016. Tailwind + shadcn/ui + SWAT design tokens (Size: M · Coverage: N/A)
 - **Depends on:** T-015
+- **Design source of truth:** [`13-design/01-design-system.md`](../13-design/01-design-system.md)
+  and `designs/design_handoff_swat_webapp/swat-tokens.css` (**port verbatim**).
 - **Files:**
-  - `apps/web/tailwind.config.ts` (create) — Tailwind config with shadcn/ui preset.
-  - `apps/web/postcss.config.js` (create) — PostCSS config.
-  - `apps/web/src/app/globals.css` (create) — base Tailwind directives + shadcn/ui styles.
-  - `apps/web/components.json` (create) — shadcn/ui config (alias for @/components).
-  - `apps/web/package.json` (modify) — add `tailwindcss`, `postcss`, `autoprefixer`, `class-variance-authority`, `clsx`, `tailwind-merge`.
-  - `apps/web/src/components/ui/button.tsx` (create, via shadcn/ui) — sample Button component.
+  - `apps/web/tailwind.config.ts` (create) — **the exact config from `01-design-system.md` §5.1**
+    (`darkMode:['class']`; primary emerald ramp `#ecfdf5…#022c22`; neutral/success/warning/danger/info;
+    shadcn HSL aliases; fontFamily sans=Plus Jakarta Sans, mono=JetBrains Mono; fontSize h1…tiny;
+    spacing xs…3xl; borderRadius; boxShadow subtle/sm/base/lg; zIndex ladder; screens sm…2xl).
+  - `apps/web/postcss.config.js` (create).
+  - `apps/web/src/app/globals.css` (create) — **port `swat-tokens.css` verbatim**: `:root` token vars
+    + the **`.dark { … }`** block + `:focus-visible` ring + shadcn HSL `:root`/`.dark`. Add `@tailwind`
+    directives. Optionally inline the reference utilities from `swat-components.css` (`.mono`,`.tnum`,
+    responsive `.tcards`/`.bottom-nav`/`.action-bar`/`.app-banner`).
+  - `apps/web/src/app/layout.tsx` (modify) — load **Plus Jakarta Sans + JetBrains Mono** (next/font or
+    self-host); add the **pre-paint theme script** in `<head>` (reads `localStorage('swat-theme')`,
+    sets `.dark` before paint) and `<meta name="theme-color" content="#0f172a">`.
+  - `apps/web/src/lib/theme.ts` (create) — theme controller: get/set/toggle, persist to
+    `localStorage('swat-theme')`, sync `prefers-color-scheme` + `<meta theme-color>`.
+  - `apps/web/src/lib/cn.ts` (create) — `clsx` + `tailwind-merge` helper.
+  - `apps/web/components.json` (create) — shadcn/ui config (alias `@/components`).
+  - `apps/web/package.json` (modify) — `tailwindcss`,`postcss`,`autoprefixer`,
+    `class-variance-authority`,`clsx`,`tailwind-merge`,`lucide-react`,`next-themes`(optional).
+  - `apps/web/src/app/(dev)/tokens/page.tsx` (create) — a **token smoke screen** rendering swatches,
+    the type scale, shadows, and a few primitives, with a light/dark toggle (dev-only; remove or gate later).
 - **Steps:**
-  1. Install Tailwind CSS: `pnpm add -D tailwindcss postcss autoprefixer`.
-  2. Create `tailwind.config.ts` with shadcn/ui preset and theme (colors, fonts from Tailwind defaults).
-  3. Create `postcss.config.js` with tailwindcss and autoprefixer plugins.
-  4. Create `src/app/globals.css` with `@tailwind` directives and shadcn/ui base styles.
-  5. Install shadcn/ui: `pnpm add class-variance-authority clsx tailwind-merge`.
-  6. Create `components.json` with `alias: "@/components"`.
-  7. Add shadcn/ui Button, Card, Input, Select, Table, Badge components via `pnpm shadcn-ui add` (or manually copy from shadcn docs).
-  8. Import Button in layout or page and test styling.
+  1. Install Tailwind + shadcn deps + lucide-react.
+  2. Drop in `tailwind.config.ts` and `globals.css` **exactly** from the design system / `swat-tokens.css`.
+  3. Wire the fonts + pre-paint theme script + `lib/theme.ts`.
+  4. `components.json` with alias `@/components`; init shadcn.
+  5. Build the token smoke screen and verify swatches/type/shadows in **light and `.dark`**.
 - **Acceptance criteria:**
-  - [ ] Tailwind CSS is configured and working (classes generate correctly).
-  - [ ] shadcn/ui Button component is importable and renders styled.
-  - [ ] `pnpm --filter=web build` passes.
-  - [ ] Home page displays with Tailwind styling.
+  - [ ] `globals.css` token values are **byte-identical** to `swat-tokens.css` (`:root` + `.dark`).
+  - [ ] Emerald ramp, primary-700 fills, focus-ring, and z-index ladder match `01-design-system.md`.
+  - [ ] Toggling `.dark` flips the smoke screen correctly with no flash on reload.
+  - [ ] Plus Jakarta Sans + JetBrains Mono load; `tabular-nums` available.
+  - [ ] `pnpm --filter=web build` passes; `grep` finds no stale `#f0fdf4`.
+
+#### T-016a. Brand & spot-illustration assets (Size: S · Coverage: N/A)
+- **Depends on:** T-016
+- **Files:**
+  - `apps/web/public/brand/` (create) — copy `swat-mark.svg`, `swat-mark-dark.svg`, `swat-mark-mono.svg`
+    from `designs/design_handoff_swat_webapp/assets/`.
+  - `apps/web/public/illustrations/` (create) — copy all 11 SVGs from `assets/illustrations/`.
+  - `apps/web/src/components/illustrations/Illustration.tsx` (create) — `<Illustration name size/>`,
+    `aria-hidden`, dark-mode filter; resolves from `/illustrations/`.
+  - `apps/web/src/components/illustrations/Icon.tsx` (create) — thin wrapper over `lucide-react`
+    (name→component map per `01-design-system.md` §Assets).
+- **Acceptance:** illustrations + brand marks render; decorative (`aria-hidden`); dark filter applied.
+
+#### T-016b. id-ID formatters + status→pill map (Size: S · Coverage: ≥90%)
+- **Depends on:** T-016
+- **Rationale:** used by every screen — build early with unit tests.
+- **Files:**
+  - `apps/web/src/lib/format.ts` (create) — `formatRupiah`, `formatDateForm`(`dd/MM/yyyy`),
+    `formatDateDisplay`(`d MMM yyyy`, id), `formatTime`(`HH:mm:ss`), `formatWeight`(kg),
+    `formatDistance`(km), `formatFuel`(`L`, 2dp), `formatTonnage`(ton) — id-ID separators, WIB.
+  - `apps/web/src/lib/status-pill.ts` (create) — enum→{label, badgeVariant} map mirroring
+    `01-design-system.md` §1.4 (Trip/Day/FuelQuota/Vehicle/Maintenance/Inspection/Employment/License/
+    Refuel/Report/User).
+  - `apps/web/src/lib/__tests__/format.test.ts` (create) — unit tests for every formatter + pill mapping.
+- **Acceptance:** ≥90% coverage; examples match the design system table (`Rp 8.500.000`, `15 Mar 2026`,
+  `45,50 L`, etc.); every status enum resolves to the correct label + variant.
 
 #### T-017. next-intl (Indonesian) setup (Size: S · Coverage: N/A)
 - **Depends on:** T-015
@@ -682,7 +722,9 @@
 | T-013 | 0.3 | Prisma init & schema | M |
 | T-014 | 0.3 | First migration, seed, and partitioning | M |
 | T-015 | 0.4 | Next.js app scaffold | S |
-| T-016 | 0.4 | Tailwind + shadcn/ui | S |
+| T-016 | 0.4 | Tailwind + shadcn/ui + SWAT design tokens (port `swat-tokens.css` verbatim, light + dark) | M |
+| T-016a | 0.4 | Brand & spot-illustration assets | S |
+| T-016b | 0.4 | id-ID formatters + status→pill map (≥90% cov) | S |
 | T-017 | 0.4 | next-intl (Indonesian) setup | S |
 | T-018 | 0.4 | PWA manifest & service worker skeleton | S |
 | T-019 | 0.4 | API client wrapper | S |

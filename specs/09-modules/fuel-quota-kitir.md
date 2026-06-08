@@ -11,6 +11,12 @@ The FuelQuota (Jatah Kitir) is an **authorization record** that permits a specif
 - **Weighbridge integration:** Phase 4 — the TPA desktop app resolves quotas by code or vehicle plate number.
 - **Volume & lifecycle:** Legacy system has ~3.3M historical quota rows; new system supports bulk issuance, with indexing on hot-path lookups.
 
+> **Phase:** Kitir **issuance CRUD + bulk import ("Impor Massal")** is **Phase 1** (it lives under
+> *Penjadwalan* in the hi-fi IA and must exist before the weighbridge can consume kitir). The
+> **weighbridge resolution API** that *consumes* kitir is **Phase 4** (`integration-weighbridge.md`).
+> This supersedes any earlier "bulk import = Phase 2" note below — bulk import ships in Phase 1.
+> Design: `13-design/03-hifi-spec.md` screen "Jatah Kitir"; wireframe in `02-wireframes.md`.
+
 ---
 
 ## 1. Entities
