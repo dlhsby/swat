@@ -80,3 +80,27 @@ pnpm --filter @swat/backend run migrate:verify
 - **Transactional history** (`trayek`/`transaksiangkutsampah`/…) is empty in the
   sample snapshot and is the live-only heavy path: stream it with
   `keysetBatches` + a resumable watermark when running against production.
+
+## Deferred — T-155 transactional bulk load (revisit with live data)
+
+The transactional history loader is **intentionally not implemented yet**: those
+tables are empty in the master-data-only snapshot, so it cannot be written or
+verified against real data in this environment. The reusable building blocks are
+already in place and unit-tested — `keysetBatches` + `readWatermark`/`writeWatermark`
+(`lib/pagination.ts`), the `mapTripStatus`/`mapDayStatus` enum maps, and the
+PK-preserve identity strategy. See the `TODO(T-155 …)` block in `migrate-legacy.ts`.
+
+**When the live DB is available, implement under a `--include-transactions` flag:**
+
+1. `trayek → Trip`, `transaksiangkutsampah → Haul`,
+   `detailtransaksiangkutsampah → HaulAssignment`, `sampahmasuktpa → TpaInboundLog`.
+2. Stream **oldest → newest** (`ORDER BY` the operation date) in 10k-row keyset
+   batches into the **pre-created monthly partitions**; **denormalize
+   `operationDate`** onto Haul/HaulAssignment/Trip from the owning
+   `TransactionDay.date`.
+3. Persist a per-table watermark so `--resume` continues after an interruption;
+   `legacyId` guard keeps it idempotent.
+4. Build indexes / `ANALYZE` per partition after the bulk load; add **per-year**
+   reconciliation rows to `verify-migration.ts` (not just per-table).
+
+Spec: [`specs/04-migration.md`](../../../../specs/04-migration.md) §3.1.

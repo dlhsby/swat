@@ -8,7 +8,7 @@
  * Run (operator, on-prem — needs legacy MySQL, the image filesystem, and MinIO/S3):
  *   LEGACY_IMAGE_ROOT=/srv/old_swat/uploads S3_* … pnpm --filter @swat/backend run migrate:images
  */
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -96,14 +96,9 @@ async function migrateOne(
   if (!isSupportedImage(ref.legacyPath)) {
     return 'unsupported';
   }
-  // Resumable: skip if a Photo for this owner already exists.
-  const existing = await prisma.photo.findFirst({
-    where: { ownerType: ref.ownerType, ownerId: ref.ownerId },
-    select: { id: true },
-  });
-  if (existing) {
-    return 'skipped';
-  }
+  // Read first so we can key resumability on the file's checksum — an owner may
+  // legitimately have many photos (dokumentasikendaraan/dokumentasitrayek), so a
+  // skip keyed only on (ownerType, ownerId) would drop every photo after the first.
   let bytes: Buffer;
   try {
     bytes = await readFile(join(imageRoot, ref.legacyPath));
@@ -112,7 +107,15 @@ async function migrateOne(
     return 'orphan';
   }
   const checksum = createHash('sha256').update(bytes).digest('hex');
-  const key = objectKeyFor(ref.ownerType, ref.ownerId, ref.legacyPath, randomKey());
+  // Resumable + idempotent: skip if this exact file already migrated for this owner.
+  const existing = await prisma.photo.findFirst({
+    where: { ownerType: ref.ownerType, ownerId: ref.ownerId, checksum },
+    select: { id: true },
+  });
+  if (existing) {
+    return 'skipped';
+  }
+  const key = objectKeyFor(ref.ownerType, ref.ownerId, ref.legacyPath, randomUUID());
   const contentType = contentTypeForPath(ref.legacyPath);
   await s3.client.send(
     new PutObjectCommand({ Bucket: s3.bucket, Key: key, Body: bytes, ContentType: contentType }),
@@ -128,11 +131,6 @@ async function migrateOne(
     },
   });
   return 'uploaded';
-}
-
-function randomKey(): string {
-  // crypto.randomUUID lazily to keep the import surface small.
-  return createHash('sha1').update(`${Date.now()}-${Math.random()}`).digest('hex').slice(0, 12);
 }
 
 /** Run tasks with a bounded worker pool (no unbounded Promise.all over millions). */

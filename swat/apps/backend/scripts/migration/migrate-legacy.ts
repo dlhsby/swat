@@ -136,9 +136,11 @@ async function migrateMasterData(): Promise<void> {
     await prisma.site.createMany({ data: sites.map((r) => mapSite(r, NOW)), skipDuplicates: true });
     log(`Site: ${sites.length}`);
 
-    // Routes — dedupe on (origin, destination, category); remember the remap so
-    // trip templates that referenced a dropped duplicate point at the kept route.
-    const routes = await query<LegacyRoute>(conn, 'SELECT * FROM rute');
+    // Routes — dedupe on (origin, destination, category). ORDER BY RUTE_ID makes
+    // "first occurrence wins" deterministic AND identical to the remap built in
+    // migrateScheduling (same ordered query), so no TripTemplate can point at a
+    // dropped duplicate.
+    const routes = await query<LegacyRoute>(conn, 'SELECT * FROM rute ORDER BY RUTE_ID');
     const { kept, dropped } = dedupeRoutes(routes, (r) =>
       routeDedupeKey(r.SPOT_ASAL_ID, r.SPOT_TUJUAN_ID, r.KATEGORIRUTE_ID),
     );
@@ -299,8 +301,9 @@ async function migrateScheduling(sysUser: number): Promise<void> {
     }
     log(`CrewSchedule: ${schedules.length}`);
 
-    // Build the route-dedupe remap so templates point at the kept route id.
-    const routes = await query<LegacyRoute>(conn, 'SELECT * FROM rute');
+    // Build the route-dedupe remap so templates point at the kept route id. Same
+    // ORDER BY RUTE_ID as migrateMasterData so "kept" is identical in both passes.
+    const routes = await query<LegacyRoute>(conn, 'SELECT * FROM rute ORDER BY RUTE_ID');
     const keptByKey = new Map<string, number>();
     const routeRemap = new Map<number, number>();
     for (const r of routes) {
@@ -391,12 +394,20 @@ async function main(): Promise<void> {
   await migrateScheduling(sysUser);
   await migrateAggregates(sysUser);
 
-  // The transactional history (trayek/transaksiangkutsampah/detail/sampahmasuktpa)
-  // is empty in the snapshot and is the live-only heavy path: stream it with
-  // keysetBatches + a resumable watermark when running against the live DB
-  // (--include-transactions). Left as the operator's on-prem step.
+  // TODO(T-155 — revisit with live data): implement the transactional history
+  // load (trayek→Trip, transaksiangkutsampah→Haul, detailtransaksiangkutsampah→
+  // HaulAssignment, sampahmasuktpa→TpaInboundLog). It is empty in the sample
+  // snapshot and is the live-only heavy path, so it cannot be written/verified
+  // against real data here. The building blocks are in place and unit-tested —
+  // keysetBatches + readWatermark/writeWatermark (lib/pagination.ts), the enum
+  // maps, and the PK-preserve strategy. When the live DB is available:
+  //   1. migrate oldest→newest (ORDER BY operationDate) into the pre-created
+  //      monthly partitions; denormalize operationDate from TransactionDay.date.
+  //   2. batch 10k rows; persist a per-table watermark for --resume.
+  //   3. reconcile per-year (not just per-table) in verify-migration.ts.
+  // See specs/04-migration.md §3.1 and scripts/migration/README.md §Transactions.
   log(
-    'Master/auth/scheduling/aggregate migration complete. Transactional history is the live-only streamed phase (see README §Transactions).',
+    'Master/auth/scheduling/aggregate migration complete. Transactional history is the live-only streamed phase — see TODO(T-155) + README §Transactions.',
   );
   await prisma.$disconnect();
 }
