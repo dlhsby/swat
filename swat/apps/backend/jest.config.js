@@ -2,6 +2,9 @@
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: 'src',
+  // Unit specs live under src/ (app logic) and ../scripts/ (migration tooling,
+  // coverage-exempt — collectCoverageFrom below is scoped to src/).
+  roots: ['<rootDir>', '<rootDir>/../scripts'],
   setupFiles: ['<rootDir>/../test/jest.setup.ts'],
   testRegex: '.*\\.spec\\.ts$',
   transform: {
