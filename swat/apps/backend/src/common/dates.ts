@@ -24,3 +24,17 @@ export function parseTimeOnly(value: string): Date {
 export function formatTimeOnly(value: Date): string {
   return value.toISOString().slice(11, 16);
 }
+
+/** Today's calendar date as a UTC-midnight Date for a `@db.Date` column. */
+export function todayDateOnly(): Date {
+  return parseDateOnly(new Date().toISOString().slice(0, 10));
+}
+
+/**
+ * Combine a `@db.Date` date with a `@db.Time` time into a single UTC
+ * `Timestamptz` — used to anchor a schedule's target times to a given
+ * operation date.
+ */
+export function combineDateAndTime(date: Date, time: Date): Date {
+  return new Date(`${formatDateOnly(date)}T${formatTimeOnly(time)}:00.000Z`);
+}

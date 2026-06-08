@@ -1,0 +1,258 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+
+import { type SessionUser } from '../../../common/auth/session.types';
+
+import { type HaulAssignmentsRepository } from './haul-assignments.repository';
+import { HaulAssignmentsService } from './haul-assignments.service';
+
+const USER: SessionUser = { id: 9, username: 'op', roleId: 4, mustChangePassword: false };
+
+function buildAssignment(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: 1000n,
+    haulId: 100n,
+    driverId: 3,
+    driver: { id: 3, name: 'Budi' },
+    crewScheduleId: 1,
+    status: 'IN_PROGRESS',
+    operationDate: new Date('2026-06-08T00:00:00Z'),
+    departTargetOdometer: 12000,
+    departActualOdometer: null,
+    returnTargetOdometer: 12000,
+    returnActualOdometer: null,
+    departTargetTime: new Date('2026-06-08T05:00:00Z'),
+    departActualTime: null,
+    returnTargetTime: new Date('2026-06-08T14:00:00Z'),
+    returnActualTime: null,
+    createdAt: new Date('2026-06-08T03:00:00Z'),
+    updatedAt: new Date('2026-06-08T03:00:00Z'),
+    trips: [],
+    haul: {
+      id: 100n,
+      status: 'IN_PROGRESS',
+      vehicleId: 7,
+      vehicle: { id: 7, currentOdometer: 12000 },
+      assignments: [{ id: 1000n, status: 'IN_PROGRESS' }],
+    },
+    ...overrides,
+  };
+}
+
+describe('HaulAssignmentsService', () => {
+  let repo: {
+    findForRecording: jest.Mock;
+    recordDepart: jest.Mock;
+    recordReturn: jest.Mock;
+    listTrips: jest.Mock;
+  };
+  let service: HaulAssignmentsService;
+
+  beforeEach(() => {
+    repo = {
+      findForRecording: jest.fn(),
+      recordDepart: jest.fn((_id, data) => Promise.resolve(buildAssignment(data))),
+      recordReturn: jest.fn(({ data }) => Promise.resolve(buildAssignment(data))),
+      listTrips: jest.fn().mockResolvedValue([]),
+    };
+    service = new HaulAssignmentsService(repo as unknown as HaulAssignmentsRepository);
+  });
+
+  describe('recordDepart', () => {
+    it('404s an unknown assignment', async () => {
+      repo.findForRecording.mockResolvedValue(null);
+      await expect(
+        service.recordDepart(
+          '1',
+          { actualOdometer: 12000, actualTime: '2026-06-08T05:30:00Z' },
+          USER,
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('400s a bad bigint id', async () => {
+      await expect(
+        service.recordDepart(
+          'abc',
+          { actualOdometer: 1, actualTime: '2026-06-08T05:30:00Z' },
+          USER,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects an odometer below the vehicle current odometer', async () => {
+      repo.findForRecording.mockResolvedValue(buildAssignment());
+      await expect(
+        service.recordDepart(
+          '1000',
+          { actualOdometer: 11999, actualTime: '2026-06-08T05:30:00Z' },
+          USER,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects departing an already-done assignment', async () => {
+      repo.findForRecording.mockResolvedValue(buildAssignment({ status: 'DONE' }));
+      await expect(
+        service.recordDepart(
+          '1000',
+          { actualOdometer: 12010, actualTime: '2026-06-08T05:30:00Z' },
+          USER,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('records the departure odometer and time', async () => {
+      repo.findForRecording.mockResolvedValue(buildAssignment());
+      await service.recordDepart(
+        '1000',
+        { actualOdometer: 12010, actualTime: '2026-06-08T05:30:00.000Z' },
+        USER,
+      );
+      expect(repo.recordDepart).toHaveBeenCalledWith(
+        1000n,
+        expect.objectContaining({
+          departActualOdometer: 12010,
+          departActualTime: new Date('2026-06-08T05:30:00.000Z'),
+        }),
+      );
+    });
+  });
+
+  describe('recordReturn', () => {
+    const departed = (overrides: Record<string, unknown> = {}): Record<string, unknown> =>
+      buildAssignment({
+        departActualOdometer: 12010,
+        departActualTime: new Date('2026-06-08T05:30:00Z'),
+        ...overrides,
+      });
+
+    it('requires departure to be recorded first', async () => {
+      repo.findForRecording.mockResolvedValue(buildAssignment());
+      await expect(
+        service.recordReturn(
+          '1000',
+          { actualOdometer: 12100, actualTime: '2026-06-08T14:30:00Z' },
+          USER,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects a return odometer below the departure odometer', async () => {
+      repo.findForRecording.mockResolvedValue(departed());
+      await expect(
+        service.recordReturn(
+          '1000',
+          { actualOdometer: 12009, actualTime: '2026-06-08T14:30:00Z' },
+          USER,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects a return time before the departure time', async () => {
+      repo.findForRecording.mockResolvedValue(departed());
+      await expect(
+        service.recordReturn(
+          '1000',
+          { actualOdometer: 12100, actualTime: '2026-06-08T05:00:00Z' },
+          USER,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('closes the assignment and haul when it is the last open one', async () => {
+      repo.findForRecording.mockResolvedValue(departed());
+      await service.recordReturn(
+        '1000',
+        { actualOdometer: 12100, actualTime: '2026-06-08T14:30:00.000Z' },
+        USER,
+      );
+      expect(repo.recordReturn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 1000n,
+          haulId: 100n,
+          vehicleId: 7,
+          odometer: 12100,
+          closeHaul: true,
+        }),
+      );
+    });
+
+    it('rejects returning an already-done assignment', async () => {
+      repo.findForRecording.mockResolvedValue(departed({ status: 'DONE' }));
+      await expect(
+        service.recordReturn(
+          '1000',
+          { actualOdometer: 12100, actualTime: '2026-06-08T14:30:00Z' },
+          USER,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('keeps the haul open when a sibling assignment is still in progress', async () => {
+      repo.findForRecording.mockResolvedValue(
+        departed({
+          haul: {
+            id: 100n,
+            status: 'IN_PROGRESS',
+            vehicleId: 7,
+            vehicle: { id: 7, currentOdometer: 12010 },
+            assignments: [
+              { id: 1000n, status: 'IN_PROGRESS' },
+              { id: 1001n, status: 'IN_PROGRESS' },
+            ],
+          },
+        }),
+      );
+      await service.recordReturn(
+        '1000',
+        { actualOdometer: 12100, actualTime: '2026-06-08T14:30:00.000Z' },
+        USER,
+      );
+      expect(repo.recordReturn).toHaveBeenCalledWith(expect.objectContaining({ closeHaul: false }));
+    });
+  });
+
+  describe('listTrips', () => {
+    it('returns the assignment trips mapped to DTOs', async () => {
+      repo.findForRecording.mockResolvedValue(buildAssignment());
+      repo.listTrips.mockResolvedValue([
+        {
+          id: 10000n,
+          haulAssignmentId: 1000n,
+          routeId: 4,
+          route: {
+            id: 4,
+            category: 'DISPOSAL',
+            originSite: { name: 'TPS A' },
+            destinationSite: { name: 'TPA B' },
+          },
+          recordedBy: null,
+          verifiedBy: null,
+          status: 'IN_PROGRESS',
+          name: 'DISPOSAL: TPS A → TPA B',
+          operationDate: new Date('2026-06-08T00:00:00Z'),
+          targetTime: null,
+          actualTime: null,
+          targetOdometer: 12000,
+          actualOdometer: 0,
+          tareWeight: 8000,
+          grossWeight: null,
+          netWeight: null,
+          wasteVolume: null,
+          fuelRequestedLiters: null,
+          fuelApprovedLiters: null,
+          recordedById: null,
+          verifiedById: null,
+          verifiedAt: null,
+          realizationEntryAt: null,
+          createdAt: new Date('2026-06-08T03:00:00Z'),
+          updatedAt: new Date('2026-06-08T03:00:00Z'),
+        },
+      ]);
+      const trips = await service.listTrips('1000');
+      expect(trips).toHaveLength(1);
+      expect(trips[0]).toMatchObject({ id: '10000', routeCategory: 'DISPOSAL' });
+      expect(repo.listTrips).toHaveBeenCalledWith(1000n);
+    });
+  });
+});

@@ -123,6 +123,10 @@ const PERMISSION_KEYS: readonly string[] = [
   'trip:record-disposal',
   'trip:record-fuel',
   'trip:verify',
+  // Approve a fuel amount above what was requested.
+  'fuel:approve',
+  // Edit a trip after it has been verified (locked) — supervisory override.
+  'trip:override',
   // Vehicle operations
   'inspection:read',
   'inspection:create',
@@ -151,6 +155,7 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   delete: 'delete',
   manage: 'administer',
   verify: 'verify',
+  override: 'override verification for',
   export: 'export',
   generate: 'generate',
   approve: 'approve',
@@ -194,9 +199,11 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
       '*:create',
       '*:update',
       'trip:verify',
+      'trip:override',
       'trip:record-pickup',
       'trip:record-disposal',
       'trip:record-fuel',
+      'fuel:approve',
       'transaction-day:manage',
     ],
   },

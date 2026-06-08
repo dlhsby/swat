@@ -4,3 +4,6 @@ export * from './vehicle.schema';
 export * from './driver.schema';
 export * from './site.schema';
 export * from './route.schema';
+export * from './transaction-day.schema';
+export * from './haul-assignment.schema';
+export * from './trip.schema';
