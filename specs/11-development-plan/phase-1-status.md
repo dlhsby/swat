@@ -1,8 +1,8 @@
 # Phase 1 — MVP · Implementation Status
 
-**Status:** 🚧 **IN PROGRESS** — Milestones **M1 (Auth & RBAC)**, **M2 (backend master data)** and
-**M3 (design-system component library)** complete and on `main` under green gates; **M4–M8** not yet
-started.
+**Status:** 🚧 **IN PROGRESS** — Milestones **M1 (Auth & RBAC)**, **M2 (backend master data)**,
+**M3 (design-system component library)** and **M4 (transactions backend)** complete and on `main`
+under green gates; **M5–M8** not yet started.
 
 > Build-side progress record for [`phase-1.md`](./phase-1.md), sequenced by
 > [`phase-1-plan.md`](./phase-1-plan.md). Where this diverges from the spec, the divergence is
@@ -12,10 +12,10 @@ started.
 |---|---|
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
-| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) — all on `main` |
+| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
-| **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · class-validator DTOs |
+| **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
 ---
 
@@ -26,8 +26,8 @@ started.
 | **M1** | 1.1 Auth & RBAC | ✅ Complete |
 | **M2** | 1.2–1.6 backend master data | ✅ Complete |
 | **M3** | 1.8.5 component library (34 components) | ✅ Complete |
-| **M4** | 1.7–1.8 transactions backend | ⏳ Not started — **next** |
-| **M5** | 1.9–1.12 frontend | ⏳ Not started |
+| **M4** | 1.7–1.8 transactions backend | ✅ Complete |
+| **M5** | 1.9–1.12 frontend | ⏳ Not started — **next** |
 | **M6** | 1.17 legacy parity | ⏳ Not started |
 | **M7** | 1.13 migration scripts (dry-run) | ⏳ Not started |
 | **M8** | 1.14–1.16 hardening / docs / cutover | ⏳ Not started |
@@ -38,12 +38,15 @@ started.
 
 | Gate | Command | Result |
 |------|---------|--------|
-| Lint | `pnpm lint` | ✅ 0 warnings/errors |
+| Lint | `pnpm lint` | ✅ 0 warnings/errors (all 5 packages) |
 | Typecheck | `pnpm typecheck` | ✅ 0 errors |
-| Unit tests | `pnpm --filter @swat/backend test` | ✅ **222 tests, 32 suites** |
-| Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ **96.6% stmts · 80.7% branch · 96.3% funcs · 96.5% lines** |
-| E2E (live stack) | `pnpm --filter @swat/backend test:e2e` | ✅ auth + master-data suites pass against Docker Postgres/Redis |
-| Build | `pnpm build` | ✅ |
+| Unit tests | `pnpm --filter @swat/backend test` | ✅ **270 tests, 36 suites** (+45 for M4) |
+| Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ **96.5% stmts · 81.5% branch · 95.3% funcs**; every M4 transactions service at **100% stmts/funcs** (≥90% trip-path gate met) |
+| Web tests | `pnpm --filter @swat/web test` | ✅ **78 tests, 7 suites** |
+| Schemas tests | `pnpm --filter @swat/schemas test` | ✅ **17 tests** |
+| E2E (live stack) | `pnpm --filter @swat/backend test:e2e` | ✅ auth + master-data pass; transactions e2e written, **deferred** (needs Docker + synthetic seed) |
+| Build | `pnpm build` | ✅ 4/4 |
+| Prisma | `prisma validate` | ✅ schema valid |
 
 **Coverage notes:** `auth.service.ts`, `login-throttle.service.ts`, `auth.guard.ts`,
 `role-permissions.service.ts` all at **100%** (auth-critical, spec gate ≥95% met). Service layer
@@ -55,9 +58,10 @@ the layer that holds the rules.
 
 ## Surface delivered
 
-- **20 controllers · 84 endpoints** (32 GET · 21 POST · 16 PATCH · 15 DELETE), all behind
+- **23 controllers · 94 endpoints** (master data + transactions), all behind
   `AuthGuard` → `PermissionsGuard`, validated by the global pipe, wrapped in the `ApiResponse<T>`
-  envelope, Indonesian error messages.
+  envelope, Indonesian error messages. M4 added the transaction routes (transaction-days,
+  haul-assignments depart/return, trip record/verify/read).
 - **Postman collection** (`apps/backend/postman/`): 74 requests / 7 folders + local environment,
   cookie-auth, id-capturing POSTs. Regenerate with `node apps/backend/postman/generate.mjs`.
 
@@ -67,14 +71,14 @@ the layer that holds the rules.
 
 | Task | Title | Status | Notes |
 |------|-------|--------|-------|
-| T-101 | User & role models (schema verification) | ✅ | Schema/migrations already applied in Phase 0; verification-only. Seed: admin (Argon2id), 92 permissions, 6 roles. |
+| T-101 | User & role models (schema verification) | ✅ | Schema/migrations already applied in Phase 0; verification-only. Seed: admin (Argon2id), 94 permissions, 6 roles. |
 | T-102 | `POST /auth/login` | ✅ | Argon2id verify; generic "Kredensial tidak valid"; rate-limit **5/IP/15 min → 429** (`LoginThrottleService`, Redis-backed); writes `AuthAuditLog`. |
 | T-103 | `POST /auth/logout` | ✅ | Destroys session, clears `swat.sid` cookie; audit-logged. |
 | T-104 | `GET /auth/me` | ✅ | Returns user + role + flattened permission keys + `mustChangePassword`. |
 | T-105 | Permission guard & `@RequirePermissions` / `@CurrentUser` | ✅ | Global `AuthGuard` then `PermissionsGuard` (APP_GUARD). Wildcard match `*:*`, `resource:*`, exact. Role→permission keys cached in Redis (300s TTL) via `RolePermissionsService`. |
 | T-106 | User CRUD | ✅ | `modules/users`; Argon2id on create; admin force-reset (`POST /auth/force-reset/:id`) + forced change-password; `PATCH /auth/change-password` clears flag. |
 | T-107 | Role CRUD | ✅ | `modules/roles`; M2M permission upsert; cache invalidation on permission change; delete-blocked-when-assigned → 409. `GET /permissions` read endpoint. |
-| T-108 | Permission seeding | ✅ | 92 permission keys, 6 roles seeded (verified Phase 0). |
+| T-108 | Permission seeding | ✅ | 94 permission keys (M4 added `fuel:approve` + `trip:override`), 6 roles seeded (verified Phase 0). |
 
 **Session infra:** `express-session` + `connect-redis@9` on a dedicated DI-managed **node-redis**
 client (`SessionRedis`, quit on shutdown — distinct from the cache layer's ioredis). Cookie `swat.sid`:
@@ -129,6 +133,13 @@ class-validator DTOs (Zod `@swat/schemas` reserved for frontend sharing).
    the backend uses class-validator + the global validation pipe (Phase-0 convention).
 4. **Coverage scoped to the logic layer** — controllers/repositories excluded from
    `collectCoverageFrom` (HTTP/Prisma wiring, e2e-covered) to keep the metric honest on business logic.
+5. **`trip:override`, not `trip:verify:override`** (M4) — the spec names a three-segment override key,
+   but the permission matcher is `resource:action` (two segments), under which `trip:verify:override`
+   collapses to `trip:verify`. The concrete key for editing a verified trip is therefore the
+   two-segment **`trip:override`**. Likewise the REFUEL over-approval gate uses **`fuel:approve`**.
+6. **Per-category trip permission enforced in the service** (M4) — the `PUT /trips/:id` permission
+   depends on the trip's route category, which a static `@RequirePermissions` decorator can't express;
+   the service resolves and enforces the right key against the caller's cached grants instead.
 
 ---
 
@@ -142,8 +153,8 @@ pnpm install
 pnpm --filter @swat/backend prisma:deploy               # migrate deploy (NOT migrate dev)
 pnpm --filter @swat/backend prisma:seed                 # admin / ChangeMe!2026
 pnpm lint && pnpm typecheck
-pnpm --filter @swat/backend test -- --coverage          # 222 unit tests + coverage gate
-pnpm --filter @swat/backend test:e2e                    # live auth + master-data e2e
+pnpm --filter @swat/backend test -- --coverage          # 270 unit tests + coverage gate
+pnpm --filter @swat/backend test:e2e                    # live auth + master-data + transactions e2e
 ```
 
 Import `apps/backend/postman/SWAT.postman_collection.json` +
@@ -195,9 +206,42 @@ green.
 
 ---
 
-## What's next — M4 (Epics 1.7–1.8 transactions backend)
+## M4 · Epics 1.7–1.8 — Transactions backend (T-123 … T-132)
 
-daily-init `@Cron` (idempotent) + TransactionDay CRUD; depart/return; REFUEL/PICKUP/DISPOSAL
-(server-authoritative `netWeight = gross − tare`, reject `gross<tare`) / passive trips; verify + lock
-(edits need `trip:verify:override`); partition-aware writes set `operationDate`. ≥90% on trip paths.
-See [`phase-1-plan.md`](./phase-1-plan.md) § M4.
+New module `modules/transactions/` (daily-init · transaction-days · haul-assignments · trips). Every
+write to the partitioned tables (`Haul`, `HaulAssignment`, `Trip`) sets `operationDate` so rows land
+in the correct monthly partition. BigInt ids serialize to strings in every DTO.
+
+| Task | Title | Status | Notes |
+|------|-------|--------|-------|
+| T-123 | TransactionDay auto-init (`@Cron`) | ✅ | `DailyInitService` runs **03:00 daily** (`@nestjs/schedule`); materializes the day from standing crew schedules — **one Haul per vehicle**, a HaulAssignment per shift, a Trip per template — in a single `$transaction`. **Idempotent** (day `date` is unique → re-run is a no-op). Logs counts. |
+| T-124 | TransactionDay CRUD | ✅ | `GET /transaction-days?date=` & `/:id` → full tree (hauls → assignments → trips); `PATCH /:id` status (**DONE blocked while hauls open**); `POST /initialize-today` manual trigger. `transaction-day:read` / `:manage`. |
+| T-125 | Record depart | ✅ | `PUT /haul-assignments/:id/record-depart`; odometer ≥ vehicle current (and depart target) → else 400; sets `departActual*`. `trip:update`. |
+| T-126 | Record return | ✅ | `PUT /…/record-return`; odometer ≥ depart, time ≥ depart-time; **advances `Vehicle.currentOdometer`**, sets assignment `DONE`, cascades **Haul → DONE** when all siblings done — all atomic. |
+| T-127 | Record REFUEL | ✅ | `approved` defaults to `requested` (or the template's); **`approved > requested` needs `fuel:approve`** → else 400. `trip:record-fuel`. |
+| T-128 | Record PICKUP | ✅ | `tareWeight` defaults from the vehicle. `trip:record-pickup`. |
+| T-129 | Record DISPOSAL | ✅ | **Server-authoritative `netWeight = grossWeight − tareWeight`; rejects `gross < tare` (400 "berat bersih akan menjadi negatif")**. `trip:record-disposal`. |
+| T-130 | Record DEPART_POOL / RETURN_POOL | ✅ | Passive trips: time + odometer only. `trip:update`. |
+| T-131 | Trip verify + lock | ✅ | `PUT /trips/:id/verify` (`trip:verify`) → `VERIFIED` + verifier/timestamp (the audit trail). A verified trip is **locked**: re-recording 403s unless the caller has **`trip:override`**. |
+| T-132 | Trip reads | ✅ | `GET /trips/:id` → trip + assignment + haul + transaction day; `GET /haul-assignments/:id/trips` → list. `trip:read`. |
+
+- **Per-category permission** is enforced **in the service** (not the route decorator), because the
+  required key depends on the trip's route category — REFUEL→`record-fuel`, PICKUP→`record-pickup`,
+  DISPOSAL→`record-disposal`, passive→`update` — resolved against the caller's cached role grants.
+- **Odometer chaining:** a trip's `actualOdometer` must be ≥ the departure odometer and any completed
+  sibling trip on the same leg.
+- **Seed delta:** added `fuel:approve` and `trip:override` permission keys (granted to *Administrasi
+  Data*; *Administrator* inherits via `*:*`). The spec's `trip:verify:override` collapses under the
+  two-segment matcher, so the concrete key is **`trip:override`** (documented deviation).
+
+**Coverage (M4 services):** daily-init, transaction-days, haul-assignments and trips services all at
+**100% stmts / 100% funcs**; trips service 98.5% stmts overall — comfortably past the ≥90% trip-path gate.
+
+---
+
+## What's next — M5 (Epics 1.9–1.12 frontend)
+
+App shell (topbar + sidebar + recessed canvas), login + forced-change + profile + dashboard; 7
+master-data CRUD pages (DataTable + Dialog forms); Haul Board + Trip Sheet + record/verify forms;
+`usePermissions()` + `ProtectedAction` + middleware route guards. Composes the M3 component library per
+the hi-fi spec. See [`phase-1-plan.md`](./phase-1-plan.md) § M5.
