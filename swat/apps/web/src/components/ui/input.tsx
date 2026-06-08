@@ -12,7 +12,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const base =
-  'h-10 w-full rounded-base border bg-neutral-0 px-3 py-2.5 text-body text-neutral-900 transition-colors placeholder:text-neutral-400 hover:border-neutral-300 focus:border-primary-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400';
+  'h-10 w-full rounded-base border bg-neutral-0 px-3 py-2.5 text-body text-neutral-900 transition-[border-color,color] placeholder:text-neutral-400 hover:border-neutral-300 focus:border-primary-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400';
 
 /**
  * Input — text/email/number/tel (design-system §3.2). Always paired with a real

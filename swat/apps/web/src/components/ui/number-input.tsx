@@ -1,5 +1,5 @@
 import { Minus, Plus } from 'lucide-react';
-import { forwardRef, type ReactNode } from 'react';
+import { type ChangeEvent, forwardRef, type ReactNode } from 'react';
 
 import { cn } from '@/lib/cn';
 
@@ -10,7 +10,12 @@ export interface NumberInputProps extends Omit<InputProps, 'type' | 'leading'> {
   steppers?: boolean;
   /** Unit suffix (kg/km/L) shown in the trailing slot. */
   unit?: ReactNode;
-  /** Called with the parsed numeric value when steppers fire. */
+  /**
+   * Called with the parsed, clamped numeric value on BOTH typing and stepper
+   * clicks — so wiring `value` + `onValueChange` (e.g. a RHF `Controller`'s
+   * `field.value` / `field.onChange`) drives the control from a single handler.
+   * The native `onChange` still fires too, for `register()`-style usage.
+   */
   onValueChange?: (value: number) => void;
 }
 
@@ -19,7 +24,18 @@ export interface NumberInputProps extends Omit<InputProps, 'type' | 'leading'> {
  * unit suffix slot. min/max/step enforced via the native input.
  */
 export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(function NumberInput(
-  { className, steppers = false, unit, value, min, max, step = 1, onValueChange, ...props },
+  {
+    className,
+    steppers = false,
+    unit,
+    value,
+    min,
+    max,
+    step = 1,
+    onValueChange,
+    onChange,
+    ...props
+  },
   ref,
 ) {
   const clamp = (n: number): number => {
@@ -30,25 +46,37 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
 
   const bump = (dir: 1 | -1): void => {
     const current = Number(value ?? 0);
-    const next = clamp(current + dir * Number(step));
-    onValueChange?.(next);
+    onValueChange?.(clamp(current + dir * Number(step)));
   };
 
+  // Forward the raw event (for register/onChange consumers) and, when the field
+  // holds a valid number, surface the parsed value via onValueChange too.
+  const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    onChange?.(event);
+    const next = event.target.valueAsNumber;
+    if (!Number.isNaN(next)) {
+      onValueChange?.(clamp(next));
+    }
+  };
+
+  const field = (
+    <Input
+      ref={ref}
+      type="number"
+      inputMode="decimal"
+      value={value}
+      min={min}
+      max={max}
+      step={step}
+      trailing={unit}
+      onChange={handleChange}
+      className={cn('tnum', steppers && 'rounded-none text-center', className)}
+      {...props}
+    />
+  );
+
   if (!steppers) {
-    return (
-      <Input
-        ref={ref}
-        type="number"
-        inputMode="decimal"
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        trailing={unit}
-        className={cn('tnum', className)}
-        {...props}
-      />
-    );
+    return field;
   }
 
   return (
@@ -62,18 +90,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
       >
         <Minus className="h-4 w-4" aria-hidden />
       </button>
-      <Input
-        ref={ref}
-        type="number"
-        inputMode="decimal"
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        trailing={unit}
-        className={cn('rounded-none text-center tnum', className)}
-        {...props}
-      />
+      {field}
       <button
         type="button"
         aria-label="Tambah"

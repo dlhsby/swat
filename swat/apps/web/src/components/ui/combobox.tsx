@@ -53,7 +53,7 @@ export function Combobox({
         aria-invalid={error || undefined}
         disabled={disabled}
         className={cn(
-          'flex h-10 w-full items-center justify-between gap-2 rounded-base border bg-neutral-0 px-3 py-2.5 text-body text-neutral-900 transition-colors hover:border-neutral-300 focus:border-primary-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400',
+          'flex h-10 w-full items-center justify-between gap-2 rounded-base border bg-neutral-0 px-3 py-2.5 text-body text-neutral-900 transition-[border-color,color] hover:border-neutral-300 focus:border-primary-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400',
           error && 'border-danger-500 focus:border-danger-500',
           !selected && 'text-neutral-400',
           className,

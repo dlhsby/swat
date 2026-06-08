@@ -102,6 +102,17 @@ describe('NumberInput', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Tambah' }));
     expect(onValueChange).toHaveBeenCalledWith(10);
   });
+
+  it('routes typing through onValueChange (clamped) and the native onChange', async () => {
+    const onValueChange = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <NumberInput aria-label="qty" max={50} onValueChange={onValueChange} onChange={onChange} />,
+    );
+    await userEvent.type(screen.getByLabelText('qty'), '7');
+    expect(onValueChange).toHaveBeenLastCalledWith(7);
+    expect(onChange).toHaveBeenCalled();
+  });
 });
 
 describe('TimePicker', () => {

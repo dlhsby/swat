@@ -19,7 +19,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
       ref={ref}
       aria-invalid={error || undefined}
       className={cn(
-        'min-h-[88px] w-full resize-y rounded-base border bg-neutral-0 px-3 py-2.5 text-body leading-normal text-neutral-900 transition-colors placeholder:text-neutral-400 hover:border-neutral-300 focus:border-primary-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400',
+        'min-h-[88px] w-full resize-y rounded-base border bg-neutral-0 px-3 py-2.5 text-body leading-normal text-neutral-900 transition-[border-color,color] placeholder:text-neutral-400 hover:border-neutral-300 focus:border-primary-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-400',
         error && 'border-danger-500 focus:border-danger-500',
         className,
       )}

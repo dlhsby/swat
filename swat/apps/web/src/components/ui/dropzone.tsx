@@ -79,7 +79,9 @@ export function Dropzone({
         handle(e.dataTransfer.files);
       }}
       className={cn(
-        'rounded-lg border-2 border-dashed bg-neutral-50 transition-colors',
+        // Transition only the border — never the themed background — so toggling
+        // .dark can't leave a stale surface colour mid-transition (design-system §3.26).
+        'rounded-lg border-2 border-dashed bg-neutral-50 transition-[border-color]',
         dragging ? 'border-primary-500 bg-primary-50' : 'border-neutral-300',
         disabled && 'cursor-not-allowed opacity-60',
         className,
