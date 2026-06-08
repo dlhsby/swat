@@ -36,7 +36,7 @@ describe('RoutesService', () => {
     repo = {
       list: jest.fn(),
       findById: jest.fn(),
-      findDuplicate: jest.fn(),
+      findDuplicate: jest.fn().mockResolvedValue(null),
       siteExists: jest.fn().mockResolvedValue({ id: 1 }),
       create: jest.fn(),
       update: jest.fn(),
@@ -52,37 +52,84 @@ describe('RoutesService', () => {
     distanceKm: 25,
   };
 
-  it('rejects identical origin and destination', async () => {
-    await expect(service.create({ ...dto, destinationSiteId: 1 })).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+  it('lists routes with site names and pagination meta', async () => {
+    repo.list.mockResolvedValue({ rows: [buildRoute()], total: 1 });
+    const result = await service.list({ page: 1, limit: 20 });
+    expect(result.meta).toEqual({ total: 1, page: 1, limit: 20 });
+    expect(result.data[0]).toMatchObject({ originSiteName: 'TPS', destinationSiteName: 'TPA' });
   });
 
-  it('rejects a missing site', async () => {
-    repo.siteExists.mockResolvedValueOnce(null);
-    await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('rejects a duplicate triple', async () => {
-    repo.findDuplicate.mockResolvedValue({ id: 9 });
-    await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
-  });
-
-  it('creates a route and labels the sites', async () => {
-    repo.findDuplicate.mockResolvedValue(null);
-    repo.create.mockResolvedValue(buildRoute());
-    const result = await service.create(dto);
-    expect(result).toMatchObject({ originSiteName: 'TPS', destinationSiteName: 'TPA' });
-  });
-
-  it('404s an unknown route on get', async () => {
-    repo.findById.mockResolvedValue(null);
+  it('returns a single route or 404', async () => {
+    repo.findById.mockResolvedValueOnce(buildRoute());
+    await expect(service.getById(1)).resolves.toMatchObject({ id: 1, distanceKm: 25 });
+    repo.findById.mockResolvedValueOnce(null);
     await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('blocks an update that collides with another route', async () => {
-    repo.findById.mockResolvedValue(buildRoute());
-    repo.findDuplicate.mockResolvedValue({ id: 2 });
-    await expect(service.update(1, { distanceKm: 30 })).rejects.toBeInstanceOf(ConflictException);
+  describe('create', () => {
+    it('rejects identical origin and destination', async () => {
+      await expect(service.create({ ...dto, destinationSiteId: 1 })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('rejects a missing site', async () => {
+      repo.siteExists.mockResolvedValueOnce(null);
+      await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects a duplicate triple', async () => {
+      repo.findDuplicate.mockResolvedValue({ id: 9 });
+      await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('creates a route and labels the sites', async () => {
+      repo.create.mockResolvedValue(buildRoute());
+      await expect(service.create(dto)).resolves.toMatchObject({
+        originSiteName: 'TPS',
+        destinationSiteName: 'TPA',
+      });
+    });
+  });
+
+  describe('update', () => {
+    it('404s an unknown route', async () => {
+      repo.findById.mockResolvedValue(null);
+      await expect(service.update(9, { distanceKm: 30 })).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('rejects an update that makes origin == destination', async () => {
+      repo.findById.mockResolvedValue(buildRoute());
+      await expect(service.update(1, { destinationSiteId: 1 })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('blocks an update that collides with another route', async () => {
+      repo.findById.mockResolvedValue(buildRoute());
+      repo.findDuplicate.mockResolvedValue({ id: 2 });
+      await expect(service.update(1, { distanceKm: 30 })).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('updates the distance', async () => {
+      repo.findById.mockResolvedValue(buildRoute());
+      repo.update.mockResolvedValue(buildRoute({ distanceKm: 30 }));
+      await expect(service.update(1, { distanceKm: 30 })).resolves.toMatchObject({
+        distanceKm: 30,
+      });
+    });
+  });
+
+  describe('remove', () => {
+    it('404s an unknown route', async () => {
+      repo.findById.mockResolvedValue(null);
+      await expect(service.remove(9)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('soft-deletes a route', async () => {
+      repo.findById.mockResolvedValue(buildRoute());
+      repo.softDelete.mockResolvedValue({ id: 1 });
+      await expect(service.remove(1)).resolves.toEqual({ message: 'Rute telah dihapus.' });
+    });
   });
 });

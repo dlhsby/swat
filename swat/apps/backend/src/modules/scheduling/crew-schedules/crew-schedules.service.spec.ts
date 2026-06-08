@@ -49,34 +49,90 @@ describe('CrewSchedulesService', () => {
 
   const dto = { vehicleId: 1, driverId: 2, departTime: '05:00', returnTime: '14:00' };
 
-  it('rejects depart >= return', async () => {
-    await expect(
-      service.create({ ...dto, departTime: '14:00', returnTime: '05:00' }),
-    ).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('rejects a duplicate vehicle+driver pairing', async () => {
-    repo.findByVehicleAndDriver.mockResolvedValue({ id: 9 });
-    await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
-  });
-
-  it('rejects a missing vehicle', async () => {
-    repo.vehicleExists.mockResolvedValue(null);
-    await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
-  });
-
-  it('creates a schedule and maps time columns to HH:mm', async () => {
-    repo.create.mockResolvedValue(buildSchedule());
-    const result = await service.create(dto);
-    expect(result).toMatchObject({
+  it('lists schedules with time columns mapped to HH:mm and template count', async () => {
+    repo.list.mockResolvedValue({ rows: [buildSchedule()], total: 1 });
+    const result = await service.list({ page: 1, limit: 20 });
+    expect(result.meta).toEqual({ total: 1, page: 1, limit: 20 });
+    expect(result.data[0]).toMatchObject({
       departTime: '05:00',
       returnTime: '14:00',
       tripTemplateCount: 3,
     });
   });
 
-  it('404s an unknown schedule', async () => {
-    repo.findById.mockResolvedValue(null);
-    await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
+  it('returns a single schedule', async () => {
+    repo.findById.mockResolvedValue(buildSchedule());
+    await expect(service.getById(1)).resolves.toMatchObject({ id: 1 });
+  });
+
+  describe('create', () => {
+    it('rejects depart >= return', async () => {
+      await expect(
+        service.create({ ...dto, departTime: '14:00', returnTime: '05:00' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects a duplicate vehicle+driver pairing', async () => {
+      repo.findByVehicleAndDriver.mockResolvedValue({ id: 9 });
+      await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('rejects a missing vehicle or driver', async () => {
+      repo.vehicleExists.mockResolvedValueOnce(null);
+      await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
+      repo.vehicleExists.mockResolvedValue({ id: 1 });
+      repo.driverExists.mockResolvedValueOnce(null);
+      await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('creates a schedule', async () => {
+      repo.create.mockResolvedValue(buildSchedule());
+      await expect(service.create(dto)).resolves.toMatchObject({ departTime: '05:00' });
+    });
+  });
+
+  describe('update', () => {
+    it('404s an unknown schedule', async () => {
+      repo.findById.mockResolvedValue(null);
+      await expect(service.update(9, { returnTime: '15:00' })).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('rejects an update that inverts the time order', async () => {
+      repo.findById.mockResolvedValue(buildSchedule());
+      await expect(service.update(1, { departTime: '20:00' })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('rejects an update that collides with another pairing', async () => {
+      repo.findById.mockResolvedValue(buildSchedule());
+      repo.findByVehicleAndDriver.mockResolvedValue({ id: 2 });
+      await expect(service.update(1, { vehicleId: 5 })).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('updates the return time', async () => {
+      repo.findById.mockResolvedValue(buildSchedule());
+      repo.update.mockResolvedValue(
+        buildSchedule({ returnTime: new Date('1970-01-01T15:00:00Z') }),
+      );
+      await expect(service.update(1, { returnTime: '15:00' })).resolves.toMatchObject({
+        returnTime: '15:00',
+      });
+    });
+  });
+
+  describe('remove', () => {
+    it('404s an unknown schedule', async () => {
+      repo.findById.mockResolvedValue(null);
+      await expect(service.remove(9)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('deletes a schedule', async () => {
+      repo.findById.mockResolvedValue(buildSchedule());
+      repo.delete.mockResolvedValue({ id: 1 });
+      await expect(service.remove(1)).resolves.toEqual({ message: 'Jadwal kru telah dihapus.' });
+    });
   });
 });

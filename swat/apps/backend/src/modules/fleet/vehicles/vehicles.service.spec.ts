@@ -85,6 +85,33 @@ describe('VehiclesService', () => {
     expect(result).toMatchObject({ plateNumber: 'L 1234 AB', registrationExpiry: '2027-01-01' });
   });
 
+  it('rejects a past registration expiry on create (spec T-112)', async () => {
+    await expect(
+      service.create({ ...dto, registrationExpiry: '2020-01-01' } as never),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('creates a vehicle with all optional fields set', async () => {
+    repo.findByPlate.mockResolvedValue(null);
+    repo.create.mockResolvedValue(buildVehicle());
+    await service.create({
+      ...dto,
+      status: VehicleStatus.MINOR_DAMAGE,
+      manufactureYear: 2021,
+      currentFuelRatio: 2,
+      notes: 'catatan',
+    } as never);
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: VehicleStatus.MINOR_DAMAGE,
+        manufactureYear: 2021,
+        currentFuelRatio: 2,
+        notes: 'catatan',
+      }),
+    );
+  });
+
   describe('update', () => {
     it('rejects rolling the odometer backwards', async () => {
       repo.findById.mockResolvedValue(buildVehicle({ currentOdometer: 100000 }));
@@ -104,6 +131,36 @@ describe('VehiclesService', () => {
     it('404s an unknown vehicle', async () => {
       repo.findById.mockResolvedValue(null);
       await expect(service.update(1, { notes: 'x' })).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('updates every field at once', async () => {
+      repo.findById.mockResolvedValue(buildVehicle({ currentOdometer: 100000 }));
+      repo.findByPlate.mockResolvedValue(null);
+      repo.update.mockResolvedValue(buildVehicle());
+      await service.update(1, {
+        plateNumber: 'L 4321 ZZ',
+        status: VehicleStatus.MAJOR_DAMAGE,
+        chassisNumber: 'C2',
+        engineNumber: 'E2',
+        manufactureYear: 2022,
+        currentFuelRatio: 3,
+        currentTareWeight: 8200,
+        currentOdometer: 101000,
+        registrationExpiry: '2028-01-01',
+        taxExpiry: '2028-01-01',
+        notes: 'baru',
+        modelId: 2,
+        poolSiteId: 2,
+      });
+      expect(repo.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          plateNumber: 'L 4321 ZZ',
+          status: VehicleStatus.MAJOR_DAMAGE,
+          model: { connect: { id: 2 } },
+          poolSite: { connect: { id: 2 } },
+        }),
+      );
     });
   });
 

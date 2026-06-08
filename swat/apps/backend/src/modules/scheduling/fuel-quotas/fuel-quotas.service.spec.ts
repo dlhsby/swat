@@ -93,4 +93,39 @@ describe('FuelQuotasService', () => {
     const result = await service.update('42', { status: FuelQuotaStatus.INACTIVE }, 7);
     expect(result.status).toBe(FuelQuotaStatus.INACTIVE);
   });
+
+  it('lists quotas with refs and pagination meta', async () => {
+    repo.list.mockResolvedValue({ rows: [buildQuota()], total: 1 });
+    const result = await service.list({ page: 1, limit: 20 });
+    expect(result.meta).toEqual({ total: 1, page: 1, limit: 20 });
+    expect(result.data[0]).toMatchObject({ id: '42', vehiclePlate: 'L 1 AB', siteName: 'SPBU' });
+  });
+
+  it('passes the activeOn date filter through to the repository', async () => {
+    repo.list.mockResolvedValue({ rows: [], total: 0 });
+    await service.list({ page: 1, limit: 20, activeOn: '2026-06-15' });
+    expect(repo.list).toHaveBeenCalledWith(expect.objectContaining({ activeOn: expect.any(Date) }));
+  });
+
+  it('returns a single quota', async () => {
+    repo.findById.mockResolvedValue(buildQuota());
+    await expect(service.getById('42')).resolves.toMatchObject({
+      id: '42',
+      code: 'KT-202606-0042',
+    });
+  });
+
+  it('404s update of an unknown quota', async () => {
+    repo.findById.mockResolvedValue(null);
+    await expect(
+      service.update('99', { status: FuelQuotaStatus.INACTIVE }, 7),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects extending validTo before validFrom', async () => {
+    repo.findById.mockResolvedValue(buildQuota());
+    await expect(service.update('42', { validTo: '2026-05-01' }, 7)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
 });

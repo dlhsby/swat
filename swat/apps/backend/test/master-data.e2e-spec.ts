@@ -5,6 +5,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { AppConfigService } from '../src/config';
 import { configureApp } from '../src/configure-app';
+import { CacheService } from '../src/modules/cache/cache.service';
 
 /**
  * Live integration test for the master-data pipeline (auth guard + validation +
@@ -26,6 +27,9 @@ describe('Master data (e2e)', () => {
     await configureApp(app, app.get(AppConfigService));
     await app.init();
     server = app.getHttpServer();
+
+    // Clear login-throttle counters so prior runs don't trip the 429 limit.
+    await app.get(CacheService).invalidatePattern('login:fail:*');
 
     const login = await request(server).post('/api/v1/auth/login').send(ADMIN).expect(200);
     const raw = login.headers['set-cookie'] as string[] | string;

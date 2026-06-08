@@ -250,9 +250,14 @@ async function seedRoles(permissionIdByKey: Map<string, number>): Promise<Map<st
 
 async function seedAdminUser(adminRoleId: number): Promise<void> {
   const passwordHash = await hash(ADMIN_DEFAULT_PASSWORD, ARGON2_OPTIONS);
+  // Outside production, re-seeding restores the documented bootstrap credential
+  // (admin / ChangeMe!2026, mustChangePassword=true) even if it was changed —
+  // keeps local/CI runs repeatable. In production we never clobber a real admin.
+  const resetInNonProd =
+    process.env.NODE_ENV === 'production' ? {} : { passwordHash, mustChangePassword: true };
   await prisma.user.upsert({
     where: { username: 'admin' },
-    update: {},
+    update: resetInNonProd,
     create: {
       username: 'admin',
       name: 'Administrator',

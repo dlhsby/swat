@@ -36,6 +36,11 @@ export interface VehicleDto {
   readonly updatedAt: string;
 }
 
+/** Today as `YYYY-MM-DD` (UTC), for date-only comparisons against `@db.Date` inputs. */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function toDto(vehicle: VehicleWithRefs): VehicleDto {
   return {
     id: vehicle.id,
@@ -84,6 +89,10 @@ export class VehiclesService {
   }
 
   async create(dto: CreateVehicleDto): Promise<VehicleDto> {
+    // New vehicles must have a registration that is still valid (spec T-112).
+    if (dto.registrationExpiry < todayIso()) {
+      throw new BadRequestException('Masa berlaku STNK sudah lewat.');
+    }
     await this.assertRefsExist(dto.modelId, dto.poolSiteId);
     const duplicate = await this.repo.findByPlate(dto.plateNumber);
     if (duplicate) {

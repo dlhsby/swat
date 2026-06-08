@@ -5,6 +5,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { AppConfigService } from '../src/config';
 import { configureApp } from '../src/configure-app';
+import { CacheService } from '../src/modules/cache/cache.service';
 
 /**
  * Live integration test for the auth + RBAC pipeline. Requires the docker-compose
@@ -26,6 +27,9 @@ describe('Auth & RBAC (e2e)', () => {
     await configureApp(app, app.get(AppConfigService));
     await app.init();
     server = app.getHttpServer();
+
+    // Clear login-throttle counters so prior runs don't trip the 429 limit.
+    await app.get(CacheService).invalidatePattern('login:fail:*');
   });
 
   afterAll(async () => {

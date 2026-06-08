@@ -46,6 +46,15 @@ describe('SitesService', () => {
     expect(result.data[0]?.latitude).toBeNull();
   });
 
+  it('returns a single site', async () => {
+    repo.findById.mockResolvedValue(buildSite({ latitude: -7.25, longitude: 112.75 }));
+    await expect(service.getById(1)).resolves.toMatchObject({
+      id: 1,
+      latitude: -7.25,
+      longitude: 112.75,
+    });
+  });
+
   it('404s an unknown site', async () => {
     repo.findById.mockResolvedValue(null);
     await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);

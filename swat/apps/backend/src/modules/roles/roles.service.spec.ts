@@ -114,6 +114,13 @@ describe('RolesService', () => {
       await service.update(1, { permissionIds: [12] });
       expect(rolePermissions.invalidate).toHaveBeenCalledWith(1);
     });
+
+    it('does not invalidate the cache on a name-only edit', async () => {
+      repo.findById.mockResolvedValue(buildRole());
+      repo.update.mockResolvedValue(buildRole({ name: 'Renamed' }));
+      await service.update(1, { name: 'Renamed' });
+      expect(rolePermissions.invalidate).not.toHaveBeenCalled();
+    });
   });
 
   describe('remove', () => {

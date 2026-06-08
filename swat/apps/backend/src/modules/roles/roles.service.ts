@@ -74,8 +74,10 @@ export class RolesService {
     }
 
     const role = await this.repo.update(id, { name: dto.name, permissionIds: dto.permissionIds });
-    // Grants may have changed — drop the cached permission set so guards reload.
-    await this.rolePermissions.invalidate(id);
+    // Only the grants affect authz — skip cache invalidation on a name-only edit.
+    if (dto.permissionIds) {
+      await this.rolePermissions.invalidate(id);
+    }
     return toRoleDto(role);
   }
 
