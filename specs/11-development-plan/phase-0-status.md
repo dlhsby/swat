@@ -88,7 +88,7 @@ pending live infra not on the critical path).
 ### Epic 0.7 — Storage, cache, rollups
 | Task | Title | Status | Notes |
 |------|-------|--------|-------|
-| T-024 | Object storage (MinIO/S3) | ⚠️ | `modules/storage` — AWS SDK v3 presigned put/get/upload/delete; unit tests (mock S3) ≥ 80%. **Live MinIO round-trip pending** — image pulls (minio/adminer/nginx) hit CloudFront EOF; Postgres+Redis were sufficient for the DB exit criteria. |
+| T-024 | Object storage (MinIO/S3) | ✅ | `modules/storage` — AWS SDK v3 presigned put/get/upload/delete; unit tests (mock S3) ≥ 80%. **Live round-trip verified** 2026-06-08: `presigned-put` → PUT → `presigned-get` → GET returned the uploaded bytes exactly (bucket `swat-photos`). |
 | T-025 | Redis cache | ✅ | `modules/cache` — ioredis get/set/del/invalidatePattern, graceful degradation; tests ≥ 80%. Live `PING`→PONG. |
 | T-026 | Partition scaffolding + rollups | ✅ | `rollups` migration (5 tables + indexes), `RollupService` stub, synthetic 365-day / 5,503-trip seed (gated by `SEED_SYNTHETIC`). |
 
@@ -113,7 +113,7 @@ pending live infra not on the critical path).
 | **Partition pruning** | `EXPLAIN … WHERE operationDate='2026-06-05'` → scans **only `trip_y2026m06`** | ✅ |
 | Redis get/set/del | live `PING`→PONG; unit tests cover ops | ✅ |
 | CI green on a PR | workflow valid; **pending** a real PR (no remote yet) | ⏳ |
-| MinIO buckets via presigned URL | service + tests done; **live round-trip pending** image pull | ⏳ |
+| MinIO buckets via presigned URL | live round-trip OK: `presigned-put` → PUT → `presigned-get` → GET byte-for-byte match | ✅ |
 
 > **Spec note:** [`phase-0.md`](./phase-0.md) exit list says *"bcrypt hash"*. The implementation uses
 > **Argon2id** (memory-hard, the modern recommendation) — consistent with the risk-mitigation table in
@@ -141,8 +141,8 @@ pending live infra not on the critical path).
 
 ## Outstanding before Phase 1 (not blockers)
 
-- [ ] Pull `minio`, `adminer`, `nginx` images (registry was flaky) → run the **MinIO presigned-URL
-      round-trip** and bring the **full stack** up behind nginx.
+- [x] ~~Pull `minio`, `adminer`, `nginx` images → run the **MinIO presigned-URL round-trip**.~~
+      Done 2026-06-08 — full stack (Postgres/Redis/MinIO/Adminer) up; presigned round-trip verified.
 - [ ] Configure a GitHub remote and open a PR to exercise **CI** end-to-end.
 - [ ] (Optional) add `packages/types` + `scripts/` skeletons when Phase 1 first needs them.
 
