@@ -120,14 +120,17 @@ Per-domain backend module = `apps/backend/src/modules/<domain>/` containing
 | Infrastructure ready | 0 | Monorepo, Docker (PG/Redis/MinIO), schema+partitioning, CI, **design tokens (light+dark) + assets + formatters** | 1–2 |
 | Design system + component library | 1 (Epic 1.8.5) | 28 reusable shadcn/ui components from tokens, light + dark | 1–1.5 |
 | MVP v1 (auth + master CRUD) | 1 (first half) | User/role mgmt; vehicle/driver/site/route/crew/fuel CRUD | 3–4 |
-| MVP v2 (transactions + migration) | 1 (second half) | Daily init, trip recording/verification, data+image migration, cutover | 5–6 |
+| MVP v2 (transactions + migration) | 1 (second half) | Daily init, trip recording/verification, data+image migration | 5–6 |
 | Legacy-parity additions | 1 (Epic 1.17) | Reference masters, kitir bulk import, refuel log, inspection, maintenance | 1–2 |
+| Parity gate + cutover | 1 (Epic 1.16, after 1.17) | Parity verified → parallel-run → go-live | 1 |
 | Monitoring | 2 | Rollups, dashboards, aggregate caching, archiving job | 2–3 |
 | Reporting | 3 | Excel/PDF exports, levy mgmt | 2 |
 | Weighbridge | 4 | TPA API, kitir resolution, post-weighing ingest | 2–3 |
 | Field/GPS | 5 | Offline PWA, live tracking, push notifications | 3–4 |
 
-**To MVP (Phases 0–1, incl. full legacy parity + design system/dark tokens): ~17–21 weeks.
-To full Phase 5: ~27–33 weeks.** (The component-library + parity epics add ~2–3.5 weeks over the
-original estimate; if the calendar is fixed, Epic 1.17 can ship as a "Phase 1.5" immediately after MVP
-but **before** cutover, since cutover requires legacy parity.)
+**To MVP (Phases 0–1): ~17–21 weeks. To full Phase 5: ~27–33 weeks.** This estimate is the *committed*
+MVP figure — it already includes the design-system/dark token layer, the component library
+(Epic 1.8.5), and **all legacy-parity work (Epic 1.17)**. Parity is **committed Phase-1 scope, not an
+optional add-on**: this is a rewrite of `old_swat`, and the cutover (Epic 1.16) is gated on full
+parity, so the parity epics must complete before go-live. If schedule pressure hits, cut **new** ideas
+(the lower-priority, non-legacy items flagged per phase) — never parity.

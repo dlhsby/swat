@@ -283,9 +283,9 @@ Low-fidelity functional wireframes using ASCII/box-drawing. Each wireframe inclu
 - Hover: background light gray
 
 **Topbar:**
-- Height: 64px
-- Logo + title (left), user menu + locale + logout (right)
-- Sticky; z-index 100
+- Height: **76px** (`--hf-topbar-h`; per `01-design-system.md` §2.1 / `03-hifi-spec.md`)
+- Brand mark + title (left); theme toggle + notification bell + user menu (right)
+- Sticky; `z-sticky` (100). Recessed content canvas below (`neutral-100` light / `neutral-50` dark).
 
 ---
 

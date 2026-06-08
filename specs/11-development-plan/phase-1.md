@@ -1487,6 +1487,11 @@ For each entity, build: list (table + filters + pagination), create (form + vali
 
 Full requirements in [`04-migration.md`](../04-migration.md) §11.
 
+> **Hard prerequisite:** **Epic 1.17 (Legacy-parity additions) must be complete before cutover.**
+> Cutover replaces `old_swat`, so the new system must have full feature parity first (reference
+> masters, kitir bulk import, refuel log, inspection, maintenance). The Exit Criteria below treat
+> parity as a gate.
+
 #### T-166. Parallel-run & delta sync
 - **Size:** M · **Coverage:** N/A
 - **Depends on:** T-159 (migration validation passed)
@@ -1579,13 +1584,19 @@ Full requirements in [`04-migration.md`](../04-migration.md) §11.
 
 ---
 
-## Epic 1.17 — Legacy-parity additions (Size: L) — **HIGH priority (parity)**
+## Epic 1.17 — Legacy-parity additions (Size: L) — **committed Phase-1 scope; gates cutover**
 
 Closes the legacy feature gaps the new design surfaced (see the plan's Part 0 audit, G1–G8). These are
-**not new features** — they existed in `old_swat` — so they are HIGH priority alongside the design
-system. Backend + frontend tasks together. **Estimated ≈1–2 weeks on top of the base Phase-1 estimate;**
-if the timeline is fixed, this epic may be split into a **"Phase 1.5"** delivered immediately after MVP
-(but before declaring legacy parity / cutover, since cutover requires parity).
+**not new features** — they existed in `old_swat`. Because this is a **parity-first rewrite and the
+Phase-1 cutover (Epic 1.16) cannot proceed without full legacy parity**, this epic is **not optional
+and not deferrable** — its effort is already included in the Phase-1 estimate (it is *not* an add-on).
+Backend + frontend tasks together.
+
+> **Sequencing:** this is feature work that belongs **with Epics 1.9–1.12** (after the component
+> library 1.8.5) and **must complete before Epic 1.13 (migration) and Epic 1.16 (cutover)**. It is
+> placed last in this file only for readability; treat its dependency order as immediately after
+> Epic 1.12. **Epic 1.16 lists this epic as a hard prerequisite.** If schedule pressure forces
+> trade-offs, cut *new* ideas (the lower-priority items flagged elsewhere) — never parity.
 
 > **Reconciliation of existing epics (no new task, just align to the hi-fi design):**
 > - **Epic 1.10 (master CRUD)** screens follow the designed forms: Kendaraan = sectioned **Dialog**
