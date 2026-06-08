@@ -1,6 +1,9 @@
 # Local Claude Code agent state
 .claude/
 
+# Temp scratch prompts (planning-session inputs, not part of the repo)
+prompts/
+
 # Env files with secrets — keep only .example templates
 **/.env
 !**/.env.example
