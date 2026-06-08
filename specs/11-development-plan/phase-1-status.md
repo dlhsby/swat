@@ -13,7 +13,7 @@ started.
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
 | **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (review fixes + coverage) · `566859c` (M3 component library) — all on `main` |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · class-validator DTOs |
 
@@ -169,13 +169,29 @@ each dark-mode-ready and keyboard-accessible (`:focus-visible` ring via the glob
   `aria-describedby` + `aria-invalid`.
 - **Deps added**: Radix primitives, `cmdk`, `sonner`, `react-day-picker`, `date-fns`,
   `react-hook-form` + `@hookform/resolvers`, `zod`, `@tanstack/react-table`, `tailwindcss-animate`.
-- **Tests**: 77 vitest specs (jsdom + Testing Library); **component library 98.8% stmts · 87.1%
+- **Tests**: 78 vitest specs (jsdom + Testing Library); **component library 98.8% stmts · 87.1%
   branch · 94.6% funcs**. A dev-only `/[locale]/components` showcase renders every component across
   its states (the "states story" acceptance) for light/dark visual QA — not part of the production
   surface.
 
 **Verification:** `pnpm lint && pnpm typecheck && pnpm test && pnpm --filter @swat/web build` all
 green.
+
+### M3 review fixes (`c7338ef`, `baf2997`)
+
+1. **Next.js 71007 ("props must be serializable") cleared** — dropped the unneeded `'use client'`
+   from `alert-dialog.tsx` (pure Radix wrappers + the controlled, hook-free `ConfirmDialog`), and made
+   `dropzone.tsx`'s `onFilesAccepted` optional (mirrors react-dropzone's optional `onDrop`).
+2. **Linter alignment (latent CI fix)** — pre-commit `eslint --fix` (no `@/` resolver) and `next lint`
+   (resolver present) disagreed on import order, so the auto-fix could leave the committed tree failing
+   `next lint`. Fixed at the root in `@swat/eslint-config`: classify `@/*` as `internal` by **pattern**
+   (`pathGroups`), not via the resolver — both linters now produce identical order.
+3. **Dark-mode transition pitfall (§3.26)** — input/textarea/select/combobox/date-picker/dropzone now
+   transition only `border-color`/`color`, never the themed background, so toggling `.dark` can't leave
+   a stale surface colour mid-transition.
+4. **NumberInput RHF wiring** — typing and stepper clicks both emit the clamped `onValueChange` (the
+   native `onChange` still fires too); previously steppers updated a controlled value but keyboard entry
+   did not. Added a regression test.
 
 ---
 
