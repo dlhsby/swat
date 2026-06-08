@@ -24,9 +24,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # pnpm version is read from the root package.json "packageManager" field.
+      # version is set explicitly: the action runs at the repo root, but the
+      # monorepo (with the "packageManager" field) lives in inner `swat/`.
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
+        with:
+          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
