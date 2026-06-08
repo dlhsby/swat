@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import animate from 'tailwindcss-animate';
 
 // Ported from specs/13-design/01-design-system.md §5.1 (SWAT design system).
 // Token values are the source of truth; the CSS variable layer lives in
@@ -109,5 +110,5 @@ export default {
       screens: { sm: '640px', md: '768px', lg: '1024px', xl: '1280px', '2xl': '1536px' },
     },
   },
-  plugins: [],
+  plugins: [animate],
 } satisfies Config;

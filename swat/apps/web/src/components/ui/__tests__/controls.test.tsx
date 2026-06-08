@@ -1,0 +1,193 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useForm } from 'react-hook-form';
+import { describe, expect, it, vi } from 'vitest';
+
+import { Checkbox } from '../checkbox';
+import { Combobox } from '../combobox';
+import { DatePicker } from '../date-picker';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../form';
+import { Input } from '../input';
+import { NumberInput } from '../number-input';
+import { RadioGroup, RadioGroupItem } from '../radio-group';
+import { Switch } from '../switch';
+import { TimePicker } from '../time-picker';
+
+describe('Checkbox', () => {
+  it('toggles and reports checked state', async () => {
+    const onChange = vi.fn();
+    render(<Checkbox aria-label="pilih" onCheckedChange={onChange} />);
+    await userEvent.click(screen.getByRole('checkbox', { name: 'pilih' }));
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it('renders the indeterminate indicator', () => {
+    render(<Checkbox aria-label="semua" checked="indeterminate" />);
+    expect(screen.getByRole('checkbox', { name: 'semua' })).toHaveAttribute(
+      'data-state',
+      'indeterminate',
+    );
+  });
+});
+
+describe('Switch', () => {
+  it('flips on click', async () => {
+    const onChange = vi.fn();
+    render(<Switch aria-label="aktif" onCheckedChange={onChange} />);
+    await userEvent.click(screen.getByRole('switch', { name: 'aktif' }));
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('RadioGroup', () => {
+  it('selects one option per group', async () => {
+    const onChange = vi.fn();
+    render(
+      <RadioGroup aria-label="tipe" onValueChange={onChange}>
+        <RadioGroupItem value="a" aria-label="A" />
+        <RadioGroupItem value="b" aria-label="B" />
+      </RadioGroup>,
+    );
+    await userEvent.click(screen.getByRole('radio', { name: 'B' }));
+    expect(onChange).toHaveBeenCalledWith('b');
+  });
+});
+
+describe('NumberInput', () => {
+  it('renders a plain numeric input with a unit suffix', () => {
+    render(<NumberInput aria-label="jarak" unit="km" value={12} readOnly />);
+    expect(screen.getByLabelText('jarak')).toHaveValue(12);
+    expect(screen.getByText('km')).toBeInTheDocument();
+  });
+
+  it('steppers bump within min/max bounds', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <NumberInput
+        aria-label="qty"
+        steppers
+        value={9}
+        max={10}
+        step={1}
+        onValueChange={onValueChange}
+        readOnly
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    expect(onValueChange).toHaveBeenCalledWith(10);
+    await userEvent.click(screen.getByRole('button', { name: 'Kurangi' }));
+    expect(onValueChange).toHaveBeenCalledWith(8);
+  });
+
+  it('clamps to max when bumping up at the ceiling', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <NumberInput
+        aria-label="qty"
+        steppers
+        value={10}
+        max={10}
+        onValueChange={onValueChange}
+        readOnly
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    expect(onValueChange).toHaveBeenCalledWith(10);
+  });
+});
+
+describe('TimePicker', () => {
+  it('emits the chosen preset', async () => {
+    const onValueChange = vi.fn();
+    render(<TimePicker aria-label="jam" onValueChange={onValueChange} />);
+    await userEvent.click(screen.getByRole('button', { name: '08:00' }));
+    expect(onValueChange).toHaveBeenCalledWith('08:00');
+  });
+
+  it('"Sekarang" emits an HH:mm string', async () => {
+    const onValueChange = vi.fn();
+    render(<TimePicker aria-label="jam" onValueChange={onValueChange} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Sekarang' }));
+    expect(onValueChange).toHaveBeenCalledWith(expect.stringMatching(/^\d{2}:\d{2}$/));
+  });
+});
+
+describe('Combobox', () => {
+  const options = [
+    { value: 'l1', label: 'L 1234 AB' },
+    { value: 'l2', label: 'L 5678 CD' },
+  ];
+
+  it('opens, filters, and selects an option', async () => {
+    const onValueChange = vi.fn();
+    render(
+      <Combobox options={options} onValueChange={onValueChange} placeholder="Pilih kendaraan" />,
+    );
+    await userEvent.click(screen.getByRole('combobox'));
+    await userEvent.click(await screen.findByText('L 5678 CD'));
+    expect(onValueChange).toHaveBeenCalledWith('l2');
+  });
+
+  it('shows the selected label', () => {
+    render(<Combobox options={options} value="l1" />);
+    expect(screen.getByText('L 1234 AB')).toBeInTheDocument();
+  });
+});
+
+describe('DatePicker', () => {
+  it('renders the formatted dd/MM/yyyy value', () => {
+    render(<DatePicker value="2026-03-15" />);
+    expect(screen.getByText('15/03/2026')).toBeInTheDocument();
+  });
+
+  it('shows the placeholder when empty', () => {
+    render(<DatePicker placeholder="dd/mm/yyyy" />);
+    expect(screen.getByText('dd/mm/yyyy')).toBeInTheDocument();
+  });
+});
+
+describe('Form (react-hook-form)', () => {
+  function Harness() {
+    const form = useForm<{ name: string }>({ defaultValues: { name: '' } });
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(() => undefined)} aria-label="form">
+          <FormField
+            control={form.control}
+            name="name"
+            rules={{ required: 'Nama wajib diisi' }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel required>Nama</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormDescription>Nama lengkap</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <button type="submit">Simpan</button>
+        </form>
+      </Form>
+    );
+  }
+
+  it('wires label↔control and surfaces the validation message', async () => {
+    render(<Harness />);
+    const input = screen.getByLabelText(/Nama/);
+    expect(input).toBeInTheDocument();
+    expect(screen.getByText('Nama lengkap')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+    expect(await screen.findByText('Nama wajib diisi')).toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+});
