@@ -1,0 +1,40 @@
+{
+  "common": {
+    "appName": "SWAT",
+    "appTagline": "Integrated Waste Transport System — DLH Surabaya",
+    "home": "Home",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "logout": "Log out",
+    "back": "Back",
+    "themeToggle": "Toggle theme"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "monitoring": "Monitoring",
+    "masterData": "Master Data",
+    "fleet": "Vehicles",
+    "personnel": "Drivers",
+    "geography": "Sites & Routes",
+    "scheduling": "Scheduling",
+    "transactions": "Transactions",
+    "users": "Users",
+    "access": "Access",
+    "reports": "Reports"
+  },
+  "forms": {
+    "required": "Required",
+    "invalid": "Invalid value",
+    "submit": "Submit",
+    "reset": "Reset"
+  },
+  "home": {
+    "title": "Welcome to SWAT",
+    "subtitle": "Application foundation is ready. Start building features in Phase 1.",
+    "healthLink": "Check API status"
+  }
+}

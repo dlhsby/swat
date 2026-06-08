@@ -1,0 +1,24 @@
+<svg viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Belum ada data">
+  <circle cx="240" cy="172" r="130" fill="#f1f5f9"></circle>
+  <ellipse cx="240" cy="286" rx="150" ry="14" fill="#e2e8f0" opacity="0.7"></ellipse>
+  
+  <circle cx="372" cy="96" r="6" fill="#a7f3d0"></circle>
+  <circle cx="100" cy="120" r="5" fill="#cbd5e1"></circle>
+  <circle cx="386" cy="200" r="4" fill="#94a3b8"></circle>
+  
+  <g transform="translate(146 70)">
+    <rect x="0" y="0" width="168" height="200" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="3"></rect>
+    <rect x="26" y="30" width="58" height="14" rx="7" fill="#a7f3d0"></rect>
+    
+    <rect x="26" y="66" width="116" height="12" rx="6" fill="#f1f5f9"></rect>
+    <rect x="26" y="92" width="116" height="12" rx="6" fill="#f1f5f9"></rect>
+    <rect x="26" y="118" width="80" height="12" rx="6" fill="#f1f5f9"></rect>
+    <rect x="26" y="150" width="116" height="34" rx="8" fill="none" stroke="#cbd5e1" stroke-width="2.5" stroke-dasharray="7 7"></rect>
+  </g>
+  
+  <g transform="translate(250 168)">
+    <circle cx="44" cy="44" r="40" fill="#ecfdf5" stroke="#10b981" stroke-width="9"></circle>
+    <circle cx="44" cy="44" r="22" fill="#ffffff" opacity="0.6"></circle>
+    <rect x="70" y="70" width="56" height="18" rx="9" transform="rotate(45 70 70)" fill="#047857"></rect>
+  </g>
+</svg>

@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
+.turbo/
+
+# Env files (never commit secrets)
+.env
+.env.local
+.env.*.local
+apps/backend/prisma/.env
+
+# Prisma generated client
+apps/backend/prisma/generated/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# PWA generated artifacts
+public/sw.js
+public/workbox-*.js
+public/service-worker.js

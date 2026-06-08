@@ -1,0 +1,707 @@
+// SWAT — PostgreSQL schema (Prisma).
+// Source of truth: specs/03-data-model.md. Names follow specs/01-glossary.md.
+//
+// NOTE on photos: the legacy scalar `photo String?` fields and `dokumentasi*`
+// tables are replaced by the polymorphic `Photo` model (ownerType/ownerId).
+// Because the pattern is polymorphic, there is intentionally NO Prisma relation
+// field back onto User/Vehicle/Driver/Site (a polymorphic owner cannot be a
+// typed FK). Photo↔owner integrity is enforced in the API validation layer
+// (see specs/03-data-model.md §6).
+//
+// NOTE on partitioning: Trip/Haul/HaulAssignment (by operationDate) and
+// TpaInboundLog (by date) are converted to native RANGE partitioning by a
+// raw-SQL migration AFTER the Prisma-generated init migration. Prisma manages
+// the logical schema here; the partition migration owns the physical layout.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================================================
+// Enums
+// ===========================================================================
+enum SiteType {
+  POOL
+  SPBU
+  TPS
+  TPA
+}
+
+enum RouteCategory {
+  DEPART_POOL
+  REFUEL
+  PICKUP
+  DISPOSAL
+  RETURN_POOL
+}
+
+enum TripStatus {
+  IN_PROGRESS
+  DONE
+  VERIFIED
+}
+
+enum DayStatus {
+  IN_PROGRESS
+  DONE
+}
+
+enum FuelQuotaStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum VehicleStatus {
+  GOOD
+  MINOR_DAMAGE
+  MAJOR_DAMAGE
+  LOST
+}
+
+enum EmploymentStatus {
+  SATGAS
+  PNS
+  HONORER
+}
+
+enum MaintenanceStatus {
+  PENDING_APPROVAL
+  APPROVED
+}
+
+enum MaintenanceType {
+  SERVICE
+  REPAIR
+}
+
+enum InspectionResult {
+  PASS
+  ATTENTION
+  FAIL
+}
+
+enum InspectionItemStatus {
+  OK
+  ATTENTION
+  FAIL
+}
+
+enum AuthAction {
+  LOGIN
+  LOGOUT
+  FAILED_LOGIN
+  PASSWORD_CHANGE
+  ACCOUNT_LOCK
+  FORCE_RESET
+  PERMISSION_DENIED
+}
+
+// ===========================================================================
+// Auth
+// ===========================================================================
+model User {
+  id                 Int       @id @default(autoincrement())
+  legacyId           Int?      @unique
+  roleId             Int
+  role               Role      @relation(fields: [roleId], references: [id])
+  name               String    @db.VarChar(100)
+  username           String    @unique @db.VarChar(100)
+  passwordHash       String    @db.VarChar(255)
+  mustChangePassword Boolean   @default(true)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(6)
+  deletedAt          DateTime? @db.Timestamptz(6)
+
+  tripsRecordedBy             Trip[]              @relation("TripRecordedBy")
+  tripsCreatedBy              Trip[]              @relation("TripCreatedBy")
+  tripsUpdatedBy              Trip[]              @relation("TripUpdatedBy")
+  tripsVerifiedBy             Trip[]              @relation("TripVerifiedBy")
+  haulAssignmentsCreatedBy    HaulAssignment[]    @relation("HaulAssignmentCreatedBy")
+  haulAssignmentsUpdatedBy    HaulAssignment[]    @relation("HaulAssignmentUpdatedBy")
+  fuelQuotasCreatedBy         FuelQuota[]         @relation("FuelQuotaCreatedBy")
+  fuelQuotasUpdatedBy         FuelQuota[]         @relation("FuelQuotaUpdatedBy")
+  leviesCreatedBy             Levy[]              @relation("LevyCreatedBy")
+  leviesUpdatedBy             Levy[]              @relation("LevyUpdatedBy")
+  maintenanceRecordsCreatedBy MaintenanceRecord[] @relation("MaintenanceRecordCreatedBy")
+  maintenanceRecordsUpdatedBy MaintenanceRecord[] @relation("MaintenanceRecordUpdatedBy")
+  inspectionsInspector        VehicleInspection[] @relation("VehicleInspectionInspector")
+  inspectionsCreatedBy        VehicleInspection[] @relation("VehicleInspectionCreatedBy")
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  legacyId    Int?             @unique
+  name        String           @unique @db.VarChar(100)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(6)
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement())
+  key         String           @unique @db.VarChar(64)
+  description String           @db.VarChar(255)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(6)
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  createdAt    DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @db.Timestamptz(6)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model AuthAuditLog {
+  id        BigInt     @id @default(autoincrement())
+  userId    Int?
+  username  String     @db.VarChar(100)
+  action    AuthAction
+  ip        String     @db.VarChar(45)
+  userAgent String     @db.VarChar(512)
+  timestamp DateTime   @db.Timestamptz(6)
+  details   String?    @db.VarChar(512)
+  createdAt DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime   @updatedAt @db.Timestamptz(6)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+}
+
+// ===========================================================================
+// Fleet
+// ===========================================================================
+model VehicleApplication {
+  id        Int            @id @default(autoincrement())
+  legacyId  Int?           @unique
+  name      String         @db.VarChar(100)
+  createdAt DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime       @updatedAt @db.Timestamptz(6)
+  models    VehicleModel[]
+}
+
+model FuelCategory {
+  id        Int      @id @default(autoincrement())
+  legacyId  Int?     @unique
+  name      String   @db.VarChar(20)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  fuels     Fuel[]
+}
+
+model Fuel {
+  id             Int            @id @default(autoincrement())
+  legacyId       Int?           @unique
+  fuelCategoryId Int
+  fuelCategory   FuelCategory   @relation(fields: [fuelCategoryId], references: [id])
+  name           String         @db.VarChar(100)
+  pricePerLiter  Int            @default(0)
+  createdAt      DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @db.Timestamptz(6)
+  models         VehicleModel[]
+}
+
+model VehicleModel {
+  id               Int                @id @default(autoincrement())
+  legacyId         Int?               @unique
+  applicationId    Int
+  application      VehicleApplication @relation(fields: [applicationId], references: [id])
+  fuelId           Int
+  fuel             Fuel               @relation(fields: [fuelId], references: [id])
+  brand            String             @db.VarChar(100)
+  fuelTankCapacity Int
+  normalFuelRatio  Int                @default(1)
+  normalTareWeight Int
+  maxNetLoad       Int?               @default(0)
+  maxNetVolume     Int?               @default(0)
+  wheelCount       Int
+  createdAt        DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime           @updatedAt @db.Timestamptz(6)
+  vehicles         Vehicle[]
+}
+
+model Vehicle {
+  id                 Int                  @id @default(autoincrement())
+  legacyId           Int?                 @unique
+  poolSiteId         Int
+  poolSite           Site                 @relation("VehiclePool", fields: [poolSiteId], references: [id])
+  modelId            Int
+  model              VehicleModel         @relation(fields: [modelId], references: [id])
+  status             VehicleStatus        @default(GOOD)
+  plateNumber        String               @unique @db.VarChar(10)
+  chassisNumber      String               @db.VarChar(100)
+  engineNumber       String               @db.VarChar(100)
+  manufactureYear    Int?
+  currentFuelRatio   Int                  @default(1)
+  currentTareWeight  Int
+  currentOdometer    Int
+  registrationExpiry DateTime             @db.Date
+  taxExpiry          DateTime             @db.Date
+  notes              String?              @db.VarChar(512)
+  createdAt          DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime             @updatedAt @db.Timestamptz(6)
+  deletedAt          DateTime?            @db.Timestamptz(6)
+  hauls              Haul[]
+  crewSchedules      CrewSchedule[]
+  fuelQuotas         FuelQuota[]
+  wasteSources       VehicleWasteSource[]
+  maintenance        MaintenanceRecord[]
+  inspections        VehicleInspection[]
+
+  @@index([poolSiteId])
+  @@index([modelId])
+}
+
+// ===========================================================================
+// Personnel
+// ===========================================================================
+model LicenseClass {
+  id        Int             @id @default(autoincrement())
+  legacyId  Int?            @unique
+  name      String          @db.VarChar(10)
+  createdAt DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime        @updatedAt @db.Timestamptz(6)
+  licenses  DriverLicense[]
+}
+
+model Driver {
+  id               Int              @id @default(autoincrement())
+  legacyId         Int?             @unique
+  poolSiteId       Int
+  poolSite         Site             @relation("DriverPool", fields: [poolSiteId], references: [id])
+  employmentStatus EmploymentStatus
+  name             String           @db.VarChar(100)
+  idCardNumber     String           @db.VarChar(16)
+  originAddress    String           @db.VarChar(256)
+  currentAddress   String           @db.VarChar(256)
+  birthDate        DateTime         @db.Date
+  contact          String           @db.VarChar(100)
+  safetyTraining   String?          @default("BELUM") @db.VarChar(100)
+  notes            String?          @db.VarChar(256)
+  createdAt        DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @db.Timestamptz(6)
+  deletedAt        DateTime?        @db.Timestamptz(6)
+  licenses         DriverLicense[]
+  crewSchedules    CrewSchedule[]
+  haulAssignments  HaulAssignment[]
+
+  @@index([poolSiteId])
+}
+
+model DriverLicense {
+  id             Int          @id @default(autoincrement())
+  legacyId       Int?         @unique
+  driverId       Int
+  driver         Driver       @relation(fields: [driverId], references: [id])
+  licenseClassId Int
+  licenseClass   LicenseClass @relation(fields: [licenseClassId], references: [id])
+  licenseNumber  String       @db.VarChar(12)
+  expiry         DateTime     @db.Date
+  createdAt      DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(6)
+}
+
+// ===========================================================================
+// Geography
+// ===========================================================================
+model Site {
+  id                Int         @id @default(autoincrement())
+  legacyId          Int?        @unique
+  type              SiteType
+  name              String      @db.VarChar(256)
+  address           String      @db.VarChar(512)
+  latitude          Decimal?    @db.Decimal(11, 6)
+  longitude         Decimal?    @db.Decimal(11, 6)
+  createdAt         DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime    @updatedAt @db.Timestamptz(6)
+  deletedAt         DateTime?   @db.Timestamptz(6)
+  originRoutes      Route[]     @relation("RouteOrigin")
+  destinationRoutes Route[]     @relation("RouteDestination")
+  pooledVehicles    Vehicle[]   @relation("VehiclePool")
+  pooledDrivers     Driver[]    @relation("DriverPool")
+  fuelQuotas        FuelQuota[]
+
+  @@index([type])
+}
+
+model Route {
+  id                Int            @id @default(autoincrement())
+  legacyId          Int?           @unique
+  category          RouteCategory
+  originSiteId      Int
+  originSite        Site           @relation("RouteOrigin", fields: [originSiteId], references: [id])
+  destinationSiteId Int
+  destinationSite   Site           @relation("RouteDestination", fields: [destinationSiteId], references: [id])
+  distanceKm        Int
+  createdAt         DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime       @updatedAt @db.Timestamptz(6)
+  deletedAt         DateTime?      @db.Timestamptz(6)
+  trips             Trip[]
+  tripTemplates     TripTemplate[]
+
+  @@unique([originSiteId, destinationSiteId, category])
+}
+
+// ===========================================================================
+// Waste
+// ===========================================================================
+model WasteSource {
+  id        Int                  @id @default(autoincrement())
+  legacyId  Int?                 @unique
+  code      String               @unique @db.VarChar(5)
+  name      String               @db.VarChar(128)
+  notes     String?              @db.VarChar(1024)
+  createdAt DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime             @updatedAt @db.Timestamptz(6)
+  vehicles  VehicleWasteSource[]
+}
+
+model VehicleWasteSource {
+  id            Int         @id @default(autoincrement())
+  vehicleId     Int
+  vehicle       Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  wasteSourceId Int
+  wasteSource   WasteSource @relation(fields: [wasteSourceId], references: [id])
+  createdAt     DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
+
+  @@unique([vehicleId, wasteSourceId])
+}
+
+// ===========================================================================
+// Scheduling
+// ===========================================================================
+model CrewSchedule {
+  id              Int              @id @default(autoincrement())
+  legacyId        Int?             @unique
+  vehicleId       Int
+  vehicle         Vehicle          @relation(fields: [vehicleId], references: [id])
+  driverId        Int
+  driver          Driver           @relation(fields: [driverId], references: [id])
+  departTime      DateTime         @db.Time
+  returnTime      DateTime         @db.Time
+  createdAt       DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(6)
+  tripTemplates   TripTemplate[]
+  haulAssignments HaulAssignment[]
+
+  @@unique([vehicleId, driverId])
+}
+
+model TripTemplate {
+  id                  Int          @id @default(autoincrement())
+  legacyId            Int?         @unique
+  crewScheduleId      Int
+  crewSchedule        CrewSchedule @relation(fields: [crewScheduleId], references: [id], onDelete: Cascade)
+  routeId             Int
+  route               Route        @relation(fields: [routeId], references: [id])
+  targetTime          DateTime     @db.Time
+  fuelRequestedLiters Decimal?     @db.Decimal(8, 2)
+  createdAt           DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime     @updatedAt @db.Timestamptz(6)
+}
+
+/// "kitir" — fuel quota slips matched at the TPA weighbridge.
+model FuelQuota {
+  id          BigInt          @id @default(autoincrement())
+  legacyId    Int?            @unique
+  code        String?         @db.VarChar(50)
+  vehicleId   Int
+  vehicle     Vehicle         @relation(fields: [vehicleId], references: [id])
+  siteId      Int
+  site        Site            @relation(fields: [siteId], references: [id])
+  status      FuelQuotaStatus @default(ACTIVE)
+  issuedAt    DateTime        @db.Timestamptz(6)
+  validFrom   DateTime        @db.Date
+  validTo     DateTime        @db.Date
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @db.Timestamptz(6)
+  createdById Int?
+  createdBy   User?           @relation("FuelQuotaCreatedBy", fields: [createdById], references: [id])
+  updatedById Int?
+  updatedBy   User?           @relation("FuelQuotaUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([code])
+  @@index([vehicleId, status, validFrom, validTo])
+  @@index([status, validFrom, validTo])
+}
+
+// ===========================================================================
+// Transaction lifecycle
+// ===========================================================================
+model TransactionDay {
+  id        Int       @id @default(autoincrement())
+  legacyId  Int?      @unique
+  date      DateTime  @unique @db.Date
+  status    DayStatus @default(IN_PROGRESS)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @db.Timestamptz(6)
+  hauls     Haul[]
+}
+
+model Haul {
+  id               BigInt           @id @default(autoincrement())
+  // Not globally @unique: this table is range-partitioned by operationDate, so a
+  // unique constraint would have to include the partition key. Plain index instead.
+  legacyId         BigInt?
+  transactionDayId Int
+  transactionDay   TransactionDay   @relation(fields: [transactionDayId], references: [id])
+  vehicleId        Int
+  vehicle          Vehicle          @relation(fields: [vehicleId], references: [id])
+  operationDate    DateTime         @db.Date
+  status           DayStatus        @default(IN_PROGRESS)
+  notes            String?          @db.VarChar(256)
+  createdAt        DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @db.Timestamptz(6)
+  assignments      HaulAssignment[]
+
+  @@unique([operationDate, transactionDayId, vehicleId])
+  @@index([operationDate])
+  @@index([legacyId])
+}
+
+model HaulAssignment {
+  id                   BigInt        @id @default(autoincrement())
+  legacyId             BigInt?
+  haulId               BigInt
+  haul                 Haul          @relation(fields: [haulId], references: [id])
+  driverId             Int
+  driver               Driver        @relation(fields: [driverId], references: [id])
+  crewScheduleId       Int?
+  crewSchedule         CrewSchedule? @relation(fields: [crewScheduleId], references: [id])
+  operationDate        DateTime      @db.Date
+  status               DayStatus     @default(IN_PROGRESS)
+  departTargetOdometer Int           @default(0)
+  departActualOdometer Int?
+  returnTargetOdometer Int           @default(0)
+  returnActualOdometer Int?
+  departTargetTime     DateTime?     @db.Timestamptz(6)
+  departActualTime     DateTime?     @db.Timestamptz(6)
+  returnTargetTime     DateTime?     @db.Timestamptz(6)
+  returnActualTime     DateTime?     @db.Timestamptz(6)
+  notes                String?       @db.VarChar(256)
+  createdAt            DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime      @updatedAt @db.Timestamptz(6)
+  createdById          Int?
+  createdBy            User?         @relation("HaulAssignmentCreatedBy", fields: [createdById], references: [id])
+  updatedById          Int?
+  updatedBy            User?         @relation("HaulAssignmentUpdatedBy", fields: [updatedById], references: [id])
+  trips                Trip[]
+
+  @@index([haulId])
+  @@index([operationDate])
+  @@index([legacyId])
+}
+
+model Trip {
+  id                  BigInt         @id @default(autoincrement())
+  legacyId            BigInt?
+  haulAssignmentId    BigInt
+  haulAssignment      HaulAssignment @relation(fields: [haulAssignmentId], references: [id])
+  routeId             Int?
+  route               Route?         @relation(fields: [routeId], references: [id])
+  recordedById        Int?
+  recordedBy          User?          @relation("TripRecordedBy", fields: [recordedById], references: [id])
+  operationDate       DateTime       @db.Date
+  status              TripStatus     @default(IN_PROGRESS)
+  name                String         @db.VarChar(256)
+  targetTime          DateTime?      @db.Timestamptz(6)
+  actualTime          DateTime?      @db.Timestamptz(6)
+  targetOdometer      Int            @default(0)
+  actualOdometer      Int            @default(0)
+  tareWeight          Int            @default(0)
+  grossWeight         Int?
+  netWeight           Int?
+  wasteVolume         Int?
+  fuelRequestedLiters Decimal?       @db.Decimal(8, 2)
+  fuelApprovedLiters  Decimal?       @db.Decimal(8, 2)
+  scheduledEntryAt    DateTime?      @db.Timestamptz(6)
+  realizationEntryAt  DateTime?      @db.Timestamptz(6)
+  notes               String?        @db.VarChar(512)
+  createdAt           DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime       @updatedAt @db.Timestamptz(6)
+  createdById         Int?
+  createdBy           User?          @relation("TripCreatedBy", fields: [createdById], references: [id])
+  updatedById         Int?
+  updatedBy           User?          @relation("TripUpdatedBy", fields: [updatedById], references: [id])
+  verifiedById        Int?
+  verifiedBy          User?          @relation("TripVerifiedBy", fields: [verifiedById], references: [id])
+  verifiedAt          DateTime?      @db.Timestamptz(6)
+
+  @@index([haulAssignmentId])
+  @@index([routeId])
+  @@index([status])
+  @@index([operationDate])
+  @@index([legacyId])
+}
+
+// ===========================================================================
+// Object storage & attachments (polymorphic)
+// ===========================================================================
+model Photo {
+  id          BigInt   @id @default(autoincrement())
+  objectKey   String   @unique @db.VarChar(512)
+  contentType String   @db.VarChar(100)
+  sizeBytes   Int
+  width       Int?
+  height      Int?
+  checksum    String   @db.VarChar(64)
+  ownerType   String   @db.VarChar(40)
+  ownerId     String
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([ownerType, ownerId])
+}
+
+// ===========================================================================
+// Maintenance
+// ===========================================================================
+model MaintenanceRecord {
+  id          BigInt            @id @default(autoincrement())
+  legacyId    BigInt?           @unique
+  code        String?           @unique @db.VarChar(30)
+  vehicleId   Int
+  vehicle     Vehicle           @relation(fields: [vehicleId], references: [id])
+  type        MaintenanceType   @default(SERVICE)
+  status      MaintenanceStatus @default(PENDING_APPROVAL)
+  date        DateTime          @db.Date
+  odometer    Int?
+  workshop    String?           @db.VarChar(256)
+  description String?           @db.VarChar(512)
+  totalCost   Int               @default(0)
+  notes       String?           @db.VarChar(512)
+  createdAt   DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime          @updatedAt @db.Timestamptz(6)
+  createdById Int?
+  createdBy   User?             @relation("MaintenanceRecordCreatedBy", fields: [createdById], references: [id])
+  updatedById Int?
+  updatedBy   User?             @relation("MaintenanceRecordUpdatedBy", fields: [updatedById], references: [id])
+  items       MaintenanceItem[]
+
+  @@index([vehicleId])
+  @@index([date])
+}
+
+model MaintenanceItem {
+  id         BigInt            @id @default(autoincrement())
+  legacyId   BigInt?           @unique
+  recordId   BigInt
+  record     MaintenanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  name       String            @db.VarChar(256)
+  qty        Int               @default(0)
+  unitPrice  Int               @default(0)
+  totalPrice Int               @default(0)
+  createdAt  DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime          @updatedAt @db.Timestamptz(6)
+}
+
+// ===========================================================================
+// Vehicle inspection
+// ===========================================================================
+model VehicleInspection {
+  id          BigInt           @id @default(autoincrement())
+  legacyId    BigInt?          @unique
+  vehicleId   Int
+  vehicle     Vehicle          @relation(fields: [vehicleId], references: [id])
+  date        DateTime         @db.Date
+  inspectorId Int?
+  inspector   User?            @relation("VehicleInspectionInspector", fields: [inspectorId], references: [id])
+  result      InspectionResult @default(PASS)
+  passedCount Int              @default(0)
+  totalCount  Int              @default(0)
+  notes       String?          @db.VarChar(512)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(6)
+  createdById Int?
+  createdBy   User?            @relation("VehicleInspectionCreatedBy", fields: [createdById], references: [id])
+  items       InspectionItem[]
+
+  @@index([vehicleId])
+  @@index([date])
+}
+
+model InspectionItem {
+  id           BigInt               @id @default(autoincrement())
+  inspectionId BigInt
+  inspection   VehicleInspection    @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  label        String               @db.VarChar(128)
+  status       InspectionItemStatus @default(OK)
+  notes        String?              @db.VarChar(256)
+  createdAt    DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime             @updatedAt @db.Timestamptz(6)
+}
+
+// ===========================================================================
+// External / aggregates
+// ===========================================================================
+model TpaInboundLog {
+  id            Int       @id @default(autoincrement())
+  legacyId      Int?
+  dateLabel     String?   @db.VarChar(50)
+  date          DateTime? @db.Date
+  plateNumber   String?   @db.VarChar(20)
+  depot         String?   @db.VarChar(200)
+  sourceTruck   String?   @db.VarChar(200)
+  grossWeight   Int?
+  tareWeight    Int?
+  netWeight     Int?
+  cctvReference String?   @db.VarChar(256)
+  tripId        BigInt?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@index([date])
+  @@index([plateNumber])
+  @@index([tripId])
+  @@index([legacyId])
+}
+
+model DailyTonnage {
+  id        Int      @id @default(autoincrement())
+  legacyId  Int?     @unique
+  date      DateTime @unique @db.Date
+  amount    BigInt   @default(0)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model LegacyNameMap {
+  id        Int      @id @default(autoincrement())
+  si        String?  @db.VarChar(250)
+  swat      String?  @db.VarChar(250)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+}
+
+// ===========================================================================
+// Levy (Phase 3)
+// ===========================================================================
+model Levy {
+  id           BigInt   @id @default(autoincrement())
+  legacyId     BigInt?  @unique
+  categoryName String   @db.VarChar(100)
+  date         DateTime @db.Date
+  amount       BigInt
+  notes        String?  @db.VarChar(256)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+  createdById  Int?
+  createdBy    User?    @relation("LevyCreatedBy", fields: [createdById], references: [id])
+  updatedById  Int?
+  updatedBy    User?    @relation("LevyUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([date])
+  @@index([categoryName, date])
+}

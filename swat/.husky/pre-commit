@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# The git root is the repo's outer directory; the pnpm monorepo lives in swat/.
+# cd to this hook's parent monorepo dir so lint-staged resolves correctly,
+# regardless of the cwd git invokes the hook from.
+cd "$(dirname "$0")/.." || exit 1
+pnpm exec lint-staged

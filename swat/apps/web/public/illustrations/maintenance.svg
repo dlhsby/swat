@@ -1,0 +1,40 @@
+<svg viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sedang dalam perbaikan">
+  <circle cx="240" cy="172" r="130" fill="#ecfdf5"></circle>
+  <ellipse cx="240" cy="288" rx="146" ry="14" fill="#bbf7d0" opacity="0.7"></ellipse>
+  <circle cx="372" cy="100" r="6" fill="#6ee7b7"></circle>
+  <circle cx="104" cy="118" r="5" fill="#34d399"></circle>
+  <circle cx="392" cy="200" r="4" fill="#10b981"></circle>
+  
+  <g transform="translate(148 92)">
+    <g fill="#047857">
+      <circle cx="58" cy="58" r="44"></circle>
+      <rect x="50" y="-6" width="16" height="22" rx="4"></rect>
+      <rect x="50" y="100" width="16" height="22" rx="4"></rect>
+      <rect x="-6" y="50" width="22" height="16" rx="4"></rect>
+      <rect x="100" y="50" width="22" height="16" rx="4"></rect>
+      <rect x="14" y="14" width="16" height="22" rx="4" transform="rotate(-45 22 25)"></rect>
+      <rect x="86" y="14" width="16" height="22" rx="4" transform="rotate(45 94 25)"></rect>
+      <rect x="14" y="80" width="16" height="22" rx="4" transform="rotate(45 22 91)"></rect>
+      <rect x="86" y="80" width="16" height="22" rx="4" transform="rotate(-45 94 91)"></rect>
+    </g>
+    <circle cx="58" cy="58" r="19" fill="#ecfdf5"></circle>
+  </g>
+  
+  <g transform="translate(252 176)">
+    <g fill="#10b981">
+      <circle cx="36" cy="36" r="26"></circle>
+      <rect x="30" y="-2" width="12" height="16" rx="3"></rect>
+      <rect x="30" y="58" width="12" height="16" rx="3"></rect>
+      <rect x="-2" y="30" width="16" height="12" rx="3"></rect>
+      <rect x="58" y="30" width="16" height="12" rx="3"></rect>
+    </g>
+    <circle cx="36" cy="36" r="11" fill="#ffffff"></circle>
+  </g>
+  
+  <g transform="translate(244 96) rotate(38)">
+    <rect x="0" y="34" width="96" height="18" rx="9" fill="#334155"></rect>
+    <circle cx="6" cy="43" r="20" fill="#334155"></circle>
+    <circle cx="6" cy="43" r="9" fill="#ecfdf5"></circle>
+    <rect x="92" y="30" width="20" height="26" rx="5" fill="#475569"></rect>
+  </g>
+</svg>

@@ -1,0 +1,40 @@
+{
+  "common": {
+    "appName": "SWAT",
+    "appTagline": "Sistem Pengangkutan Sampah Terpadu — DLH Surabaya",
+    "home": "Beranda",
+    "loading": "Memuat…",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "edit": "Ubah",
+    "search": "Cari",
+    "logout": "Keluar",
+    "back": "Kembali",
+    "themeToggle": "Ganti Tema"
+  },
+  "nav": {
+    "dashboard": "Dasbor",
+    "monitoring": "Pemantauan",
+    "masterData": "Data Master",
+    "fleet": "Kendaraan",
+    "personnel": "Pengemudi",
+    "geography": "Lokasi & Rute",
+    "scheduling": "Penjadwalan",
+    "transactions": "Transaksi",
+    "users": "Pengguna",
+    "access": "Hak Akses",
+    "reports": "Laporan"
+  },
+  "forms": {
+    "required": "Wajib diisi",
+    "invalid": "Nilai tidak valid",
+    "submit": "Kirim",
+    "reset": "Atur Ulang"
+  },
+  "home": {
+    "title": "Selamat datang di SWAT",
+    "subtitle": "Fondasi aplikasi siap. Mulai membangun fitur pada Fase 1.",
+    "healthLink": "Periksa status API"
+  }
+}

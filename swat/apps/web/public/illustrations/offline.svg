@@ -1,0 +1,22 @@
+<svg viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Anda sedang offline">
+  <circle cx="240" cy="172" r="130" fill="#f1f5f9"></circle>
+  <ellipse cx="240" cy="288" rx="146" ry="14" fill="#e2e8f0" opacity="0.7"></ellipse>
+  <circle cx="368" cy="104" r="6" fill="#a7f3d0"></circle>
+  <circle cx="104" cy="124" r="5" fill="#cbd5e1"></circle>
+  
+  <g transform="translate(132 120)">
+    <path d="M58 118 C 26 118, 4 96, 12 66 C 18 44, 42 36, 60 44 C 70 18, 104 12, 124 32 C 140 24, 162 32, 168 50 C 196 50, 214 74, 204 100 C 198 112, 184 118, 170 118 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="3"></path>
+    
+    <circle cx="78" cy="80" r="7" fill="#cbd5e1"></circle>
+    <circle cx="108" cy="80" r="7" fill="#cbd5e1"></circle>
+    <circle cx="138" cy="80" r="7" fill="#cbd5e1"></circle>
+  </g>
+  
+  <line x1="150" y1="118" x2="330" y2="270" stroke="#f1f5f9" stroke-width="20" stroke-linecap="round"></line>
+  <line x1="150" y1="118" x2="330" y2="270" stroke="#64748b" stroke-width="10" stroke-linecap="round"></line>
+  
+  <g transform="translate(300 92) rotate(-18)">
+    <path d="M0 -16 C -10 -4, -10 10, 0 20 L0 -16 Z" fill="#34d399"></path>
+    <path d="M0 -16 C 10 -4, 10 10, 0 20 L0 -16 Z" fill="#10b981"></path>
+  </g>
+</svg>

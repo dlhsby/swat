@@ -1,0 +1,21 @@
+{
+  "name": "SWAT — DLH Surabaya",
+  "short_name": "SWAT",
+  "description": "Sistem Pengangkutan Sampah Terpadu — Dinas Lingkungan Hidup Kota Surabaya",
+  "start_url": "/id-ID/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "lang": "id-ID",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/brand/swat-mark.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

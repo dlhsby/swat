@@ -1,0 +1,25 @@
+<svg viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tidak ada hasil pencarian">
+  <circle cx="240" cy="172" r="130" fill="#f1f5f9"></circle>
+  <ellipse cx="240" cy="288" rx="150" ry="14" fill="#e2e8f0" opacity="0.7"></ellipse>
+  <circle cx="372" cy="98" r="6" fill="#a7f3d0"></circle>
+  <circle cx="100" cy="120" r="5" fill="#cbd5e1"></circle>
+  
+  <g transform="translate(120 78)">
+    <rect x="0" y="0" width="220" height="52" rx="26" fill="#ffffff" stroke="#e2e8f0" stroke-width="3"></rect>
+    <circle cx="34" cy="26" r="11" fill="none" stroke="#94a3b8" stroke-width="4"></circle>
+    <line x1="42" y1="34" x2="52" y2="44" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"></line>
+    <rect x="64" y="20" width="120" height="12" rx="6" fill="#f1f5f9"></rect>
+  </g>
+  
+  <g transform="translate(120 154)">
+    <rect x="0" y="0" width="220" height="14" rx="7" fill="#eef2f7"></rect>
+    <rect x="0" y="28" width="180" height="14" rx="7" fill="#eef2f7"></rect>
+    <rect x="0" y="56" width="200" height="14" rx="7" fill="#f5f7fa"></rect>
+  </g>
+  
+  <g transform="translate(244 150)">
+    <circle cx="46" cy="46" r="42" fill="#ecfdf5" stroke="#10b981" stroke-width="9"></circle>
+    <path d="M34 34 L58 58 M58 34 L34 58" stroke="#047857" stroke-width="7" stroke-linecap="round"></path>
+    <rect x="74" y="74" width="56" height="18" rx="9" transform="rotate(45 74 74)" fill="#047857"></rect>
+  </g>
+</svg>

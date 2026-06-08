@@ -1,0 +1,20 @@
+<svg viewBox="0 0 480 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Memuat">
+  
+  <circle cx="240" cy="116" r="96" fill="#ecfdf5"></circle>
+  
+  <line class="road" x1="40" y1="196" x2="440" y2="196" stroke="#a7f3d0" stroke-width="7" stroke-linecap="round"></line>
+  
+  <circle class="puff" cx="150" cy="150" r="7" fill="#d1fae5"></circle>
+  <circle class="puff" cx="140" cy="158" r="5" fill="#bbf7d0" style="animation-delay:.4s"></circle>
+  
+  <g class="truck" transform="translate(168 96)">
+    <rect x="0" y="4" width="104" height="58" rx="9" fill="#047857"></rect>
+    <circle cx="78" cy="33" r="15" fill="#ffffff"></circle>
+    <g transform="translate(78 33) rotate(-18)"><path d="M0 -9 C -5 -3, -5 5, 0 11 L0 -9 Z" fill="#10b981"></path><path d="M0 -9 C 5 -3, 5 5, 0 11 L0 -9 Z" fill="#047857"></path></g>
+    <path d="M104 22 H130 C 134 22, 137 25, 139 29 L145 46 V62 H104 Z" fill="#10b981"></path>
+    <rect x="110" y="29" width="24" height="17" rx="4" fill="#d1fae5"></rect>
+    <rect x="2" y="62" width="143" height="10" rx="3" fill="#0f172a"></rect>
+    <g class="wheel"><circle cx="34" cy="74" r="15" fill="#0f172a"></circle><circle cx="34" cy="74" r="6" fill="#475569"></circle><rect x="32" y="61" width="4" height="26" rx="2" fill="#64748b"></rect></g>
+    <g class="wheel"><circle cx="120" cy="74" r="15" fill="#0f172a"></circle><circle cx="120" cy="74" r="6" fill="#475569"></circle><rect x="118" y="61" width="4" height="26" rx="2" fill="#64748b"></rect></g>
+  </g>
+</svg>

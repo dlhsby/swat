@@ -1,0 +1,97 @@
+# SWAT local development stack.
+#   docker compose --env-file infra/docker-compose.env up -d
+# Services: PostgreSQL 15, Adminer, Redis 7, MinIO (+ bucket bootstrap), nginx.
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: swat-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-swat}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swat_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-swat}
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-swat} -d ${POSTGRES_DB:-swat}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer:4
+    container_name: swat-adminer
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    container_name: swat-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'no']
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: swat-minio
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-swat}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-swat_dev_secret}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-shot job: create the buckets SWAT expects, then exit.
+  minio-init:
+    image: minio/mc:latest
+    container_name: swat-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-swat} ${MINIO_ROOT_PASSWORD:-swat_dev_secret} &&
+      mc mb --ignore-existing local/swat-photos &&
+      mc mb --ignore-existing local/swat-thumbnails &&
+      mc mb --ignore-existing local/swat-reports &&
+      echo 'SWAT buckets ready';
+      "
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: swat-nginx
+    restart: unless-stopped
+    ports:
+      - '8088:80'
+    volumes:
+      - ./infra/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  minio_data:

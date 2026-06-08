@@ -1,0 +1,27 @@
+<svg viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Halaman tidak ditemukan">
+  <circle cx="240" cy="172" r="130" fill="#f1f5f9"></circle>
+  <ellipse cx="240" cy="288" rx="150" ry="14" fill="#e2e8f0" opacity="0.7"></ellipse>
+  <circle cx="372" cy="100" r="6" fill="#a7f3d0"></circle>
+  <circle cx="104" cy="120" r="5" fill="#cbd5e1"></circle>
+  <circle cx="392" cy="206" r="4" fill="#94a3b8"></circle>
+  
+  <g transform="translate(150 70)">
+    <rect x="0" y="0" width="180" height="64" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="3"></rect>
+    <text x="90" y="46" font-family="&#39;Plus Jakarta Sans&#39;,sans-serif" font-size="40" font-weight="800" fill="#047857" text-anchor="middle" letter-spacing="2">404</text>
+  </g>
+  
+  <g transform="translate(0 0)">
+    <rect x="232" y="150" width="16" height="124" rx="5" fill="#334155"></rect>
+    
+    <path d="M236 162 H140 L120 180 L140 198 H236 Z" fill="#047857"></path>
+    <path d="M150 180 H210" stroke="#ffffff" stroke-width="7" stroke-linecap="round" opacity="0.85"></path>
+    
+    <path d="M244 206 H348 L368 224 L348 242 H244 Z" fill="#94a3b8"></path>
+    <path d="M270 224 H338" stroke="#ffffff" stroke-width="7" stroke-linecap="round" opacity="0.85"></path>
+  </g>
+  
+  <g transform="translate(330 120) rotate(-18)">
+    <path d="M0 -14 C 8 -4, 8 10, 0 18 C -8 10, -8 -4, 0 -14 Z" fill="#10b981"></path>
+    <path d="M0 -9 L0 13" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"></path>
+  </g>
+</svg>
