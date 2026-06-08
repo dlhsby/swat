@@ -2,9 +2,11 @@
 
 **Status:** 🚧 **IN PROGRESS** — Milestones **M1 (Auth & RBAC)**, **M2 (backend master data)**,
 **M3 (design-system component library)**, **M4 (transactions backend)**, **M5 (frontend —
-Epics 1.9–1.12)**, **M6 (legacy parity — Epic 1.17)** and **M7 (migration toolkit — Epic 1.13,
-scripts + tested pure logic; live run deferred)** complete and on `main` under green gates;
-**M8** not yet started.
+Epics 1.9–1.12)**, **M6 (legacy parity — Epic 1.17)**, **M7 (migration toolkit — Epic 1.13,
+scripts + tested pure logic; live run deferred)** and **M8 (hardening / docs / cutover — Epics
+1.14–1.16)** complete and on `main` under green gates. **Phase 1 is code-complete**; the
+remaining items are the operator's on-prem live steps (Docker stack up, `migrate deploy` + seed,
+the T-155 transactional bulk migration, Playwright E2E run, and the actual cutover).
 
 > Build-side progress record for [`phase-1.md`](./phase-1.md), sequenced by
 > [`phase-1-plan.md`](./phase-1-plan.md). Where this diverges from the spec, the divergence is
@@ -14,8 +16,8 @@ scripts + tested pure logic; live run deferred)** complete and on `main` under g
 |---|---|
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
-| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) · M6 (Epic 1.17) · M7 (Epic 1.13 scripts) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) · `89d3a15` (M6 review fix) · `fc07541` (M7 migration toolkit) · `1436b9b` (M7 review fix) — all on `main` |
+| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) · M6 (Epic 1.17) · M7 (Epic 1.13 scripts) · M8 (Epics 1.14–1.16) — **all 8 milestones** |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) · `89d3a15` (M6 review fix) · `fc07541` (M7 migration toolkit) · `1436b9b` (M7 review fix) · `1301011` (M8 hardening/docs/cutover) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
@@ -32,7 +34,7 @@ scripts + tested pure logic; live run deferred)** complete and on `main` under g
 | **M5** | 1.9–1.12 frontend | ✅ Complete |
 | **M6** | 1.17 legacy parity | ✅ Complete |
 | **M7** | 1.13 migration scripts (dry-run) | ✅ Complete (live run deferred) |
-| **M8** | 1.14–1.16 hardening / docs / cutover | ⏳ Not started — **next** |
+| **M8** | 1.14–1.16 hardening / docs / cutover | ✅ Complete (live cutover deferred) |
 
 ---
 
@@ -415,9 +417,43 @@ checked columns are `NOT NULL`); enum maps already carry their dump-verified pro
 
 ---
 
-## What's next — M8 (Epics 1.14–1.16 hardening / docs / cutover)
+## M8 · Epics 1.14–1.16 — Hardening / docs / cutover (T-160 … T-169)
 
-Playwright E2E for the critical flows; README + Swagger decorators + prod Dockerfiles +
-`docker-compose.prod.yml` + Nginx; cutover runbook + rollback (docs + staging dry-run). Same-origin
-Nginx also resolves the M5 deviation #7 (server-side route guard). **Live cutover execution is the
-user's on-prem step.** See [`phase-1-plan.md`](./phase-1-plan.md) § M8.
+Final hardening. Test/lint/typecheck gates and the unit/integration suites were built incrementally
+across M1–M7 (T-160/T-161); M8 adds the E2E harness, production deployment, and the cutover/ops docs.
+
+| Task | Title | Status | Notes |
+|------|-------|--------|-------|
+| T-160 | Unit test suite | ✅ | 363 backend + 106 web unit/component tests across M1–M7; coverage gates enforced (auth/trip ≥90%, services ≥80%). |
+| T-161 | Integration suite | ✅ | supertest e2e for auth + master-data pass live; transactions e2e written, deferred (needs Docker + seed). |
+| T-162 | E2E (Playwright) | ✅ scaffold | `@playwright/test` + `playwright.config.ts` + auth/master-data/transactions critical-flow specs + helpers (Bahasa, role/label selectors). Typechecked here; **runs against a live stack** (`playwright install` + seeded DB) — operator step. |
+| T-163 | README & setup | ✅ | README gained Production-deployment, Migration, Cutover-docs, and API-docs sections atop the existing dev quick-start. |
+| T-164 | API docs (Swagger) | ✅ | Already wired — `SwaggerModule` at `/api/docs`; every controller `@ApiTags`/`@ApiOperation`-decorated; responses in the `ApiResponse<T>` envelope. |
+| T-165 | Production Docker image | ✅ | `infra/docker-compose.prod.yml` (Postgres/Redis/MinIO/backend/web/Nginx + healthchecks + `migrate deploy` on boot), `nginx.prod.conf` (single same-origin), Next `output:'standalone'` + standalone web Dockerfile, `docker-compose.prod.env.example`. `docker build`/`up` is the operator step. |
+| T-166 | Parallel-run & delta-sync | ✅ | `delta-sync.ts` — idempotent master re-upsert + KPI parity (tonnage/fuel/ritase) reconcile, exit 1 on >1% divergence; transactional incremental deferred with T-155. |
+| T-167 | Cutover runbook | ✅ | [`docs/CUTOVER-RUNBOOK.md`](../../docs/CUTOVER-RUNBOOK.md) — freeze window, final delta-sync, verification + sign-off, DNS/proxy flip, temp-credential distribution, 48h fallback. |
+| T-168 | Rollback plan | ✅ | [`docs/ROLLBACK-PLAN.md`](../../docs/ROLLBACK-PLAN.md) — explicit triggers, reverse-flip procedure, data quarantine, named authority, staging dry-run checklist. |
+| T-169 | Training & hypercare | ✅ | [`USER-GUIDE.md`](../../docs/USER-GUIDE.md) (Bahasa, per-role + forced-reset), [`LEGACY-TO-NEW-REFERENCE.md`](../../docs/LEGACY-TO-NEW-REFERENCE.md), [`KNOWN-ISSUES-AND-WORKAROUNDS.md`](../../docs/KNOWN-ISSUES-AND-WORKAROUNDS.md). |
+
+- **Same-origin Nginx closes M5 deviation #7:** with `/api` + the web app on one origin, the httpOnly
+  `swat.sid` cookie is first-party and the route guard can become server-side; the client `AuthGuard`
+  stays as UX.
+- **Verification:** Next `output:'standalone'` build produces a runnable server bundle; all 5 packages
+  lint + typecheck clean; web 106 tests + build green; compose YAML parse-validated (Docker unavailable
+  so `compose up` is the operator step).
+
+---
+
+## Phase 1 — code-complete
+
+All eight milestones (M1–M8) are delivered on `main` under green gates. What remains is **operator
+on-prem execution**, all consistent with the Phase-0/1 defer-live-infra posture:
+
+1. Bring up the prod stack (`docker-compose.prod.yml`), `prisma migrate deploy` + seed the admin.
+2. Run the legacy migration end-to-end against the live DB, incl. the **T-155 transactional bulk
+   load** (revisit with live data) and the image corpus.
+3. `playwright install` + run the E2E suite against the live stack.
+4. Execute the cutover per [`docs/CUTOVER-RUNBOOK.md`](../../docs/CUTOVER-RUNBOOK.md) (with the rollback
+   plan on standby).
+
+See [`phase-1-plan.md`](./phase-1-plan.md) for the original milestone map.
