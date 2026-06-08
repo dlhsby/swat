@@ -1,8 +1,9 @@
 # Phase 1 — MVP · Implementation Status
 
 **Status:** 🚧 **IN PROGRESS** — Milestones **M1 (Auth & RBAC)**, **M2 (backend master data)**,
-**M3 (design-system component library)**, **M4 (transactions backend)** and **M5 (frontend —
-Epics 1.9–1.12)** complete and on `main` under green gates; **M6–M8** not yet started.
+**M3 (design-system component library)**, **M4 (transactions backend)**, **M5 (frontend —
+Epics 1.9–1.12)** and **M6 (legacy parity — Epic 1.17)** complete and on `main` under green gates;
+**M7–M8** not yet started.
 
 > Build-side progress record for [`phase-1.md`](./phase-1.md), sequenced by
 > [`phase-1-plan.md`](./phase-1-plan.md). Where this diverges from the spec, the divergence is
@@ -12,8 +13,8 @@ Epics 1.9–1.12)** complete and on `main` under green gates; **M6–M8** not ye
 |---|---|
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
-| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) — all on `main` |
+| **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) · M6 (Epic 1.17) |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
@@ -28,8 +29,8 @@ Epics 1.9–1.12)** complete and on `main` under green gates; **M6–M8** not ye
 | **M3** | 1.8.5 component library (34 components) | ✅ Complete |
 | **M4** | 1.7–1.8 transactions backend | ✅ Complete |
 | **M5** | 1.9–1.12 frontend | ✅ Complete |
-| **M6** | 1.17 legacy parity | ⏳ Not started — **next** |
-| **M7** | 1.13 migration scripts (dry-run) | ⏳ Not started |
+| **M6** | 1.17 legacy parity | ✅ Complete |
+| **M7** | 1.13 migration scripts (dry-run) | ⏳ Not started — **next** |
 | **M8** | 1.14–1.16 hardening / docs / cutover | ⏳ Not started |
 
 ---
@@ -40,10 +41,10 @@ Epics 1.9–1.12)** complete and on `main` under green gates; **M6–M8** not ye
 |------|---------|--------|
 | Lint | `pnpm lint` | ✅ 0 warnings/errors (all 5 packages) |
 | Typecheck | `pnpm typecheck` | ✅ 0 errors |
-| Unit tests | `pnpm --filter @swat/backend test` | ✅ **271 tests, 36 suites** (+46 for M4) |
-| Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ **96.5% stmts · 81.5% branch · 95.3% funcs**; every M4 transactions service at **100% stmts/funcs** (≥90% trip-path gate met) |
-| Web tests | `pnpm --filter @swat/web test` | ✅ **100 tests, 12 suites** (+22 for M5: permissions matcher, password strength, dashboard metrics, ProtectedAction, format) |
-| Web build | `pnpm --filter @swat/web build` | ✅ **all 13 app routes** compile (App Router; login/change-password/profile/dashboard, 11 master-data + transaction screens) |
+| Unit tests | `pnpm --filter @swat/backend test` | ✅ **305 tests, 39 suites** (+34 for M6: inspection result-derivation, maintenance totalCost/approve, refuel cost/anomaly, kitir bulk-import) |
+| Coverage gate | `--coverage` (threshold 90/78/90/90) | ✅ M6 operations services (inspection/maintenance/refuel) at **≥80%** per gate; transactions at **100%** stmts/funcs |
+| Web tests | `pnpm --filter @swat/web test` | ✅ **106 tests, 13 suites** (+6 for M6: CSV parser) |
+| Web build | `pnpm --filter @swat/web build` | ✅ **all 16 app routes** compile (App Router; +`/pengisian-bbm`, `/pemeriksaan`, `/perawatan` for M6) |
 | Schemas tests | `pnpm --filter @swat/schemas test` | ✅ **17 tests** |
 | E2E (live stack) | `pnpm --filter @swat/backend test:e2e` | ✅ auth + master-data pass; transactions e2e written, **deferred** (needs Docker + synthetic seed) |
 | Build | `pnpm build` | ✅ 4/4 |
@@ -59,10 +60,11 @@ the layer that holds the rules.
 
 ## Surface delivered
 
-- **23 controllers · 94 endpoints** (master data + transactions), all behind
+- **26 controllers · ~107 endpoints** (master data + transactions + operations), all behind
   `AuthGuard` → `PermissionsGuard`, validated by the global pipe, wrapped in the `ApiResponse<T>`
   envelope, Indonesian error messages. M4 added the transaction routes (transaction-days,
-  haul-assignments depart/return, trip record/verify/read).
+  haul-assignments depart/return, trip record/verify/read); M6 added the operations routes
+  (vehicle-inspections, maintenance-records + approve, refuels read view, fuel-quotas bulk-import).
 - **Postman collection** (`apps/backend/postman/`): 74 requests / 7 folders + local environment,
   cookie-auth, id-capturing POSTs. Regenerate with `node apps/backend/postman/generate.mjs`.
 
@@ -150,6 +152,12 @@ class-validator DTOs (Zod `@swat/schemas` reserved for frontend sharing).
    `eslint-plugin-import` (one via `eslint-config-next`, one via `@swat/eslint-config`), which ESLint 8
    rejects as a plugin conflict, breaking `next lint`. `pnpm dedupe` collapses them; the lockfile change
    is committed with the M5 foundation.
+9. **Kitir bulk-import parses the file client-side** (M6) — the spec names `POST /fuel-quotas/bulk-import
+   (CSV/Excel)`. The frontend reads + parses the CSV (and resolves plate/site-name → id against loaded
+   options) and posts **structured, validated rows** as JSON; the server re-validates vehicle/site
+   existence + date order and upserts by `legacyId`. This keeps the backend free of a multipart/Excel
+   parsing dependency while the server stays authoritative over validation + idempotency. (`.xlsx`
+   files are exported to CSV by the user; native Excel parsing is deferrable.)
 
 ---
 
@@ -306,9 +314,31 @@ instances across the `(app)`/`(auth)` route groups (never co-mount, so no double
 
 ---
 
-## What's next — M6 (Epic 1.17 legacy parity)
+## M6 · Epic 1.17 — Legacy parity (T-170 … T-175)
 
-Reference-master CRUD (delete-blocked-when-referenced), kitir bulk import, refuel log, inspection
-(12-item + result derivation), maintenance (nested items + totalCost + approval) — backend + frontend.
-The four parity screens already appear in the sidebar as "Segera" placeholders. See
-[`phase-1-plan.md`](./phase-1-plan.md) § M6.
+Closes the legacy feature gaps that gate cutover. Backend in a new `modules/operations/`
+(inspections · maintenance · refuels) plus a bulk-import endpoint on the existing fuel-quotas module;
+frontend promotes the three "Segera" placeholders to live screens and adds the kitir importer.
+
+| Task | Title | Status | Notes |
+|------|-------|--------|-------|
+| T-170 | Reference-master CRUD (model/application/fuel) | ✅ | Already delivered in **M2** backend (`fleet/{models,applications,fuels}`, delete-blocked-when-referenced → 409; fuel update carries `pricePerLiter`) + **M5** screens. Verified, no new work. |
+| T-171 | Jatah Kitir bulk import (Impor Massal) | ✅ | `POST /fuel-quotas/bulk-import` — validate vehicle/site + `validTo ≥ validFrom`, **upsert by `legacyId`** with **UPSERT/SKIP** strategy, per-row error reporting. Frontend: CSV dropzone → client parse + preview → import summary + downloadable error log (deviation #9). |
+| T-172 | Pengisian BBM — refuel log | ✅ | `GET /refuels` read view over REFUEL trips: derived **cost = approved × fuel.pricePerLiter**, **anomaly flag** when `approved < requested`; filters vehicle/fuel/status/date. Frontend `/pengisian-bbm`: KPI grid + table. |
+| T-173 | Pemeriksaan Kendaraan — inspection | ✅ | CRUD with **server-derived** `result`/`passedCount`/`totalCount` (any FAIL→FAIL; any ATTENTION→ATTENTION; else PASS) from a seeded **12-item checklist**. Frontend `/pemeriksaan`: list + create/edit dialog (3-way per-item control + live result) + detail Sheet. |
+| T-174 | Perawatan — maintenance | ✅ | CRUD with nested line items, **server-computed `totalCost`**, auto code `PRW-YYYYMM-NNNN`, `PATCH …/approve` gated `maintenance:approve`; edit/delete **blocked once APPROVED**. Frontend `/perawatan`: KPI grid + list + record/edit dialog (line-item sub-table + live total) + approve flow + read-only view. |
+| T-175 | RBAC permission seed additions | ✅ | All keys (`vehicle-model:*`, `vehicle-application:*`, `fuel:*`, `inspection:*`, `maintenance:*` incl. `maintenance:approve`) were already seeded + assigned to default roles via wildcard patterns; sidebar gates each screen on its `:read`. Verified. |
+
+- **Coverage (M6 services):** inspection / maintenance / refuel services tested at the spec's ≥80%
+  bar — including the result-derivation, `totalCost`, approve-transition, refuel-cost/anomaly, and
+  bulk-import (validation + UPSERT/SKIP) unit tests.
+- **Result/totalCost are server-authoritative** — the client never sets them; inspections derive from
+  item statuses, maintenance from line items.
+
+---
+
+## What's next — M7 (Epic 1.13 migration, scripts + dry-run)
+
+Discovery / migrate / images / verify scripts; idempotent by `legacyId`; dry-run vs the sample dump
+with a reconciliation report. **Live multi-TB run is the user's on-prem step** (Docker deferred). See
+[`phase-1-plan.md`](./phase-1-plan.md) § M7.
