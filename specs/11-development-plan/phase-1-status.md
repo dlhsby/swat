@@ -17,7 +17,7 @@ the T-155 transactional bulk migration, Playwright E2E run, and the actual cutov
 | **Spec** | [`phase-1.md`](./phase-1.md) (18 epics, T-101…T-175) |
 | **Plan** | [`phase-1-plan.md`](./phase-1-plan.md) — 8 milestones (M1 → M8) |
 | **Delivered so far** | M1 (Epic 1.1) · M2 (Epics 1.2–1.6) · M3 (Epic 1.8.5) · M4 (Epics 1.7–1.8) · M5 (Epics 1.9–1.12) · M6 (Epic 1.17) · M7 (Epic 1.13 scripts) · M8 (Epics 1.14–1.16) — **all 8 milestones** |
-| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) · `89d3a15` (M6 review fix) · `fc07541` (M7 migration toolkit) · `1436b9b` (M7 review fix) · `1301011` (M8 hardening/docs/cutover) — all on `main` |
+| **Commits** | `bc8acd3` (M1 auth/RBAC) · `b7301f8` (M2 master data) · `13aeecc` (Postman) · `b413a22` (M1+M2 review/coverage) · `566859c` (M3 component library) · `c7338ef` (M3 lint/RSC fixes) · `baf2997` (M3 review fixes) · `1459fcc` (M4 transactions backend) · `cfa4a33` (M4 review fixes) · `75fe6ee` (M5 foundation: auth/shell/login/profile/dashboard) · `8469bf4` (M5 master-data CRUD) · `0bdf7d3` (M5 transaction workflow) · `b15b41c` (M5 review fixes) · `4d589d1` (M6 parity backend) · `54b00d4` (M6 parity frontend) · `89d3a15` (M6 review fix) · `fc07541` (M7 migration toolkit) · `1436b9b` (M7 review fix) · `1301011` (M8 hardening/docs/cutover) · `2fb5355` (M8 review fix) — all on `main` |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
 | **Stack added** | `express-session` + `connect-redis@9` (node-redis client) · `argon2` · `@nestjs/schedule` (cron) · class-validator DTOs |
 
@@ -441,6 +441,22 @@ across M1–M7 (T-160/T-161); M8 adds the E2E harness, production deployment, an
 - **Verification:** Next `output:'standalone'` build produces a runnable server bundle; all 5 packages
   lint + typecheck clean; web 106 tests + build green; compose YAML parse-validated (Docker unavailable
   so `compose up` is the operator step).
+
+### M8 review fixes (`2fb5355`)
+
+Adversarial review of the prod config + scaffolding against the backend source. Two real defects fixed:
+
+1. **Missing `JWT_SECRET` in the prod stack** (HIGH) — `env.validation.ts` requires `JWT_SECRET`
+   (≥16 chars, no default), but `docker-compose.prod.yml` + the env example omitted it, so the backend
+   would **fail fast at boot**. Added to the backend service env + `docker-compose.prod.env.example`.
+2. **`delta-sync` update clobbered `createdAt`** (MED) — passing the full create payload as the Prisma
+   `upsert` update would re-write each row's original migration `createdAt` on every parallel-run pass.
+   The update now strips `id` + `createdAt` (mutable columns only).
+
+**Verified correct, not changed:** `/health` is excluded from the `/api/v1` prefix
+(`@Controller('health')` + main.ts), so the container healthcheck and the nginx `= /health` route both
+resolve; the Next-standalone Dockerfile copy layout; nginx service-name upstreams; busybox `wget`
+follows the `/ → /id-ID` redirect for the web healthcheck.
 
 ---
 
