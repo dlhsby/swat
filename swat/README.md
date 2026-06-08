@@ -2,8 +2,8 @@
 
 Fleet & solid-waste-transport operations platform for **DLH Kota Surabaya**.
 A TypeScript monorepo rebuilding the legacy CodeIgniter app (`../old_swat`) on a
-modern stack. This is the **Phase 0 foundation** (see
-`../specs/11-development-plan/phase-0.md`).
+modern stack. **Phase 0 (foundation) is complete** — see the status report at
+`../specs/11-development-plan/phase-0-status.md` (spec: `../specs/11-development-plan/phase-0.md`).
 
 ## Stack
 
@@ -29,7 +29,8 @@ swat/
 │   ├── prisma-client/  # @swat/prisma-client — PrismaClient singleton
 │   ├── eslint-config/  # @swat/eslint-config
 │   └── tsconfig/       # @swat/tsconfig
-├── infra/              # Dockerfiles, nginx, compose env
+├── infra/              # Dockerfiles, nginx, compose env (+ .example)
+├── scripts/            # setup.sh (bootstrap) · start.sh (run)
 └── docker-compose.yml  # Postgres · Adminer · Redis · MinIO · nginx
 ```
 
@@ -38,31 +39,61 @@ swat/
 - Node.js ≥ 20, **pnpm 9** (`corepack enable`)
 - Docker + Docker Compose (for Postgres/Redis/MinIO)
 
-## Quick start
+## Quick start (scripts)
+
+Two helper scripts in [`scripts/`](./scripts/) wrap the whole flow:
 
 ```bash
-# 1. Install (runs `prisma generate` via postinstall)
-pnpm install
+# 1. One-time setup: env files + install + Docker infra + migrate + seed
+./scripts/setup.sh              # add --synthetic to also seed ~365 days of trips
 
-# 2. Configure env
+# 2. Run the stack (ensures infra is up, then backend + web)
+./scripts/start.sh
+#   Backend  http://localhost:3000  (GET /health · Swagger /api/docs)
+#   Frontend http://localhost:3001  (redirects to /id-ID)
+#   Admin login → admin / ChangeMe!2026  (mustChangePassword)
+```
+
+`setup.sh` is idempotent — re-run it anytime. Flags: `--synthetic` (seed synthetic dataset),
+`--no-docker` (infra already running). `start.sh --infra` brings up only the containers;
+`start.sh --no-docker` runs just the apps.
+
+### Manual steps (what the scripts do)
+
+```bash
+# 1. Configure env (copy templates → gitignored local files)
 cp .env.example .env.local
 cp apps/backend/prisma/.env.example apps/backend/prisma/.env
+cp infra/docker-compose.env.example infra/docker-compose.env
+
+# 2. Install (runs `prisma generate` via postinstall)
+pnpm install
 
 # 3. Start infrastructure
 docker compose --env-file infra/docker-compose.env up -d
 #   Postgres :5432 · Adminer :8080 · Redis :6379 · MinIO :9000 (console :9001) · nginx :8088
 #   The minio-init job creates buckets: swat-photos, swat-thumbnails, swat-reports
 
-# 4. Apply migrations + seed (creates partitions, RBAC, admin, lookup + synthetic data)
+# 4. Apply migrations + seed (partitions, RBAC, admin, lookup [+ synthetic] data)
 pnpm db:migrate
-pnpm db:seed
-#   Admin login → admin / ChangeMe!2026  (mustChangePassword)
+pnpm db:seed                    # SEED_SYNTHETIC=1 pnpm db:seed  for synthetic trips
 
 # 5. Run both apps
 pnpm dev
-#   Backend  http://localhost:3000  (GET /health · Swagger /api/docs)
-#   Frontend http://localhost:3001  (redirects to /id-ID)
 ```
+
+### Custom infra ports
+
+Host ports are configurable in `infra/docker-compose.env` (copied from
+`infra/docker-compose.env.example`). Override any that clash on your machine:
+
+```ini
+POSTGRES_PORT=5432      # ADMINER_PORT=8080      REDIS_PORT=6379
+MINIO_API_PORT=9000     MINIO_CONSOLE_PORT=9001  NGINX_PORT=8088
+```
+
+If you change `POSTGRES_PORT`, `REDIS_PORT`, or `MINIO_API_PORT`, update the matching URL in
+`.env.local` (`DATABASE_URL`, `REDIS_URL`, `S3_ENDPOINT`) and `apps/backend/prisma/.env`.
 
 ## Scripts (root)
 
@@ -99,6 +130,12 @@ EXPLAIN ANALYZE SELECT * FROM "Trip" WHERE "operationDate" = '2026-06-05';
 
 `.github/workflows/ci.yml` (at the git-repo root) runs install → prisma generate
 → lint → typecheck → test → build on push/PR to `main`.
+
+## Docs & status
+
+- [`../specs/`](../specs/) — authoritative requirements (specs + phased dev plan).
+- [`../specs/11-development-plan/phase-0-status.md`](../specs/11-development-plan/phase-0-status.md) —
+  Phase 0 task ledger, exit-criteria evidence, and documented deviations.
 
 ## Conventions
 

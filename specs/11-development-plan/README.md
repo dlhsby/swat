@@ -22,6 +22,16 @@ phase is now a self-contained, turnkey execution doc.
 > **Backlog / not-yet-committed:** see [`../14-proposals/`](../14-proposals/). An accepted RFC
 > graduates into a `../09-modules/` spec and a new phase/epic here.
 
+## Implementation status
+
+Build-side progress records sit next to each phase plan (`phase-N-status.md`): task ledger
+(T-IDs), exit-criteria evidence from a live run, and any intentional deviations from spec.
+
+| Phase | Status | Record |
+|-------|--------|--------|
+| 0 | ✅ Complete | [`phase-0-status.md`](./phase-0-status.md) |
+| 1–5 | ⏳ Not started | — |
+
 ## Design & legacy parity (read before Phase 1 frontend)
 
 - **Design source of truth:** the vendored bundle in [`../../designs/`](../../designs/) and its mirror
