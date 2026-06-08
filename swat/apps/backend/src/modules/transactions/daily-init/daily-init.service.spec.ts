@@ -116,6 +116,15 @@ describe('DailyInitService', () => {
     expect(tripArg.data.targetOdometer).toBe(12000);
   });
 
+  it('excludes schedules whose vehicle or driver was soft-deleted', async () => {
+    await service.initializeForDate(date);
+    expect(prisma.crewSchedule.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { vehicle: { deletedAt: null }, driver: { deletedAt: null } },
+      }),
+    );
+  });
+
   it('groups schedules sharing a vehicle into one haul with multiple assignments', async () => {
     prisma.crewSchedule.findMany.mockResolvedValue([
       buildSchedule({ id: 1, driverId: 3 }),

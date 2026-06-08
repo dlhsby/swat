@@ -100,6 +100,9 @@ export class TripsService {
 
     this.assertOdometerChain(trip, dto.actualOdometer);
 
+    // Recording (including an authorized override of a verified trip) lands the
+    // trip back at DONE — an edit invalidates any prior verification, so it must
+    // be re-verified.
     const data: Prisma.TripUpdateInput = {
       status: 'DONE',
       actualTime: new Date(dto.actualTime),

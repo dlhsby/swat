@@ -100,9 +100,9 @@ describe('TripsService', () => {
         'trip:record-disposal',
       ]);
       repo.findForRecording.mockResolvedValue(buildTrip({ status: 'VERIFIED' }));
-      await expect(
-        service.record('10000', { ...dispatch, grossWeight: 12000 }, USER),
-      ).resolves.toBeDefined();
+      await service.record('10000', { ...dispatch, grossWeight: 12000 }, USER);
+      // An override edit invalidates the verification: the trip drops back to DONE.
+      expect(repo.update).toHaveBeenCalledWith(10000n, expect.objectContaining({ status: 'DONE' }));
     });
 
     it('rejects a category the user lacks permission for', async () => {

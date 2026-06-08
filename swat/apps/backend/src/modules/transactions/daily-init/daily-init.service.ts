@@ -84,7 +84,12 @@ export class DailyInitService {
       };
     }
 
-    const schedules = await this.prisma.crewSchedule.findMany({ include: scheduleInclude });
+    // Skip schedules whose vehicle or driver has since been soft-deleted —
+    // a retired vehicle / resigned driver must not spawn daily work.
+    const schedules = await this.prisma.crewSchedule.findMany({
+      where: { vehicle: { deletedAt: null }, driver: { deletedAt: null } },
+      include: scheduleInclude,
+    });
     const byVehicle = this.groupByVehicle(schedules);
 
     const result = await this.prisma.$transaction(async (tx) => {
