@@ -1,0 +1,138 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { MaintenanceStatus, MaintenanceType } from '@prisma/client';
+
+import { type MaintenanceRepository } from './maintenance.repository';
+import { MaintenanceService } from './maintenance.service';
+
+function buildRecord(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: 5n,
+    code: 'PRW-202606-0001',
+    vehicleId: 1,
+    type: MaintenanceType.SERVICE,
+    status: MaintenanceStatus.PENDING_APPROVAL,
+    date: new Date('2026-06-08T00:00:00Z'),
+    odometer: 12000,
+    workshop: 'Bengkel A',
+    description: 'Servis berkala',
+    totalCost: 150000,
+    notes: null,
+    vehicle: { id: 1, plateNumber: 'L 1 AB', model: { brand: 'Hino' } },
+    items: [
+      { id: 20n, name: 'Oli', qty: 2, unitPrice: 50000, totalPrice: 100000 },
+      { id: 21n, name: 'Filter', qty: 1, unitPrice: 50000, totalPrice: 50000 },
+    ],
+    createdAt: new Date('2026-06-08T00:00:00Z'),
+    updatedAt: new Date('2026-06-08T00:00:00Z'),
+    ...overrides,
+  };
+}
+
+describe('MaintenanceService', () => {
+  let repo: {
+    list: jest.Mock;
+    findById: jest.Mock;
+    vehicleExists: jest.Mock;
+    countByCodePrefix: jest.Mock;
+    sumCost: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+  };
+  let service: MaintenanceService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    repo = {
+      list: jest.fn(),
+      findById: jest.fn(),
+      vehicleExists: jest.fn().mockResolvedValue({ id: 1 }),
+      countByCodePrefix: jest.fn().mockResolvedValue(0),
+      sumCost: jest.fn(),
+      create: jest.fn().mockImplementation((data) => buildRecord({ totalCost: data.totalCost })),
+      update: jest.fn().mockResolvedValue(buildRecord()),
+      delete: jest.fn().mockResolvedValue(undefined),
+    };
+    service = new MaintenanceService(repo as unknown as MaintenanceRepository);
+  });
+
+  const dto = {
+    vehicleId: 1,
+    type: MaintenanceType.SERVICE,
+    date: '2026-06-08',
+    items: [
+      { name: 'Oli', qty: 2, unitPrice: 50000 },
+      { name: 'Filter', qty: 1, unitPrice: 50000 },
+    ],
+  };
+
+  it('rejects a missing vehicle', async () => {
+    repo.vehicleExists.mockResolvedValue(null);
+    await expect(service.create(dto, 1)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('computes totalCost from items and generates a monthly code', async () => {
+    repo.countByCodePrefix.mockResolvedValue(41);
+    await service.create(dto, 7);
+    const arg = repo.create.mock.calls[0][0];
+    expect(arg.totalCost).toBe(150000);
+    expect(arg.code).toBe('PRW-202606-0042');
+    expect(arg.items.create[0]).toMatchObject({ name: 'Oli', totalPrice: 100000 });
+  });
+
+  it('handles a record with no items (totalCost 0)', async () => {
+    await service.create({ ...dto, items: [] }, 7);
+    expect(repo.create.mock.calls[0][0].totalCost).toBe(0);
+  });
+
+  it('404s an unknown record', async () => {
+    repo.findById.mockResolvedValue(null);
+    await expect(service.getById('99')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('approves a pending record', async () => {
+    repo.findById.mockResolvedValue(buildRecord());
+    repo.update.mockResolvedValue(buildRecord({ status: MaintenanceStatus.APPROVED }));
+    const result = await service.approve('5', 7);
+    expect(result.status).toBe(MaintenanceStatus.APPROVED);
+    expect(repo.update.mock.calls[0][1]).toMatchObject({ status: MaintenanceStatus.APPROVED });
+  });
+
+  it('rejects approving an already-approved record', async () => {
+    repo.findById.mockResolvedValue(buildRecord({ status: MaintenanceStatus.APPROVED }));
+    await expect(service.approve('5', 7)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('recomputes totalCost when items change on update', async () => {
+    repo.findById.mockResolvedValue(buildRecord());
+    await service.update('5', { items: [{ name: 'Ban', qty: 4, unitPrice: 600000 }] }, 7);
+    const arg = repo.update.mock.calls[0][1];
+    expect(arg.totalCost).toBe(2400000);
+    expect(arg.items.deleteMany).toEqual({});
+  });
+
+  it('blocks updating an approved record', async () => {
+    repo.findById.mockResolvedValue(buildRecord({ status: MaintenanceStatus.APPROVED }));
+    await expect(service.update('5', { notes: 'x' }, 7)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it('blocks deleting an approved record', async () => {
+    repo.findById.mockResolvedValue(buildRecord({ status: MaintenanceStatus.APPROVED }));
+    await expect(service.remove('5')).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('deletes a pending record', async () => {
+    repo.findById.mockResolvedValue(buildRecord());
+    await service.remove('5');
+    expect(repo.delete).toHaveBeenCalledWith(5n);
+  });
+
+  it('lists with pagination meta and serialized ids', async () => {
+    repo.list.mockResolvedValue({ rows: [buildRecord()], total: 1 });
+    const result = await service.list({ page: 1, limit: 20 });
+    expect(result.meta).toEqual({ total: 1, page: 1, limit: 20 });
+    expect(result.data[0]).toMatchObject({ id: '5', code: 'PRW-202606-0001', totalCost: 150000 });
+  });
+});

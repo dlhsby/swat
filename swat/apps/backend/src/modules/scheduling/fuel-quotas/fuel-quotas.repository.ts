@@ -65,6 +65,50 @@ export class FuelQuotasRepository {
     return this.prisma.fuelQuota.create({ data, include: quotaInclude });
   }
 
+  async allVehicleIds(): Promise<Set<number>> {
+    const rows = await this.prisma.vehicle.findMany({
+      where: { deletedAt: null },
+      select: { id: true },
+    });
+    return new Set(rows.map((r) => r.id));
+  }
+
+  async allSiteIds(): Promise<Set<number>> {
+    const rows = await this.prisma.site.findMany({
+      where: { deletedAt: null },
+      select: { id: true },
+    });
+    return new Set(rows.map((r) => r.id));
+  }
+
+  async existingLegacyIds(legacyIds: number[]): Promise<Set<number>> {
+    if (legacyIds.length === 0) {
+      return new Set();
+    }
+    const rows = await this.prisma.fuelQuota.findMany({
+      where: { legacyId: { in: legacyIds } },
+      select: { legacyId: true },
+    });
+    return new Set(rows.flatMap((r) => (r.legacyId === null ? [] : [r.legacyId])));
+  }
+
+  /** Idempotent by legacyId — used by the bulk importer. */
+  async upsertByLegacyId(
+    legacyId: number,
+    create: Prisma.FuelQuotaCreateInput,
+    update: Prisma.FuelQuotaUpdateInput,
+  ): Promise<void> {
+    await this.prisma.fuelQuota.upsert({
+      where: { legacyId },
+      create: { ...create, legacyId },
+      update,
+    });
+  }
+
+  async createPlain(data: Prisma.FuelQuotaCreateInput): Promise<void> {
+    await this.prisma.fuelQuota.create({ data });
+  }
+
   update(id: bigint, data: Prisma.FuelQuotaUpdateInput): Promise<FuelQuotaWithRefs> {
     return this.prisma.fuelQuota.update({ where: { id }, data, include: quotaInclude });
   }

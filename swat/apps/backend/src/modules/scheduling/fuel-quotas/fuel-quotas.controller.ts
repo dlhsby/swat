@@ -6,6 +6,7 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { type PaginationMeta } from '../../../common/types/api-response';
 
+import { BulkImportFuelQuotasDto, type BulkImportResult } from './dto/bulk-import-fuel-quotas.dto';
 import { CreateFuelQuotaDto } from './dto/create-fuel-quota.dto';
 import { ListFuelQuotasQueryDto } from './dto/list-fuel-quotas.query.dto';
 import { UpdateFuelQuotaDto } from './dto/update-fuel-quota.dto';
@@ -37,6 +38,16 @@ export class FuelQuotasController {
   @ApiOperation({ summary: 'Issue a fuel quota (kitir)' })
   create(@Body() dto: CreateFuelQuotaDto, @CurrentUser() user: SessionUser): Promise<FuelQuotaDto> {
     return this.fuelQuotas.create(dto, user.id);
+  }
+
+  @Post('bulk-import')
+  @RequirePermissions('fuel-quota:create')
+  @ApiOperation({ summary: 'Bulk-import fuel quotas (Impor Massal); upsert by legacyId' })
+  bulkImport(
+    @Body() dto: BulkImportFuelQuotasDto,
+    @CurrentUser() user: SessionUser,
+  ): Promise<BulkImportResult> {
+    return this.fuelQuotas.bulkImport(dto, user.id);
   }
 
   @Patch(':id')

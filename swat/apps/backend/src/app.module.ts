@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CacheModule } from './modules/cache/cache.module';
 import { FleetModule } from './modules/fleet/fleet.module';
 import { GeographyModule } from './modules/geography/geography.module';
+import { OperationsModule } from './modules/operations/operations.module';
 import { PersonnelModule } from './modules/personnel/personnel.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { RolesModule } from './modules/roles/roles.module';
@@ -51,6 +52,7 @@ import { SessionModule } from './session.module';
     PersonnelModule,
     SchedulingModule,
     TransactionsModule,
+    OperationsModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },

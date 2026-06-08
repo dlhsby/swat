@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { FuelQuotaStatus } from '@prisma/client';
 
+import { BulkImportStrategy } from './dto/bulk-import-fuel-quotas.dto';
 import { type FuelQuotasRepository } from './fuel-quotas.repository';
 import { FuelQuotasService } from './fuel-quotas.service';
 
@@ -30,6 +31,11 @@ describe('FuelQuotasService', () => {
     siteExists: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
+    allVehicleIds: jest.Mock;
+    allSiteIds: jest.Mock;
+    existingLegacyIds: jest.Mock;
+    upsertByLegacyId: jest.Mock;
+    createPlain: jest.Mock;
   };
   let service: FuelQuotasService;
 
@@ -42,6 +48,11 @@ describe('FuelQuotasService', () => {
       siteExists: jest.fn().mockResolvedValue({ id: 2 }),
       create: jest.fn(),
       update: jest.fn(),
+      allVehicleIds: jest.fn().mockResolvedValue(new Set([1, 2])),
+      allSiteIds: jest.fn().mockResolvedValue(new Set([2, 3])),
+      existingLegacyIds: jest.fn().mockResolvedValue(new Set()),
+      upsertByLegacyId: jest.fn().mockResolvedValue(undefined),
+      createPlain: jest.fn().mockResolvedValue(undefined),
     };
     service = new FuelQuotasService(repo as unknown as FuelQuotasRepository);
   });
@@ -127,5 +138,70 @@ describe('FuelQuotasService', () => {
     await expect(service.update('42', { validTo: '2026-05-01' }, 7)).rejects.toBeInstanceOf(
       BadRequestException,
     );
+  });
+
+  describe('bulkImport', () => {
+    const row = {
+      vehicleId: 1,
+      siteId: 2,
+      validFrom: '2026-01-01',
+      validTo: '2026-12-31',
+    };
+
+    it('creates new rows without a legacyId', async () => {
+      const result = await service.bulkImport({ rows: [row] }, 7);
+      expect(result).toMatchObject({ total: 1, imported: 1, updated: 0, errorCount: 0 });
+      expect(repo.createPlain).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports unknown vehicle/site with the 1-based row number', async () => {
+      const result = await service.bulkImport(
+        {
+          rows: [
+            { ...row, vehicleId: 99 },
+            { ...row, siteId: 88 },
+          ],
+        },
+        7,
+      );
+      expect(result.imported).toBe(0);
+      expect(result.errors).toEqual([
+        { row: 1, reason: expect.stringContaining('Kendaraan') },
+        { row: 2, reason: expect.stringContaining('Lokasi') },
+      ]);
+    });
+
+    it('rejects validFrom after validTo', async () => {
+      const result = await service.bulkImport(
+        { rows: [{ ...row, validFrom: '2026-12-31', validTo: '2026-01-01' }] },
+        7,
+      );
+      expect(result.errorCount).toBe(1);
+      expect(result.errors[0]?.reason).toContain('Berlaku dari');
+    });
+
+    it('skips existing legacyIds under the SKIP strategy', async () => {
+      repo.existingLegacyIds.mockResolvedValue(new Set([500]));
+      const result = await service.bulkImport(
+        { strategy: BulkImportStrategy.SKIP, rows: [{ ...row, legacyId: 500 }] },
+        7,
+      );
+      expect(result).toMatchObject({ skipped: 1, updated: 0, imported: 0 });
+      expect(repo.upsertByLegacyId).not.toHaveBeenCalled();
+    });
+
+    it('upserts existing legacyIds under the UPSERT strategy', async () => {
+      repo.existingLegacyIds.mockResolvedValue(new Set([500]));
+      const result = await service.bulkImport(
+        { strategy: BulkImportStrategy.UPSERT, rows: [{ ...row, legacyId: 500 }] },
+        7,
+      );
+      expect(result).toMatchObject({ updated: 1, imported: 0, skipped: 0 });
+      expect(repo.upsertByLegacyId).toHaveBeenCalledWith(
+        500,
+        expect.any(Object),
+        expect.any(Object),
+      );
+    });
   });
 });
