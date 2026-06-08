@@ -36,23 +36,34 @@ async function systemUserId(): Promise<number> {
 async function resyncMasters(sysUser: number): Promise<void> {
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
+    // On update, never re-write the PK or the original `createdAt` — only the
+    // mutable columns (an `id`/`createdAt` in the update payload would clobber
+    // the row's migration timestamp on every parallel-run pass).
     const sites = await query<LegacySite>(conn, 'SELECT * FROM spot');
     for (const s of sites) {
-      const data = mapSite(s, NOW);
-      await prisma.site.upsert({ where: { id: data.id as number }, create: data, update: data });
+      const { id, createdAt, ...update } = mapSite(s, NOW);
+      await prisma.site.upsert({
+        where: { id: id as number },
+        create: { id, createdAt, ...update },
+        update,
+      });
     }
     const vehicles = await query<LegacyVehicle>(conn, 'SELECT * FROM kendaraan');
     for (const v of vehicles) {
-      const data = mapVehicle(v, NOW);
-      await prisma.vehicle.upsert({ where: { id: data.id as number }, create: data, update: data });
+      const { id, createdAt, ...update } = mapVehicle(v, NOW);
+      await prisma.vehicle.upsert({
+        where: { id: id as number },
+        create: { id, createdAt, ...update },
+        update,
+      });
     }
     const quotas = await query<LegacyFuelQuota>(conn, 'SELECT * FROM jatahkitir');
     for (const q of quotas) {
-      const data = mapFuelQuota(q, NOW, sysUser);
+      const { id, createdAt, ...update } = mapFuelQuota(q, NOW, sysUser);
       await prisma.fuelQuota.upsert({
-        where: { id: data.id as bigint },
-        create: data,
-        update: data,
+        where: { id: id as bigint },
+        create: { id, createdAt, ...update },
+        update,
       });
     }
     log(
