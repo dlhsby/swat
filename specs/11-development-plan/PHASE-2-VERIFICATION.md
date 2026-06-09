@@ -45,7 +45,9 @@ verified ([`PHASE-1-VERIFICATION.md`](./PHASE-1-VERIFICATION.md)).
 
 All under `/api/v1/monitoring/`, `monitoring:read` guarded, `ApiResponse<T>` envelope.
 
-- [ ] **A1. tonnage-5day** — `GET /monitoring/tonnage-5day` → last 5 days of daily totals.
+- [ ] **A1. tonnage-5day** — `GET /monitoring/tonnage-5day` → last 5 days of daily totals, each row
+  carrying its per-day `reconciliationStatus` (`MATCHED`/`DISCREPANCY`/`PENDING`, computed on read
+  from `DailyTonnage` vs `TpaInboundLog` — see section RC).
 - [ ] **A2. tonnage-monthly** — `?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD` → monthly series.
 - [ ] **A3. tonnage-by-source** — verify the toggle: no `group` (Semua) → all six sources;
   `?group=SWASTA` → only code `S`; `?group=NON_SWASTA` → the other five. **Expected:** Semua total =
@@ -65,6 +67,24 @@ All under `/api/v1/monitoring/`, `monitoring:read` guarded, `ApiResponse<T>` env
 - [ ] **C2. Precise invalidation.** Note keys for date X and date Y. Record a trip on date X.
   **Expected:** only date-X monitoring keys are dropped; date-Y keys survive (per-date invalidation,
   blanket only when operationDate is absent).
+
+---
+
+## RC · TPA reconciliation (Epic 2.4 · T-211)  [API/OPS]
+
+Nightly job `@Cron('30 23 * * *', Asia/Jakarta)` re-checks a trailing window, comparing
+trip-derived `DailyTonnage` vs Σ `TpaInboundLog.netWeight` per day; the monitoring API also computes
+the same status on read (`tonnage-5day`, A1). Tolerance and rules live in `monitoring.math.ts`.
+
+- [ ] **RC1. MATCHED.** Insert a `TpaInboundLog` total within **±5%** of the day's `DailyTonnage`.
+  Run reconciliation (or wait for the cron). **Expected:** day flagged `MATCHED`; `tonnage-5day`
+  shows `MATCHED` for that date.
+- [ ] **RC2. DISCREPANCY.** Insert a TPA total **> 5%** off. **Expected:** `DISCREPANCY`, and the job
+  logs a discrepancy summary (count + dates).
+- [ ] **RC3. PENDING.** Leave a day with trips but **no** `TpaInboundLog` row. **Expected:** `PENDING`
+  (never silently `MATCHED`). Both-zero days → `MATCHED`.
+- [ ] **RC4. Window + idempotent.** Re-run reconciliation twice over the trailing window; statuses are
+  stable and the job never throws.
 
 ---
 
@@ -88,12 +108,16 @@ All under `/api/v1/monitoring/`, `monitoring:read` guarded, `ApiResponse<T>` env
 
 Logic is unit/integration-tested with mocked pg; the real run is operator-gated.
 
-- [ ] **X1. Detach.** Trigger archiving (monthly `0 1 1 * *` or manual) for a partition > 13 months old.
-  **Expected:** partition detached, `pg_dump` + gzip produced, SHA-256 recorded in `ArchiveCatalog`.
-  Aborts if rollups for that period are incomplete; idempotent (skips if already cataloged).
-- [ ] **X2. Reattach.** `POST /archiving/reattach` (admin) → decompress, checksum-verify, `ATTACH
-  PARTITION`, catalog updated. **Expected:** an `AuditLog` entry records the reattach.
-- [ ] **X3. Dashboards unchanged.** After detach, dashboards for archived periods still load < 1 s
+- [ ] **X1. Detach.** Archiving runs on the monthly cron `@Cron('0 1 1 * *', Asia/Jakarta)` (no manual
+  API trigger) for partitions > 13 months old. **Expected:** partition detached, `pg_dump` + gzip
+  produced, SHA-256 recorded in `ArchiveCatalog`. Aborts if rollups for that period are incomplete;
+  idempotent (skips if already cataloged).
+- [ ] **X2. Catalog list.** `GET /archiving` (perm `archive:read`) → lists `ArchiveCatalog` rows
+  (tableName, period, location, rowCount, checksum, detachedAt).
+- [ ] **X3. Reattach.** `POST /archiving/reattach` (perm `archive:manage`) → decompress,
+  checksum-verify, `ATTACH PARTITION`, catalog updated. **Expected:** an `AuditLog` entry records the
+  reattach (mutation audit).
+- [ ] **X4. Dashboards unchanged.** After detach, dashboards for archived periods still load < 1 s
   (served from rollups, never partitions).
 
 ---
