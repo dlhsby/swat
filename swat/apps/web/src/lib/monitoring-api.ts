@@ -8,7 +8,8 @@ import { apiClient } from './api-client';
 
 export type ReconciliationStatus = 'MATCHED' | 'DISCREPANCY' | 'PENDING';
 export type FuelVarianceFlag = 'OK' | 'RED';
-export type Ownership = 'DINAS' | 'SWASTA';
+/** Legacy Semua / Non-Swasta / Swasta tonnage filter (omit for Semua). */
+export type SourceGroup = 'NON_SWASTA' | 'SWASTA';
 
 export interface DateRange {
   readonly dateFrom: string;
@@ -27,7 +28,6 @@ export interface TonnageBySourceRow {
   readonly wasteSourceId: number;
   readonly code: string;
   readonly name: string;
-  readonly ownership: string;
   readonly totalTonnageKg: number;
   readonly haulCount: number;
 }
@@ -93,8 +93,8 @@ export const monitoringApi = {
   tonnage5Day: (range: DateRange): Promise<DailyTonnageRow[]> =>
     apiClient.get(`/monitoring/tonnage-5day?${monitoringQuery(range)}`),
 
-  tonnageBySource: (range: DateRange, ownership?: Ownership): Promise<TonnageBySourceRow[]> =>
-    apiClient.get(`/monitoring/tonnage-by-source?${monitoringQuery(range, { ownership })}`),
+  tonnageBySource: (range: DateRange, group?: SourceGroup): Promise<TonnageBySourceRow[]> =>
+    apiClient.get(`/monitoring/tonnage-by-source?${monitoringQuery(range, { group })}`),
 
   tonnageBySite: (range: DateRange): Promise<TonnageBySiteRow[]> =>
     apiClient.get(`/monitoring/tonnage-by-site?${monitoringQuery(range)}`),

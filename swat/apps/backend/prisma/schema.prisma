@@ -32,13 +32,6 @@ enum SiteType {
   TPA
 }
 
-/// Ownership split for the monitoring tonnage "Total / Dinas / Swasta" toggle
-/// (parity G9). Not derivable from WasteSource.code, so stored explicitly.
-enum WasteSourceOwnership {
-  DINAS
-  SWASTA
-}
-
 enum RouteCategory {
   DEPART_POOL
   REFUEL
@@ -389,7 +382,6 @@ model WasteSource {
   legacyId  Int?                 @unique
   code      String               @unique @db.VarChar(5)
   name      String               @db.VarChar(128)
-  ownership WasteSourceOwnership @default(SWASTA)
   notes     String?              @db.VarChar(1024)
   createdAt DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt DateTime             @updatedAt @db.Timestamptz(6)

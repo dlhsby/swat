@@ -1,16 +1,24 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { WasteSourceOwnership } from '@prisma/client';
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsIn, IsOptional } from 'class-validator';
 
 import { DateRangeQueryDto } from './date-range.query.dto';
 
-/** Tonnage-by-source query: the Total/Dinas/Swasta toggle maps to `ownership`. */
+/** Source-group values for the legacy Semua / Non-Swasta / Swasta tonnage filter. */
+export const SOURCE_GROUPS = ['NON_SWASTA', 'SWASTA'] as const;
+export type SourceGroup = (typeof SOURCE_GROUPS)[number];
+
+/**
+ * Tonnage-by-source query. The Semua / Non-Swasta / Swasta toggle maps to `group`:
+ * omit for Semua (all six sources), `SWASTA` for the private source (code `S`),
+ * `NON_SWASTA` for the rest — derived from `WasteSource.code`, no stored flag.
+ */
 export class TonnageBySourceQueryDto extends DateRangeQueryDto {
   @ApiPropertyOptional({
-    enum: WasteSourceOwnership,
-    description: 'Filter by ownership (omit for Total)',
+    enum: SOURCE_GROUPS,
+    description:
+      "Filter by source group (omit for Semua). SWASTA = code 'S'; NON_SWASTA = the rest.",
   })
   @IsOptional()
-  @IsEnum(WasteSourceOwnership, { message: 'ownership harus DINAS atau SWASTA.' })
-  ownership?: WasteSourceOwnership;
+  @IsIn(SOURCE_GROUPS, { message: 'group harus NON_SWASTA atau SWASTA.' })
+  group?: SourceGroup;
 }

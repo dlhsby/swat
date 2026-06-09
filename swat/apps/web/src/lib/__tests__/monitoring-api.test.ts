@@ -10,11 +10,11 @@ const RANGE = { dateFrom: '2026-06-01', dateTo: '2026-06-30' };
 describe('monitoringQuery', () => {
   it('serialises the date range and omits empty extras', () => {
     expect(monitoringQuery(RANGE)).toBe('dateFrom=2026-06-01&dateTo=2026-06-30');
-    expect(monitoringQuery(RANGE, { ownership: undefined })).toBe(
+    expect(monitoringQuery(RANGE, { group: undefined })).toBe(
       'dateFrom=2026-06-01&dateTo=2026-06-30',
     );
-    expect(monitoringQuery(RANGE, { ownership: 'DINAS' })).toBe(
-      'dateFrom=2026-06-01&dateTo=2026-06-30&ownership=DINAS',
+    expect(monitoringQuery(RANGE, { group: 'NON_SWASTA' })).toBe(
+      'dateFrom=2026-06-01&dateTo=2026-06-30&group=NON_SWASTA',
     );
   });
 });
@@ -22,10 +22,10 @@ describe('monitoringQuery', () => {
 describe('monitoringApi', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('requests the tonnage-by-source endpoint with the ownership filter', async () => {
+  it('requests the tonnage-by-source endpoint with the source-group filter', async () => {
     await monitoringApi.tonnageBySource(RANGE, 'SWASTA');
     expect(apiClient.get).toHaveBeenCalledWith(
-      '/monitoring/tonnage-by-source?dateFrom=2026-06-01&dateTo=2026-06-30&ownership=SWASTA',
+      '/monitoring/tonnage-by-source?dateFrom=2026-06-01&dateTo=2026-06-30&group=SWASTA',
     );
   });
 

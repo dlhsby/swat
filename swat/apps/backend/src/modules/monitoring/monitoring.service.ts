@@ -73,9 +73,9 @@ export class MonitoringService {
   async tonnageBySource(query: TonnageBySourceQueryDto): Promise<TonnageBySourceRow[]> {
     const { monthFrom, monthTo } = this.monthRange(query);
     return this.cached(
-      this.key('tonnage-by-source', query, query.ownership ?? 'ALL'),
+      this.key('tonnage-by-source', query, query.group ?? 'ALL'),
       TTL_DEFAULT,
-      () => this.repo.tonnageBySource(monthFrom, monthTo, query.ownership),
+      () => this.repo.tonnageBySource(monthFrom, monthTo, query.group),
     );
   }
 

@@ -97,20 +97,20 @@ describe('MonitoringService', () => {
   });
 
   describe('tonnageBySource', () => {
-    it('passes the ownership filter and uses month anchors', async () => {
-      await service.tonnageBySource({ ...RANGE, ownership: 'DINAS' });
+    it('passes the source-group filter and uses month anchors', async () => {
+      await service.tonnageBySource({ ...RANGE, group: 'SWASTA' });
 
       expect(repo.tonnageBySource).toHaveBeenCalledWith(
         parseDateOnly('2026-06-01'),
         parseDateOnly('2026-06-01'),
-        'DINAS',
+        'SWASTA',
       );
       expect(cache.get).toHaveBeenCalledWith(
-        'cache:monitoring:tonnage-by-source:2026-06-01:2026-06-05:DINAS',
+        'cache:monitoring:tonnage-by-source:2026-06-01:2026-06-05:SWASTA',
       );
     });
 
-    it('keys Total (no ownership) distinctly', async () => {
+    it('keys Semua (no group) distinctly', async () => {
       await service.tonnageBySource(RANGE);
       expect(cache.get).toHaveBeenCalledWith(
         'cache:monitoring:tonnage-by-source:2026-06-01:2026-06-05:ALL',

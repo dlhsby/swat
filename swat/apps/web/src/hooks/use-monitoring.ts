@@ -2,11 +2,11 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { type DateRange, type Ownership, monitoringApi } from '@/lib/monitoring-api';
+import { type DateRange, type SourceGroup, monitoringApi } from '@/lib/monitoring-api';
 
 /**
  * TanStack Query hooks for the monitoring dashboards. Query keys are namespaced
- * by endpoint + range (+ ownership) so a date-range change refetches precisely;
+ * by endpoint + range (+ source group) so a date-range change refetches precisely;
  * the provider's 15-minute staleTime mirrors the server cache TTL.
  */
 
@@ -26,10 +26,10 @@ export function useTonnage5Day(range: DateRange) {
   });
 }
 
-export function useTonnageBySource(range: DateRange, ownership?: Ownership) {
+export function useTonnageBySource(range: DateRange, group?: SourceGroup) {
   return useQuery({
-    queryKey: [KEY, 'tonnage-by-source', range, ownership ?? 'ALL'],
-    queryFn: () => monitoringApi.tonnageBySource(range, ownership),
+    queryKey: [KEY, 'tonnage-by-source', range, group ?? 'ALL'],
+    queryFn: () => monitoringApi.tonnageBySource(range, group),
   });
 }
 

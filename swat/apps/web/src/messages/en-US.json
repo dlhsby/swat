@@ -178,8 +178,8 @@
       "colStatus": "Reconciliation",
       "colSite": "Site",
       "sourceLabel": "Source",
-      "sourceTotal": "Total",
-      "sourceDinas": "Dinas",
+      "sourceAll": "All",
+      "sourceNonSwasta": "Non-Swasta",
       "sourceSwasta": "Swasta"
     },
     "fuel": {

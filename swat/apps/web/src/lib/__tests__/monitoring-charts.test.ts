@@ -43,7 +43,6 @@ describe('sourceComposition', () => {
     wasteSourceId: 1,
     code: name[0]!,
     name,
-    ownership: 'SWASTA',
     totalTonnageKg: kg,
     haulCount: 1,
   });

@@ -20,7 +20,6 @@ import {
   SiteType,
   TripStatus,
   VehicleStatus,
-  type WasteSourceOwnership,
 } from '@prisma/client';
 import { hash } from 'argon2';
 
@@ -297,20 +296,16 @@ const FUELS: ReadonlyArray<{ name: string; category: string; pricePerLiter: numb
 
 const VEHICLE_APPLICATIONS = ['Compactor', 'Dump Truck', 'Arm Roll', 'Pick Up', 'Tangki'];
 
-// Ownership drives the monitoring "Total / Dinas / Swasta" toggle (G9). Only the
-// government source ('D') is Dinas; everyone else is private (Swasta). Adjust here
-// if the domain mapping differs — see plan open question O1.
-const WASTE_SOURCES: ReadonlyArray<{
-  code: string;
-  name: string;
-  ownership: WasteSourceOwnership;
-}> = [
-  { code: 'D', name: 'Dinas', ownership: 'DINAS' },
-  { code: 'R', name: 'Rekanan', ownership: 'SWASTA' },
-  { code: 'PS', name: 'Pasar', ownership: 'SWASTA' },
-  { code: 'PU', name: 'Pintu Air', ownership: 'SWASTA' },
-  { code: 'PL', name: 'Pelabuhan', ownership: 'SWASTA' },
-  { code: 'S', name: 'Swasta', ownership: 'SWASTA' },
+// The six waste sources are distinct categories (legacy `kategorisumbersampah`).
+// The monitoring "Semua / Non-Swasta / Swasta" filter derives from the code
+// ('S' = Swasta) — no ownership column needed.
+const WASTE_SOURCES: ReadonlyArray<{ code: string; name: string }> = [
+  { code: 'D', name: 'Dinas' },
+  { code: 'R', name: 'Rekanan' },
+  { code: 'PS', name: 'Pasar' },
+  { code: 'PU', name: 'Pintu Air' },
+  { code: 'PL', name: 'Pelabuhan' },
+  { code: 'S', name: 'Swasta' },
 ];
 
 async function seedReferenceData(): Promise<void> {
@@ -351,8 +346,8 @@ async function seedReferenceData(): Promise<void> {
   for (const source of WASTE_SOURCES) {
     await prisma.wasteSource.upsert({
       where: { code: source.code },
-      update: { name: source.name, ownership: source.ownership },
-      create: { code: source.code, name: source.name, ownership: source.ownership },
+      update: { name: source.name },
+      create: { code: source.code, name: source.name },
     });
   }
 }

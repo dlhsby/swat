@@ -46,22 +46,8 @@ describe('VolumePage', () => {
       },
     ]);
     api.tonnageBySource.mockResolvedValue([
-      {
-        wasteSourceId: 1,
-        code: 'D',
-        name: 'Dinas',
-        ownership: 'DINAS',
-        totalTonnageKg: 7000,
-        haulCount: 5,
-      },
-      {
-        wasteSourceId: 2,
-        code: 'PS',
-        name: 'Pasar',
-        ownership: 'SWASTA',
-        totalTonnageKg: 3000,
-        haulCount: 2,
-      },
+      { wasteSourceId: 1, code: 'D', name: 'Dinas', totalTonnageKg: 7000, haulCount: 5 },
+      { wasteSourceId: 2, code: 'PS', name: 'Pasar', totalTonnageKg: 3000, haulCount: 2 },
     ]);
     api.tonnageBySite.mockResolvedValue([
       { siteId: 1, name: 'TPS Mawar', type: 'TPS', totalTonnageKg: 7000, haulCount: 5 },

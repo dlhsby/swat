@@ -45,11 +45,11 @@ describe('monitoring data hooks', () => {
     expect(api.tonnage5Day).toHaveBeenCalledWith(RANGE);
   });
 
-  it('useTonnageBySource forwards the ownership filter', async () => {
+  it('useTonnageBySource forwards the source-group filter', async () => {
     api.tonnageBySource.mockResolvedValue([]);
-    const { result } = renderHookWithProviders(() => useTonnageBySource(RANGE, 'DINAS'));
+    const { result } = renderHookWithProviders(() => useTonnageBySource(RANGE, 'SWASTA'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(api.tonnageBySource).toHaveBeenCalledWith(RANGE, 'DINAS');
+    expect(api.tonnageBySource).toHaveBeenCalledWith(RANGE, 'SWASTA');
   });
 
   it('useKpiOverview surfaces the overview object', async () => {

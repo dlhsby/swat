@@ -14,11 +14,15 @@ import { Alert, Badge, Button, DataTable, MetricCard } from '@/components/ui';
 import { useTonnage5Day, useTonnageBySite, useTonnageBySource } from '@/hooks/use-monitoring';
 import { useMonitoringRange } from '@/hooks/use-monitoring-range';
 import { formatNumber, formatWeight } from '@/lib/format';
-import { type DailyTonnageRow, type Ownership, type TonnageBySiteRow } from '@/lib/monitoring-api';
+import {
+  type DailyTonnageRow,
+  type SourceGroup,
+  type TonnageBySiteRow,
+} from '@/lib/monitoring-api';
 import { kgToTon, sourceComposition, tonnageTrend } from '@/lib/monitoring-charts';
 import { type PillVariant } from '@/lib/status-pill';
 
-type SourceTab = 'TOTAL' | 'DINAS' | 'SWASTA';
+type SourceTab = 'SEMUA' | 'NON_SWASTA' | 'SWASTA';
 
 const RECON_VARIANT: Record<string, PillVariant> = {
   MATCHED: 'green',
@@ -31,11 +35,11 @@ export default function VolumePage(): JSX.Element {
   const tRecon = useTranslations('monitoring.recon');
   const tCommon = useTranslations('monitoring.common');
   const { range, setRange, today } = useMonitoringRange();
-  const [tab, setTab] = useState<SourceTab>('TOTAL');
-  const ownership: Ownership | undefined = tab === 'TOTAL' ? undefined : tab;
+  const [tab, setTab] = useState<SourceTab>('SEMUA');
+  const group: SourceGroup | undefined = tab === 'SEMUA' ? undefined : tab;
 
   const daily = useTonnage5Day(range);
-  const bySource = useTonnageBySource(range, ownership);
+  const bySource = useTonnageBySource(range, group);
   const bySite = useTonnageBySite(range);
 
   const dailyRows = daily.data ?? [];
@@ -133,14 +137,20 @@ export default function VolumePage(): JSX.Element {
           footer={<p className="text-caption text-neutral-400">{tCommon('monthNote')}</p>}
           right={
             <div className="flex gap-1">
-              {(['TOTAL', 'DINAS', 'SWASTA'] as const).map((key) => (
+              {(
+                [
+                  ['SEMUA', 'sourceAll'],
+                  ['NON_SWASTA', 'sourceNonSwasta'],
+                  ['SWASTA', 'sourceSwasta'],
+                ] as const
+              ).map(([key, label]) => (
                 <Button
                   key={key}
                   size="sm"
                   variant={tab === key ? 'primary' : 'outline'}
                   onClick={() => setTab(key)}
                 >
-                  {t(`source${key === 'TOTAL' ? 'Total' : key === 'DINAS' ? 'Dinas' : 'Swasta'}`)}
+                  {t(label)}
                 </Button>
               ))}
             </div>

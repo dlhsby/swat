@@ -25,7 +25,6 @@ export interface TonnageBySourceRow {
   readonly wasteSourceId: number;
   readonly code: string;
   readonly name: string;
-  readonly ownership: string;
   readonly totalTonnageKg: number;
   readonly haulCount: number;
 }

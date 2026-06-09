@@ -178,8 +178,8 @@
       "colStatus": "Rekonsiliasi",
       "colSite": "TPS",
       "sourceLabel": "Sumber",
-      "sourceTotal": "Total",
-      "sourceDinas": "Dinas",
+      "sourceAll": "Semua",
+      "sourceNonSwasta": "Non-Swasta",
       "sourceSwasta": "Swasta"
     },
     "fuel": {

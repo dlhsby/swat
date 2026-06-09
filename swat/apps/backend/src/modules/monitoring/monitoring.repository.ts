@@ -5,8 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { type TripSummaryRow } from './monitoring.types';
 
-/** A waste-source filter resolved from the Total/Dinas/Swasta toggle. */
-export type OwnershipFilter = 'DINAS' | 'SWASTA' | undefined;
+/** Source-group filter from the Semua / Non-Swasta / Swasta toggle (by `code`). */
+export type SourceGroupFilter = 'NON_SWASTA' | 'SWASTA' | undefined;
 
 export interface DailyTonnageRecord {
   date: Date;
@@ -83,26 +83,28 @@ export class MonitoringRepository {
   async tonnageBySource(
     monthFrom: Date,
     monthTo: Date,
-    ownership: OwnershipFilter,
+    group: SourceGroupFilter,
   ): Promise<
     Array<{
       wasteSourceId: number;
       code: string;
       name: string;
-      ownership: string;
       totalTonnageKg: number;
       haulCount: number;
     }>
   > {
-    const ownershipClause = ownership
-      ? Prisma.sql`AND ws."ownership"::text = ${ownership}`
-      : Prisma.empty;
+    // Legacy parity: Swasta is the single source coded 'S'; Non-Swasta is the rest.
+    const groupClause =
+      group === 'SWASTA'
+        ? Prisma.sql`AND ws."code" = 'S'`
+        : group === 'NON_SWASTA'
+          ? Prisma.sql`AND ws."code" <> 'S'`
+          : Prisma.empty;
     const rows = await this.prisma.$queryRaw<
       Array<{
         wasteSourceId: number;
         code: string;
         name: string;
-        ownership: string;
         total: bigint;
         hauls: bigint;
       }>
@@ -110,21 +112,19 @@ export class MonitoringRepository {
       SELECT ws."id"                              AS "wasteSourceId",
              ws."code"                            AS "code",
              ws."name"                            AS "name",
-             ws."ownership"::text                 AS "ownership",
              COALESCE(SUM(m."totalNetWeight"), 0)::bigint AS "total",
              COALESCE(SUM(m."haulCount"), 0)::bigint      AS "hauls"
       FROM "MonthlyTonnageBySource" m
       JOIN "WasteSource" ws ON ws."id" = m."wasteSourceId"
       WHERE m."month" >= ${monthFrom}::date AND m."month" <= ${monthTo}::date
-        ${ownershipClause}
-      GROUP BY ws."id", ws."code", ws."name", ws."ownership"
+        ${groupClause}
+      GROUP BY ws."id", ws."code", ws."name"
       ORDER BY "total" DESC
     `;
     return rows.map((row) => ({
       wasteSourceId: row.wasteSourceId,
       code: row.code,
       name: row.name,
-      ownership: row.ownership,
       totalTonnageKg: Number(row.total),
       haulCount: Number(row.hauls),
     }));
