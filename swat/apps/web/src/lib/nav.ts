@@ -55,14 +55,24 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         href: '/monitoring/volume',
         icon: BarChart3,
         permission: 'monitoring:read',
-        comingSoon: true,
       },
       {
         key: 'fuelMonitoring',
         href: '/monitoring/bbm',
         icon: FuelIcon,
         permission: 'monitoring:read',
-        comingSoon: true,
+      },
+      {
+        key: 'routes',
+        href: '/monitoring/rute',
+        icon: MapPin,
+        permission: 'monitoring:read',
+      },
+      {
+        key: 'levy',
+        href: '/monitoring/retribusi',
+        icon: Ticket,
+        permission: 'monitoring:read',
       },
       {
         key: 'reports',

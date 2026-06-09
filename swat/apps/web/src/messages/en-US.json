@@ -27,6 +27,8 @@
     "monitoring": "Monitoring",
     "volume": "Volume per Day",
     "fuelMonitoring": "Fuel Consumption",
+    "routes": "Route Activity",
+    "levy": "Levy",
     "reports": "Reports",
     "masterData": "Master Data",
     "vehicles": "Vehicles",

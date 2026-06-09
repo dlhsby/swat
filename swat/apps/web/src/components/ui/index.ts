@@ -16,6 +16,7 @@ export * from './date-picker';
 export * from './form';
 export * from './input';
 export * from './label';
+export * from './metric-card';
 export * from './number-input';
 export * from './popover';
 export * from './radio-group';

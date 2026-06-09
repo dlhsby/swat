@@ -2,11 +2,20 @@
 
 import { Fuel, Gauge, Scale, Truck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { type ComponentType, useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
 import { PageHead } from '@/components/shell/page-head';
-import { Alert, Button, Card, CardContent, Skeleton, StatusPill, notify } from '@/components/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  MetricCard,
+  Skeleton,
+  StatusPill,
+  notify,
+} from '@/components/ui';
 import { useRouter } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api-error';
 import { cn } from '@/lib/cn';
@@ -33,32 +42,6 @@ function greetingKey():
   if (hour < 15) return 'greetingAfternoon';
   if (hour < 18) return 'greetingEvening';
   return 'greetingNight';
-}
-
-function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  unit,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  unit: string;
-}): JSX.Element {
-  return (
-    <Card>
-      <CardContent className="space-y-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-base bg-primary-50 text-primary-700">
-          <Icon className="h-5 w-5" />
-        </span>
-        <p className="text-label text-neutral-500">{label}</p>
-        <p className="text-h1 font-bold tabular-nums text-neutral-900">
-          {value} <span className="text-body-sm font-medium text-neutral-400">{unit}</span>
-        </p>
-      </CardContent>
-    </Card>
-  );
 }
 
 export default function DashboardPage(): JSX.Element {
