@@ -161,7 +161,7 @@
     },
     "volume": {
       "title": "Volume per Hari",
-      "subtitle": "Tonase pengangkutan sampah dari leg pembuangan terverifikasi.",
+      "subtitle": "Tonase pengangkutan sampah dari leg pembuangan terealisasi.",
       "kpiTotal": "Total Tonase",
       "kpiHauls": "Haul Selesai",
       "kpiAvg": "Rata-rata per Haul",
@@ -170,7 +170,7 @@
       "chartSub": "Kilogram dikonversi ke ton.",
       "donutTitle": "Komposisi per Sumber",
       "tableTitle": "Tonase per TPS",
-      "infoNote": "Agregasi dari leg DISPOSAL berstatus TERVERIFIKASI. Rekonsiliasi malam terhadap timbangan TPA; selisih >5% ditandai anomali.",
+      "infoNote": "Agregasi dari leg DISPOSAL terealisasi (Selesai atau Terverifikasi). Rekonsiliasi malam terhadap timbangan TPA; selisih >5% ditandai anomali.",
       "colDate": "Tanggal",
       "colTonnage": "Tonase",
       "colHauls": "Haul",

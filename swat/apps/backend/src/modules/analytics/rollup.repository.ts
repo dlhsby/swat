@@ -21,7 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class RollupRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Σ net weight + distinct hauls of VERIFIED DISPOSAL trips weighed on `date`. */
+  /** Σ net weight + distinct hauls of realized (DONE/VERIFIED) DISPOSAL trips on `date`. */
   async aggregateDailyTonnage(date: Date): Promise<{ amount: bigint; haulCount: number }> {
     const [row] = await this.prisma.$queryRaw<Array<{ amount: bigint; haulCount: bigint }>>`
       SELECT COALESCE(SUM(t."netWeight"), 0)::bigint   AS "amount",
@@ -31,7 +31,7 @@ export class RollupRepository {
       JOIN "HaulAssignment" ha  ON ha."operationDate" = t."operationDate"
                                AND ha."id" = t."haulAssignmentId"
       WHERE t."operationDate" = ${date}::date
-        AND t."status" = 'VERIFIED'
+        AND t."status" IN ('DONE', 'VERIFIED')
         AND r."category" = 'DISPOSAL'
         AND t."netWeight" > 0
     `;
@@ -46,7 +46,7 @@ export class RollupRepository {
     });
   }
 
-  /** Σ net weight + distinct hauls by waste source for VERIFIED DISPOSAL trips in `[from, to)`. */
+  /** Σ net weight + distinct hauls by waste source for DONE/VERIFIED DISPOSAL trips in `[from, to)`. */
   async aggregateMonthlyTonnageBySource(
     from: Date,
     to: Date,
@@ -73,7 +73,7 @@ export class RollupRepository {
       ) vws ON vws."vehicleId" = h."vehicleId"
       WHERE t."operationDate" >= ${from}::date
         AND t."operationDate" <  ${to}::date
-        AND t."status" = 'VERIFIED'
+        AND t."status" IN ('DONE', 'VERIFIED')
         AND r."category" = 'DISPOSAL'
         AND t."netWeight" > 0
       GROUP BY vws."wasteSourceId"
@@ -102,7 +102,7 @@ export class RollupRepository {
                                AND ha."id" = t."haulAssignmentId"
       WHERE t."operationDate" >= ${from}::date
         AND t."operationDate" <  ${to}::date
-        AND t."status" = 'VERIFIED'
+        AND t."status" IN ('DONE', 'VERIFIED')
         AND r."category" = 'DISPOSAL'
         AND t."netWeight" > 0
       GROUP BY r."originSiteId"

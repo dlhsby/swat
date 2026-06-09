@@ -161,7 +161,7 @@
     },
     "volume": {
       "title": "Volume per Day",
-      "subtitle": "Hauled waste tonnage from verified disposal legs.",
+      "subtitle": "Hauled waste tonnage from realized disposal legs.",
       "kpiTotal": "Total Tonnage",
       "kpiHauls": "Hauls Completed",
       "kpiAvg": "Average per Haul",
@@ -170,7 +170,7 @@
       "chartSub": "Kilograms converted to tonnes.",
       "donutTitle": "Composition by Source",
       "tableTitle": "Tonnage per Site",
-      "infoNote": "Aggregated from VERIFIED disposal legs. Nightly reconciliation against the TPA weighbridge; gaps over 5% are flagged as anomalies.",
+      "infoNote": "Aggregated from realized disposal legs (Done or Verified). Nightly reconciliation against the TPA weighbridge; gaps over 5% are flagged as anomalies.",
       "colDate": "Date",
       "colTonnage": "Tonnage",
       "colHauls": "Hauls",
