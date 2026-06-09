@@ -7,10 +7,15 @@
  *  3. Admin user (Argon2id hash, mustChangePassword=true).
  *  4. Reference/lookup data (specs/01-glossary.md §4): LicenseClass,
  *     FuelCategory, Fuel, VehicleApplication, WasteSource.
- *  5. Synthetic transactional data (a year of disposal trips) so partition
- *     pruning can be verified — gated by SEED_SYNTHETIC (default true).
+ *  5. Synthetic transactional data (a year of disposal + refuel trips, plus TPA
+ *     weighbridge logs) so partition pruning and the Phase-2 monitoring
+ *     dashboards (tonnage by source, BBM variance, TPA reconciliation) have data
+ *     — gated by SEED_SYNTHETIC (default true).
  *
- * Idempotent: every write is an upsert or guarded create; re-running is safe.
+ * Idempotent: every write is an upsert or guarded create; re-running is safe and
+ * back-fills refuel/TPA onto days an earlier run created (no wipe needed). Run
+ * the rollup backfill (`pnpm rollup:backfill`) afterwards to populate the
+ * aggregate tables the dashboards read.
  */
 import {
   type DayStatus,
@@ -473,60 +478,132 @@ async function seedSyntheticData(): Promise<void> {
       },
     }));
 
+  // REFUEL route (pool → pool) so the BBM dashboard + DailyFuelByVehicle rollup
+  // have data in dev — one refuel leg per operational day.
+  const refuelRoute =
+    (await prisma.route.findFirst({
+      where: { originSiteId: pool.id, destinationSiteId: pool.id, category: RouteCategory.REFUEL },
+    })) ??
+    (await prisma.route.create({
+      data: {
+        category: RouteCategory.REFUEL,
+        originSiteId: pool.id,
+        destinationSiteId: pool.id,
+        distanceKm: 5,
+      },
+    }));
+
   // One year of operational days ending 2026-06-08 (the project "today").
   const totalDays = 365;
   const end = dateOnly(2026, 5, 8);
-  const inProgress: DayStatus = 'DONE';
+  const dayStatus: DayStatus = 'DONE';
 
   for (let offset = totalDays - 1; offset >= 0; offset -= 1) {
     const opDate = new Date(end);
     opDate.setUTCDate(end.getUTCDate() - offset);
 
-    const existingDay = await prisma.transactionDay.findUnique({ where: { date: opDate } });
-    if (existingDay) {
-      continue; // already seeded this date
+    // Find-or-create the day skeleton (day → haul → assignment) so this pass also
+    // enriches days seeded by an earlier run (adds refuel + TPA without a wipe).
+    // Alternate the vehicle per day so tonnage splits across Dinas vs Swasta.
+    const dayVehicle = offset % 2 === 0 ? vehicle : vehicle2;
+    const day =
+      (await prisma.transactionDay.findUnique({ where: { date: opDate } })) ??
+      (await prisma.transactionDay.create({ data: { date: opDate, status: dayStatus } }));
+    const haul =
+      (await prisma.haul.findFirst({
+        where: { operationDate: opDate, vehicleId: dayVehicle.id },
+      })) ??
+      (await prisma.haul.create({
+        data: {
+          transactionDayId: day.id,
+          vehicleId: dayVehicle.id,
+          operationDate: opDate,
+          status: dayStatus,
+        },
+      }));
+    const assignment =
+      (await prisma.haulAssignment.findFirst({
+        where: { operationDate: opDate, haulId: haul.id },
+      })) ??
+      (await prisma.haulAssignment.create({
+        data: { haulId: haul.id, driverId: driver.id, operationDate: opDate, status: dayStatus },
+      }));
+
+    // Disposal trips — only when the day has none yet (preserves an earlier seed).
+    const disposalCount = await prisma.trip.count({
+      where: { operationDate: opDate, routeId: disposalRoute.id },
+    });
+    if (disposalCount === 0) {
+      const tripCount = 10 + Math.floor(rng() * 11); // 10..20
+      const trips = Array.from({ length: tripCount }, (_, i) => {
+        const netWeight = 2000 + Math.floor(rng() * 6000); // 2..8 ton
+        const tareWeight = 8000;
+        return {
+          haulAssignmentId: assignment.id,
+          routeId: disposalRoute.id,
+          operationDate: opDate,
+          status: TripStatus.DONE,
+          name: `Pembuangan #${i + 1}`,
+          tareWeight,
+          grossWeight: tareWeight + netWeight,
+          netWeight,
+          wasteVolume: 6 + Math.floor(rng() * 6),
+        };
+      });
+      await prisma.trip.createMany({ data: trips });
     }
 
-    const day = await prisma.transactionDay.create({
-      data: { date: opDate, status: inProgress },
+    // Refuel trip — one per day. Approved falls 10% short on every 5th day so the
+    // BBM variance view (red when approved < requested − 5%) has signal.
+    const refuelExists = await prisma.trip.findFirst({
+      where: { operationDate: opDate, routeId: refuelRoute.id },
+      select: { id: true },
     });
-    // Alternate the day's haul between the two vehicles so tonnage splits across
-    // their sources (Dinas vs Swasta) — exercising the by-source toggle in dev.
-    const dayVehicle = offset % 2 === 0 ? vehicle : vehicle2;
-    const haul = await prisma.haul.create({
-      data: {
-        transactionDayId: day.id,
-        vehicleId: dayVehicle.id,
-        operationDate: opDate,
-        status: inProgress,
-      },
-    });
-    const assignment = await prisma.haulAssignment.create({
-      data: {
-        haulId: haul.id,
-        driverId: driver.id,
-        operationDate: opDate,
-        status: inProgress,
-      },
-    });
+    if (!refuelExists) {
+      const requested = 40 + Math.floor(rng() * 21); // 40..60 L
+      const approved = offset % 5 === 0 ? Math.round(requested * 0.9) : requested;
+      await prisma.trip.create({
+        data: {
+          haulAssignmentId: assignment.id,
+          routeId: refuelRoute.id,
+          operationDate: opDate,
+          status: TripStatus.DONE,
+          name: 'Pengisian BBM',
+          fuelRequestedLiters: requested,
+          fuelApprovedLiters: approved,
+        },
+      });
+    }
 
-    const tripCount = 10 + Math.floor(rng() * 11); // 10..20
-    const trips = Array.from({ length: tripCount }, (_, i) => {
-      const netWeight = 2000 + Math.floor(rng() * 6000); // 2..8 ton
-      const tareWeight = 8000;
-      return {
-        haulAssignmentId: assignment.id,
-        routeId: disposalRoute.id,
-        operationDate: opDate,
-        status: TripStatus.DONE,
-        name: `Pembuangan #${i + 1}`,
-        tareWeight,
-        grossWeight: tareWeight + netWeight,
-        netWeight,
-        wasteVolume: 6 + Math.floor(rng() * 6),
-      };
-    });
-    await prisma.trip.createMany({ data: trips });
+    // TPA weighbridge log — reconciled against the day's disposal tonnage:
+    // every 12th day PENDING (no row), the next DISCREPANCY (−20%), the rest
+    // MATCHED (±2%). operationDate is the partition key (not on the Prisma model),
+    // so insert via raw SQL with operationDate = date.
+    const alreadyLogged = await prisma.tpaInboundLog.count({ where: { date: opDate } });
+    if (alreadyLogged === 0) {
+      const bucket = offset % 12;
+      if (bucket !== 0) {
+        const dayNet =
+          (
+            await prisma.trip.aggregate({
+              _sum: { netWeight: true },
+              where: { operationDate: opDate, routeId: disposalRoute.id },
+            })
+          )._sum.netWeight ?? 0;
+        const factor = bucket === 1 ? 0.8 : 0.98 + rng() * 0.04;
+        const tpaNet = Math.round(dayNet * factor);
+        const tareWeight = 8000;
+        // `updatedAt` is app-managed (@updatedAt) with no DB default, so a raw
+        // insert must set it explicitly alongside the partition key.
+        await prisma.$executeRaw`
+          INSERT INTO "TpaInboundLog"
+            ("operationDate", "date", "plateNumber", "grossWeight", "tareWeight", "netWeight", "updatedAt")
+          VALUES
+            (${opDate}::date, ${opDate}::date, ${dayVehicle.plateNumber},
+             ${tareWeight + tpaNet}, ${tareWeight}, ${tpaNet}, now())
+        `;
+      }
+    }
   }
 }
 
