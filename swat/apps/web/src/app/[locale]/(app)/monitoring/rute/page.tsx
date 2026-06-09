@@ -60,7 +60,10 @@ export default function RoutesPage(): JSX.Element {
       </div>
 
       <div className="mt-4">
-        <ChartCard title={t('tableTitle')}>
+        <ChartCard
+          title={t('tableTitle')}
+          footer={<p className="text-caption text-neutral-400">{tCommon('monthNote')}</p>}
+        >
           <DataTable
             columns={columns}
             data={rows}

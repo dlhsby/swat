@@ -154,17 +154,18 @@ export class MonitoringService {
     const { from, to } = this.range(query);
     const { monthFrom, monthTo } = this.monthRange(query);
     return this.cached(this.key('kpi-overview', query), TTL_DEFAULT, async () => {
-      const [daily, fuel, routes] = await Promise.all([
+      const [daily, fuel, routes, vehiclesInOperation] = await Promise.all([
         this.repo.dailyTonnage(from, to),
         this.repo.fuelConsumption(from, to, undefined),
         this.repo.routesActive(monthFrom, monthTo),
+        this.repo.countOperatingVehicles(from, to),
       ]);
       return {
         totalTonnageKg: daily.reduce((sum, row) => sum + row.totalTonnageKg, 0),
         haulsCompleted: daily.reduce((sum, row) => sum + row.haulCount, 0),
         fuelApprovedLiters: fuel.reduce((sum, row) => sum + row.fuelApprovedLiters, 0),
         fuelRequestedLiters: fuel.reduce((sum, row) => sum + row.fuelRequestedLiters, 0),
-        vehiclesInOperation: fuel.length,
+        vehiclesInOperation,
         tripsRecorded: routes.reduce((sum, row) => sum + row.tripCount, 0),
         routesActive: routes.length,
       };

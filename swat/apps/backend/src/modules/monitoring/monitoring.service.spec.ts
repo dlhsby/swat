@@ -14,6 +14,7 @@ function createRepo(): jest.Mocked<MonitoringRepository> {
     fuelConsumption: jest.fn().mockResolvedValue([]),
     fuelByType: jest.fn().mockResolvedValue([]),
     routesActive: jest.fn().mockResolvedValue([]),
+    countOperatingVehicles: jest.fn().mockResolvedValue(0),
     levySummary: jest.fn().mockResolvedValue([]),
     tripSummary: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
   } as unknown as jest.Mocked<MonitoringRepository>;
@@ -179,6 +180,9 @@ describe('MonitoringService', () => {
           tripCount: 9,
         },
       ]);
+      // Distinct operating vehicles come from the haul-based count, not fuel rows
+      // (4 here vs 2 vehicles that refuelled) — proving the accurate source.
+      repo.countOperatingVehicles.mockResolvedValue(4);
 
       const kpi = await service.kpiOverview(RANGE);
 
@@ -187,10 +191,11 @@ describe('MonitoringService', () => {
         haulsCompleted: 8,
         fuelApprovedLiters: 130,
         fuelRequestedLiters: 150,
-        vehiclesInOperation: 2,
+        vehiclesInOperation: 4,
         tripsRecorded: 9,
         routesActive: 1,
       });
+      expect(repo.countOperatingVehicles).toHaveBeenCalled();
     });
   });
 

@@ -29,7 +29,13 @@ export function TonnageColumns({ data }: { data: readonly TonnagePoint[] }): JSX
             fontSize: 12,
           }}
         />
-        <Bar dataKey="ton" fill="var(--primary-600)" radius={[4, 4, 0, 0]} maxBarSize={48} />
+        <Bar
+          dataKey="ton"
+          fill="var(--primary-600)"
+          radius={[4, 4, 0, 0]}
+          maxBarSize={48}
+          isAnimationActive={false}
+        />
       </BarChart>
     </ResponsiveContainer>
   );

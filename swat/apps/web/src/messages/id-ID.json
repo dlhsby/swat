@@ -156,7 +156,8 @@
     "common": {
       "empty": "Tidak ada data pada rentang ini.",
       "loadError": "Gagal memuat data pemantauan.",
-      "lastUpdated": "Diperbarui {time}"
+      "lastUpdated": "Diperbarui {time}",
+      "monthNote": "Rincian per sumber, TPS, dan rute diagregasi per bulan—rentang harian menampilkan total bulan yang tercakup."
     },
     "volume": {
       "title": "Volume per Hari",

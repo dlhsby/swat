@@ -90,6 +90,24 @@ export class CacheService implements OnModuleDestroy {
     }
   }
 
+  /**
+   * Delete the keys matching `pattern` for which `predicate(key)` is true. Lets
+   * callers invalidate a precise subset (e.g. only the cache entries whose date
+   * window covers a mutated day) instead of flushing a whole namespace.
+   */
+  async invalidateWhere(pattern: string, predicate: (key: string) => boolean): Promise<number> {
+    try {
+      const keys = await this.client.keys(pattern);
+      const matched = keys.filter(predicate);
+      if (matched.length === 0) {
+        return 0;
+      }
+      return await this.client.del(...matched);
+    } catch {
+      return 0;
+    }
+  }
+
   async onModuleDestroy(): Promise<void> {
     try {
       await this.client.quit();

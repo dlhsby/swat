@@ -156,7 +156,8 @@
     "common": {
       "empty": "No data in this range.",
       "loadError": "Failed to load monitoring data.",
-      "lastUpdated": "Updated {time}"
+      "lastUpdated": "Updated {time}",
+      "monthNote": "By-source, by-site, and route breakdowns are aggregated monthly—a daily range shows the totals of the months it spans."
     },
     "volume": {
       "title": "Volume per Day",

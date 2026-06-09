@@ -63,7 +63,14 @@ export class RollupRepository {
                                  AND ha."id" = t."haulAssignmentId"
       JOIN "Haul" h               ON h."operationDate" = ha."operationDate"
                                  AND h."id" = ha."haulId"
-      JOIN "VehicleWasteSource" vws ON vws."vehicleId" = h."vehicleId"
+      -- Resolve one source per vehicle so a vehicle mapped to several sources
+      -- can never multiply its net weight across them (operationally a vehicle
+      -- serves a single source; this guards a dirty-data anomaly deterministically).
+      JOIN (
+        SELECT "vehicleId", MIN("wasteSourceId") AS "wasteSourceId"
+        FROM "VehicleWasteSource"
+        GROUP BY "vehicleId"
+      ) vws ON vws."vehicleId" = h."vehicleId"
       WHERE t."operationDate" >= ${from}::date
         AND t."operationDate" <  ${to}::date
         AND t."status" = 'VERIFIED'

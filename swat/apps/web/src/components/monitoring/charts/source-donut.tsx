@@ -18,6 +18,7 @@ export function SourceDonut({ slices }: { slices: readonly DonutSlice[] }): JSX.
             outerRadius={85}
             paddingAngle={2}
             stroke="none"
+            isAnimationActive={false}
           >
             {slices.map((slice) => (
               <Cell key={slice.name} fill={slice.color} />

@@ -130,6 +130,7 @@ export default function VolumePage(): JSX.Element {
         </div>
         <ChartCard
           title={t('donutTitle')}
+          footer={<p className="text-caption text-neutral-400">{tCommon('monthNote')}</p>}
           right={
             <div className="flex gap-1">
               {(['TOTAL', 'DINAS', 'SWASTA'] as const).map((key) => (
@@ -154,7 +155,10 @@ export default function VolumePage(): JSX.Element {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <ChartCard title={t('tableTitle')}>
+        <ChartCard
+          title={t('tableTitle')}
+          footer={<p className="text-caption text-neutral-400">{tCommon('monthNote')}</p>}
+        >
           <DataTable
             columns={siteColumns}
             data={bySite.data ?? []}

@@ -280,6 +280,27 @@ export class MonitoringRepository {
     }));
   }
 
+  /**
+   * Distinct vehicles that actually operated (≥1 realized trip) within `[from, to]`.
+   * Mirrors the spec's `COUNT(DISTINCT Haul.vehicleId)` definition of "vehicles in
+   * operation" — a vehicle that hauled but never refuelled is still counted, which
+   * the fuel rollup alone would miss. Reads the partitioned Trip table but is
+   * date-pruned to the window, and only feeds the cached KPI overview.
+   */
+  async countOperatingVehicles(from: Date, to: Date): Promise<number> {
+    const [row] = await this.prisma.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COUNT(DISTINCT h."vehicleId")::bigint AS "count"
+      FROM "Trip" t
+      JOIN "HaulAssignment" ha ON ha."operationDate" = t."operationDate"
+                              AND ha."id" = t."haulAssignmentId"
+      JOIN "Haul" h            ON h."operationDate" = ha."operationDate"
+                              AND h."id" = ha."haulId"
+      WHERE t."operationDate" >= ${from}::date AND t."operationDate" <= ${to}::date
+        AND t."status" IN ('DONE', 'VERIFIED')
+    `;
+    return Number(row?.count ?? 0n);
+  }
+
   /** Levy totals by category within `[from, to]` (integer IDR). */
   async levySummary(
     from: Date,

@@ -10,11 +10,17 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      include: ['src/lib/**/*.ts', 'src/components/ui/**/*.{ts,tsx}'],
+      include: [
+        'src/lib/**/*.ts',
+        'src/components/ui/**/*.{ts,tsx}',
+        'src/components/monitoring/**/*.{ts,tsx}',
+        'src/hooks/use-monitoring*.ts',
+      ],
       exclude: [
         'src/lib/**/__tests__/**',
         'src/components/ui/**/__tests__/**',
         'src/components/ui/index.ts',
+        'src/components/monitoring/**/__tests__/**',
       ],
     },
   },
