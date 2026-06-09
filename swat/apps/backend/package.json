@@ -16,6 +16,7 @@
     "migrate:images": "ts-node --compiler-options {\"module\":\"CommonJS\"} scripts/migration/migrate-images.ts",
     "migrate:verify": "ts-node --compiler-options {\"module\":\"CommonJS\"} scripts/migration/verify-migration.ts",
     "migrate:delta-sync": "ts-node --compiler-options {\"module\":\"CommonJS\"} scripts/migration/delta-sync.ts",
+    "rollup:backfill": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/backfill-rollups.ts",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

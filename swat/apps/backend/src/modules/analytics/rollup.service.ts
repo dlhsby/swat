@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { formatDateOnly, startOfMonth, startOfNextMonth, trailingDates } from '../../common/dates';
+import {
+  addDays,
+  formatDateOnly,
+  startOfMonth,
+  startOfNextMonth,
+  trailingDates,
+} from '../../common/dates';
 
 import { RollupRepository } from './rollup.repository';
 
@@ -85,5 +91,32 @@ export class RollupService {
       await this.refreshMonthlyTonnage(anchor);
       await this.refreshMonthlyRouteActivity(anchor);
     }
+  }
+
+  /**
+   * Recompute every daily and monthly rollup across the inclusive `[from, to]`
+   * day range. Idempotent (each table is recomputed from scratch), so it is safe
+   * to re-run after a historical bulk import — unlike the nightly cron, which only
+   * heals the trailing window. `from`/`to` are UTC day-only dates.
+   */
+  async backfill(from: Date, to: Date): Promise<{ days: number; months: number }> {
+    let days = 0;
+    for (let date = from; date.getTime() <= to.getTime(); date = addDays(date, 1)) {
+      await this.refreshDailyTonnage(date);
+      await this.refreshDailyFuel(date);
+      days += 1;
+    }
+    let months = 0;
+    for (
+      let anchor = startOfMonth(from);
+      anchor.getTime() <= to.getTime();
+      anchor = startOfNextMonth(anchor)
+    ) {
+      await this.refreshMonthlyTonnage(anchor);
+      await this.refreshMonthlyRouteActivity(anchor);
+      months += 1;
+    }
+    this.logger.log(`Backfill rollup: ${days} hari, ${months} bulan diperbarui.`);
+    return { days, months };
   }
 }

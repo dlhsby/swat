@@ -159,4 +159,40 @@ describe('RollupService', () => {
       ).toEqual(['2026-06-01', '2026-05-01']);
     });
   });
+
+  describe('backfill', () => {
+    it('recomputes every daily + monthly rollup across the inclusive range', async () => {
+      // 4 days spanning two months (30 May → 2 Jun) → May + June anchors.
+      const result = await service.backfill(
+        parseDateOnly('2026-05-30'),
+        parseDateOnly('2026-06-02'),
+      );
+
+      expect(result).toEqual({ days: 4, months: 2 });
+      expect(repo.aggregateDailyTonnage).toHaveBeenCalledTimes(4);
+      expect(repo.aggregateDailyFuel).toHaveBeenCalledTimes(4);
+      const days = repo.aggregateDailyTonnage.mock.calls.map(([d]) =>
+        (d as Date).toISOString().slice(0, 10),
+      );
+      expect(days).toEqual(['2026-05-30', '2026-05-31', '2026-06-01', '2026-06-02']);
+      // refreshMonthlyTonnage hits source + site; route activity once — per month.
+      expect(repo.aggregateMonthlyTonnageBySource).toHaveBeenCalledTimes(2);
+      expect(repo.aggregateMonthlyTonnageBySite).toHaveBeenCalledTimes(2);
+      expect(repo.aggregateMonthlyRouteActivity).toHaveBeenCalledTimes(2);
+      expect(
+        repo.replaceMonthlyTonnageBySource.mock.calls.map(([m]) =>
+          (m as Date).toISOString().slice(0, 10),
+        ),
+      ).toEqual(['2026-05-01', '2026-06-01']);
+    });
+
+    it('handles a single-day range', async () => {
+      const result = await service.backfill(
+        parseDateOnly('2026-06-08'),
+        parseDateOnly('2026-06-08'),
+      );
+      expect(result).toEqual({ days: 1, months: 1 });
+      expect(repo.aggregateDailyTonnage).toHaveBeenCalledTimes(1);
+    });
+  });
 });
