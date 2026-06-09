@@ -140,6 +140,90 @@
     "viewBoard": "View Board",
     "emptyDays": "No transaction days yet. Start with \"Initialize Today\"."
   },
+  "monitoring": {
+    "range": {
+      "today": "Today",
+      "last7": "7 Days",
+      "thisMonth": "This Month",
+      "lastMonth": "Last Month",
+      "ytd": "Year to Date"
+    },
+    "recon": {
+      "MATCHED": "Matched",
+      "DISCREPANCY": "Discrepancy",
+      "PENDING": "Pending"
+    },
+    "common": {
+      "empty": "No data in this range.",
+      "loadError": "Failed to load monitoring data.",
+      "lastUpdated": "Updated {time}"
+    },
+    "volume": {
+      "title": "Volume per Day",
+      "subtitle": "Hauled waste tonnage from verified disposal legs.",
+      "kpiTotal": "Total Tonnage",
+      "kpiHauls": "Hauls Completed",
+      "kpiAvg": "Average per Haul",
+      "kpiSources": "Active Sources",
+      "chartTitle": "Tonnage per Day",
+      "chartSub": "Kilograms converted to tonnes.",
+      "donutTitle": "Composition by Source",
+      "tableTitle": "Tonnage per Site",
+      "infoNote": "Aggregated from VERIFIED disposal legs. Nightly reconciliation against the TPA weighbridge; gaps over 5% are flagged as anomalies.",
+      "colDate": "Date",
+      "colTonnage": "Tonnage",
+      "colHauls": "Hauls",
+      "colTpa": "TPA Weighbridge",
+      "colStatus": "Reconciliation",
+      "colSite": "Site",
+      "sourceLabel": "Source",
+      "sourceTotal": "Total",
+      "sourceDinas": "Dinas",
+      "sourceSwasta": "Swasta"
+    },
+    "fuel": {
+      "title": "Fuel Consumption",
+      "subtitle": "Requested versus approved fuel per vehicle.",
+      "kpiApproved": "Total Approved",
+      "kpiRequested": "Total Requested",
+      "kpiVehicles": "Vehicles",
+      "kpiFlagged": "Flagged",
+      "chartTitle": "Requested vs Approved",
+      "chartSub": "Red bars flag variance below -5%.",
+      "tableTitle": "Variance per Vehicle",
+      "colPlate": "Vehicle",
+      "colRequested": "Requested",
+      "colApproved": "Approved",
+      "colVariance": "Variance",
+      "colFlag": "Status",
+      "flagOk": "OK",
+      "flagRed": "Anomaly"
+    },
+    "routes": {
+      "title": "Route Activity",
+      "subtitle": "Routes with realized trips, ranked by frequency.",
+      "kpiActive": "Active Routes",
+      "kpiTrips": "Total Trips",
+      "tableTitle": "Most Active Routes",
+      "colRoute": "Route",
+      "colCategory": "Category",
+      "colDistance": "Distance",
+      "colTrips": "Trips"
+    },
+    "levy": {
+      "title": "Levy",
+      "subtitle": "Levy recap by category.",
+      "kpiTotal": "Total Levy",
+      "kpiCount": "Transactions",
+      "kpiAvg": "Average per Transaction",
+      "tableTitle": "Levy by Category",
+      "note": "Levy data is loaded from the legacy migration; empty until live data is available.",
+      "colCategory": "Category",
+      "colTotal": "Amount",
+      "colCount": "Transactions",
+      "colAvg": "Average"
+    }
+  },
   "crud": {
     "created": "Created successfully.",
     "updated": "Changes saved.",
