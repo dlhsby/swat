@@ -7,10 +7,11 @@
  *  3. Admin user (Argon2id hash, mustChangePassword=true).
  *  4. Reference/lookup data (specs/01-glossary.md §4): LicenseClass,
  *     FuelCategory, Fuel, VehicleApplication, WasteSource.
- *  5. Synthetic transactional data (a year of disposal + refuel trips, plus TPA
+ *  5. Demo levy/retribusi rows (monthly, by category) for the Retribusi dashboard.
+ *  6. Synthetic transactional data (a year of disposal + refuel trips, plus TPA
  *     weighbridge logs) so partition pruning and the Phase-2 monitoring
- *     dashboards (tonnage by source, BBM variance, TPA reconciliation) have data
- *     — gated by SEED_SYNTHETIC (default true).
+ *     dashboards (tonnage by source, BBM variance, TPA reconciliation) have data.
+ *     Items 5–6 are gated by SEED_SYNTHETIC (default true).
  *
  * Idempotent: every write is an upsert or guarded create; re-running is safe and
  * back-fills refuel/TPA onto days an earlier run created (no wipe needed). Run
@@ -358,7 +359,46 @@ async function seedReferenceData(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Synthetic transactional data (for partition-pruning verification)
+// 5. Levy / retribusi (monthly, by category) — feeds the Retribusi dashboard.
+//    Read-only in-app until live legacy levy data lands; this is dev demo data.
+// ---------------------------------------------------------------------------
+const LEVY_CATEGORIES: ReadonlyArray<{ name: string; baseAmount: number }> = [
+  { name: 'Rumah Tangga', baseAmount: 15_000_000 },
+  { name: 'Komersial', baseAmount: 28_000_000 },
+  { name: 'Industri', baseAmount: 45_000_000 },
+  { name: 'Pasar', baseAmount: 12_000_000 },
+  { name: 'Hotel & Restoran', baseAmount: 22_000_000 },
+];
+
+async function seedLevies(): Promise<void> {
+  const rng = makeRng(20260610);
+  const admin = await prisma.user.findUnique({ where: { username: 'admin' } });
+  // 12 monthly anchors (first-of-month) from 2025-07 to 2026-06.
+  for (let m = 0; m < 12; m += 1) {
+    const date = dateOnly(2025, 6 + m, 1);
+    for (const category of LEVY_CATEGORIES) {
+      const existing = await prisma.levy.findFirst({
+        where: { categoryName: category.name, date },
+        select: { id: true },
+      });
+      if (existing) {
+        continue; // idempotent — already seeded this category-month
+      }
+      const amount = Math.round(category.baseAmount * (0.85 + rng() * 0.3));
+      await prisma.levy.create({
+        data: {
+          categoryName: category.name,
+          date,
+          amount: BigInt(amount),
+          createdById: admin?.id ?? null,
+        },
+      });
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 6. Synthetic transactional data (for partition-pruning verification)
 // ---------------------------------------------------------------------------
 
 /** Deterministic pseudo-random generator (no Math.random — reproducible seeds). */
@@ -561,7 +601,15 @@ async function seedSyntheticData(): Promise<void> {
     });
     if (!refuelExists) {
       const requested = 40 + Math.floor(rng() * 21); // 40..60 L
-      const approved = offset % 5 === 0 ? Math.round(requested * 0.9) : requested;
+      // vehicle2 (Swasta) is chronically under-approved (~−12%) so the BBM
+      // variance view shows a RED vehicle; vehicle1 stays mostly OK (10% short
+      // every 5th day, averaging within the −5% threshold).
+      const approved =
+        dayVehicle.id === vehicle2.id
+          ? Math.round(requested * 0.88)
+          : offset % 5 === 0
+            ? Math.round(requested * 0.9)
+            : requested;
       await prisma.trip.create({
         data: {
           haulAssignmentId: assignment.id,
@@ -630,6 +678,7 @@ async function main(): Promise<void> {
   await seedReferenceData();
 
   if (process.env.SEED_SYNTHETIC !== 'false') {
+    await seedLevies();
     await seedSyntheticData();
   }
 
