@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SWAT — Wireframes (Web)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<!-- ===== References the SWAT Design System (tokens + components) ===== -->
+<link rel="stylesheet" href="design-system/swat-tokens.css" />
+<link rel="stylesheet" href="design-system/swat-components.css" />
+<link rel="stylesheet" href="wireframe/wireframe.css" />
+</head>
+<body>
+<div class="wf">
+
+  <!-- ===================== DOC RAIL (wireframe index) ===================== -->
+  <nav class="rail" id="rail">
+    <div class="rail-brand">
+      <div class="mark">SW</div>
+      <div><b>SWAT · Wireframes</b><span>Web · Fase 1</span></div>
+    </div>
+    <div class="rail-meta">
+      Kerangka fungsional (low/mid-fi) untuk back-office DLH Kota Surabaya. Dibangun di atas
+      <a href="design-system.html">Sistem Desain</a> — struktur &amp; interaksi, bukan polesan visual akhir.
+    </div>
+    <div id="rail-list"></div>
+  </nav>
+
+  <!-- ===================== STAGE ===================== -->
+  <div class="stage">
+    <div class="stage-bar">
+      <div class="crumb" id="bar-crumb"></div>
+      <span class="route" id="bar-route"></span>
+      <div class="spacer"></div>
+      <div class="vp-seg" id="vp-seg">
+        <button data-vp="desktop"><span class="g">▢</span>Desktop</button>
+        <button data-vp="mobile"><span class="g">▯</span>Mobile</button>
+        <button data-vp="compare" class="on"><span class="g">▤</span>Bandingkan</button>
+      </div>
+      <button class="wf-toggle" id="annot-toggle" aria-pressed="true">
+        <span class="switch" style="width:32px;height:18px"><input type="checkbox" checked tabindex="-1" /><span class="track"></span><span class="thumb"></span></span>
+        Anotasi
+      </button>
+    </div>
+    <div class="stage-body" id="stage-body">
+      <div class="canvas" id="canvas"></div>
+      <aside class="annot" id="annot"></aside>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   SWAT wireframes — data-driven renderer.
+   Each screen supplies the real DS markup for the product UI + an
+   annotation panel keyed to design-system component names.
+   ===================================================================== */
+
+/* ---------- product sidebar — reconciled IA ----------------------------------
+   Combines the REAL SWAT application menu (provided JSON) with the wireframe
+   screens already built. Leaves with `screen` open a wireframe; leaves with
+   `stub` are part of the app's IA but not yet wireframed (open a generic page).
+   Groups are collapsible (nested), e.g. "Pengemudi & SIM".
+   --------------------------------------------------------------------------- */
+const NAV = [
+  { id:'dashboard', label:'Dasbor', ic:'◳', screen:'dashboard' },
+
+  { id:'grp-monitoring', label:'Monitoring', ic:'▦', children:[
+    { id:'sub-volume', label:'Volume Sampah', children:[
+      { id:'n-vol-hari',   label:'Volume per Hari',          screen:'monitoring' },
+      { id:'n-vol-rekap',  label:'Rekap Volume Sampah',      stub:'crud' },
+      { id:'n-vol-tps',    label:'Volume di TPS / Sumber',   stub:'crud' },
+      { id:'n-vol-upload', label:'Upload Data Penimbangan',  stub:'soon' },
+    ]},
+    { id:'n-mon-bbm',       label:'Konsumsi BBM',  stub:'soon' },
+    { id:'n-mon-retribusi', label:'Retribusi',     stub:'crud' },
+    { id:'n-laporan',       label:'Laporan',       stub:'soon' },
+  ]},
+
+  { id:'grp-master', label:'Master Data', ic:'▤', children:[
+    { id:'sub-driver', label:'Pengemudi & SIM', children:[
+      { id:'n-driver',  label:'Pengemudi',       stub:'crud' },
+      { id:'n-sim',     label:'SIM',             stub:'crud' },
+      { id:'n-sim-own', label:'Kepemilikan SIM', stub:'crud' },
+    ]},
+    { id:'sub-vehicle', label:'Kendaraan', children:[
+      { id:'n-vehicle',   label:'Kendaraan',                screen:'vehicle' },
+      { id:'n-veh-app',   label:'Aplikasi Kendaraan',       stub:'crud' },
+      { id:'n-veh-cat',   label:'Kategori Kendaraan',       stub:'crud' },
+      { id:'n-waste-cat', label:'Kategori Sumber Sampah',   stub:'crud' },
+    ]},
+    { id:'sub-route', label:'Spot & Rute', children:[
+      { id:'n-spot',      label:'Spot',           stub:'crud' },
+      { id:'n-route',     label:'Rute',           stub:'crud' },
+      { id:'n-spot-cat',  label:'Kategori Spot',  stub:'crud' },
+      { id:'n-route-cat', label:'Kategori Rute',  stub:'crud' },
+    ]},
+    { id:'sub-access', label:'Menu & Hak Akses', children:[
+      { id:'n-menu',        label:'Menu',            stub:'crud' },
+      { id:'n-role',        label:'Hak Akses',       screen:'role' },
+      { id:'n-user',        label:'Pengguna',        screen:'user' },
+      { id:'n-access-menu',  label:'Hak Akses Menu', stub:'crud' },
+    ]},
+    { id:'n-crud-pattern', label:'Pola CRUD (ref)', ic:'▤', screen:'masterPattern' },
+  ]},
+
+  { id:'grp-sched', label:'Penjadwalan', ic:'◴', children:[
+    { id:'n-crew',     label:'Jadwal Kru',      screen:'crew' },
+    { id:'n-template', label:'Template Trayek', screen:'template' },
+    { id:'n-quota',    label:'Jatah Kitir',     screen:'quota' },
+  ]},
+
+  { id:'grp-txn', label:'Transaksi', ic:'⇄', children:[
+    { id:'sub-haul', label:'Pengangkutan Sampah', children:[
+      { id:'n-day',            label:'Hari Transaksi',        screen:'day' },
+      { id:'n-board',          label:'Haul Board (harian)',   screen:'board' },
+      { id:'n-pickup',         label:'Pengambilan Sampah',    screen:'pickup' },
+      { id:'n-disposal',       label:'Pembuangan Sampah',     screen:'disposal' },
+      { id:'n-verify',         label:'Verifikasi Trayek',     screen:'verify' },
+      { id:'n-pool',           label:'Aktivitas Pool',        stub:'soon' },
+      { id:'n-mon-haul',       label:'Monitoring Pengangkutan', stub:'soon' },
+      { id:'n-rekap',          label:'Rekapitulasi',          stub:'soon' },
+      { id:'n-disposal-month', label:'Pembuangan per Bulan',  stub:'soon' },
+    ]},
+    { id:'n-refuel',    label:'Pengisian Bahan Bakar', screen:'refuel' },
+    { id:'n-inspect',   label:'Pemeriksaan Kendaraan', stub:'crud' },
+    { id:'n-maint',     label:'Perawatan',             stub:'crud' },
+    { id:'n-txn-retri', label:'Retribusi',             stub:'crud' },
+  ]},
+];
+
+/* permission-gated example — hidden for roles lacking the permission */
+const LOCKED = new Set(['n-role']);
+
+/* ---- indexes (built once): node lookup, parent chain, screen→leaf ---- */
+const NODES = {}, PARENT = {}, SCR2NAV = {};
+(function walk(arr, par){
+  for(const n of arr){
+    NODES[n.id] = n; PARENT[n.id] = par;
+    if(n.screen) SCR2NAV[n.screen] = n.id;
+    if(n.children) walk(n.children, n.id);
+  }
+})(NAV, null);
+/* dialog / sub screens map to their owning sidebar leaf */
+Object.assign(SCR2NAV, {
+  vehicleForm:'n-vehicle', reconcile:'n-board',
+  profile:'dashboard', shell:'dashboard'
+});
+function navPath(leafId){
+  const p = []; let id = leafId;
+  while(id){ if(NODES[id]) p.unshift(NODES[id].label); id = PARENT[id]; }
+  return p.length ? p : ['Layar'];
+}
+function activeLeafFor(id){
+  if(id==='generic' && window.__gen) return window.__gen.leafId;
+  return SCR2NAV[id] || id;
+}
+
+/* expanded groups (mutated in place) + mobile drawer flag + nav history */
+const EXPANDED = new Set(['grp-monitoring','grp-master','grp-sched','grp-txn','sub-driver','sub-vehicle','sub-access','sub-haul']);
+window.__mdrawer = false;
+const MHIST = [];
+
+/* recursive sidebar renderer */
+function navNode(node, depth, activeLeaf){
+  if(node.children){
+    const open = EXPANDED.has(node.id);
+    const top = depth===0;
+    let h = '<div class="'+(top?'nav-group':'nav-sub')+(open?' open':'')+'">';
+    h += '<button class="nav-parent" data-navtog="'+node.id+'" data-label="'+node.label+'" style="--d:'+depth+'">'+
+           '<span class="si">'+(node.ic||'▸')+'</span><span class="nl">'+node.label+'</span><span class="chev">▸</span></button>';
+    h += '<div class="nav-kids">';
+    for(const c of node.children) h += navNode(c, depth+1, activeLeaf);
+    h += '</div></div>';
+    return h;
+  }
+  const isActive = node.id===activeLeaf;
+  const locked = LOCKED.has(node.id);
+  const attr = node.screen ? 'data-nav="'+node.screen+'"' : 'data-stub="'+node.id+'"';
+  const lock = locked ? ' title="Disembunyikan bila tanpa izin"' : '';
+  return '<a class="side-link'+(isActive?' active':'')+(locked?' side-locked':'')+'" '+attr+
+    ' data-label="'+node.label+'" style="--d:'+depth+'"'+lock+'>'+
+    '<span class="si">'+(node.ic||'·')+'</span><span class="nl">'+node.label+'</span></a>';
+}
+function sidebar(activeArg){
+  const cur = window.__current || activeArg;
+  const activeLeaf = activeLeafFor(cur);
+  /* auto-expand the path to the active leaf */
+  let p = PARENT[activeLeaf];
+  while(p){ EXPANDED.add(p); p = PARENT[p]; }
+  let h = '';
+  for(const node of NAV) h += navNode(node, 0, activeLeaf);
+  return '<aside class="sidebar">'+h+'</aside>';
+}
+function topbar(){
+  return '<header class="topbar">'+
+    '<div class="ti js-collapse" title="Lipat / buka menu">☰</div>'+
+    '<div class="logo"><span class="mk">SW</span><b>SWAT</b><span>· DLH Surabaya</span></div>'+
+    '<div class="spacer"></div>'+
+    '<div class="ti" title="Notifikasi">◔</div>'+
+    '<div class="usr"><span class="avatar" style="width:34px;height:34px">AD</span><div class="nm"><b>Ali Darmawan</b><span>Administrasi Data</span></div><span class="muted">▾</span></div>'+
+  '</header>';
+}
+function shell(active, content){
+  const col = window.__sidebarCollapsed ? ' collapsed' : '';
+  return '<div class="app-shell'+col+'">'+topbar()+sidebar(active)+'<main class="content">'+content+'</main></div>';
+}
+function frame(url, inner, tag){
+  tag = tag || 'Wireframe';
+  return '<div class="frame"><div class="frame-head"><div class="dots"><i></i><i></i><i></i></div>'+
+    '<div class="url">'+url+'</div><span class="frame-tag">'+tag+'</span></div>'+inner+'</div>';
+}
+function crumbs(arr){
+  let h='<nav class="crumbs crumbs2" aria-label="Breadcrumb">';
+  arr.forEach((c,i)=>{
+    if(i<arr.length-1) h+='<a href="#">'+c+'</a><span class="sep">/</span>';
+    else h+='<span aria-current="page">'+c+'</span>';
+  });
+  return h+'</nav>';
+}
+function field(label, control, opts){
+  opts=opts||{};
+  const req = opts.req?' <span class="req">*</span>':'';
+  const help = opts.help?'<span class="field-help">'+opts.help+'</span>':'';
+  const err = opts.err?'<span class="field-error">⚠ '+opts.err+'</span>':'';
+  return '<div class="field"'+(opts.mb0?' style="margin-bottom:0"':'')+'><label class="field-label">'+label+req+'</label>'+control+help+err+'</div>';
+}
+function states(arr){
+  let h='<div class="states">';
+  for(const s of arr){
+    h+='<div class="state"><div class="cap">'+s.cap+'</div><div class="bd">'+s.body+'</div></div>';
+  }
+  return h+'</div>';
+}
+
+/* annotation helpers */
+function A(n, html){ return {n:n, html:html}; }
+function annotPanel(s){
+  let h='<h2>'+(s.kicker||'Layar')+'</h2><p class="a-title">'+s.title+'</p><p class="a-desc">'+s.desc+'</p>';
+  if(s.meta) h+='<div class="multi-note">'+s.meta+'</div>';
+  let groups = s.annot;
+  if(!Array.isArray(groups[0])) groups = [['Komponen & Interaksi', groups]];
+  for(const [secTitle, items] of groups){
+    h+='<p class="a-sec">'+secTitle+'</p>';
+    for(const it of items){
+      h+='<div class="a-item"><span class="n">'+it.n+'</span><div class="tx">'+it.html+'</div></div>';
+    }
+  }
+  return h;
+}
+
+/* shorthand DS markup pieces */
+const SEARCH = '<div class="input-group" style="max-width:300px"><input class="input" placeholder="Cari…" /></div>';
+function btn(t,v,extra){ return '<button class="btn '+v+(extra||'')+'">'+t+'</button>'; }
+function pill(t,cls){ return '<span class="badge '+cls+'"><span class="dot"></span>'+t+'</span>'; }
+
+/* ===================================================================== */
+/*  SCREEN DEFINITIONS                                                    */
+/* ===================================================================== */
+const SCREENS = {};
+
+/* ----------------------------------------------------- 00 OVERVIEW ---- */
+SCREENS.overview = {
+  group:'Dokumen', ix:'00', label:'Ikhtisar', chrome:'doc',
+  crumb:'<b>Ikhtisar</b>', route:'wireframe-web.html',
+  render(){
+    const groupsCount = {Auth:3, Kerangka:2, 'Master Data':3, Penjadwalan:3, Transaksi:7, 'Pengguna':2};
+    const cards = [
+      ['Autentikasi','Login, Ubah Kata Sandi (paksa), Profil'],
+      ['Kerangka Aplikasi','App shell (sidebar + topbar), Dasbor'],
+      ['Master Data','Pola CRUD sekali-pakai + instansi Kendaraan'],
+      ['Penjadwalan','Jadwal Kru, Template Trayek, Jatah Kitir'],
+      ['Transaksi','Hari Transaksi → Haul Board → Pengambilan / Pembuangan + Timbangan / Bahan Bakar → Verifikasi'],
+      ['Pengguna & Akses','Pengguna, Hak Akses (RBAC)'],
+    ];
+    let cardsH='';
+    for(const [t,d] of cards) cardsH+='<div class="metric"><div class="lbl">'+t+'</div><p style="margin:0;font-size:13px;color:var(--neutral-600);line-height:1.5">'+d+'</p></div>';
+    return '<div class="doc">'+
+      '<h1>Wireframe SWAT — Web (Fase 1)</h1>'+
+      '<p class="lede">Kerangka fungsional untuk aplikasi back-office pengangkutan sampah DLH Kota Surabaya. '+
+      'Setiap layar memakai <b>App Shell</b> dan <b>Template Halaman</b> dari Sistem Desain, dengan anotasi komponen '+
+      '(<span class="cmp">Button</span> <span class="cmp">DataTable</span> <span class="cmp">Dialog</span> …), '+
+      'status (kosong / memuat / galat), dan perilaku validasi. Warna &amp; polesan akhir adalah tahap hi-fi.</p>'+
+      '<h2 class="dh">Cakupan</h2>'+
+      '<div class="grid3" style="margin-bottom:8px">'+cardsH+'</div>'+
+      '<h2 class="dh">Cara membaca</h2>'+
+      '<div class="notecols">'+
+        '<div class="notecard"><h3>Panel kiri</h3><ul>'+
+          '<li>Daftar seluruh layar, dikelompokkan per modul.</li>'+
+          '<li>Klik untuk berpindah — kerangka berperilaku seperti aplikasi nyata.</li>'+
+          '<li>Dua entri <b>Referensi</b> di bawah: Inventaris Layar &amp; Catatan Interaksi.</li>'+
+        '</ul></div>'+
+        '<div class="notecard"><h3>Panel kanan</h3><ul>'+
+          '<li>Anotasi bernomor: komponen DS yang dipakai + catatan interaksi.</li>'+
+          '<li>Toggle <span class="kbd">Anotasi</span> di kanan-atas untuk tampilan bersih.</li>'+
+          '<li>Status kosong / memuat / galat ditandai eksplisit.</li>'+
+        '</ul></div>'+
+      '</div>';
+  },
+  annot:null
+};
+
+/* ----------------------------------------------------- 01 LOGIN ------- */
+SCREENS.login = {
+  group:'Autentikasi', ix:'01', label:'Login', chrome:'plain',
+  crumb:'Autentikasi / <b>Login</b>', route:'/login',
+  render(){
+    const card = '<div class="auth-wrap"><div class="auth-card">'+
+      '<div class="auth-logo"><div class="mk">SW</div><b>SWAT</b><span>Dinas Lingkungan Hidup · Kota Surabaya</span></div>'+
+      '<div class="card" style="padding:24px">'+
+        '<h3 style="margin:0 0 4px;font-size:18px;font-weight:700">Masuk</h3>'+
+        '<p class="muted" style="margin:0 0 18px;font-size:13px">Gunakan akun yang diberikan administrator.</p>'+
+        field('Nama pengguna','<input class="input" placeholder="mis. ali.darmawan" />',{req:true})+
+        field('Kata sandi','<input class="input" type="password" value="········" />',{req:true})+
+        '<div class="alert alert-danger" style="margin-bottom:14px"><div><div class="alert-title">Gagal masuk</div>Nama pengguna atau kata sandi salah.</div></div>'+
+        btn('Masuk','btn-primary','" style="width:100%')+
+        '<p class="muted" style="text-align:center;margin:14px 0 0;font-size:12px"><a href="#" style="color:var(--primary-700)">Lupa kata sandi?</a></p>'+
+      '</div>'+
+      '<p class="muted" style="text-align:center;margin-top:18px;font-size:11.5px">© 2026 Dinas Lingkungan Hidup Kota Surabaya</p>'+
+    '</div></div>';
+    return frame('app.swat.dlh.surabaya.go.id/login', card);
+  },
+  annot:{
+    title:'Login', kicker:'Autentikasi',
+    desc:'Kartu masuk terpusat (380px desktop, penuh di mobile). Sesi berbasis cookie httpOnly.',
+    annot:[
+      A(1,'Kartu terpusat memakai <span class="cmp">Card</span>; lebar 380px, satu kolom.'),
+      A(2,'Dua <span class="cmp">FormField</span> — <b>Nama pengguna</b> &amp; <b>Kata sandi</b> (type password). Selalu pakai <code>&lt;label&gt;</code> nyata, asterisk wajib.'),
+      A(3,'Galat kredensial pakai <span class="cmp">Alert</span> varian danger: "Nama pengguna atau kata sandi salah". Setelah 5 gagal → terkunci 30 mnt (pesan rate-limit).'),
+      A(4,'<span class="cmp">Button</span> primary penuh-lebar. <span class="kbd">Enter</span> men-submit form.'),
+      A(5,'Sukses → arahkan ke <code>/dashboard</code> (atau referrer). Bila <code>mustChangePassword</code> = true → paksa ke Ubah Kata Sandi.'),
+    ]
+  }
+};
+
+/* ----------------------------------------------------- 02 CHANGE PW --- */
+SCREENS.changepw = {
+  group:'Autentikasi', ix:'02', label:'Ubah Kata Sandi', chrome:'plain',
+  crumb:'Autentikasi / <b>Ubah Kata Sandi</b>', route:'/auth/change-password',
+  render(){
+    const card='<div class="auth-wrap"><div class="auth-card" style="width:420px">'+
+      '<div class="auth-logo"><div class="mk">SW</div><b>Ubah Kata Sandi</b><span>Wajib sebelum melanjutkan</span></div>'+
+      '<div class="alert alert-warning" style="margin-bottom:14px"><div><div class="alert-title">Tindakan diperlukan</div>Anda harus mengubah kata sandi sementara untuk melanjutkan.</div></div>'+
+      '<div class="card" style="padding:24px">'+
+        field('Kata sandi saat ini','<input class="input" type="password" value="········" />',{req:true})+
+        field('Kata sandi baru','<input class="input" type="password" value="············" />',{req:true,help:'Minimal 8 karakter, kombinasi huruf &amp; angka.'})+
+        '<div class="progress" style="margin:-6px 0 14px"><i style="width:82%"></i></div>'+
+        '<p class="muted" style="margin:-10px 0 14px;font-size:11.5px">Kekuatan: <b style="color:var(--success-700)">Kuat</b></p>'+
+        field('Konfirmasi kata sandi baru','<input class="input is-error" type="password" value="··········" aria-invalid="true" />',{req:true,err:'Konfirmasi tidak cocok dengan kata sandi baru.',mb0:true})+
+        '<div class="dialog-foot" style="margin-top:18px"><button class="btn btn-secondary">Keluar</button><button class="btn btn-primary">Ubah &amp; Lanjut</button></div>'+
+      '</div>'+
+    '</div></div>';
+    return frame('app.swat…/auth/change-password', card);
+  },
+  annot:{
+    title:'Ubah Kata Sandi (paksa)', kicker:'Autentikasi',
+    desc:'Dipicu otomatis saat login pertama (mustChangePassword). Navigasi lain diblok sampai selesai.',
+    annot:[
+      A(1,'<span class="cmp">Alert</span> warning menjelaskan mengapa layar muncul. Middleware frontend memblok rute lain.'),
+      A(2,'Tiga <span class="cmp">FormField</span> password: saat ini, baru, konfirmasi.'),
+      A(3,'Indikator kekuatan = <span class="cmp">Progress</span> + label ("Lemah/Sedang/Kuat"), diperbarui saat mengetik.'),
+      A(4,'Validasi inline: kecocokan konfirmasi &amp; aturan kekuatan via <span class="cmp">FormField</span> error. <span class="cmp">Button</span> nonaktif bila tak valid.'),
+      A(5,'Sukses → <span class="cmp">Toast</span> "Berhasil", set <code>mustChangePassword=false</code>, arahkan ke dasbor.'),
+    ]
+  }
+};
+
+/* ----------------------------------------------------- 03 PROFILE ----- */
+SCREENS.profile = {
+  group:'Autentikasi', ix:'03', label:'Profil', chrome:'shell', active:'dashboard',
+  crumb:'Akun / <b>Profil</b>', route:'/profile',
+  render(){
+    const content = crumbs(['Akun','Profil'])+
+      '<div class="pg-head"><div><h1>Profil Saya</h1><p class="sub">Kelola informasi akun dan keamanan.</p></div></div>'+
+      '<div class="grid2" style="align-items:start">'+
+        '<div class="card" style="padding:22px">'+
+          '<div class="row" style="align-items:center;gap:16px;margin-bottom:18px"><span class="avatar" style="width:64px;height:64px;font-size:22px">AD</span>'+
+            '<div><div style="font-size:17px;font-weight:700">Ali Darmawan</div><div class="muted" style="font-size:13px">@ali.darmawan</div>'+pill('Administrasi Data','badge-slate')+'</div></div>'+
+          '<div class="imgslot" style="height:70px;margin-bottom:18px">foto profil — JPG/PNG, maks 2 MB (Dropzone)</div>'+
+          field('Nama lengkap','<input class="input" value="Ali Darmawan" />',{req:true})+
+          field('Nama pengguna','<input class="input" value="ali.darmawan" disabled />',{help:'Tidak dapat diubah.',mb0:true})+
+          '<div class="dialog-foot" style="margin-top:18px"><button class="btn btn-secondary">Batal</button><button class="btn btn-primary">Simpan</button></div>'+
+        '</div>'+
+        '<div class="col" style="gap:16px">'+
+          '<div class="card" style="padding:20px"><h3 style="margin:0 0 4px;font-size:15px;font-weight:700">Keamanan</h3>'+
+            '<p class="muted" style="margin:0 0 14px;font-size:13px">Ubah kata sandi kapan saja.</p>'+btn('Ubah Kata Sandi','btn-outline')+'</div>'+
+          '<div class="card" style="padding:20px"><h3 style="margin:0 0 4px;font-size:15px;font-weight:700">Sesi</h3>'+
+            '<p class="muted" style="margin:0 0 14px;font-size:13px">Keluar dari perangkat ini.</p>'+btn('Keluar','btn-destructive')+'</div>'+
+        '</div>'+
+      '</div>';
+    return frame('app.swat…/profile', shell('dashboard', content));
+  },
+  annot:{
+    title:'Profil', kicker:'Akun',
+    desc:'Detail akun milik sendiri: nama & foto dapat diubah; kata sandi & logout selalu tersedia.',
+    annot:[
+      A(1,'Header: <span class="cmp">Avatar</span> 64px + nama + <span class="cmp">Badge</span> peran (read-only).'),
+      A(2,'Foto via <span class="cmp">Dropzone</span> (JPG/PNG, maks 2 MB) — placeholder bergaris.'),
+      A(3,'<span class="cmp">FormField</span>: nama (editable), nama pengguna (disabled, abu-abu).'),
+      A(4,'Footer kartu: <span class="cmp">Button</span> Batal (secondary) + Simpan (primary) → <code>PATCH /auth me</code>.'),
+      A(5,'Kartu keamanan &amp; sesi: tombol <b>Ubah Kata Sandi</b> (outline) &amp; <b>Keluar</b> (destructive).'),
+    ]
+  }
+};
+
+/* ----------------------------------------------------- 04 APP SHELL --- */
+SCREENS.shell = {
+  group:'Kerangka', ix:'04', label:'App Shell', chrome:'shell', active:'dashboard',
+  crumb:'Kerangka / <b>App Shell</b>', route:'(referensi tata letak)',
+  render(){
+    const content = '<div class="pg-head"><div><h1>App Shell</h1><p class="sub">Topbar lengket + sidebar 256px (peran) + kanvas konten. Referensi tata letak untuk semua layar.</p></div>'+btn('Aksi Utama','btn-primary')+'</div>'+
+      '<div class="card" style="padding:0;overflow:hidden">'+
+        '<div style="padding:16px 18px;border-bottom:1px solid var(--neutral-200);background:var(--neutral-0)"><b style="font-size:13px">Area konten</b> <span class="muted" style="font-size:12.5px">— maks-w 1400px, padding 32/24px; section berjarak 24–32px.</span></div>'+
+        '<div style="padding:18px;display:flex;flex-direction:column;gap:12px">'+
+          '<div class="ph lite" style="height:14px;width:40%"></div>'+
+          '<div class="ph lite" style="height:64px"></div>'+
+          '<div class="ph lite" style="height:120px"></div>'+
+        '</div>'+
+      '</div>';
+    return frame('app.swat…  (kerangka aplikasi)', shell('dashboard', content));
+  },
+  annot:{
+    title:'App Shell', kicker:'Kerangka',
+    desc:'Kerangka tetap yang membungkus setiap layar bershell. Item sidebar tanpa izin disembunyikan (bukan dinonaktifkan).',
+    annot:[
+      ['Topbar — tinggi 64', [
+        A(1,'Kiri: logo 24px + judul. Lengket di atas, <code>z-sticky</code>.'),
+        A(2,'Kanan: ikon notifikasi + <span class="cmp">Avatar</span> 40px → <span class="cmp">DropdownMenu</span> (Profil · Ubah Kata Sandi · Keluar).'),
+        A(3,'&lt;lg: hamburger membuka sidebar sebagai <span class="cmp">Drawer</span> off-canvas.'),
+      ]],
+      ['Sidebar — lebar 256, slate-50', [
+        A(4,'Grup nav: Dasbor · Master Data · Penjadwalan · Transaksi · Pengguna &amp; Akses (urut sesuai IA frontend-spec).'),
+        A(5,'<b>Role-driven:</b> item tanpa izin <b>disembunyikan</b>. Lihat "Hak Akses" yang diredam — contoh item tergembok untuk peran ini.'),
+        A(6,'Item aktif: latar <code>primary-50</code>, teks <code>primary-700</code>, border kiri 3px <code>primary-600</code>, bobot 600.'),
+      ]],
+      ['Konten', [
+        A(7,'<span class="cmp">Breadcrumb</span> → H1 + aksi utama → toolbar/tabel/form. Maks-w 1400, kanvas <code>neutral-50</code>.'),
+      ]],
+    ]
+  }
+};
+
+/* ----------------------------------------------------- 05 DASHBOARD --- */
+SCREENS.dashboard = {
+  group:'Kerangka', ix:'05', label:'Dasbor', chrome:'shell', active:'dashboard',
+  crumb:'<b>Dasbor</b>', route:'/dashboard',
+  render(){
+    const metric=(ic,lbl,val,u)=>'<div class="metric"><div class="lbl"><span class="ico">'+ic+'</span>'+lbl+'</div><div class="val">'+val+(u?' <span class="u">'+u+'</span>':'')+'</div></div>';
+    const content = '<div class="pg-head"><div><h1>Selamat datang, Ali</h1><p class="sub">Ringkasan operasi hari ini — Jumat, 5 Juni 2026.</p></div>'+btn('Inisiasi Hari Ini','btn-primary')+'</div>'+
+      '<div class="grid4" style="margin-bottom:16px">'+
+        metric('▤','Kendaraan Aktif','34','unit')+
+        metric('⇄','Haul Berjalan','28','haul')+
+        metric('⛽','BBM Hari Ini','1.245','L')+
+        metric('▦','Tonase Hari Ini','87,5','ton')+
+      '</div>'+
+      '<div class="grid2" style="align-items:start">'+
+        '<div class="card" style="padding:18px"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:14px">Hari Transaksi Terakhir</b><a href="#" style="color:var(--primary-700);font-size:12.5px;font-weight:600">Lihat semua →</a></div>'+
+          '<table class="table"><thead><tr><th>Tanggal</th><th>Status</th><th class="num">Kendaraan</th><th class="num">Tonase</th></tr></thead><tbody>'+
+          '<tr><td class="mono">5 Jun 2026</td><td>'+pill('Belum Selesai','badge-amber')+'</td><td class="num">28</td><td class="num">87,5</td></tr>'+
+          '<tr><td class="mono">4 Jun 2026</td><td>'+pill('Selesai','badge-blue')+'</td><td class="num">27</td><td class="num">132,6</td></tr>'+
+          '<tr><td class="mono">3 Jun 2026</td><td>'+pill('Selesai','badge-blue')+'</td><td class="num">25</td><td class="num">118,9</td></tr>'+
+          '</tbody></table></div>'+
+        '<div class="card" style="padding:18px"><b style="font-size:14px">Perlu Perhatian</b>'+
+          '<div class="col" style="gap:10px;margin-top:12px">'+
+            '<div class="alert alert-warning"><div><div class="alert-title">3 trayek menunggu verifikasi</div>Checker perlu meninjau pembuangan hari ini.</div></div>'+
+            '<div class="alert alert-danger"><div><div class="alert-title">2 SIM pengemudi kedaluwarsa</div>Perbarui sebelum penjadwalan berikutnya.</div></div>'+
+          '</div></div>'+
+      '</div>';
+    return frame('app.swat…/dashboard', shell('dashboard', content));
+  },
+  annot:{
+    title:'Dasbor', kicker:'Kerangka',
+    desc:'Template D (Dashboard): sapaan H1 + grid kartu metrik (4-up xl / 2-up md / 1-up sm). Minimal di Fase 1, tanpa grafik.',
+    annot:[
+      A(1,'Empat <span class="cmp">Card</span> metrik: nilai ukuran-H1, <code>tabular-nums</code>, sufiks unit. 4-up di xl.'),
+      A(2,'Aksi utama <b>Inisiasi Hari Ini</b> (<span class="cmp">Button</span> primary) — pintasan ke alur transaksi.'),
+      A(3,'<span class="cmp">DataTable</span> ringkas hari transaksi terakhir + <span class="cmp">Badge</span> status (amber/blue).'),
+      A(4,'Kartu "Perlu Perhatian" memakai <span class="cmp">Alert</span> warning/danger sebagai ringkasan tindakan.'),
+      A(5,'Grafik tonase &amp; analitik rute ditunda ke Fase 2+.'),
+    ]
+  }
+};
+/* ----------------------------------------------- GENERIC IA STUB ----- */
+/* Renders for sidebar items that exist in the real SWAT menu but don't yet
+   have a dedicated wireframe. `crud` → generic list page; `soon` → placeholder. */
+function genericCrudBody(){
+  return '<div class="toolbar2"><div class="input-group" style="max-width:280px"><input class="input" placeholder="Cari…" /></div>'+
+      btn('Filter ▾','btn-outline btn-sm')+btn('Kolom ▾','btn-outline btn-sm')+'<div class="grow"></div><span class="muted" style="font-size:12.5px">— entri</span></div>'+
+    '<div class="card" style="padding:0;overflow:hidden">'+
+      '<table class="table"><thead><tr><th style="width:36px"><input type="checkbox" /></th>'+
+      '<th class="sortable">Nama / Kode <span class="sort-ico">↑</span></th><th>Atribut</th><th>Atribut</th><th>Status</th><th style="text-align:right;width:70px">Aksi</th></tr></thead><tbody>'+
+      ['','',''].map(()=>'<tr><td><input type="checkbox" /></td><td class="mono">KODE-000</td><td><div class="ph lite" style="height:11px;width:80%"></div></td><td><div class="ph lite" style="height:11px;width:60%"></div></td><td>'+pill('Aktif','badge-green')+'</td><td style="text-align:right"><span class="muted" style="cursor:pointer;font-size:17px">⋮</span></td></tr>').join('')+
+      '</tbody></table></div>'+
+    '<div class="mini-note">Mengikuti <b>Pola CRUD</b> master data — List + Create/Edit (Dialog) + Delete (Confirm).</div>';
+}
+function genericSoonBody(label){
+  return '<div class="gsoon"><span class="tag">Bagian dari IA aplikasi</span>'+
+    '<div class="ic">◷</div><h3>'+label+'</h3>'+
+    '<p>Menu ini ada pada aplikasi SWAT yang berjalan, ditambahkan di sini agar struktur navigasi lengkap. Wireframe detail untuk layar ini belum dibuat pada Fase 1.</p></div>';
+}
+SCREENS.generic = {
+  group:'(IA)', label:'(generic)', chrome:'shell',
+  render(){
+    const g = window.__gen || {label:'Layar', kind:'soon', path:['Layar'], leafId:null};
+    const sub = g.kind==='crud' ? 'Daftar data — mengikuti Pola CRUD master data.' : 'Bagian dari struktur menu aplikasi SWAT.';
+    const content = crumbs(g.path)+
+      '<div class="pg-head"><div><h1>'+g.label+'</h1><p class="sub">'+sub+'</p></div>'+(g.kind==='crud'?btn('+ Buat Baru','btn-primary'):'')+'</div>'+
+      (g.kind==='crud' ? genericCrudBody() : genericSoonBody(g.label));
+    return frame('app.swat…/'+(g.path.join('/').toLowerCase().replace(/[^a-z]+/g,'-')), shell(g.leafId, content));
+  }
+};
+
+window.SCREENS = SCREENS; /* extended in part 2 */
+</script>
+<script src="wireframe/screens-2.js"></script>
+<script src="wireframe/mobile.js"></script>
+<script src="wireframe/app.js"></script>
+</body>
+</html>

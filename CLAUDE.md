@@ -12,7 +12,22 @@ Concise orientation so sessions don't re-explore. Global directives live in `~/.
 ## Stack
 pnpm + Turborepo · NestJS 10 + Prisma 5 + Postgres 15 · Next 14 + Tailwind 3 + next-intl 3.
 Packages: `@swat/{schemas,prisma-client,eslint-config,tsconfig}`; backend = `@swat/backend`.
-Admin seed login: `admin / ChangeMe!2026`.
+Admin seed login: `admin / Password1234!`.
+
+## Frontend conventions (`apps/web`)
+- **Routes use English slugs** under `[locale]` (e.g. `/id-ID/dashboard`, `/vehicles`,
+  `/transaction-days`, `/monitoring/fuel`); **UI labels stay localized** via next-intl. IA lives in
+  `src/lib/nav.ts`.
+- **Default locale `id-ID`**, enforced with `localeDetection: false` in `src/i18n/routing.ts` so the
+  browser `Accept-Language` can't redirect `/` to en-US.
+- **Design tokens** ship as CSS variables in `src/app/globals.css` (light + `.dark`), ported verbatim
+  from `designs/`. `tailwind.config.ts` color ramps reference those vars (`var(--neutral-0)` …) so
+  `.dark` flips every `bg-/text-*` utility. Opacity can't be applied to a hex `var()` — overlays use
+  the dedicated `--scrim` token (`bg-scrim`), not `bg-neutral-900/50`.
+- **Theme**: default follows system (`prefers-color-scheme`); user choice persists in
+  `localStorage['swat-theme']` and is applied pre-paint. Controller: `src/lib/theme.ts`.
+- **`designs/` is the visual source of truth** (Claude Design handoff bundle); on conflict the bundle
+  wins — see `designs/INDEX.md`.
 
 ## Package manager: pnpm (NOT npm)
 From inner `swat/`:

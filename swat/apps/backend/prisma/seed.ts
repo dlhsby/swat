@@ -33,7 +33,7 @@ const prisma = new PrismaClient();
 
 // Default admin password — meets the policy in specs/06-auth-rbac.md §1.4
 // (≥12 chars, upper/lower/digit/symbol). Forced to change on first login.
-const ADMIN_DEFAULT_PASSWORD = 'ChangeMe!2026';
+const ADMIN_DEFAULT_PASSWORD = 'Password1234!';
 
 // Argon2id parameters per specs/06-auth-rbac.md §1.1.
 const ARGON2_OPTIONS = {
@@ -267,7 +267,7 @@ async function seedRoles(permissionIdByKey: Map<string, number>): Promise<Map<st
 async function seedAdminUser(adminRoleId: number): Promise<void> {
   const passwordHash = await hash(ADMIN_DEFAULT_PASSWORD, ARGON2_OPTIONS);
   // Outside production, re-seeding restores the documented bootstrap credential
-  // (admin / ChangeMe!2026, mustChangePassword=true) even if it was changed —
+  // (admin / Password1234!, mustChangePassword=true) even if it was changed —
   // keeps local/CI runs repeatable. In production we never clobber a real admin.
   const resetInNonProd =
     process.env.NODE_ENV === 'production' ? {} : { passwordHash, mustChangePassword: true };

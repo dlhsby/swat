@@ -122,6 +122,11 @@
   --ring: var(--primary-600);
   --ring-offset: var(--neutral-0);
 
+  /* ---- Scrim (modal/sheet/drawer backdrop) ----------------------------
+     Explicit rgba: Tailwind opacity modifiers can't apply alpha to a hex
+     var() color, so overlays read this token instead of `neutral-900/50`. */
+  --scrim: rgb(15 23 42 / 0.5);
+
   /* ---- shadcn semantic aliases (HSL channels) -------------------------- */
   --background: 0 0% 100%;
   --foreground: 222 47% 11%;
@@ -168,6 +173,9 @@
 
   --ring: var(--primary-500);
   --ring-offset: var(--neutral-0);
+
+  /* Deeper scrim over the dark canvas. */
+  --scrim: rgb(2 6 23 / 0.6);
 
   /* shadcn semantic layer — dark */
   --background: 222 47% 9%;

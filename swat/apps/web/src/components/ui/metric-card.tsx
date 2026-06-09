@@ -31,15 +31,15 @@ export function MetricCard({
   return (
     <Card>
       <CardContent className="space-y-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-base bg-primary-50 text-primary-700">
+        <span className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-primary-50 text-primary-700">
           <Icon className="h-5 w-5" />
         </span>
-        <p className="text-label text-neutral-500">{label}</p>
+        <p className="text-[13px] font-medium text-neutral-500">{label}</p>
         {loading ? (
           <Skeleton className="h-8 w-24" />
         ) : (
-          <p className="text-h1 font-bold tabular-nums text-neutral-900">
-            {value} <span className="text-body-sm font-medium text-neutral-400">{unit}</span>
+          <p className="text-h1 font-bold tabular-nums tracking-[-0.02em] text-neutral-900">
+            {value} <span className="ml-1 text-[14px] font-medium text-neutral-500">{unit}</span>
           </p>
         )}
       </CardContent>

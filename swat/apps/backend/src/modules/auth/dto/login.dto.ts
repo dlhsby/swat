@@ -8,7 +8,7 @@ export class LoginDto {
   @MaxLength(100)
   username!: string;
 
-  @ApiProperty({ example: 'ChangeMe!2026' })
+  @ApiProperty({ example: 'Password1234!' })
   @IsString()
   @MinLength(1, { message: 'Kata sandi wajib diisi' })
   @MaxLength(200)

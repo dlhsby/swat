@@ -47,7 +47,7 @@ the T-155 transactional bulk migration, Playwright E2E run, and the actual cutov
 | Unit tests | `pnpm --filter @swat/backend test` | ✅ **399 tests, 52 suites** (+36 over M8 for the gap-closure pass: audit service, readiness, CORS resolver, cache service, password/parse-bigint helpers, reference-master uniqueness) |
 | Coverage gate | `--coverage` (threshold **96/81/96/96**, ratcheted) | ✅ aggregate **97.8% stmts · 82.6% branch · 98% funcs · 97.7% lines** (gate passes) |
 | Web tests | `pnpm --filter @swat/web test` | ✅ **106 tests, 13 suites** (+6 for M6: CSV parser) |
-| Web build | `pnpm --filter @swat/web build` | ✅ **all 16 app routes** compile (App Router; +`/pengisian-bbm`, `/pemeriksaan`, `/perawatan` for M6) |
+| Web build | `pnpm --filter @swat/web build` | ✅ **all 16 app routes** compile (App Router; +`/refuel-log`, `/inspections`, `/maintenance` for M6) |
 | Schemas tests | `pnpm --filter @swat/schemas test` | ✅ **17 tests** |
 | E2E (live stack) | `pnpm --filter @swat/backend test:e2e` | ✅ auth + master-data pass; transactions e2e written, **deferred** (needs Docker + synthetic seed) |
 | Build | `pnpm build` | ✅ 4/4 |
@@ -182,7 +182,7 @@ docker compose --env-file infra/docker-compose.env up -d postgres redis
 cp .env.example .env.local                              # fill secrets
 pnpm install
 pnpm --filter @swat/backend prisma:deploy               # migrate deploy (NOT migrate dev)
-pnpm --filter @swat/backend prisma:seed                 # admin / ChangeMe!2026
+pnpm --filter @swat/backend prisma:seed                 # admin / Password1234!
 pnpm lint && pnpm typecheck
 pnpm --filter @swat/backend test -- --coverage          # 271 unit tests + coverage gate
 pnpm --filter @swat/backend test:e2e                    # live auth + master-data + transactions e2e
@@ -337,9 +337,9 @@ frontend promotes the three "Segera" placeholders to live screens and adds the k
 |------|-------|--------|-------|
 | T-170 | Reference-master CRUD (model/application/fuel) | ✅ | Already delivered in **M2** backend (`fleet/{models,applications,fuels}`, delete-blocked-when-referenced → 409; fuel update carries `pricePerLiter`) + **M5** screens. Verified, no new work. |
 | T-171 | Jatah Kitir bulk import (Impor Massal) | ✅ | `POST /fuel-quotas/bulk-import` — validate vehicle/site + `validTo ≥ validFrom`, **upsert by `legacyId`** with **UPSERT/SKIP** strategy, per-row error reporting. Frontend: CSV dropzone → client parse + preview → import summary + downloadable error log (deviation #9). |
-| T-172 | Pengisian BBM — refuel log | ✅ | `GET /refuels` read view over REFUEL trips: derived **cost = approved × fuel.pricePerLiter**, **anomaly flag** when `approved < requested`; filters vehicle/fuel/status/date. Frontend `/pengisian-bbm`: KPI grid + table. |
-| T-173 | Pemeriksaan Kendaraan — inspection | ✅ | CRUD with **server-derived** `result`/`passedCount`/`totalCount` (any FAIL→FAIL; any ATTENTION→ATTENTION; else PASS) from a seeded **12-item checklist**. Frontend `/pemeriksaan`: list + create/edit dialog (3-way per-item control + live result) + detail Sheet. |
-| T-174 | Perawatan — maintenance | ✅ | CRUD with nested line items, **server-computed `totalCost`**, auto code `PRW-YYYYMM-NNNN`, `PATCH …/approve` gated `maintenance:approve`; edit/delete **blocked once APPROVED**. Frontend `/perawatan`: KPI grid + list + record/edit dialog (line-item sub-table + live total) + approve flow + read-only view. |
+| T-172 | Pengisian BBM — refuel log | ✅ | `GET /refuels` read view over REFUEL trips: derived **cost = approved × fuel.pricePerLiter**, **anomaly flag** when `approved < requested`; filters vehicle/fuel/status/date. Frontend `/refuel-log`: KPI grid + table. |
+| T-173 | Pemeriksaan Kendaraan — inspection | ✅ | CRUD with **server-derived** `result`/`passedCount`/`totalCount` (any FAIL→FAIL; any ATTENTION→ATTENTION; else PASS) from a seeded **12-item checklist**. Frontend `/inspections`: list + create/edit dialog (3-way per-item control + live result) + detail Sheet. |
+| T-174 | Perawatan — maintenance | ✅ | CRUD with nested line items, **server-computed `totalCost`**, auto code `PRW-YYYYMM-NNNN`, `PATCH …/approve` gated `maintenance:approve`; edit/delete **blocked once APPROVED**. Frontend `/maintenance`: KPI grid + list + record/edit dialog (line-item sub-table + live total) + approve flow + read-only view. |
 | T-175 | RBAC permission seed additions | ✅ | All keys (`vehicle-model:*`, `vehicle-application:*`, `fuel:*`, `inspection:*`, `maintenance:*` incl. `maintenance:approve`) were already seeded + assigned to default roles via wildcard patterns; sidebar gates each screen on its `:read`. Verified. |
 
 - **Coverage (M6 services):** inspection / maintenance / refuel services tested at the spec's ≥80%

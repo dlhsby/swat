@@ -322,7 +322,7 @@ Legacy model:
 
 ### Steps
 1. **Enumerate legacy menu entries:** each menu item → extract action code (e.g. `vehicle:create` from
-   `/master/kendaraan/create`).
+   `/master/vehicles/create`).
 2. **Create Permission rows:** one per unique action.
 3. **For each role & hakaksesmenu grant:** insert RolePermission row.
 
@@ -337,8 +337,8 @@ async function migrateRBACGrants() {
   
   // 2. Derive permission keys from menu URIs (hardcoded mapping)
   const permissionMap = {
-    '/master/kendaraan': ['vehicle:read', 'vehicle:create', 'vehicle:update', 'vehicle:delete'],
-    '/master/pengemudi': ['driver:read', 'driver:create', 'driver:update', 'driver:delete'],
+    '/master/vehicles': ['vehicle:read', 'vehicle:create', 'vehicle:update', 'vehicle:delete'],
+    '/master/drivers': ['driver:read', 'driver:create', 'driver:update', 'driver:delete'],
     '/master/spot': ['site:read', 'site:create', 'site:update', 'site:delete'],
     '/transaksi/pengambilan': ['trip:create', 'trip:update'],
     '/transaksi/pembuangan': ['trip:create', 'trip:verify'],

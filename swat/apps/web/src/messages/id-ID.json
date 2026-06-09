@@ -73,11 +73,17 @@
     "forgotPassword": "Lupa kata sandi?",
     "forgotPasswordHelp": "Hubungi administrator untuk mengatur ulang kata sandi Anda.",
     "bothRequired": "Nama pengguna dan kata sandi wajib diisi.",
-    "invalidCredentials": "Nama pengguna atau kata sandi salah."
+    "invalidCredentials": "Nama pengguna atau kata sandi salah.",
+    "brandSubtitle": "Dinas Lingkungan Hidup · Kota Surabaya",
+    "loginHeading": "Masuk",
+    "loginHelp": "Gunakan akun yang diberikan administrator.",
+    "copyright": "© 2026 Dinas Lingkungan Hidup Kota Surabaya"
   },
   "changePassword": {
     "title": "Ubah Kata Sandi",
-    "forcedTitle": "Wajib Ganti Kata Sandi",
+    "subtitle": "Perbarui kata sandi akun Anda",
+    "forcedTitle": "Ubah Kata Sandi",
+    "forcedSubtitle": "Wajib sebelum melanjutkan",
     "forcedNotice": "Demi keamanan, Anda harus mengganti kata sandi sebelum melanjutkan.",
     "currentPassword": "Kata Sandi Saat Ini",
     "newPassword": "Kata Sandi Baru",
@@ -93,6 +99,9 @@
     "tooShort": "Kata sandi baru minimal 12 karakter.",
     "tooWeak": "Kata sandi terlalu lemah.",
     "submit": "Simpan Kata Sandi",
+    "submitForced": "Ubah & Lanjut",
+    "cancel": "Batal",
+    "signOut": "Keluar",
     "success": "Kata sandi telah diperbarui."
   },
   "profile": {

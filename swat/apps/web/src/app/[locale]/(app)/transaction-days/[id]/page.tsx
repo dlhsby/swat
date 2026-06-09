@@ -114,7 +114,7 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
   return (
     <>
       <PageHead
-        breadcrumb={[{ label: 'Hari Transaksi', href: '/hari-transaksi' }, { label: day.date }]}
+        breadcrumb={[{ label: 'Hari Transaksi', href: '/transaction-days' }, { label: day.date }]}
         title={`Haul · ${formatDateDisplay(day.date)}`}
         description={`${verifiedCount}/${allTrips.length} trayek terverifikasi`}
         actions={

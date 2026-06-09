@@ -32,7 +32,7 @@ export function AuthGuard({ children }: { children: ReactNode }): JSX.Element {
     if (status === 'unauthenticated') {
       router.replace('/login');
     } else if (status === 'authenticated' && user?.mustChangePassword) {
-      router.replace('/ubah-kata-sandi');
+      router.replace('/change-password');
     }
   }, [status, user, router]);
 

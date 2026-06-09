@@ -154,7 +154,7 @@ export default function DashboardPage(): JSX.Element {
             ) : day ? (
               <button
                 type="button"
-                onClick={() => router.push(`/hari-transaksi/${day.id}`)}
+                onClick={() => router.push(`/transaction-days/${day.id}`)}
                 className={cn(
                   'flex w-full items-center justify-between gap-3 rounded-base border border-neutral-200 px-4 py-3 text-left transition-colors hover:bg-neutral-50',
                 )}

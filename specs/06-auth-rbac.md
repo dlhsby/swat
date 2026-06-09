@@ -445,10 +445,10 @@ The complete migration algorithm is in [`04-migration.md`](./04-migration.md) §
 1. **Create Permission rows** for all keys in §2.2 (68+ permissions).
 2. **Create Role rows** for each legacy `hakakses`. Map legacy role ID → new role name per the table in §2.3.
 3. **Derive permission keys from legacy menu URIs** — each `hakaksesmenu` grant (role, menu) is translated:
-   - `/masterdata/kendaraan.*` → `vehicle:read`, `vehicle:create`, `vehicle:update`, `vehicle:delete`
+   - `/masterdata/vehicles.*` → `vehicle:read`, `vehicle:create`, `vehicle:update`, `vehicle:delete`
    - `/transaksi/pembuangansampah.*` → `trip:record-disposal`
    - `/transaksi/verifikasi.*` → `trip:verify`
-   - `/masterdata/pengguna.*` → `user:*` (if admin access)
+   - `/masterdata/users.*` → `user:*` (if admin access)
    - etc. (see hardcoded mapping in `04-migration.md` §6)
 4. **INSERT RolePermission** rows for each (role, permission) pair derived.
 

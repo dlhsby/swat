@@ -546,7 +546,7 @@ model MaintenanceItem {
   // documentation photos via polymorphic Photo (ownerType='maintenanceItem', ownerId=itemId)
 }
 
-// ---------- Vehicle inspection (legacy: transaksi/pemeriksaankendaraan) ----------
+// ---------- Vehicle inspection (legacy: transaksi/inspectionskendaraan) ----------
 model VehicleInspection {
   id           BigInt   @id @default(autoincrement())
   legacyId     BigInt?  @unique
@@ -678,7 +678,7 @@ Every legacy table maps to a model above (or is intentionally dropped). Tables e
   the unified `Photo` model (see §8; all empty in legacy, low priority).
 
 **Newly modeled (legacy had behavior but no clean table):**
-- **`VehicleInspection` + `InspectionItem`** model the legacy `transaksi/pemeriksaankendaraan`
+- **`VehicleInspection` + `InspectionItem`** model the legacy `transaksi/inspectionskendaraan`
   controller (which had no dedicated table). Required for parity (design screen "Pemeriksaan
   Kendaraan"). Migration: backfill from legacy inspection rows if any exist; otherwise greenfield.
 

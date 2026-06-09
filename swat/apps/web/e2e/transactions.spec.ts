@@ -10,11 +10,11 @@ import { expectAppShell, login } from './helpers';
 test.describe('Transaction workflow', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
-    test.skip(page.url().includes('ubah-kata-sandi'), 'admin must change password first');
+    test.skip(page.url().includes('change-password'), 'admin must change password first');
   });
 
   test('navigate to a transaction day and open the Haul Board', async ({ page }) => {
-    await page.goto('/id-ID/hari-transaksi');
+    await page.goto('/id-ID/transaction-days');
     await expectAppShell(page);
     await expect(page.getByRole('heading', { name: /hari transaksi/i })).toBeVisible();
 
@@ -25,7 +25,7 @@ test.describe('Transaction workflow', () => {
       .first();
     if (await firstDay.count()) {
       await firstDay.click();
-      await expect(page).toHaveURL(/\/hari-transaksi\/\d+/);
+      await expect(page).toHaveURL(/\/transaction-days\/\d+/);
       // Haul Board shows the verified/total counter in the page head.
       await expect(page.getByText(/terverifikasi/i)).toBeVisible();
     }
@@ -35,7 +35,7 @@ test.describe('Transaction workflow', () => {
     // Documents the data-quality gate exercised in the record-disposal dialog;
     // the operator's run drives a real DISPOSAL trip end-to-end (depart → pickup →
     // disposal → verify). Here we assert the screen is reachable.
-    await page.goto('/id-ID/hari-transaksi');
+    await page.goto('/id-ID/transaction-days');
     await expect(page.getByRole('heading', { name: /hari transaksi/i })).toBeVisible();
   });
 });

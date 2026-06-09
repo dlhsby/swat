@@ -4,7 +4,7 @@ Step-by-step acceptance pass for Phase 1 (MVP). Work top-to-bottom; each item ha
 **Steps** and an **Expected** result. Check the box when it passes. Items are
 tagged **[API]** (curl/Postman/psql), **[WEB]** (browser), or **[OPS]** (operator).
 
-- **Admin login:** `admin` / `ChangeMe!2026` (forces a password change on first login).
+- **Admin login:** `admin` / `Password1234!` (forces a password change on first login).
 - **API base:** `http://<host>/api/v1` · **Liveness:** `/health` · **Readiness:** `/health/ready` · **Swagger:** `/api/docs`
 - **Web base:** `http://<host>/` (redirects to `/id-ID`). Postman collection: `swat/apps/backend/postman/`.
 - Docker is the operator's environment; none of this runs in the dev WSL.
@@ -52,10 +52,10 @@ tagged **[API]** (curl/Postman/psql), **[WEB]** (browser), or **[OPS]** (operato
 
 ## AUTH · Authentication & RBAC  [API unless noted]
 
-- [ ] **AUTH1. Login happy path.** POST `/auth/login {admin, ChangeMe!2026}` → 200, `Set-Cookie: swat.sid` (httpOnly, SameSite=Strict), body has `mustChangePassword:true`.
+- [ ] **AUTH1. Login happy path.** POST `/auth/login {admin, Password1234!}` → 200, `Set-Cookie: swat.sid` (httpOnly, SameSite=Strict), body has `mustChangePassword:true`.
 - [ ] **AUTH2. Bad credentials.** Wrong username and wrong password each → 400 with the **generic** "Kredensial tidak valid" (no hint which field).
 - [ ] **AUTH3. /auth/me.** With the cookie → 200, returns user + role + **flattened permission keys**. No cookie → 401.
-- [ ] **AUTH4. Forced change-password [WEB].** Log in via the UI → you are forced to `/id-ID/ubah-kata-sandi` and cannot reach the app until you change it. After change, `mustChangePassword` is cleared and `/auth/me` reflects it.
+- [ ] **AUTH4. Forced change-password [WEB].** Log in via the UI → you are forced to `/id-ID/change-password` and cannot reach the app until you change it. After change, `mustChangePassword` is cleared and `/auth/me` reflects it.
 - [ ] **AUTH5. Logout.** POST `/auth/logout` → 200, cookie cleared; subsequent `/auth/me` → 401.
 - [ ] **AUTH6. Permission enforcement.** As a role lacking `vehicle:create`, POST `/vehicles` → **403**. As a role with it → 200. As admin (`*:*`) → always 200.
 - [ ] **AUTH7. User CRUD.** Create user → 201 with a temporary password + `mustChangePassword:true`, no password hash in the response. Soft-delete → row gone from list, `deletedAt` set.
@@ -96,10 +96,10 @@ For each resource, exercise list → create → edit → delete and confirm the 
 
 ## OPS · Legacy-parity operations  [API + WEB]
 
-- [ ] **OPS1. Inspection [WEB] (`/pemeriksaan`).** Create with the 12-item checklist; the **result is server-derived** (any FAIL→FAIL; any ATTENTION→ATTENTION; else PASS) — the client cannot set it. Detail sheet shows per-item status. *(Known gap: no result/vehicle/date filter dropdowns — search only.)*
-- [ ] **OPS2. Maintenance [WEB] (`/perawatan`).** Line items → **`totalCost` server-computed**; auto code `PRW-YYYYMM-NNNN`; `PATCH :id/approve` (needs `maintenance:approve`) → APPROVED; once APPROVED, edit/delete are **blocked**. *(Same filter gap.)*
-- [ ] **OPS3. Refuel log [WEB] (`/pengisian-bbm`).** Read-only view; cost = `approved × fuel.pricePerLiter`; rows where `approved < requested` flagged as **anomaly**.
-- [ ] **OPS4. Kitir bulk import [WEB] (`/jatah-kitir` → Impor Massal).** Upload a CSV → preview → import; upsert by `legacyId`; per-row error report for bad rows; duplicate `legacyId` within one file handled (UPSERT/SKIP), no spurious failure.
+- [ ] **OPS1. Inspection [WEB] (`/inspections`).** Create with the 12-item checklist; the **result is server-derived** (any FAIL→FAIL; any ATTENTION→ATTENTION; else PASS) — the client cannot set it. Detail sheet shows per-item status. *(Known gap: no result/vehicle/date filter dropdowns — search only.)*
+- [ ] **OPS2. Maintenance [WEB] (`/maintenance`).** Line items → **`totalCost` server-computed**; auto code `PRW-YYYYMM-NNNN`; `PATCH :id/approve` (needs `maintenance:approve`) → APPROVED; once APPROVED, edit/delete are **blocked**. *(Same filter gap.)*
+- [ ] **OPS3. Refuel log [WEB] (`/refuel-log`).** Read-only view; cost = `approved × fuel.pricePerLiter`; rows where `approved < requested` flagged as **anomaly**.
+- [ ] **OPS4. Kitir bulk import [WEB] (`/fuel-quotas` → Impor Massal).** Upload a CSV → preview → import; upsert by `legacyId`; per-row error report for bad rows; duplicate `legacyId` within one file handled (UPSERT/SKIP), no spurious failure.
 
 ---
 
@@ -107,12 +107,12 @@ For each resource, exercise list → create → edit → delete and confirm the 
 
 - [ ] **WEB1. App shell.** Topbar h76, theme toggle persists across reload with **no flash**, user menu → logout confirm; sidebar active-item styling; **mobile drawer + scrim below `lg`**.
 - [ ] **WEB2. Permission-gated nav.** As a limited role, the sidebar **hides** modules without `:read` and action buttons you lack are absent (not just disabled). Admin sees all.
-- [ ] **WEB3. Dashboard (`/dasbor`).** Greeting + "Inisiasi Hari Ini"; 4 metric cards from live data; recent-day row navigates to the Haul Board.
+- [ ] **WEB3. Dashboard (`/dashboard`).** Greeting + "Inisiasi Hari Ini"; 4 metric cards from live data; recent-day row navigates to the Haul Board.
 - [ ] **WEB4. Inline server errors.** A 409/422 from create/edit maps onto the **right form field**, not just a toast.
 - [ ] **WEB5. i18n.** All labels Bahasa Indonesia; dates `dd/MM/yyyy`; IDR number formatting; no stray English on primary screens.
 - [ ] **WEB6. Dark mode.** Toggle and skim each screen — contrast OK, no stale-surface flashes on toggle.
 - [ ] **WEB7. Responsive.** DataTables collapse to stacked cards below `md`.
-- [ ] **WEB8. Profile (`/profil`).** Name edit persists; logout confirm works. *(Known: photo upload is a labeled "coming soon" placeholder.)*
+- [ ] **WEB8. Profile (`/profile`).** Name edit persists; logout confirm works. *(Known: photo upload is a labeled "coming soon" placeholder.)*
 
 ### Known deviations (expected, not bugs — decide if any block the pilot)
 - No trip **Tolak/reject** flow (hi-fi shows it; T-131 specced verify-only).

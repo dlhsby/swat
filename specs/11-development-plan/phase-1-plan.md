@@ -15,7 +15,7 @@ RBAC)** in this session.
   Haul / HaulAssignment / TpaInboundLog are monthly-RANGE partitioned (composite PK incl.
   `operationDate`). **`migrate deploy` only, never `migrate dev`.** → **T-101 is verification-only.**
 - **Seed is complete** — 45 permission keys, 6 roles (Administrator, Administrasi Data, Checker,
-  Operator Pool, Petugas TPA, Supervisor), Argon2id admin (`admin`/`ChangeMe!2026`,
+  Operator Pool, Petugas TPA, Supervisor), Argon2id admin (`admin`/`Password1234!`,
   `mustChangePassword=true`), reference lookups (LicenseClass, FuelCategory, Fuel, VehicleApplication,
   WasteSource), and synthetic transactional data gated by `SEED_SYNTHETIC`. → **T-108 mostly done;
   T-175 adds any missing parity keys.**
@@ -196,7 +196,7 @@ code. Partition pruning re-checked with `EXPLAIN`.
 
 **M1 acceptance (this session):**
 1. `pnpm --filter @swat/backend test` — auth/users/roles green, auth ≥95%.
-2. Live: `POST /api/v1/auth/login {admin/ChangeMe!2026}` → 200 + httpOnly cookie + `mustChangePassword:true`.
+2. Live: `POST /api/v1/auth/login {admin/Password1234!}` → 200 + httpOnly cookie + `mustChangePassword:true`.
 3. `GET /api/v1/auth/me` → user+role+permissions; no session → 401.
 4. Guarded endpoint without permission → 403; with → 200; admin `*:*` → always 200.
 5. `PATCH /auth/change-password` clears flag; 6th bad login in 15min → 429.

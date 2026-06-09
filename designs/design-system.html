@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SWAT — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="design-system/swat-tokens.css" />
+<link rel="stylesheet" href="design-system/swat-components.css" />
+<style>
+  /* ---------- Guide chrome ---------- */
+  body{background:var(--neutral-50)}
+  a{color:inherit}
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+  /* Sidebar */
+  .nav{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;background:var(--neutral-0);border-right:1px solid var(--neutral-200);padding:0 0 32px}
+  .brand{display:flex;align-items:center;gap:10px;padding:20px 20px 18px;border-bottom:1px solid var(--neutral-100);position:sticky;top:0;background:var(--neutral-0);z-index:2}
+  .brand .mark{width:32px;height:32px;border-radius:8px;background:var(--primary-700);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;letter-spacing:.5px}
+  .brand .who{line-height:1.2}
+  .brand .who b{font-size:15px;font-weight:700;color:var(--neutral-900);display:block}
+  .brand .who span{font-size:11px;color:var(--neutral-500)}
+  .nav-group{padding:14px 12px 2px}
+  .nav-group > p{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--neutral-400);font-weight:600;margin:0 0 4px;padding:0 8px}
+  .nav a{display:block;padding:7px 8px;border-radius:6px;font-size:13.5px;color:var(--neutral-600);text-decoration:none;font-weight:500}
+  .nav a:hover{background:var(--neutral-100);color:var(--neutral-900)}
+  .nav a.active{background:var(--primary-50);color:var(--primary-700);font-weight:600}
+
+  /* Content */
+  main{padding:0 56px 120px;max-width:1080px}
+  .page-head{padding:52px 0 28px;border-bottom:1px solid var(--neutral-200);margin-bottom:44px}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--primary-700);margin:0 0 12px}
+  h1.title{font-size:44px;line-height:1.08;font-weight:800;letter-spacing:-.02em;margin:0 0 16px;color:var(--neutral-900)}
+  .lede{font-size:18px;line-height:1.6;color:var(--neutral-600);max-width:62ch;margin:0}
+  .meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+  .meta-row .badge{font-size:12px}
+
+  section.block{margin:0 0 72px;scroll-margin-top:24px}
+  .sec-head{margin:0 0 22px}
+  .sec-head h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--primary-700);margin:0 0 6px}
+  .sec-head h3{font-size:28px;font-weight:700;letter-spacing:-.015em;margin:0 0 8px;color:var(--neutral-900)}
+  .sec-head p{margin:0;color:var(--neutral-600);font-size:15px;line-height:1.6;max-width:64ch}
+
+  .sub{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--neutral-500);margin:34px 0 14px}
+  .sub:first-of-type{margin-top:0}
+
+  .panel{background:var(--neutral-0);border:1px solid var(--neutral-200);border-radius:12px;padding:28px}
+  .panel + .panel{margin-top:16px}
+  .grid{display:grid;gap:16px}
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .col{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+  .divline{height:1px;background:var(--neutral-200);margin:24px 0}
+  .note{font-size:13px;color:var(--neutral-500);line-height:1.6}
+  code.tok{font-family:var(--font-mono);font-size:12.5px;background:var(--neutral-100);color:var(--neutral-700);padding:2px 6px;border-radius:4px}
+
+  /* Color swatches */
+  .ramp{display:grid;grid-template-columns:repeat(11,1fr);gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--neutral-200)}
+  .ramp.semantic{grid-template-columns:repeat(5,1fr)}
+  .sw{height:84px;display:flex;flex-direction:column;justify-content:flex-end;padding:8px;cursor:pointer;position:relative;transition:transform .08s ease}
+  .sw:hover{transform:translateY(-2px);z-index:1;box-shadow:var(--shadow-base)}
+  .sw .n{font-size:10px;font-weight:600}
+  .sw .h{font-family:var(--font-mono);font-size:9.5px;opacity:.85}
+  .sw.dark .n,.sw.dark .h{color:#fff}
+  .sw.light .n,.sw.light .h{color:#0f172a}
+
+  /* Status table */
+  .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .status-card{border:1px solid var(--neutral-200);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--neutral-0)}
+  .status-card .lbl{font-family:var(--font-mono);font-size:12px;color:var(--neutral-500)}
+  .status-card .lbl b{display:block;font-family:var(--font-sans);font-size:13.5px;color:var(--neutral-800);font-weight:600;margin-bottom:2px}
+
+  /* Type specimens */
+  .spec{display:flex;align-items:baseline;justify-content:space-between;gap:24px;padding:14px 0;border-bottom:1px solid var(--neutral-100)}
+  .spec:last-child{border-bottom:0}
+  .spec .smeta{font-family:var(--font-mono);font-size:11.5px;color:var(--neutral-400);white-space:nowrap;flex-shrink:0}
+
+  /* Spacing scale */
+  .space-row{display:flex;align-items:center;gap:16px;margin-bottom:10px}
+  .space-row .bar{height:18px;background:var(--primary-200);border-radius:3px}
+  .space-row .sl{font-family:var(--font-mono);font-size:12px;color:var(--neutral-500);width:120px}
+
+  /* tiles */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+  .tile{border:1px solid var(--neutral-200);border-radius:10px;padding:16px;background:var(--neutral-0)}
+  .tile .demo{height:48px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .tile .tn{font-family:var(--font-mono);font-size:12px;color:var(--neutral-800);font-weight:600}
+  .tile .tv{font-size:11.5px;color:var(--neutral-500)}
+
+  .state-tag{font-size:11px;font-weight:600;color:var(--neutral-400);text-transform:uppercase;letter-spacing:.05em;width:90px;flex-shrink:0}
+
+  /* layout skeletons */
+  .wf{border:1px solid var(--neutral-200);border-radius:10px;overflow:hidden;background:var(--neutral-50)}
+  .wf-bar{background:var(--neutral-0);border-bottom:1px solid var(--neutral-200);display:flex;align-items:center;gap:8px;padding:10px 12px}
+  .wf-body{display:flex;min-height:200px}
+  .wf-side{width:120px;background:var(--neutral-0);border-right:1px solid var(--neutral-200);padding:12px 10px;display:flex;flex-direction:column;gap:7px}
+  .wf-main{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .ph{background:var(--neutral-200);border-radius:4px}
+  .ph.g{background:var(--primary-200)}
+  .ph.lite{background:var(--neutral-100)}
+  .wf-cap{font-size:12px;color:var(--neutral-500);margin-top:8px;text-align:center}
+
+  .demo-table-wrap{border:1px solid var(--neutral-200);border-radius:10px;overflow:hidden}
+  .toolbar{display:flex;align-items:center;gap:10px;padding:12px;background:var(--neutral-0);border-bottom:1px solid var(--neutral-200)}
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;background:var(--neutral-0);border-top:1px solid var(--neutral-200);font-size:13px;color:var(--neutral-600)}
+
+  .copy-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e293b;color:#f8fafc;font-size:13px;padding:9px 16px;border-radius:8px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:.2s ease;z-index:99}
+  .copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* live modal */
+  .modal-scrim{position:fixed;inset:0;background:rgb(0 0 0 / .5);display:none;align-items:center;justify-content:center;z-index:var(--z-overlay);padding:24px}
+  .modal-scrim.open{display:flex}
+
+  .toast-stack{position:fixed;right:24px;bottom:24px;display:flex;flex-direction:column;gap:10px;z-index:var(--z-toast)}
+
+  @media (max-width:880px){
+    .app{grid-template-columns:1fr}
+    .nav{display:none}
+    main{padding:0 24px 80px}
+    .ramp{grid-template-columns:repeat(6,1fr)}
+    .status-grid{grid-template-columns:1fr}
+  }
+
+  /* ---------- Theme toggle + dark chrome ---------- */
+  .theme-toggle{position:fixed;top:14px;right:18px;z-index:1041;width:40px;height:40px;border-radius:10px;border:1px solid var(--neutral-200);background:var(--neutral-0);color:var(--neutral-700);cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);font-size:17px;line-height:1}
+  .theme-toggle:hover{background:var(--neutral-100)}
+  .theme-toggle .moon{display:none}
+  .dark .theme-toggle .sun{display:none}
+  .dark .theme-toggle .moon{display:block}
+  .dark .nav a.active{background:rgb(16 185 129 / .15);color:#6ee7b7}
+  .dark .tab[aria-selected="true"]{color:#6ee7b7;border-bottom-color:#10b981}
+  .dark .crumbs a{color:#6ee7b7}
+  .dark .eyebrow,.dark .sec-head h2{color:#34d399}
+  .dark .req{color:#6ee7b7}
+  .dark .field-error{color:#fca5a5}
+  .dark .alert-success{background:rgb(34 197 94 / .12);color:#bbf7d0}
+  .dark .alert-warning{background:rgb(245 158 11 / .12);color:#fde68a}
+  .dark .alert-danger{background:rgb(239 68 68 / .12);color:#fecaca}
+  .dark .alert-info{background:rgb(59 130 246 / .12);color:#bfdbfe}
+  .dark .alert .alert-title{color:var(--neutral-900)}
+</style>
+<script>try{if(localStorage.getItem('swat-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}</script>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#047857">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#047857"/>
+    <rect x="360" y="250" width="480" height="300" rx="48" fill="#ffffff"/>
+    <text x="600" y="455" font-family="'Plus Jakarta Sans',sans-serif" font-size="180" font-weight="800" fill="#047857" text-anchor="middle" letter-spacing="6">SW</text>
+  </svg>
+</template>
+<button id="theme-toggle" class="theme-toggle" aria-label="Ganti tema gelap/terang" title="Ganti tema"><span class="sun">☀</span><span class="moon">☾</span></button>
+<div class="app">
+
+  <!-- ================= SIDEBAR ================= -->
+  <nav class="nav" aria-label="Daftar isi">
+    <div class="brand">
+      <div class="mark">SW</div>
+      <div class="who"><b>SWAT</b><span>Design System · DLH Surabaya</span></div>
+    </div>
+    <div class="nav-group">
+      <p>Fondasi</p>
+      <a href="#overview" class="nlink">Ikhtisar</a>
+      <a href="#color" class="nlink">Warna</a>
+      <a href="#status" class="nlink">Status &amp; Enum</a>
+      <a href="#type" class="nlink">Tipografi</a>
+      <a href="#space" class="nlink">Spasi &amp; Radius</a>
+      <a href="#elevation" class="nlink">Elevasi &amp; Z-index</a>
+    </div>
+    <div class="nav-group">
+      <p>Tata Letak</p>
+      <a href="#shell" class="nlink">App Shell</a>
+      <a href="#templates" class="nlink">Template Halaman</a>
+    </div>
+    <div class="nav-group">
+      <p>Komponen</p>
+      <a href="#buttons" class="nlink">Button</a>
+      <a href="#inputs" class="nlink">Input &amp; Form</a>
+      <a href="#toggles" class="nlink">Checkbox · Radio · Switch</a>
+      <a href="#table" class="nlink">DataTable</a>
+      <a href="#overlays" class="nlink">Dialog · Sheet · Toast</a>
+      <a href="#feedback" class="nlink">Alert · Tooltip · Badge</a>
+      <a href="#nav-comps" class="nlink">Tabs · Breadcrumb · Avatar</a>
+      <a href="#advanced" class="nlink">Komponen Lanjutan</a>
+    </div>
+    <div class="nav-group">
+      <p>Responsif</p>
+      <a href="#responsive" class="nlink">Mobile, Touch &amp; PWA</a>
+    </div>
+    <div class="nav-group">
+      <p>Panduan</p>
+      <a href="#apply" class="nlink">Cara Pakai &amp; Konvensi</a>
+    </div>
+  </nav>
+
+  <!-- ================= MAIN ================= -->
+  <main>
+    <header class="page-head" id="overview">
+      <p class="eyebrow">Sistem Desain · v1.0</p>
+      <h1 class="title">SWAT Design System</h1>
+      <p class="lede">Fondasi visual untuk aplikasi back-office pengangkutan sampah DLH Kota Surabaya. Token, tata letak, dan komponen — dipetakan 1:1 ke <b>Tailwind CSS</b> + <b>shadcn/ui</b>, antarmuka Bahasa Indonesia, dan memenuhi <b>WCAG 2.1 AA</b>.</p>
+      <div class="meta-row">
+        <span class="badge badge-green"><span class="dot"></span>Tema terang (baseline)</span>
+        <span class="badge badge-slate">Desktop-first</span>
+        <span class="badge badge-blue">Plus Jakarta Sans</span>
+        <span class="badge badge-slate">Klik swatch mana pun untuk menyalin token</span>
+      </div>
+    </header>
+
+    <!-- principles -->
+    <section class="block">
+      <div class="grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="panel" style="padding:20px">
+          <div class="badge badge-green" style="margin-bottom:10px"><span class="dot"></span>01</div>
+          <p style="font-weight:700;margin:0 0 4px">Jelas, bukan dekoratif</p>
+          <p class="note">Tanpa gradien atau ornamen. UI yang berbicara sendiri.</p>
+        </div>
+        <div class="panel" style="padding:20px">
+          <div class="badge badge-green" style="margin-bottom:10px"><span class="dot"></span>02</div>
+          <p style="font-weight:700;margin:0 0 4px">Padat, tetap lega</p>
+          <p class="note">Grid 8px, 25–100 baris per tabel tanpa scroll di 1280px+.</p>
+        </div>
+        <div class="panel" style="padding:20px">
+          <div class="badge badge-green" style="margin-bottom:10px"><span class="dot"></span>03</div>
+          <p style="font-weight:700;margin:0 0 4px">Cepat lewat keyboard</p>
+          <p class="note">Tab order rapi, fokus terlihat, entri angka langsung.</p>
+        </div>
+        <div class="panel" style="padding:20px">
+          <div class="badge badge-green" style="margin-bottom:10px"><span class="dot"></span>04</div>
+          <p style="font-weight:700;margin:0 0 4px">Cegah kesalahan</p>
+          <p class="note">Validasi inline, konfirmasi aksi merusak, pesan manusiawi.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= COLOR ================= -->
+    <section class="block" id="color">
+      <div class="sec-head">
+        <h2>Fondasi</h2>
+        <h3>Warna</h3>
+        <p>Hijau emerald untuk identitas DLH/lingkungan; slate netral untuk teks dan permukaan; warna semantik standar Tailwind. Permukaan hijau dengan teks putih memakai <code class="tok">primary-700</code> ke atas agar lolos kontras AA.</p>
+      </div>
+
+      <p class="sub">Primary · emerald</p>
+      <div class="ramp" id="ramp-primary"></div>
+
+      <p class="sub">Neutral · slate</p>
+      <div class="ramp" id="ramp-neutral"></div>
+
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:32px">
+        <div>
+          <p class="sub">Success · green</p>
+          <div class="ramp semantic" id="ramp-success"></div>
+        </div>
+        <div>
+          <p class="sub">Warning · amber</p>
+          <div class="ramp semantic" id="ramp-warning"></div>
+        </div>
+        <div>
+          <p class="sub">Danger · red</p>
+          <div class="ramp semantic" id="ramp-danger"></div>
+        </div>
+        <div>
+          <p class="sub">Info · blue</p>
+          <div class="ramp semantic" id="ramp-info"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:24px;display:flex;gap:20px;align-items:flex-start">
+        <div style="flex:1">
+          <p style="font-weight:700;margin:0 0 6px;font-size:14px">Aturan kontras</p>
+          <p class="note">Isian hijau + teks putih → <code class="tok">primary-700</code> (5,49:1 ✓). <code class="tok">primary-600</code> dipakai untuk ring fokus, ikon, dan border 2px — bukan teks di atas putih (3,78:1 ✗).</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary">primary-700 ✓</button>
+          <span class="badge badge-green"><span class="dot"></span>green-700 ✓</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= STATUS ================= -->
+    <section class="block" id="status">
+      <div class="sec-head">
+        <h2>Fondasi</h2>
+        <h3>Status &amp; Enum Domain</h3>
+        <p>Setiap nilai enum dipetakan 1:1 ke satu pill — latar <code class="tok">-100</code>, teks <code class="tok">-700</code>, semua diverifikasi ≥4,5:1. Bahasa: amber = berjalan/menunggu · biru = selesai · hijau = terverifikasi/baik · merah = rusak kritis · slate = nonaktif/hilang. Warna selalu disertai teks &amp; titik.</p>
+      </div>
+      <div class="status-grid" id="status-grid"></div>
+    </section>
+
+    <!-- ================= TYPE ================= -->
+    <section class="block" id="type">
+      <div class="sec-head">
+        <h2>Fondasi</h2>
+        <h3>Tipografi</h3>
+        <p><b>Plus Jakarta Sans</b> untuk antarmuka (mendukung diakritik Bahasa Indonesia) dan <b>JetBrains Mono</b> untuk kode, nomor polisi, kitir, dan ID. Kolom angka memakai <code class="tok">tabular-nums</code>.</p>
+      </div>
+      <div class="panel" id="type-specimens"></div>
+      <div class="panel" style="margin-top:16px;display:flex;gap:40px;flex-wrap:wrap">
+        <div>
+          <p class="sub" style="margin-top:0">Bobot</p>
+          <div class="row" style="gap:24px">
+            <span style="font-weight:400">400 Regular</span>
+            <span style="font-weight:500">500 Medium</span>
+            <span style="font-weight:600">600 Semibold</span>
+            <span style="font-weight:700">700 Bold</span>
+          </div>
+        </div>
+        <div>
+          <p class="sub" style="margin-top:0">Mono · data</p>
+          <div class="mono" style="font-size:15px;color:var(--neutral-800)">L 1234 AB · KTR-2026-0042 · 08:30:00</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SPACE ================= -->
+    <section class="block" id="space">
+      <div class="sec-head">
+        <h2>Fondasi</h2>
+        <h3>Spasi &amp; Radius</h3>
+        <p>Semua jarak kelipatan grid 8px. Radius default 6px untuk input, button, dan kartu.</p>
+      </div>
+      <div class="grid" style="grid-template-columns:1.4fr 1fr">
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Skala spasi · 8px grid</p>
+          <div id="space-scale"></div>
+        </div>
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Radius</p>
+          <div class="tiles" id="radius-tiles"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ELEVATION ================= -->
+    <section class="block" id="elevation">
+      <div class="sec-head">
+        <h2>Fondasi</h2>
+        <h3>Elevasi &amp; Z-index</h3>
+        <p>UI datar secara default; bayangan hanya menandai lapisan mengambang. Skala z-index menjaga urutan overlay tetap konsisten.</p>
+      </div>
+      <div class="grid" style="grid-template-columns:1.3fr 1fr">
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Bayangan</p>
+          <div class="tiles" id="shadow-tiles"></div>
+        </div>
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Z-index</p>
+          <table class="table" style="font-size:13px"><tbody id="z-rows"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= APP SHELL ================= -->
+    <section class="block" id="shell">
+      <div class="sec-head">
+        <h2>Tata Letak</h2>
+        <h3>App Shell</h3>
+        <p>Topbar lengket (h64) + sidebar 256px (slate-50) + area konten (maks 1400px, padding 2xl/xl). Item sidebar yang tak diizinkan disembunyikan, bukan dinonaktifkan.</p>
+      </div>
+      <div class="wf">
+        <div class="wf-bar">
+          <div class="ph" style="width:18px;height:14px"></div>
+          <div class="ph g" style="width:90px;height:14px"></div>
+          <div class="ph lite" style="width:160px;height:12px"></div>
+          <div style="flex:1"></div>
+          <div class="ph" style="width:64px;height:12px"></div>
+          <div class="ph" style="width:28px;height:28px;border-radius:50%"></div>
+        </div>
+        <div class="wf-body">
+          <div class="wf-side">
+            <div class="ph lite" style="width:50px;height:9px"></div>
+            <div class="ph g" style="width:100%;height:24px"></div>
+            <div class="ph lite" style="width:100%;height:24px"></div>
+            <div class="ph lite" style="width:100%;height:24px"></div>
+            <div class="ph lite" style="width:60px;height:9px;margin-top:8px"></div>
+            <div class="ph lite" style="width:100%;height:24px"></div>
+            <div class="ph lite" style="width:100%;height:24px"></div>
+          </div>
+          <div class="wf-main">
+            <div class="ph lite" style="width:200px;height:10px"></div>
+            <div class="row" style="justify-content:space-between">
+              <div class="ph" style="width:220px;height:26px"></div>
+              <div class="ph g" style="width:110px;height:32px;border-radius:6px"></div>
+            </div>
+            <div class="ph" style="width:100%;height:90px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+          </div>
+        </div>
+      </div>
+      <p class="wf-cap">Topbar (z-sticky) · Sidebar (z-fixed) · Konten kanvas slate-50 · aktif = primary-50 + border kiri 3px primary-600</p>
+    </section>
+
+    <!-- ================= TEMPLATES ================= -->
+    <section class="block" id="templates">
+      <div class="sec-head">
+        <h2>Tata Letak</h2>
+        <h3>Template Halaman</h3>
+        <p>Empat kerangka yang menyusun seluruh aplikasi — struktur &amp; spasi saja (bukan layar hi-fi).</p>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div>
+          <div class="wf"><div class="wf-main" style="gap:10px">
+            <div class="ph lite" style="width:120px;height:9px"></div>
+            <div class="row" style="justify-content:space-between"><div class="ph" style="width:140px;height:20px"></div><div class="ph g" style="width:90px;height:26px;border-radius:6px"></div></div>
+            <div class="row"><div class="ph lite" style="width:180px;height:24px"></div><div class="ph lite" style="width:90px;height:24px"></div><div class="ph lite" style="width:90px;height:24px"></div></div>
+            <div class="ph" style="width:100%;height:80px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+            <div class="row" style="justify-content:space-between"><div class="ph lite" style="width:120px;height:12px"></div><div class="ph lite" style="width:140px;height:20px"></div></div>
+          </div></div>
+          <p class="wf-cap"><b>A · List</b> — toolbar · DataTable · pagination</p>
+        </div>
+        <div>
+          <div class="wf"><div class="wf-main" style="gap:10px">
+            <div class="ph lite" style="width:120px;height:9px"></div>
+            <div class="ph" style="width:140px;height:20px"></div>
+            <div class="ph" style="width:100%;height:54px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+            <div class="ph" style="width:100%;height:54px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+            <div class="row" style="justify-content:flex-end;border-top:1px solid var(--neutral-200);padding-top:10px"><div class="ph lite" style="width:70px;height:30px;border-radius:6px"></div><div class="ph g" style="width:90px;height:30px;border-radius:6px"></div></div>
+          </div></div>
+          <p class="wf-cap"><b>B · Form</b> — kartu fieldset · footer lengket [Batal][Simpan]</p>
+        </div>
+        <div>
+          <div class="wf"><div class="wf-main" style="gap:10px">
+            <div class="row" style="justify-content:space-between"><div class="ph" style="width:160px;height:18px"></div><div class="ph lite" style="width:80px;height:20px;border-radius:9999px"></div></div>
+            <div class="ph" style="width:100%;height:40px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+            <div class="ph" style="width:100%;height:40px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+            <div class="ph" style="width:100%;height:40px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+          </div></div>
+          <p class="wf-cap"><b>C · Detail / Board</b> — satu kartu baris per haul + pill status</p>
+        </div>
+        <div>
+          <div class="wf"><div class="wf-main" style="gap:10px">
+            <div class="ph" style="width:180px;height:20px"></div>
+            <div class="row">
+              <div class="ph" style="flex:1;height:66px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+              <div class="ph" style="flex:1;height:66px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+              <div class="ph" style="flex:1;height:66px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+              <div class="ph" style="flex:1;height:66px;background:var(--neutral-0);border:1px solid var(--neutral-200)"></div>
+            </div>
+          </div></div>
+          <p class="wf-cap"><b>D · Dashboard</b> — grid kartu metrik (4-up xl / 2-up md / 1-up sm)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= BUTTONS ================= -->
+    <section class="block" id="buttons">
+      <div class="sec-head">
+        <h2>Komponen</h2>
+        <h3>Button</h3>
+        <p>Satu aksi utama per area. Varian, ukuran, dan seluruh state. Tinggi 32/40/44px; target sentuh min 44px untuk kios timbang.</p>
+      </div>
+      <div class="panel">
+        <p class="sub" style="margin-top:0">Varian</p>
+        <div class="row">
+          <button class="btn btn-primary">Simpan</button>
+          <button class="btn btn-secondary">Batal</button>
+          <button class="btn btn-outline">Filter</button>
+          <button class="btn btn-ghost">Lihat detail</button>
+          <button class="btn btn-destructive">Hapus</button>
+          <button class="btn btn-link">Pelajari lagi</button>
+        </div>
+        <div class="divline"></div>
+        <p class="sub" style="margin-top:0">Ukuran</p>
+        <div class="row">
+          <button class="btn btn-primary btn-sm">Small · 32</button>
+          <button class="btn btn-primary">Medium · 40</button>
+          <button class="btn btn-primary btn-lg">Large · 44</button>
+          <button class="btn btn-primary btn-icon" aria-label="Tambah">+</button>
+        </div>
+        <div class="divline"></div>
+        <p class="sub" style="margin-top:0">State (primary)</p>
+        <div class="row" style="gap:24px">
+          <div class="col" style="align-items:center"><button class="btn btn-primary">Default</button><span class="state-tag" style="width:auto">default</span></div>
+          <div class="col" style="align-items:center"><button class="btn btn-primary" style="background:var(--primary-800);box-shadow:var(--shadow-subtle)">Hover</button><span class="state-tag" style="width:auto">hover</span></div>
+          <div class="col" style="align-items:center"><button class="btn btn-primary" style="background:var(--primary-900)">Active</button><span class="state-tag" style="width:auto">active</span></div>
+          <div class="col" style="align-items:center"><button class="btn btn-primary" style="box-shadow:0 0 0 2px var(--neutral-0),0 0 0 4px var(--ring)">Focus</button><span class="state-tag" style="width:auto">focus-visible</span></div>
+          <div class="col" style="align-items:center"><button class="btn btn-primary" disabled>Disabled</button><span class="state-tag" style="width:auto">disabled</span></div>
+          <div class="col" style="align-items:center"><button class="btn btn-primary" aria-busy="true"><span class="spinner"></span>Memuat…</button><span class="state-tag" style="width:auto">loading</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= INPUTS ================= -->
+    <section class="block" id="inputs">
+      <div class="sec-head">
+        <h2>Komponen</h2>
+        <h3>Input &amp; Form Field</h3>
+        <p>Input, Textarea, Select, dan field komposit (label · kontrol · bantuan · galat). Setiap input punya <code class="tok">&lt;label&gt;</code> nyata — placeholder hanya contoh.</p>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="panel">
+          <div class="field">
+            <label class="field-label" for="f1">Nomor Polisi <span class="req">*</span></label>
+            <input class="input mono" id="f1" placeholder="mis. L 1234 AB" />
+            <span class="field-help">Format: huruf wilayah, angka, huruf seri.</span>
+          </div>
+          <div class="field">
+            <label class="field-label" for="f2">Jumlah BBM Diminta <span class="req">*</span></label>
+            <div class="input-group">
+              <input class="input tnum" id="f2" value="45.50" inputmode="decimal" />
+              <span class="input-affix">L</span>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="field-label" for="f3">Catatan</label>
+            <textarea class="textarea" id="f3" placeholder="Catatan tambahan (opsional)"></textarea>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="field">
+            <label class="field-label" for="f4">Sumber Sampah <span class="req">*</span></label>
+            <select class="select" id="f4">
+              <option>Pilih sumber…</option>
+              <option>Dinas</option><option>Rekanan</option><option>Pasar</option>
+              <option>Pintu Air</option><option>Pelabuhan</option><option>Swasta</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="f5">Berat Kotor <span class="req">*</span></label>
+            <input class="input tnum is-error" id="f5" value="3.200" aria-invalid="true" />
+            <span class="field-error">⚠ Berat Kotor harus ≥ Berat Kosong.</span>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="field-label" for="f6">Jumlah Disetujui</label>
+            <input class="input tnum" id="f6" value="45.50" disabled />
+            <span class="field-help">Hanya peran dengan hak persetujuan yang dapat mengubah.</span>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <p class="sub" style="margin-top:0">State input</p>
+        <div class="grid" style="grid-template-columns:repeat(5,1fr)">
+          <div><span class="state-tag">default</span><input class="input" value="Teks" /></div>
+          <div><span class="state-tag">hover</span><input class="input" value="Teks" style="border-color:var(--neutral-300)" /></div>
+          <div><span class="state-tag">focus</span><input class="input" value="Teks" style="border-color:var(--primary-600);box-shadow:0 0 0 3px rgb(5 150 105 / .12)" /></div>
+          <div><span class="state-tag">error</span><input class="input is-error" value="Teks" /></div>
+          <div><span class="state-tag">disabled</span><input class="input" value="Teks" disabled /></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TOGGLES ================= -->
+    <section class="block" id="toggles">
+      <div class="sec-head">
+        <h2>Komponen</h2>
+        <h3>Checkbox · Radio · Switch</h3>
+        <p>Checkbox &amp; radio 16px dengan isian <code class="tok">primary-700</code>; switch untuk boolean instan (mis. status Berlaku/Tidak).</p>
+      </div>
+      <div class="panel row" style="gap:48px;align-items:flex-start">
+        <div class="col">
+          <p class="sub" style="margin:0">Checkbox</p>
+          <label class="check"><input type="checkbox" checked /> Pilih semua baris</label>
+          <label class="check"><input type="checkbox" /> Hapus permanen</label>
+          <label class="check"><input type="checkbox" disabled /> Nonaktif</label>
+        </div>
+        <div class="col">
+          <p class="sub" style="margin:0">Radio</p>
+          <label class="check"><input type="radio" name="r" checked /> TPS</label>
+          <label class="check"><input type="radio" name="r" /> TPA</label>
+          <label class="check"><input type="radio" name="r" /> Pool</label>
+        </div>
+        <div class="col">
+          <p class="sub" style="margin:0">Switch</p>
+          <label class="check" style="gap:12px"><span class="switch"><input type="checkbox" checked /><span class="track"></span><span class="thumb"></span></span> Kuota Berlaku</label>
+          <label class="check" style="gap:12px"><span class="switch"><input type="checkbox" /><span class="track"></span><span class="thumb"></span></span> Mode offline</label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TABLE ================= -->
+    <section class="block" id="table">
+      <div class="sec-head">
+        <h2>Komponen</h2>
+        <h3>DataTable</h3>
+        <p>Toolbar (cari · filter · kolom), header sortable, aksi baris, pagination, serta state kosong / memuat / galat. Angka rata kanan dengan <code class="tok">tabular-nums</code>; kode dengan mono.</p>
+      </div>
+      <div class="demo-table-wrap">
+        <div class="toolbar">
+          <div class="input-group" style="max-width:280px">
+            <input class="input" placeholder="Cari… (mis. nomor polisi)" />
+          </div>
+          <button class="btn btn-outline btn-sm">Filter</button>
+          <button class="btn btn-outline btn-sm">Kolom</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm">+ Buat Baru</button>
+        </div>
+        <table class="table" id="demo-table">
+          <thead><tr>
+            <th class="sortable" data-k="plate">Nopol <span class="sort-ico">↕</span></th>
+            <th class="sortable" data-k="driver">Pengemudi <span class="sort-ico">↕</span></th>
+            <th class="sortable num" data-k="ritase">Ritase <span class="sort-ico">↕</span></th>
+            <th class="sortable num" data-k="tonase">Tonase <span class="sort-ico">↕</span></th>
+            <th>Status</th>
+            <th style="text-align:right">Aksi</th>
+          </tr></thead>
+          <tbody id="demo-rows"></tbody>
+        </table>
+        <div class="pager">
+          <span>Menampilkan 1–5 dari 128</span>
+          <div class="row" style="gap:8px">
+            <button class="btn btn-outline btn-sm" disabled>‹ Sebelumnya</button>
+            <span class="tnum">Halaman 1 dari 26</span>
+            <button class="btn btn-outline btn-sm">Selanjutnya ›</button>
+            <select class="select" style="width:auto;height:32px;padding:4px 32px 4px 10px;font-size:13px"><option>25</option><option>50</option><option>100</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns:1fr 1fr 1fr;margin-top:16px">
+        <div class="panel" style="text-align:center;padding:32px 20px">
+          <div style="font-size:28px;color:var(--neutral-300);margin-bottom:8px">▤</div>
+          <p style="font-weight:600;margin:0 0 4px">Belum ada data</p>
+          <p class="note" style="margin-bottom:14px">Mulai dengan menambah entri pertama.</p>
+          <button class="btn btn-primary btn-sm">+ Buat Baru</button>
+        </div>
+        <div class="panel">
+          <p class="state-tag" style="width:auto;margin-bottom:10px">memuat · skeleton</p>
+          <div class="col" style="gap:14px;width:100%">
+            <div class="skeleton" style="width:100%"></div>
+            <div class="skeleton" style="width:90%"></div>
+            <div class="skeleton" style="width:95%"></div>
+            <div class="skeleton" style="width:80%"></div>
+          </div>
+        </div>
+        <div class="panel" style="text-align:center;padding:32px 20px">
+          <div style="font-size:28px;color:var(--danger-500);margin-bottom:8px">⚠</div>
+          <p style="font-weight:600;margin:0 0 4px">Gagal memuat data</p>
+          <p class="note" style="margin-bottom:14px">Periksa koneksi lalu coba lagi.</p>
+          <button class="btn btn-secondary btn-sm">Coba Lagi</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= OVERLAYS ================= -->
+    <section class="block" id="overlays">
+      <div class="sec-head">
+        <h2>Komponen</h2>
+        <h3>Dialog · Confirm · Sheet · Toast</h3>
+        <p>Lapisan mengambang dengan fokus terjebak dan urutan z-index konsisten. Coba langsung:</p>
+      </div>
+      <div class="panel row">
+        <button class="btn btn-primary" id="open-dialog">Buka Dialog</button>
+        <button class="btn btn-destructive" id="open-confirm">Buka Confirm (Hapus)</button>
+        <button class="btn btn-secondary" id="t-success">Toast Berhasil</button>
+        <button class="btn btn-secondary" id="t-error">Toast Gagal</button>
+        <button class="btn btn-secondary" id="t-warning">Toast Peringatan</button>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <p class="sub" style="margin-top:0">Sheet (panel samping)</p>
+        <div class="wf" style="display:flex">
+          <div style="flex:1;padding:18px;color:var(--neutral-400);font-size:13px">Konten halaman…</div>
+          <div style="width:240px;background:var(--neutral-0);border-left:1px solid var(--neutral-200);box-shadow:var(--shadow-lg);padding:18px">
+            <div class="row" style="justify-content:space-between;margin-bottom:14px"><b style="font-size:15px">Detail Trayek</b><span style="color:var(--neutral-400);cursor:pointer">✕</span></div>
+            <div class="skeleton" style="width:100%;margin-bottom:10px"></div>
+            <div class="skeleton" style="width:80%;margin-bottom:18px"></div>
+            <div class="dialog-foot" style="margin-top:0"><button class="btn btn-secondary btn-sm">Batal</button><button class="btn btn-primary btn-sm">Simpan</button></div>
+          </div>
+        </div>
+        <p class="note" style="margin-top:10px">Geser dari kanan (desktop) / bawah (mobile), lebar 420–520px, untuk alur kontekstual yang berat.</p>
+      </div>
+    </section>
+
+    <!-- ================= FEEDBACK ================= -->
+    <section class="block" id="feedback">
+      <div class="sec-head">
+        <h2>Komponen</h2>
+        <h3>Alert · Tooltip · Badge</h3>
+        <p>Pemberitahuan dalam halaman, bantuan kontekstual, dan label status.</p>
+      </div>
+      <div class="panel col" style="gap:12px">
+        <div class="alert alert-info" style="width:100%"><div><div class="alert-title">Informasi</div>Data hari ini diseed otomatis dari jadwal kru.</div></div>
+        <div class="alert alert-warning" style="width:100%"><div><div class="alert-title">Peringatan</div>Anda sedang offline. Perubahan akan disinkronkan saat kembali daring.</div></div>
+        <div class="alert alert-danger" style="width:100%"><div><div class="alert-title">Gagal</div>Nomor polisi sudah ada. Gunakan nomor lain.</div></div>
+        <div class="alert alert-success" style="width:100%"><div><div class="alert-title">Berhasil</div>Trayek terverifikasi dan dikunci.</div></div>
+      </div>
+      <div class="panel row" style="margin-top:16px;gap:24px;align-items:center">
+        <span class="badge badge-green"><span class="dot"></span>Terverifikasi</span>
+        <span class="badge badge-amber"><span class="dot"></span>Belum Selesai</span>
+        <span class="badge badge-count">3/5 Terverifikasi</span>
+        <span style="position:relative" id="tip-anchor">
+          <button class="btn btn-outline btn-sm">Arahkan untuk Tooltip</button>
+          <span class="tip" id="tip" style="position:absolute;bottom:calc(100% + 8px);left:0;display:none">Berat bersih = kotor − kosong, dihitung otomatis.</span>
+        </span>
+      </div>
+    </section>
+
+    <!-- ================= NAV COMPS ================= -->
+    <section class="block" id="nav-comps">
+      <div class="sec-head">
+        <h2>Komponen</h2>
+        <h3>Tabs · Breadcrumb · Avatar · Card</h3>
+        <p>Navigasi sekunder dan kontainer.</p>
+      </div>
+      <div class="panel">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="#">Master Data</a><span class="sep">/</span><a href="#">Kendaraan</a><span class="sep">/</span><span aria-current="page">Ubah</span></nav>
+        <div class="divline"></div>
+        <div class="tabs" role="tablist" id="demo-tabs">
+          <button class="tab" role="tab" aria-selected="true">Ringkasan</button>
+          <button class="tab" role="tab" aria-selected="false">Timbangan</button>
+          <button class="tab" role="tab" aria-selected="false">Bahan Bakar</button>
+        </div>
+        <div style="padding:18px 2px;color:var(--neutral-600);font-size:14px" id="tab-panel">Panel “Ringkasan”: rute, waktu &amp; odometer tercatat, pencatat, dan waktu pencatatan.</div>
+        <div class="divline"></div>
+        <div class="row" style="gap:24px;align-items:center">
+          <div class="row" style="gap:10px"><span class="avatar">BS</span><div><div style="font-weight:600;font-size:14px">Budi Santoso</div><div class="note">Administrasi Data</div></div></div>
+          <div class="card" style="padding:14px 18px"><div class="note" style="margin-bottom:4px">Total Tonase Hari Ini</div><div class="tnum" style="font-size:24px;font-weight:700">128,75 <span style="font-size:14px;color:var(--neutral-500);font-weight:500">ton</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ADVANCED COMPONENTS ================= -->
+    <section class="block" id="advanced">
+      <div class="sec-head">
+        <h2>Komponen</h2>
+        <h3>Komponen Lanjutan</h3>
+        <p>Komponen yang dibutuhkan untuk membangun alur nyata: menu aksi, langkah multi-step (form transaksi), unggah foto dokumentasi, daftar rincian (verifikasi), kalender, combobox, dan popover filter.</p>
+      </div>
+
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <!-- Dropdown menu -->
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Dropdown Menu · aksi baris</p>
+          <div class="menu" style="max-width:200px">
+            <div class="menu-label">Aksi</div>
+            <button class="menu-item"><span class="mi-ico">◎</span> Lihat detail</button>
+            <button class="menu-item"><span class="mi-ico">✎</span> Ubah</button>
+            <button class="menu-item"><span class="mi-ico">⎘</span> Duplikat</button>
+            <hr class="menu-sep" />
+            <button class="menu-item danger"><span class="mi-ico">🗑</span> Hapus</button>
+          </div>
+        </div>
+        <!-- Popover -->
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Popover · filter</p>
+          <div class="popover" style="max-width:240px">
+            <div class="pop-title">Filter Status</div>
+            <label class="check" style="margin-bottom:8px"><input type="checkbox" checked /> Belum Selesai</label>
+            <label class="check" style="margin-bottom:8px"><input type="checkbox" checked /> Selesai</label>
+            <label class="check" style="margin-bottom:12px"><input type="checkbox" /> Terverifikasi</label>
+            <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn btn-ghost btn-sm">Reset</button><button class="btn btn-primary btn-sm">Terapkan</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stepper -->
+      <div class="panel" style="margin-top:16px">
+        <p class="sub" style="margin-top:0">Stepper · form transaksi multi-langkah</p>
+        <div class="stepper">
+          <div class="step done"><span class="dot">✓</span><span class="stitle">Pilih Trayek</span></div>
+          <div class="step-line done"></div>
+          <div class="step active"><span class="dot">2</span><span class="stitle">Catat Timbangan</span></div>
+          <div class="step-line"></div>
+          <div class="step upcoming"><span class="dot">3</span><span class="stitle">Konfirmasi</span></div>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+        <!-- File upload -->
+        <div class="panel">
+          <p class="sub" style="margin-top:0">File Upload · foto dokumentasi</p>
+          <div class="dropzone" style="margin-bottom:12px">
+            <div class="dz-ico">⤓</div>
+            <div class="dz-t">Seret foto ke sini atau klik untuk unggah</div>
+            <div class="dz-h">JPG / PNG · maks 5 MB</div>
+          </div>
+          <div class="file-row">
+            <span class="fthumb">🖼</span>
+            <div style="flex:1">
+              <div class="ft">timbangan-L1234AB.jpg</div>
+              <div class="progress" style="margin-top:6px"><i style="width:72%"></i></div>
+            </div>
+            <span class="fmeta">72%</span>
+          </div>
+        </div>
+        <!-- Description list -->
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Description List · rincian verifikasi</p>
+          <dl class="dl">
+            <dt>Nomor Polisi</dt><dd class="mono">L 1234 AB</dd>
+            <dt>Rute</dt><dd>TPS Gubeng → TPA Benowo</dd>
+            <dt>Berat Bersih</dt><dd class="tnum">4.250 kg</dd>
+            <dt>Waktu Aktual</dt><dd class="mono">08:42:00</dd>
+            <dt>Dicatat oleh</dt><dd>Budi Santoso</dd>
+            <dt>Status</dt><dd><span class="badge badge-blue"><span class="dot"></span>Selesai</span></dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px;align-items:start">
+        <!-- Calendar -->
+        <div class="panel">
+          <p class="sub" style="margin-top:0">DatePicker · kalender (dd/MM/yyyy)</p>
+          <div class="cal">
+            <div class="cal-head"><button aria-label="Bulan sebelumnya">‹</button><span>Maret 2026</span><button aria-label="Bulan berikutnya">›</button></div>
+            <div class="cal-grid" id="cal-grid"></div>
+          </div>
+        </div>
+        <!-- Combobox -->
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Combobox · pencarian kendaraan</p>
+          <div class="combo">
+            <div class="combo-search"><span style="color:var(--neutral-400)">⌕</span><input value="L 12" readonly aria-label="Cari kendaraan" /></div>
+            <div class="combo-list">
+              <div class="combo-opt sel"><span class="mono">L 1234 AB</span><span style="color:var(--primary-700)">✓</span></div>
+              <div class="combo-opt"><span class="mono">L 1255 CD</span></div>
+              <div class="combo-opt"><span class="mono">L 1288 EF</span></div>
+              <div class="combo-opt"><span class="mono">L 1299 GH</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= RESPONSIVE & PWA ================= -->
+    <section class="block" id="responsive">
+      <style>
+        .pf{width:248px;border-radius:32px;background:#0f172a;padding:8px;box-shadow:var(--shadow-lg);flex-shrink:0}
+        .pf-scr{background:var(--neutral-50);border-radius:25px;overflow:hidden;height:472px;display:flex;flex-direction:column;position:relative}
+        .pf-top{height:46px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--neutral-200);background:var(--neutral-0);flex-shrink:0}
+        .pf-top .ico{width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:var(--neutral-600);font-size:17px}
+        .pf-top .ttl{font-size:14px;font-weight:700;color:var(--neutral-900)}
+        .pf-body{flex:1;overflow:hidden;padding:12px;background:var(--neutral-50)}
+        .pf-av{width:26px;height:26px;border-radius:50%;background:var(--primary-100);color:var(--primary-800);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600}
+        .bp-ladder{display:flex;gap:6px;align-items:flex-end}
+        .bp{flex:1;border-radius:8px;background:var(--neutral-100);border:1px solid var(--neutral-200);padding:10px;text-align:center}
+        .bp.band{background:var(--primary-50);border-color:var(--primary-200)}
+        .dark .bp.band{background:rgb(16 185 129 / .12);border-color:rgb(16 185 129 / .25)}
+        .bp .bn{font-family:var(--font-mono);font-weight:600;font-size:13px;color:var(--neutral-800)}
+        .bp .bv{font-size:11px;color:var(--neutral-500);margin-top:2px}
+        .bp .bu{font-size:11px;color:var(--neutral-500);margin-top:6px}
+        .bp.band .bn{color:var(--primary-700)}
+        .dark .bp.band .bn{color:#6ee7b7}
+        .pwa-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        @media (max-width:760px){.pwa-grid{grid-template-columns:1fr}}
+      </style>
+      <div class="sec-head">
+        <h2>Responsif</h2>
+        <h3>Mobile, Touch &amp; PWA</h3>
+        <p>Strategi <b>desktop-first, mobile-ready</b>. Operator memakai desktop &amp; terminal timbang (target utama 1280–1440px), namun seluruh layar tetap dapat dioperasikan dari tablet dan ponsel — dan terpasang sebagai <b>PWA</b>. Komponen yang sama beradaptasi lewat breakpoint, bukan desain terpisah.</p>
+      </div>
+
+      <!-- breakpoint ladder -->
+      <p class="sub" style="margin-top:0">Breakpoint &amp; perilaku</p>
+      <div class="bp-ladder">
+        <div class="bp"><div class="bn">sm</div><div class="bv">640</div><div class="bu">Ponsel · bottom-nav, tabel→kartu, form 1 kolom, dialog→sheet</div></div>
+        <div class="bp"><div class="bn">md</div><div class="bv">768</div><div class="bu">Tablet · drawer sidebar, tabel scroll-x</div></div>
+        <div class="bp band"><div class="bn">lg</div><div class="bv">1024</div><div class="bu">Sidebar menetap, tabel penuh</div></div>
+        <div class="bp band"><div class="bn">xl</div><div class="bv">1280</div><div class="bu">Target utama · 25 baris tanpa scroll</div></div>
+        <div class="bp"><div class="bn">2xl</div><div class="bv">1536</div><div class="bu">Kios lebar / monitor besar</div></div>
+      </div>
+
+      <!-- mobile shell -->
+      <p class="sub">App shell di ponsel</p>
+      <div class="panel">
+        <div class="row" style="gap:28px;align-items:flex-start;justify-content:center">
+          <!-- phone 1: bottom nav + adaptive table -->
+          <div>
+            <div class="pf"><div class="pf-scr">
+              <div class="pf-top"><span class="ico">☰</span><span class="ttl" style="flex:1">Hari Transaksi</span><span class="pf-av">BS</span></div>
+              <div class="pf-body">
+                <div class="tcards">
+                  <div class="tcard">
+                    <div class="tcard-top"><span class="plate">L 1234 AB</span><span class="badge badge-green"><span class="dot"></span>Terverifikasi</span></div>
+                    <div class="tcard-row"><span class="k">Pengemudi</span><span class="v">Budi Santoso</span></div>
+                    <div class="tcard-row"><span class="k">Ritase</span><span class="v">5</span></div>
+                    <div class="tcard-row"><span class="k">Tonase</span><span class="v">12,75 ton</span></div>
+                  </div>
+                  <div class="tcard">
+                    <div class="tcard-top"><span class="plate">L 8821 CD</span><span class="badge badge-amber"><span class="dot"></span>Belum Selesai</span></div>
+                    <div class="tcard-row"><span class="k">Pengemudi</span><span class="v">Slamet R.</span></div>
+                    <div class="tcard-row"><span class="k">Ritase</span><span class="v">3</span></div>
+                  </div>
+                </div>
+              </div>
+              <nav class="bottom-nav">
+                <a href="#responsive"><span class="bn-ico">▦</span>Dasbor</a>
+                <a href="#responsive"><span class="bn-ico">🗂</span>Master</a>
+                <a href="#responsive" class="active"><span class="bn-ico">🚛</span>Transaksi</a>
+                <a href="#responsive"><span class="bn-ico">◴</span>Pengguna</a>
+              </nav>
+            </div></div>
+            <div class="pf-cap">Bottom-nav · DataTable → kartu</div>
+          </div>
+          <!-- phone 2: drawer -->
+          <div>
+            <div class="pf"><div class="pf-scr">
+              <div class="pf-top"><span class="ico">✕</span><span class="ttl" style="flex:1">Menu</span></div>
+              <div class="pf-body" style="padding:0;position:relative">
+                <div class="drawer-scrim" style="position:absolute"></div>
+                <div class="drawer" style="position:absolute;width:82%">
+                  <div class="row" style="gap:8px;padding:4px 8px 14px;align-items:center">
+                    <svg width="30" height="30" viewBox="0 0 256 256"><rect width="256" height="256" rx="58" fill="#047857"/><g transform="rotate(-20 128 128)"><path d="M128 40 C 184 88, 184 158, 128 214 C 72 158, 72 88, 128 40 Z" fill="#fff"/><path d="M128 58 L128 206" stroke="#047857" stroke-width="7" stroke-linecap="round"/><path d="M128 104 L106 88 M128 104 L150 88 M128 140 L108 127 M128 140 L148 127" stroke="#047857" stroke-width="6" stroke-linecap="round"/></g></svg>
+                    <b style="font-size:14px">SWAT</b>
+                  </div>
+                  <a href="#responsive" class="nlink" style="display:block;padding:10px;border-radius:8px;text-decoration:none;font-size:13.5px;color:var(--neutral-600)">Dasbor</a>
+                  <a href="#responsive" class="nlink" style="display:block;padding:10px;border-radius:8px;text-decoration:none;font-size:13.5px;background:var(--primary-50);color:var(--primary-700);font-weight:600">Kendaraan</a>
+                  <a href="#responsive" class="nlink" style="display:block;padding:10px;border-radius:8px;text-decoration:none;font-size:13.5px;color:var(--neutral-600)">Pengemudi</a>
+                  <a href="#responsive" class="nlink" style="display:block;padding:10px;border-radius:8px;text-decoration:none;font-size:13.5px;color:var(--neutral-600)">Hari Transaksi</a>
+                  <a href="#responsive" class="nlink" style="display:block;padding:10px;border-radius:8px;text-decoration:none;font-size:13.5px;color:var(--neutral-600)">Pengguna</a>
+                </div>
+              </div>
+            </div></div>
+            <div class="pf-cap">Sidebar → off-canvas drawer (&lt; lg)</div>
+          </div>
+        </div>
+        <p class="note" style="margin-top:18px;text-align:center">Topbar tetap lengket; sidebar menjadi drawer di <code class="tok">&lt; lg</code> dan navigasi utama pindah ke <b>bottom-nav</b> di <code class="tok">&lt; sm</code>. Footer form lengket menjadi <b>action bar</b> penuh-lebar.</p>
+      </div>
+
+      <!-- touch + adaptive rules -->
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Target sentuh ≥ 44px</p>
+          <p class="note" style="margin-bottom:14px">Pada perangkat sentuh (<code class="tok">pointer: coarse</code>), semua kontrol minimal 44×44px. Tombol ukuran <code class="tok">md/lg</code> sudah memenuhi; ikon-aksi melebar otomatis.</p>
+          <div class="row" style="align-items:center;gap:16px">
+            <button class="btn btn-primary btn-lg">Simpan</button>
+            <span style="position:relative;display:inline-block"><button class="btn btn-outline btn-icon" aria-label="Menu" style="width:44px;height:44px">⋮</button><span style="position:absolute;inset:-1px;border:1.5px dashed var(--primary-400);border-radius:8px;pointer-events:none"></span></span>
+            <span class="mono" style="font-size:12px;color:var(--neutral-500)">44 × 44</span>
+          </div>
+        </div>
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Aturan adaptif komponen</p>
+          <dl class="dl">
+            <dt>Sidebar</dt><dd>menetap ≥lg · drawer &lt;lg</dd>
+            <dt>Navigasi</dt><dd>bottom-nav &lt;sm</dd>
+            <dt>DataTable</dt><dd>scroll-x &lt;lg · kartu &lt;sm</dd>
+            <dt>Form</dt><dd>1 kolom · footer→action bar</dd>
+            <dt>Dialog</dt><dd>jadi bottom-sheet &lt;sm</dd>
+            <dt>Konten</dt><dd>gutter 32→16px</dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- PWA -->
+      <p class="sub">Progressive Web App</p>
+      <div class="pwa-grid">
+        <div class="panel">
+          <p style="font-weight:700;margin:0 0 10px;font-size:14px">Manifest &amp; instalasi</p>
+          <div class="app-banner" style="border-radius:8px;margin-bottom:14px"><span>⤓</span><span style="flex:1">Pasang SWAT ke layar utama</span><button class="btn btn-primary btn-sm">Pasang</button></div>
+          <dl class="dl">
+            <dt>name</dt><dd class="mono">SWAT — DLH Surabaya</dd>
+            <dt>display</dt><dd class="mono">standalone</dd>
+            <dt>theme_color</dt><dd><span class="row" style="justify-content:flex-end;gap:6px"><span style="width:14px;height:14px;border-radius:3px;background:#0f172a;display:inline-block"></span><span class="mono">#0f172a</span></span></dd>
+            <dt>background</dt><dd class="mono">#f8fafc</dd>
+            <dt>icons</dt><dd class="mono">192 · 512 · maskable</dd>
+            <dt>orientation</dt><dd class="mono">any</dd>
+          </dl>
+        </div>
+        <div class="panel">
+          <p style="font-weight:700;margin:0 0 10px;font-size:14px">Offline &amp; safe-area</p>
+          <div class="app-banner" style="border-radius:8px;margin-bottom:14px"><span>⚠</span><span>Anda sedang offline — perubahan disinkronkan saat daring</span></div>
+          <ul class="note" style="margin:0;padding-left:18px;line-height:1.9">
+            <li>Service worker meng-cache app-shell (Fase 1); API <i>network-first</i>.</li>
+            <li>Tombol &amp; bar menghormati <code class="tok">env(safe-area-inset-*)</code> (notch / home bar).</li>
+            <li>Ikon maskable + <code class="tok">theme-color</code> = status bar hijau-gelap.</li>
+            <li>Mode gelap mengikuti preferensi sistem &amp; pilihan pengguna.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= APPLY ================= -->
+    <section class="block" id="apply">
+      <div class="sec-head">
+        <h2>Panduan</h2>
+        <h3>Cara Pakai &amp; Konvensi</h3>
+        <p>Tema terang adalah baseline wajib (dark mode opsional, P2). Fokus selalu tampak pada <code class="tok">:focus-visible</code>. Warna tidak pernah menjadi satu-satunya penanda.</p>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Angka · Tanggal · Mata uang (id-ID · WIB)</p>
+          <table class="table" style="font-size:13px"><tbody>
+            <tr><td>Mata uang</td><td class="mono">Rp 8.500.000</td></tr>
+            <tr><td>Tanggal (form)</td><td class="mono">15/03/2026</td></tr>
+            <tr><td>Tanggal (tabel)</td><td class="mono">15 Mar 2026</td></tr>
+            <tr><td>Waktu (24 jam)</td><td class="mono">08:30:00</td></tr>
+            <tr><td>Berat</td><td class="mono">4.250 kg</td></tr>
+            <tr><td>Jarak</td><td class="mono">128.430 km</td></tr>
+            <tr><td>BBM</td><td class="mono">45,50 L</td></tr>
+            <tr><td>Kode / kitir</td><td class="mono">KTR-2026-0042</td></tr>
+          </tbody></table>
+        </div>
+        <div class="panel">
+          <p class="sub" style="margin-top:0">Checklist aksesibilitas (per layar)</p>
+          <div class="col" style="gap:9px;font-size:13.5px;color:var(--neutral-700)">
+            <label class="check"><input type="checkbox" checked /> <code class="tok">&lt;label&gt;</code> nyata pada tiap input</label>
+            <label class="check"><input type="checkbox" checked /> Ring fokus terlihat, operable keyboard</label>
+            <label class="check"><input type="checkbox" checked /> Dialog menjebak fokus, Esc menutup</label>
+            <label class="check"><input type="checkbox" checked /> <code class="tok">aria-label</code> pada tombol ikon</label>
+            <label class="check"><input type="checkbox" checked /> <code class="tok">aria-invalid</code> + <code class="tok">describedby</code> saat galat</label>
+            <label class="check"><input type="checkbox" checked /> Kontras ≥ 4,5:1 teks · 3:1 UI</label>
+            <label class="check"><input type="checkbox" checked /> Warna bukan satu-satunya penanda</label>
+            <label class="check"><input type="checkbox" checked /> Skip-to-content + elemen semantik</label>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <p class="sub" style="margin-top:0">Suara &amp; gaya (id-ID)</p>
+        <p class="note">Resmi, efisien, suportif. Tombol imperatif (“Simpan”, “Hapus”, “Terverifikasi”). Galat manusiawi (“Nomor polisi sudah ada”, bukan “FK violation”). Satu istilah per entitas — selalu dari glosarium.</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- live dialog -->
+<div class="modal-scrim" id="dialog-scrim">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
+    <h3 id="dlg-t">Tambah Kendaraan</h3>
+    <div class="field"><label class="field-label" for="d1">Nomor Polisi <span class="req">*</span></label><input class="input mono" id="d1" placeholder="mis. L 1234 AB" /></div>
+    <div class="field" style="margin-bottom:0"><label class="field-label" for="d2">Status <span class="req">*</span></label><select class="select" id="d2"><option>Baik</option><option>Rusak Ringan</option><option>Rusak Berat</option><option>Hilang</option></select></div>
+    <div class="dialog-foot"><button class="btn btn-secondary" data-close>Batal</button><button class="btn btn-primary" data-close>Simpan</button></div>
+  </div>
+</div>
+
+<!-- live confirm -->
+<div class="modal-scrim" id="confirm-scrim">
+  <div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="cf-t" style="width:min(90vw,420px)">
+    <h3 id="cf-t">Hapus kendaraan?</h3>
+    <p class="note" style="font-size:14px">Yakin ingin menghapus <b class="mono" style="color:var(--neutral-800)">L 1234 AB</b>? Tindakan ini tidak dapat dibatalkan.</p>
+    <div class="dialog-foot"><button class="btn btn-secondary" data-close autofocus>Batal</button><button class="btn btn-destructive" data-close>Hapus</button></div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+<div class="copy-toast" id="copy-toast">Token disalin</div>
+
+<script src="design-system/guide.js"></script>
+<script>(function(){var b=document.getElementById('theme-toggle');if(!b)return;b.addEventListener('click',function(){var d=document.documentElement.classList.toggle('dark');try{localStorage.setItem('swat-theme',d?'dark':'light')}catch(e){}});})();</script>
+</body>
+</html>

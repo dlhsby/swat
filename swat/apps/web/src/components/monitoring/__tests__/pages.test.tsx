@@ -1,9 +1,9 @@
 import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import FuelPage from '@/app/[locale]/(app)/monitoring/bbm/page';
-import LevyPage from '@/app/[locale]/(app)/monitoring/retribusi/page';
-import RoutesPage from '@/app/[locale]/(app)/monitoring/rute/page';
+import FuelPage from '@/app/[locale]/(app)/monitoring/fuel/page';
+import LevyPage from '@/app/[locale]/(app)/monitoring/levy/page';
+import RoutesPage from '@/app/[locale]/(app)/monitoring/routes/page';
 import VolumePage from '@/app/[locale]/(app)/monitoring/volume/page';
 import type * as MonitoringApi from '@/lib/monitoring-api';
 import { renderWithProviders } from '@/test-utils/render';

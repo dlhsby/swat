@@ -1,0 +1,134 @@
+/* ============================================================================
+   SWAT — Design Tokens (reference implementation of the variable layer)
+   DLH Kota Surabaya · light theme baseline · maps 1:1 to specs/13-design/01-design-system.md
+   ========================================================================== */
+
+:root {
+  /* ---- Primary (emerald) ----------------------------------------------- */
+  --primary-50:#ecfdf5;  --primary-100:#d1fae5; --primary-200:#a7f3d0;
+  --primary-300:#6ee7b7; --primary-400:#34d399; --primary-500:#10b981;
+  --primary-600:#059669; --primary-700:#047857; --primary-800:#065f46;
+  --primary-900:#064e3b; --primary-950:#022c22;
+
+  /* ---- Neutral (slate) ------------------------------------------------- */
+  --neutral-0:#ffffff;   --neutral-50:#f8fafc;  --neutral-100:#f1f5f9;
+  --neutral-200:#e2e8f0; --neutral-300:#cbd5e1; --neutral-400:#94a3b8;
+  --neutral-500:#64748b; --neutral-600:#475569; --neutral-700:#334155;
+  --neutral-800:#1e293b; --neutral-900:#0f172a; --neutral-950:#020617;
+
+  /* ---- Semantic -------------------------------------------------------- */
+  --success-50:#f0fdf4; --success-100:#dcfce7; --success-500:#22c55e; --success-600:#16a34a; --success-700:#15803d;
+  --warning-50:#fffbeb; --warning-100:#fef3c7; --warning-500:#f59e0b; --warning-600:#d97706; --warning-700:#b45309;
+  --danger-50:#fef2f2;  --danger-100:#fee2e2;  --danger-500:#ef4444;  --danger-600:#dc2626;  --danger-700:#b91c1c;
+  --info-50:#eff6ff;    --info-100:#dbeafe;    --info-500:#3b82f6;    --info-600:#2563eb;    --info-700:#1d4ed8;
+
+  /* ---- Typography ------------------------------------------------------ */
+  --font-sans:'Plus Jakarta Sans','Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'SF Mono','Cascadia Code',monospace;
+  --fs-h1:32px;  --lh-h1:1.25;
+  --fs-h2:24px;  --lh-h2:1.33;
+  --fs-h3:20px;  --lh-h3:1.4;
+  --fs-body-lg:18px; --lh-body-lg:1.5;
+  --fs-body:16px;    --lh-body:1.5;
+  --fs-body-sm:14px; --lh-body-sm:1.43;
+  --fs-label:14px;   --lh-label:1.43;
+  --fs-tiny:12px;    --lh-tiny:1.5;
+  --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700;
+
+  /* ---- Spacing (8px grid) --------------------------------------------- */
+  --space-xs:4px; --space-sm:8px; --space-md:12px; --space-lg:16px;
+  --space-xl:24px; --space-2xl:32px; --space-3xl:48px;
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --radius-sm:4px; --radius-base:6px; --radius-lg:8px; --radius-full:9999px;
+
+  /* ---- Elevation ------------------------------------------------------- */
+  --shadow-none:none;
+  --shadow-subtle:0 1px 2px 0 rgb(0 0 0 / .05);
+  --shadow-sm:0 1px 3px 0 rgb(0 0 0 / .1), 0 1px 2px -1px rgb(0 0 0 / .1);
+  --shadow-base:0 4px 6px -1px rgb(0 0 0 / .1), 0 2px 4px -2px rgb(0 0 0 / .1);
+  --shadow-lg:0 10px 15px -3px rgb(0 0 0 / .1), 0 4px 6px -4px rgb(0 0 0 / .1);
+
+  /* ---- Z-index --------------------------------------------------------- */
+  --z-base:0; --z-raised:10; --z-sticky:100; --z-fixed:200;
+  --z-overlay:1000; --z-modal:1010; --z-popover:1020; --z-toast:1030; --z-tooltip:1040;
+
+  /* ---- Focus ring ------------------------------------------------------ */
+  --ring:var(--primary-600);
+  --ring-offset:var(--neutral-0);
+
+  /* ---- shadcn semantic aliases (HSL channels) -------------------------- */
+  --background:0 0% 100%;
+  --foreground:222 47% 11%;
+  --card:0 0% 100%;            --card-foreground:222 47% 11%;
+  --popover:0 0% 100%;         --popover-foreground:222 47% 11%;
+  --muted:210 40% 96%;         --muted-foreground:215 16% 47%;
+  --border:214 32% 91%;        --input:214 32% 91%;
+  --ring-hsl:160 84% 31%;
+  --primary:162 94% 24%;       --primary-foreground:0 0% 100%;
+  --secondary:210 40% 96%;     --secondary-foreground:222 47% 11%;
+  --accent:152 76% 96%;        --accent-foreground:162 94% 24%;
+  --destructive:0 72% 51%;     --destructive-foreground:0 0% 100%;
+  --radius:0.375rem;
+}
+
+/* ===========================================================================
+   Dark theme (optional). Applied via .dark on <html>.
+   The neutral ramp is re-tuned for dark surfaces so every existing
+   var(--neutral-*) usage flips correctly (neutral-0 = card surface … neutral-900
+   = near-white text). Brand & semantic ramps are unchanged; interactive accents
+   are brightened in the component layer.
+   ========================================================================= */
+.dark {
+  --neutral-0:#111c2e;    /* card / control surface */
+  --neutral-50:#0b1424;   /* page canvas (darkest) */
+  --neutral-100:#1c2942;  /* input / hover / alt-row */
+  --neutral-200:#2a3a55;  /* borders, dividers */
+  --neutral-300:#3b4d6b;
+  --neutral-400:#64748b;  /* placeholder / muted icon */
+  --neutral-500:#94a3b8;  /* secondary text */
+  --neutral-600:#cbd5e1;  /* body text */
+  --neutral-700:#e2e8f0;  /* strong text */
+  --neutral-800:#f1f5f9;
+  --neutral-900:#f8fafc;  /* headings */
+  --neutral-950:#ffffff;
+
+  --ring:var(--primary-500);
+  --ring-offset:var(--neutral-0);
+
+  /* shadcn semantic layer — dark */
+  --background:222 47% 9%;       --foreground:210 40% 96%;
+  --card:222 40% 12%;            --card-foreground:210 40% 96%;
+  --popover:222 40% 12%;         --popover-foreground:210 40% 96%;
+  --muted:217 33% 20%;           --muted-foreground:215 20% 65%;
+  --border:217 33% 24%;          --input:217 33% 24%;
+  --ring-hsl:160 84% 39%;
+  --primary:160 84% 39%;         --primary-foreground:0 0% 100%;
+  --secondary:217 33% 20%;       --secondary-foreground:210 40% 96%;
+  --accent:160 50% 18%;          --accent-foreground:152 76% 80%;
+  --destructive:0 72% 51%;       --destructive-foreground:0 0% 100%;
+
+  /* ---- Semantic & brand TINTS re-tuned for dark surfaces -------------
+     The 50/100 steps become deep, low-chroma fills that read as "tinted
+     dark" instead of bright pastel. The 700 steps (used as badge/alert/
+     icon text & app accents) are brightened so they stay legible on dark.
+     Raw 500/600 (saturated) are unchanged. */
+  --primary-50:#0c2a20;  --primary-100:#103a2c; --primary-200:#16513c; --primary-300:#1d6b50;
+  --success-50:#0c2a1a;  --success-100:#103a25; --success-700:#4ade80;
+  --warning-50:#2a1f08;  --warning-100:#3a2c0f; --warning-700:#fbbf24;
+  --danger-50:#2c1414;   --danger-100:#3a1c1c;  --danger-700:#f87171;
+  --info-50:#0f2138;     --info-100:#152c4a;    --info-700:#60a5fa;
+
+  /* deeper elevation so cards/sheets separate from the dark canvas */
+  --shadow-subtle:0 1px 2px 0 rgb(0 0 0 / .4);
+  --shadow-sm:0 1px 3px 0 rgb(0 0 0 / .5), 0 1px 2px -1px rgb(0 0 0 / .5);
+  --shadow-base:0 4px 6px -1px rgb(0 0 0 / .55), 0 2px 4px -2px rgb(0 0 0 / .5);
+  --shadow-lg:0 12px 24px -6px rgb(0 0 0 / .65), 0 4px 8px -4px rgb(0 0 0 / .55);
+}
+
+/* Focus-visible: one ring everywhere, keyboard only */
+:where(a,button,input,select,textarea,[role="button"],[role="tab"],[tabindex]):focus-visible {
+  outline:none;
+  box-shadow:0 0 0 2px var(--ring-offset), 0 0 0 4px var(--ring);
+  border-radius:var(--radius-base);
+}

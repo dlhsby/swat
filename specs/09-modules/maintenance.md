@@ -50,7 +50,7 @@ photos via the polymorphic `Photo` model (`ownerType='maintenanceItem'`).
 ---
 
 ## 3. Screens (Next.js) — see design "Perawatan"
-### 3.1 List `/transaksi/perawatan`
+### 3.1 List `/transaksi/maintenance`
 - KPI grid: total records, running (in-progress), monthly cost (Rp), scheduled count.
 - Table: Kode (mono), Tanggal (`d MMM yyyy`), Kendaraan (plate mono), Jenis pill (Servis/Perbaikan),
   Pekerjaan (description), Bengkel, Biaya (Rp), Status pill. Toolbar: search + filter (type/status/

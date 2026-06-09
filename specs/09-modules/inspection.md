@@ -3,7 +3,7 @@
 ## Overview
 
 The Inspection module records periodic vehicle inspections via a checklist (legacy
-`transaksi/pemeriksaankendaraan.php`). It is a **legacy-parity** capability included in the new hi-fi
+`transaksi/inspectionskendaraan.php`). It is a **legacy-parity** capability included in the new hi-fi
 design (**Pemeriksaan Kendaraan** screen). The legacy app had the controller but **no clean table**;
 the new schema introduces `VehicleInspection` + `InspectionItem` (see `specs/03-data-model.md`).
 
@@ -45,7 +45,7 @@ checklist is a **12-item** template (configurable seed; not a separate entity in
 ---
 
 ## 3. Screens (Next.js) — see design "Pemeriksaan Kendaraan"
-### 3.1 List `/transaksi/pemeriksaan-kendaraan`
+### 3.1 List `/transaksi/inspections-kendaraan`
 Table: Tanggal, Kendaraan (plate mono), Model, Pemeriksa, Lolos (`passed/total`), Hasil pill
 (Lolos/Perlu Perhatian/Tidak Lolos). Toolbar: search + filter (result/vehicle/date) + columns. Standard
 states. `[Periksa]` primary. Row → **detail Sheet**.

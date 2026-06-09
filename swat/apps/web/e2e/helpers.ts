@@ -5,7 +5,7 @@ import { type Page, expect } from '@playwright/test';
  * password; defaults match the seeded admin for a fresh dev stack.
  */
 export const ADMIN_USER = process.env.E2E_USER ?? 'admin';
-export const ADMIN_PASS = process.env.E2E_PASS ?? 'ChangeMe!2026';
+export const ADMIN_PASS = process.env.E2E_PASS ?? 'Password1234!';
 
 /**
  * Log in via the UI. The seeded admin has `mustChangePassword=true`, so on a
@@ -18,7 +18,7 @@ export async function login(page: Page, user = ADMIN_USER, pass = ADMIN_PASS): P
   await page.getByLabel(/nama pengguna|username/i).fill(user);
   await page.getByLabel(/kata sandi|password/i).fill(pass);
   await page.getByRole('button', { name: /masuk/i }).click();
-  await page.waitForURL(/\/(dasbor|ubah-kata-sandi)/);
+  await page.waitForURL(/\/(dashboard|change-password)/);
 }
 
 /** Assert the app shell rendered (topbar brand + sidebar present). */

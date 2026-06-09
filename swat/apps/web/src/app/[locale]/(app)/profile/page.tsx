@@ -49,7 +49,7 @@ export default function ProfilePage(): JSX.Element {
               <div className="min-w-0">
                 <p className="truncate text-h3 font-semibold text-neutral-900">{user?.name}</p>
                 <p className="font-mono text-body-sm text-neutral-500">@{user?.username}</p>
-                <Badge variant="green" className="mt-1.5">
+                <Badge variant="slate" className="mt-1.5">
                   {user?.roleName}
                 </Badge>
               </div>
@@ -85,7 +85,7 @@ export default function ProfilePage(): JSX.Element {
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-body-sm text-neutral-500">{t('securityBody')}</p>
-              <Button variant="secondary" onClick={() => router.push('/ubah-kata-sandi')}>
+              <Button variant="secondary" onClick={() => router.push('/change-password')}>
                 {t('changePassword')}
               </Button>
             </CardContent>

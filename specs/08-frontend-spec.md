@@ -157,15 +157,15 @@ phase. This is the parity contract.
 
 ### 4.1 Transaction Day Management
 
-**List page:** `/transaksi/hari-transaksi`
+**List page:** `/transaksi/transaction-days`
 - Table: Tanggal (date), Status (Belum Selesai / Selesai), Kendaraan (vehicle/haul count), Tonase (total tonnage), Aksi (actions)
 - Action: "Inisiasi Hari" button (POST `/api/transaction-days` with date, creates TransactionDay + seeds Hauls & HaulAssignments from CrewSchedules)
 - Idempotent: POST same date = fetch existing day (no duplicate)
-- On success: navigate to haul board (`/transaksi/hari-transaksi/{date}`)
+- On success: navigate to haul board (`/transaksi/transaction-days/{date}`)
 
 ### 4.2 Daily Haul Board
 
-**Route:** `/transaksi/hari-transaksi/{date}`
+**Route:** `/transaksi/transaction-days/{date}`
 - Server-rendered grid: one row per vehicle assignment (haul) that day
 - Columns: vehicle plate (Nopol), driver name (Pengemudi), depart time (target/actual), return time (target/actual), trip count (Ritase), status, actions
 - Actions: "Edit" (depart/return reconciliation via HaulAssignment), "View trips"
@@ -200,7 +200,7 @@ phase. This is the parity contract.
 
 ### 4.5 Record Fuel (Pengisian Bahan Bakar)
 
-**Form:** Modal from haul board or `/transaksi/bahan-bakar/{haulId}`
+**Form:** Modal from haul board or `/transaksi/fuels/{haulId}`
 - **Step 1 — Select Trip:** `REFUEL` trips only
 - **Step 2 — Record fuel:**
   - Jenis Bahan Bakar / Fuel product (dropdown, filtered by vehicle model's compatible fuel)

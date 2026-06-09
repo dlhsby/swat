@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SWAT — Ilustrasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="design-system/swat-tokens.css" />
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font-sans);color:var(--neutral-900);background:var(--neutral-50);-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .topbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;gap:14px;height:60px;padding:0 28px;background:rgba(255,255,255,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--neutral-200)}
+  .topbar .back{font-size:13px;color:var(--neutral-500);text-decoration:none;font-weight:500}
+  .topbar .back:hover{color:var(--neutral-900)}
+  .topbar .sep{color:var(--neutral-300)}
+  .topbar b{font-size:14px;font-weight:700}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px 120px}
+
+  .hero{padding:72px 0 52px;border-bottom:1px solid var(--neutral-200);margin-bottom:52px}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--primary-700);margin:0 0 16px}
+  .hero h1{font-size:46px;font-weight:800;letter-spacing:-.02em;margin:0 0 14px}
+  .hero p{font-size:18px;line-height:1.6;color:var(--neutral-600);max-width:62ch;margin:0}
+
+  .sh{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--primary-700);margin:48px 0 18px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .ill{background:#fff;border:1px solid var(--neutral-200);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+  .ill .stage{padding:26px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%, #fff, #f8fafc)}
+  .ill.feature .stage{padding:34px}
+  .ill img{width:100%;max-width:380px;height:auto;display:block}
+  .ill .meta{padding:16px 20px;border-top:1px solid var(--neutral-100);display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .ill .meta .t{font-weight:600;font-size:15px}
+  .ill .meta .u{font-size:12.5px;color:var(--neutral-500);margin-top:2px}
+  .ill .meta code{font-family:var(--font-mono);font-size:11px;background:var(--neutral-100);color:var(--neutral-600);padding:3px 7px;border-radius:5px;white-space:nowrap}
+
+  /* usage example cards */
+  .demo{background:#fff;border:1px solid var(--neutral-200);border-radius:18px;padding:40px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px}
+  .demo img{width:200px;height:auto;margin-bottom:8px}
+  .demo h3{margin:0;font-size:20px;font-weight:700}
+  .demo p{margin:0;color:var(--neutral-500);font-size:14px;max-width:38ch;line-height:1.55}
+  .demo .btn{margin-top:14px;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:6px;background:var(--primary-700);color:#fff;font-weight:600;font-size:14px;border:0;cursor:pointer;font-family:inherit}
+  .demo.dark{background:#0f172a;border-color:#1e293b}
+  .demo.dark h3{color:#f8fafc}
+  .demo.dark p{color:#94a3b8}
+
+  .note{font-size:13px;color:var(--neutral-500);line-height:1.6;max-width:64ch}
+  @media (max-width:780px){.grid,.grid3{grid-template-columns:1fr}.hero h1{font-size:36px}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back" href="index.html">← Beranda</a>
+    <span class="sep">/</span>
+    <b>Ilustrasi</b>
+  </div>
+  <div class="wrap">
+    <header class="hero">
+      <p class="eyebrow">Aset Visual</p>
+      <h1>Ilustrasi Aplikasi</h1>
+      <p>Set ilustrasi spot bergaya flat-geometris dalam palet brand — untuk layar login, status kosong, memuat, galat, sukses, dan offline. Semua disusun dari bentuk dasar agar ringan, konsisten, dan mudah dipakai ulang sebagai <code style="font-family:var(--font-mono);font-size:14px">.svg</code>.</p>
+    </header>
+
+    <!-- FEATURE: login + loading -->
+    <p class="sh">Layar Utama</p>
+    <div class="grid">
+      <div class="ill feature">
+        <div class="stage"><img src="illustrations/login.svg" alt="Ilustrasi login" /></div>
+        <div class="meta"><div><div class="t">Login / Selamat datang</div><div class="u">Hero layar masuk &amp; splash</div></div><code>login.svg</code></div>
+      </div>
+      <div class="ill feature">
+        <div class="stage"><img src="illustrations/loading.svg" alt="Ilustrasi memuat (animasi)" /></div>
+        <div class="meta"><div><div class="t">Memuat <span style="color:var(--primary-600)">· animasi</span></div><div class="u">Loading penuh layar / transisi</div></div><code>loading.svg</code></div>
+      </div>
+    </div>
+
+    <!-- STATES -->
+    <p class="sh">Status</p>
+    <div class="grid3">
+      <div class="ill">
+        <div class="stage"><img src="illustrations/empty.svg" alt="Belum ada data" /></div>
+        <div class="meta"><div><div class="t">Kosong</div><div class="u">“Belum ada data”</div></div><code>empty.svg</code></div>
+      </div>
+      <div class="ill">
+        <div class="stage"><img src="illustrations/success.svg" alt="Berhasil" /></div>
+        <div class="meta"><div><div class="t">Sukses</div><div class="u">Tersimpan / Terverifikasi</div></div><code>success.svg</code></div>
+      </div>
+      <div class="ill">
+        <div class="stage"><img src="illustrations/error.svg" alt="Gagal memuat" /></div>
+        <div class="meta"><div><div class="t">Galat</div><div class="u">“Gagal memuat data”</div></div><code>error.svg</code></div>
+      </div>
+      <div class="ill">
+        <div class="stage"><img src="illustrations/offline.svg" alt="Offline" /></div>
+        <div class="meta"><div><div class="t">Offline</div><div class="u">“Anda sedang offline”</div></div><code>offline.svg</code></div>
+      </div>
+    </div>
+
+    <!-- SYSTEM & ACCESS -->
+    <p class="sh">Sistem &amp; Akses</p>
+    <div class="grid3">
+      <div class="ill">
+        <div class="stage"><img src="illustrations/not-found.svg" alt="Halaman tidak ditemukan" /></div>
+        <div class="meta"><div><div class="t">404</div><div class="u">“Halaman tidak ditemukan”</div></div><code>not-found.svg</code></div>
+      </div>
+      <div class="ill">
+        <div class="stage"><img src="illustrations/no-access.svg" alt="Tidak ada akses" /></div>
+        <div class="meta"><div><div class="t">Tanpa Akses</div><div class="u">403 · “Anda tidak memiliki akses”</div></div><code>no-access.svg</code></div>
+      </div>
+      <div class="ill">
+        <div class="stage"><img src="illustrations/no-results.svg" alt="Tidak ada hasil pencarian" /></div>
+        <div class="meta"><div><div class="t">Tanpa Hasil</div><div class="u">“Tidak ada hasil pencarian”</div></div><code>no-results.svg</code></div>
+      </div>
+      <div class="ill">
+        <div class="stage"><img src="illustrations/server-error.svg" alt="Kesalahan server" /></div>
+        <div class="meta"><div><div class="t">Kesalahan Server</div><div class="u">500 · “Terjadi kesalahan server”</div></div><code>server-error.svg</code></div>
+      </div>
+      <div class="ill">
+        <div class="stage"><img src="illustrations/maintenance.svg" alt="Dalam perbaikan" /></div>
+        <div class="meta"><div><div class="t">Perbaikan</div><div class="u">“Sedang dalam perbaikan”</div></div><code>maintenance.svg</code></div>
+      </div>
+    </div>
+
+    <!-- IN CONTEXT -->
+    <p class="sh">Dalam Konteks</p>
+    <div class="grid">
+      <div class="demo">
+        <img src="illustrations/empty.svg" alt="" />
+        <h3>Belum ada data</h3>
+        <p>Mulai dengan menambahkan kendaraan pertama untuk hari transaksi ini.</p>
+        <button class="btn">+ Buat Baru</button>
+      </div>
+      <div class="demo dark">
+        <img src="illustrations/offline.svg" alt="" />
+        <h3>Anda sedang offline</h3>
+        <p>Perubahan akan disinkronkan otomatis saat koneksi kembali.</p>
+        <button class="btn" style="background:#334155">Coba Lagi</button>
+      </div>
+    </div>
+
+    <p class="note" style="margin-top:36px">Palet: emerald (<code style="font-family:var(--font-mono)">#047857 · #10b981 · #a7f3d0</code>) + slate netral, aksen amber hanya untuk galat/peringatan. Pakai pada area ≥ 160px; di bawah itu gunakan ikon. Sertakan selalu teks pendamping — ilustrasi memperkuat, bukan menggantikan pesan.</p>
+  </div>
+</body>
+</html>

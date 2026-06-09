@@ -10,13 +10,13 @@ import { expectAppShell, login } from './helpers';
 test.describe('Master data — vehicles', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
-    test.skip(page.url().includes('ubah-kata-sandi'), 'admin must change password first');
+    test.skip(page.url().includes('change-password'), 'admin must change password first');
   });
 
   test('create → list → edit → delete a vehicle', async ({ page }) => {
     const plate = `L ${Date.now() % 100000} ZZ`;
 
-    await page.goto('/id-ID/kendaraan');
+    await page.goto('/id-ID/vehicles');
     await expectAppShell(page);
 
     // Create
@@ -42,11 +42,11 @@ test.describe('Master data — vehicles', () => {
 test.describe('Master data — driver + license', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
-    test.skip(page.url().includes('ubah-kata-sandi'), 'admin must change password first');
+    test.skip(page.url().includes('change-password'), 'admin must change password first');
   });
 
   test('open the driver screen and its SIM sheet', async ({ page }) => {
-    await page.goto('/id-ID/pengemudi');
+    await page.goto('/id-ID/drivers');
     await expectAppShell(page);
     await expect(page.getByRole('button', { name: /buat|tambah|baru/i }).first()).toBeVisible();
   });

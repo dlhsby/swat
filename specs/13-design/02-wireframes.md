@@ -363,7 +363,7 @@ Low-fidelity functional wireframes using ASCII/box-drawing. Each wireframe inclu
 - [Inisiasi Hari]: POST `/api/transaction-days` with date (creates TransactionDay for today)
   - If already exists for date: fetch existing (idempotent)
   - Seeds Hauls (one per CrewSchedule) + HaulAssignments from active CrewSchedules
-  - On success: navigate to `/transaksi/hari-transaksi/{date}` (haul board)
+  - On success: navigate to `/transaksi/transaction-days/{date}` (haul board)
 
 **Table columns:**
 - Tanggal: transaction date, sortable

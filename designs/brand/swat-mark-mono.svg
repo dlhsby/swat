@@ -1,0 +1,7 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SWAT mark, monochrome">
+  <g transform="rotate(-20 128 128)">
+    <path d="M128 40 C 184 88, 184 158, 128 214 C 72 158, 72 88, 128 40 Z" fill="currentColor"></path>
+    <path d="M128 214 L128 232 M128 58 L128 206" stroke="#ffffff" stroke-width="7" stroke-linecap="round"></path>
+    <path d="M128 100 L101 80 M128 100 L155 80 M128 132 L97 114 M128 132 L159 114 M128 164 L102 149 M128 164 L154 149" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round"></path>
+  </g>
+</svg>

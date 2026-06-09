@@ -1,0 +1,24 @@
+<svg viewBox="0 0 480 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Anda tidak memiliki akses">
+  <circle cx="240" cy="172" r="130" fill="#f1f5f9"></circle>
+  <ellipse cx="240" cy="288" rx="146" ry="14" fill="#e2e8f0" opacity="0.7"></ellipse>
+  <circle cx="372" cy="104" r="6" fill="#cbd5e1"></circle>
+  <circle cx="104" cy="120" r="5" fill="#94a3b8"></circle>
+  <circle cx="388" cy="206" r="4" fill="#cbd5e1"></circle>
+  
+  <g transform="translate(150 64)">
+    <path d="M90 6 C 62 22, 34 28, 14 28 C 14 96, 28 160, 90 196 C 152 160, 166 96, 166 28 C 146 28, 118 22, 90 6 Z" fill="#047857"></path>
+    <path d="M90 6 C 62 22, 34 28, 14 28 C 14 96, 28 160, 90 196 C 152 160, 166 96, 166 28 C 146 28, 118 22, 90 6 Z" fill="none" stroke="#065f46" stroke-width="3" opacity="0.5"></path>
+    
+    <rect x="58" y="92" width="64" height="52" rx="10" fill="#ffffff"></rect>
+    
+    <path d="M70 92 V78 C 70 66, 80 58, 90 58 C 100 58, 110 66, 110 78 V92" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round"></path>
+    
+    <circle cx="90" cy="112" r="8" fill="#047857"></circle>
+    <rect x="86" y="116" width="8" height="16" rx="4" fill="#047857"></rect>
+  </g>
+  
+  <g transform="translate(286 178)">
+    <circle cx="42" cy="42" r="40" fill="#ffffff" stroke="#ef4444" stroke-width="8"></circle>
+    <line x1="20" y1="64" x2="64" y2="20" stroke="#ef4444" stroke-width="8" stroke-linecap="round"></line>
+  </g>
+</svg>

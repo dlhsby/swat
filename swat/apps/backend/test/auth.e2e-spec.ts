@@ -9,10 +9,10 @@ import { CacheService } from '../src/modules/cache/cache.service';
 
 /**
  * Live integration test for the auth + RBAC pipeline. Requires the docker-compose
- * stack (Postgres + Redis) and a seeded admin (`admin` / `ChangeMe!2026`). Run
+ * stack (Postgres + Redis) and a seeded admin (`admin` / `Password1234!`). Run
  * via `pnpm --filter @swat/backend test:e2e`.
  */
-const ADMIN = { username: 'admin', password: 'ChangeMe!2026' };
+const ADMIN = { username: 'admin', password: 'Password1234!' };
 
 describe('Auth & RBAC (e2e)', () => {
   let app: INestApplication;

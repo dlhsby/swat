@@ -42,8 +42,8 @@ process** and **migrating the existing data**.
 | Module | Legacy origin | Phase |
 |--------|---------------|-------|
 | Auth & RBAC | `home`, `auth.php`, `hakakses`, `menu` | 1 ✅ |
-| Master — Fleet (vehicles, models, applications, fuel) | `masterdata/kendaraan…` | 1 ✅ |
-| Master — Personnel (drivers, licenses) | `masterdata/pengemudi…` | 1 ✅ |
+| Master — Fleet (vehicles, models, applications, fuel) | `masterdata/vehicles…` | 1 ✅ |
+| Master — Personnel (drivers, licenses) | `masterdata/drivers…` | 1 ✅ |
 | Master — Geography (sites, routes) | `masterdata/spot, rute` | 1 ✅ |
 | Master — Waste sources | `masterdata/kategorisumbersampah…` | 1 ✅ |
 | Scheduling (crew schedules, trip templates, fuel quota) | `mastertrayek`, `jatahkitir`, `penjadwalan` | 1 ✅ |

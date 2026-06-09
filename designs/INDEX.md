@@ -18,6 +18,21 @@ vendored here verbatim.
 | `design_handoff_swat_webapp/screenshots/` | 12 rendered references (light/dark, desktop/mobile) | Visual cross‑check only. |
 | `design_handoff_swat_webapp/hifi-web.html` + `prototype_src/` | Runnable React prototype + its source | **Reference only — see below.** |
 
+## Additional reference extras (from the re-pulled bundle)
+
+The latest pull added these standalone reference files at the `designs/` root. The core handoff
+files above are **byte-identical** to the previous pull — these extras are net-new viewing aids.
+
+| Path | What it is |
+|------|------------|
+| `design-system.html` + `design-system/` (`guide.js`, `swat-tokens.css`, `swat-components.css`) | Rendered, browsable design-system guide. |
+| `illustrations.html` + `illustrations/` | Gallery of the 11 spot illustrations. |
+| `wireframe-web.html` + `wireframe/` | Low-fi wireframe prototype (predates the hi-fi). |
+| `hifi-web.html` | Top-level entry to the hi-fi prototype. |
+| `index.html`, `logo.html` | Bundle landing page + logo/brand-mark showcase. |
+| `brand/` | Brand marks (`swat-mark*.svg`) at the bundle root. |
+| `specs/13-design/` | The bundle's own mirror of the design-system + hi-fi specs. |
+
 ## Important — prototype is reference, not production code
 
 - `hifi-web.html` and everything under `prototype_src/` are **design references created in

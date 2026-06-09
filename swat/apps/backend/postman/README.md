@@ -18,7 +18,7 @@ backend. Covers Phase 1 **M1** (auth, users, roles, permissions) and **M2**
    (needs the docker-compose stack + a seeded admin).
 2. In Postman: **Import** both JSON files.
 3. Select the **SWAT Local** environment (top-right).
-4. Run **Auth → Login**. It authenticates `admin / ChangeMe!2026` and Postman
+4. Run **Auth → Login**. It authenticates `admin / Password1234!` and Postman
    stores the httpOnly `swat.sid` session cookie automatically — every other
    request reuses it.
 

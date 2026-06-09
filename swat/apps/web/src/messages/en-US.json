@@ -73,11 +73,17 @@
     "forgotPassword": "Forgot password?",
     "forgotPasswordHelp": "Contact your administrator to reset your password.",
     "bothRequired": "Username and password are required.",
-    "invalidCredentials": "Incorrect username or password."
+    "invalidCredentials": "Incorrect username or password.",
+    "brandSubtitle": "Department of Environment · City of Surabaya",
+    "loginHeading": "Sign in",
+    "loginHelp": "Use the account provided by your administrator.",
+    "copyright": "© 2026 Department of Environment, City of Surabaya"
   },
   "changePassword": {
     "title": "Change Password",
-    "forcedTitle": "Password Change Required",
+    "subtitle": "Update your account password",
+    "forcedTitle": "Change Password",
+    "forcedSubtitle": "Required before continuing",
     "forcedNotice": "For your security, you must change your password before continuing.",
     "currentPassword": "Current Password",
     "newPassword": "New Password",
@@ -93,6 +99,9 @@
     "tooShort": "New password must be at least 12 characters.",
     "tooWeak": "Password is too weak.",
     "submit": "Save Password",
+    "submitForced": "Change & Continue",
+    "cancel": "Cancel",
+    "signOut": "Sign out",
     "success": "Your password has been updated."
   },
   "profile": {

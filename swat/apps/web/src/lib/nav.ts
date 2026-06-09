@@ -1,8 +1,12 @@
 import {
+  Activity,
+  ArrowLeftRight,
   BarChart3,
   Boxes,
   CalendarClock,
+  CalendarDays,
   ClipboardCheck,
+  Database,
   Fuel,
   FuelIcon,
   Gauge,
@@ -33,8 +37,12 @@ export interface NavLeaf {
 
 /** A collapsible sidebar group. */
 export interface NavGroup {
+  /** Stable id used to track expand/collapse state; omit for the top-level leaf. */
+  readonly id?: string;
   /** Translation key under the `nav` namespace; omit for the top-level leaf. */
   readonly key?: string;
+  /** Group header icon (shown in the rail + collapsed state); omit for the top-level leaf. */
+  readonly icon?: LucideIcon;
   readonly leaves: readonly NavLeaf[];
 }
 
@@ -45,10 +53,12 @@ export interface NavGroup {
  */
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
-    leaves: [{ key: 'dashboard', href: '/dasbor', icon: LayoutDashboard }],
+    leaves: [{ key: 'dashboard', href: '/dashboard', icon: LayoutDashboard }],
   },
   {
+    id: 'grp-monitoring',
     key: 'monitoring',
+    icon: Activity,
     leaves: [
       {
         key: 'volume',
@@ -58,19 +68,19 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       },
       {
         key: 'fuelMonitoring',
-        href: '/monitoring/bbm',
+        href: '/monitoring/fuel',
         icon: FuelIcon,
         permission: 'monitoring:read',
       },
       {
         key: 'routes',
-        href: '/monitoring/rute',
+        href: '/monitoring/routes',
         icon: MapPin,
         permission: 'monitoring:read',
       },
       {
         key: 'levy',
-        href: '/monitoring/retribusi',
+        href: '/monitoring/levy',
         icon: Ticket,
         permission: 'monitoring:read',
       },
@@ -84,78 +94,86 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     ],
   },
   {
+    id: 'grp-master',
     key: 'masterData',
+    icon: Database,
     leaves: [
-      { key: 'vehicles', href: '/kendaraan', icon: Truck, permission: 'vehicle:read' },
+      { key: 'vehicles', href: '/vehicles', icon: Truck, permission: 'vehicle:read' },
       {
         key: 'vehicleModels',
-        href: '/model-kendaraan',
+        href: '/vehicle-models',
         icon: Boxes,
         permission: 'vehicle-model:read',
       },
       {
         key: 'vehicleApplications',
-        href: '/aplikasi-kendaraan',
+        href: '/vehicle-applications',
         icon: Boxes,
         permission: 'vehicle-application:read',
       },
-      { key: 'fuels', href: '/bahan-bakar', icon: Fuel, permission: 'fuel:read' },
-      { key: 'drivers', href: '/pengemudi', icon: Users, permission: 'driver:read' },
-      { key: 'sitesRoutes', href: '/spot-rute', icon: MapPin, permission: 'site:read' },
+      { key: 'fuels', href: '/fuels', icon: Fuel, permission: 'fuel:read' },
+      { key: 'drivers', href: '/drivers', icon: Users, permission: 'driver:read' },
+      { key: 'sitesRoutes', href: '/sites-routes', icon: MapPin, permission: 'site:read' },
       {
         key: 'wasteSources',
-        href: '/sumber-sampah',
+        href: '/waste-sources',
         icon: Trash2,
         permission: 'waste-source:read',
       },
     ],
   },
   {
+    id: 'grp-sched',
     key: 'scheduling',
+    icon: CalendarDays,
     leaves: [
       {
         key: 'crewSchedules',
-        href: '/jadwal-kru',
+        href: '/crew-schedules',
         icon: CalendarClock,
         permission: 'crew-schedule:read',
       },
-      { key: 'fuelQuotas', href: '/jatah-kitir', icon: Ticket, permission: 'fuel-quota:read' },
+      { key: 'fuelQuotas', href: '/fuel-quotas', icon: Ticket, permission: 'fuel-quota:read' },
     ],
   },
   {
+    id: 'grp-txn',
     key: 'transactions',
+    icon: ArrowLeftRight,
     leaves: [
       {
         key: 'transactionDays',
-        href: '/hari-transaksi',
+        href: '/transaction-days',
         icon: Gauge,
         permission: 'transaction-day:read',
       },
       {
         key: 'refuelLog',
-        href: '/pengisian-bbm',
+        href: '/refuel-log',
         icon: FuelIcon,
         permission: 'trip:read',
       },
       {
         key: 'inspections',
-        href: '/pemeriksaan',
+        href: '/inspections',
         icon: ClipboardCheck,
         permission: 'inspection:read',
       },
       {
         key: 'maintenance',
-        href: '/perawatan',
+        href: '/maintenance',
         icon: Wrench,
         permission: 'maintenance:read',
       },
     ],
   },
   {
+    id: 'grp-users',
     key: 'usersAccess',
+    icon: Users,
     leaves: [
-      { key: 'users', href: '/pengguna', icon: UserCog, permission: 'user:read' },
-      { key: 'roles', href: '/hak-akses', icon: ShieldCheck, permission: 'role:read' },
+      { key: 'users', href: '/users', icon: UserCog, permission: 'user:read' },
+      { key: 'roles', href: '/roles', icon: ShieldCheck, permission: 'role:read' },
     ],
   },
 ];

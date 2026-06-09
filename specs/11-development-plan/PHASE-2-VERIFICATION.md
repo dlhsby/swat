@@ -5,7 +5,7 @@ has **Steps** and an **Expected** result. Check the box when it passes. Items ar
 (curl/Postman/psql), **[WEB]** (browser), or **[OPS]** (operator). Assumes Phase 1 already
 verified ([`PHASE-1-VERIFICATION.md`](./PHASE-1-VERIFICATION.md)).
 
-- **Admin login:** `admin` / `ChangeMe!2026`. **API base:** `http://<host>/api/v1` · **Swagger:** `/api/docs`
+- **Admin login:** `admin` / `Password1234!`. **API base:** `http://<host>/api/v1` · **Swagger:** `/api/docs`
 - **Web base:** `http://<host>/` (redirects to `/id-ID`). Monitoring nav requires `monitoring:read`.
 - Docker is the operator's environment; none of this runs in the dev WSL.
 
@@ -99,15 +99,15 @@ the same status on read (`tonnage-5day`, A1). Tolerance and rules live in `monit
 
 - [ ] **W1. Volume** (`/monitoring/volume`) — KPI cards, stacked tonnage columns, source donut, per-site
   table, reconciliation badge. **Semua / Non-Swasta / Swasta** toggle drives every widget.
-- [ ] **W2. BBM** (`/monitoring/bbm`) — KPI cards, grouped requested-vs-approved bars (red on variance
+- [ ] **W2. BBM** (`/monitoring/fuel`) — KPI cards, grouped requested-vs-approved bars (red on variance
   < −5%), vehicle variance table. With the demo seed: `L 0001 SW` ≈ −2% **OK**, `L 0002 SW` ≈ −12%
   **RED** (one vehicle is seeded chronically under-approved so the red flag is visible).
-- [ ] **W3. Rute** (`/monitoring/rute`) — KPI cards + route-activity (ritase) table.
-- [ ] **W4. Retribusi** (`/monitoring/retribusi`) — KPI cards + levy table (IDR-formatted). The demo
+- [ ] **W3. Rute** (`/monitoring/routes`) — KPI cards + route-activity (ritase) table.
+- [ ] **W4. Retribusi** (`/monitoring/levy`) — KPI cards + levy table (IDR-formatted). The demo
   seed populates 12 months × 5 categories (Industri/Komersial/Hotel & Restoran/Rumah Tangga/Pasar);
   live legacy levy data replaces it post-T-155.
 - [ ] **W5. Date range.** Changing the date range updates all widgets; perceived < 1 s from cache.
-- [ ] **W6. Vehicle → source mapping** (`/kendaraan` → row action "Kelola Sumber Sampah") — add/remove a
+- [ ] **W6. Vehicle → source mapping** (`/vehicles` → row action "Kelola Sumber Sampah") — add/remove a
   source for a vehicle; re-run backfill; the by-source breakdown reflects the change.
 - [ ] **W7. Dark-mode QA.** All four dashboards + charts legible in dark mode.
 
