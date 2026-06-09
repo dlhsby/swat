@@ -14,6 +14,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CacheModule } from './modules/cache/cache.module';
 import { FleetModule } from './modules/fleet/fleet.module';
 import { GeographyModule } from './modules/geography/geography.module';
+import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { OperationsModule } from './modules/operations/operations.module';
 import { PersonnelModule } from './modules/personnel/personnel.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
@@ -55,6 +56,7 @@ import { SessionModule } from './session.module';
     SchedulingModule,
     TransactionsModule,
     OperationsModule,
+    MonitoringModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },

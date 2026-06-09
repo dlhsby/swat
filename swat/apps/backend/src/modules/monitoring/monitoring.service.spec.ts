@@ -1,0 +1,208 @@
+import { parseDateOnly } from '../../common/dates';
+import { type CacheService } from '../cache/cache.service';
+
+import { type MonitoringRepository } from './monitoring.repository';
+import { MonitoringService } from './monitoring.service';
+
+function createRepo(): jest.Mocked<MonitoringRepository> {
+  return {
+    dailyTonnage: jest.fn().mockResolvedValue([]),
+    tpaInboundByDate: jest.fn().mockResolvedValue([]),
+    monthlyTonnage: jest.fn().mockResolvedValue([]),
+    tonnageBySource: jest.fn().mockResolvedValue([]),
+    tonnageBySite: jest.fn().mockResolvedValue([]),
+    fuelConsumption: jest.fn().mockResolvedValue([]),
+    fuelByType: jest.fn().mockResolvedValue([]),
+    routesActive: jest.fn().mockResolvedValue([]),
+    levySummary: jest.fn().mockResolvedValue([]),
+    tripSummary: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
+  } as unknown as jest.Mocked<MonitoringRepository>;
+}
+
+function createCache(): jest.Mocked<Pick<CacheService, 'get' | 'set'>> {
+  return {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue(undefined),
+  };
+}
+
+const RANGE = { dateFrom: '2026-06-01', dateTo: '2026-06-05' };
+
+describe('MonitoringService', () => {
+  let repo: jest.Mocked<MonitoringRepository>;
+  let cache: jest.Mocked<Pick<CacheService, 'get' | 'set'>>;
+  let service: MonitoringService;
+
+  beforeEach(() => {
+    repo = createRepo();
+    cache = createCache();
+    service = new MonitoringService(repo, cache as unknown as CacheService);
+  });
+
+  describe('caching', () => {
+    it('returns the cached value without hitting the repo', async () => {
+      cache.get.mockResolvedValue([{ date: '2026-06-01' }]);
+
+      const result = await service.tonnage5Day(RANGE);
+
+      expect(result).toEqual([{ date: '2026-06-01' }]);
+      expect(repo.dailyTonnage).not.toHaveBeenCalled();
+    });
+
+    it('computes and caches on a miss', async () => {
+      await service.tonnageMonthly(RANGE);
+
+      expect(repo.monthlyTonnage).toHaveBeenCalledWith(
+        parseDateOnly('2026-06-01'),
+        parseDateOnly('2026-06-05'),
+      );
+      expect(cache.set).toHaveBeenCalledWith(
+        'cache:monitoring:tonnage-monthly:2026-06-01:2026-06-05',
+        [],
+        15 * 60,
+      );
+    });
+  });
+
+  describe('tonnage5Day', () => {
+    it('merges TPA inbound and derives the reconciliation status per day', async () => {
+      repo.dailyTonnage.mockResolvedValue([
+        { date: parseDateOnly('2026-06-01'), totalTonnageKg: 4000, haulCount: 3 },
+        { date: parseDateOnly('2026-06-02'), totalTonnageKg: 5000, haulCount: 4 },
+      ]);
+      repo.tpaInboundByDate.mockResolvedValue([
+        { date: parseDateOnly('2026-06-01'), tpaInboundKg: 4100 },
+      ]);
+
+      const result = await service.tonnage5Day(RANGE);
+
+      expect(result).toEqual([
+        {
+          date: '2026-06-01',
+          totalTonnageKg: 4000,
+          haulCount: 3,
+          tpaInboundKg: 4100,
+          reconciliationStatus: 'MATCHED',
+        },
+        {
+          date: '2026-06-02',
+          totalTonnageKg: 5000,
+          haulCount: 4,
+          tpaInboundKg: null,
+          reconciliationStatus: 'PENDING',
+        },
+      ]);
+    });
+  });
+
+  describe('tonnageBySource', () => {
+    it('passes the ownership filter and uses month anchors', async () => {
+      await service.tonnageBySource({ ...RANGE, ownership: 'DINAS' });
+
+      expect(repo.tonnageBySource).toHaveBeenCalledWith(
+        parseDateOnly('2026-06-01'),
+        parseDateOnly('2026-06-01'),
+        'DINAS',
+      );
+      expect(cache.get).toHaveBeenCalledWith(
+        'cache:monitoring:tonnage-by-source:2026-06-01:2026-06-05:DINAS',
+      );
+    });
+
+    it('keys Total (no ownership) distinctly', async () => {
+      await service.tonnageBySource(RANGE);
+      expect(cache.get).toHaveBeenCalledWith(
+        'cache:monitoring:tonnage-by-source:2026-06-01:2026-06-05:ALL',
+      );
+    });
+  });
+
+  describe('fuelConsumption', () => {
+    it('appends the variance + flag to each vehicle row', async () => {
+      repo.fuelConsumption.mockResolvedValue([
+        { vehicleId: 1, plateNumber: 'L 1 AB', fuelApprovedLiters: 80, fuelRequestedLiters: 100 },
+      ]);
+
+      const [row] = await service.fuelConsumption(RANGE);
+
+      expect(row).toMatchObject({ variancePercent: -20, flag: 'RED' });
+    });
+  });
+
+  describe('levySummary', () => {
+    it('adds the integer average per transaction', async () => {
+      repo.levySummary.mockResolvedValue([
+        { categoryName: 'Pasar', totalAmount: 1000, transactionCount: 3 },
+      ]);
+
+      const [row] = await service.levySummary(RANGE);
+
+      expect(row).toEqual({
+        categoryName: 'Pasar',
+        totalAmount: 1000,
+        transactionCount: 3,
+        avgPerTransaction: 333,
+      });
+    });
+  });
+
+  describe('tripSummary', () => {
+    it('returns the rows plus pagination meta', async () => {
+      repo.tripSummary.mockResolvedValue({ rows: [], total: 42 });
+
+      const result = await service.tripSummary({ ...RANGE, page: 2, limit: 50 });
+
+      expect(repo.tripSummary).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 2, limit: 50, status: undefined, routeId: undefined }),
+      );
+      expect(result.meta).toEqual({ total: 42, page: 2, limit: 50 });
+    });
+  });
+
+  describe('kpiOverview', () => {
+    it('aggregates tonnage, fuel, and route activity into one object', async () => {
+      repo.dailyTonnage.mockResolvedValue([
+        { date: parseDateOnly('2026-06-01'), totalTonnageKg: 4000, haulCount: 3 },
+        { date: parseDateOnly('2026-06-02'), totalTonnageKg: 6000, haulCount: 5 },
+      ]);
+      repo.fuelConsumption.mockResolvedValue([
+        { vehicleId: 1, plateNumber: 'L 1 AB', fuelApprovedLiters: 80, fuelRequestedLiters: 100 },
+        { vehicleId: 2, plateNumber: 'L 2 CD', fuelApprovedLiters: 50, fuelRequestedLiters: 50 },
+      ]);
+      repo.routesActive.mockResolvedValue([
+        {
+          routeId: 3,
+          category: 'DISPOSAL',
+          originSiteName: 'TPS',
+          destinationSiteName: 'TPA',
+          distanceKm: 10,
+          tripCount: 9,
+        },
+      ]);
+
+      const kpi = await service.kpiOverview(RANGE);
+
+      expect(kpi).toEqual({
+        totalTonnageKg: 10000,
+        haulsCompleted: 8,
+        fuelApprovedLiters: 130,
+        fuelRequestedLiters: 150,
+        vehiclesInOperation: 2,
+        tripsRecorded: 9,
+        routesActive: 1,
+      });
+    });
+  });
+
+  describe('passthrough endpoints', () => {
+    it('serve tonnage-by-site, fuel-by-type, and routes-active from the repo', async () => {
+      await service.tonnageBySite(RANGE);
+      await service.fuelByType(RANGE);
+      await service.routesActive(RANGE);
+
+      expect(repo.tonnageBySite).toHaveBeenCalled();
+      expect(repo.fuelByType).toHaveBeenCalled();
+      expect(repo.routesActive).toHaveBeenCalled();
+    });
+  });
+});
