@@ -781,6 +781,29 @@ model LegacyNameMap {
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
 }
 
+/// Metadata for archived (detached + compressed) monthly partitions
+/// (specs/12-scalability-archiving.md §3, Phase 2 Epic 2.5). One row per archived
+/// partition; `checksum` guards a later re-attach. `createdById` is a plain scalar
+/// (no relation) — see the rollup-tables note above.
+model ArchiveCatalog {
+  id           Int       @id @default(autoincrement())
+  tableName    String    @db.VarChar(64)
+  period       String    @db.VarChar(7) // YYYY-MM
+  archiveType  String    @db.VarChar(32)
+  location     String    @db.VarChar(512)
+  rowCount     BigInt    @default(0)
+  sizeBytes    BigInt?
+  checksum     String?   @db.VarChar(128)
+  detachedAt   DateTime  @db.Timestamptz(6)
+  reattachedAt DateTime? @db.Timestamptz(6)
+  notes        String?   @db.VarChar(512)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  createdById  Int?
+
+  @@unique([tableName, period], map: "ArchiveCatalog_table_period_key")
+  @@index([period], map: "ArchiveCatalog_period_idx")
+}
+
 // ===========================================================================
 // Levy (Phase 3)
 // ===========================================================================

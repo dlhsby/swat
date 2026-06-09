@@ -9,6 +9,7 @@ import { SecurityModule } from './common/security.module';
 import { AppConfigModule } from './config';
 import { HealthModule } from './health/health.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ArchivingModule } from './modules/archiving/archiving.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CacheModule } from './modules/cache/cache.module';
@@ -57,6 +58,7 @@ import { SessionModule } from './session.module';
     TransactionsModule,
     OperationsModule,
     MonitoringModule,
+    ArchivingModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },

@@ -147,6 +147,9 @@ const PERMISSION_KEYS: readonly string[] = [
   'levy:create',
   'levy:update',
   'levy:delete',
+  // Archiving (Phase 2, Epic 2.5) — admin-only partition lifecycle.
+  'archive:read',
+  'archive:manage',
 ];
 
 const ACTION_LABELS: Readonly<Record<string, string>> = {
