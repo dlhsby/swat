@@ -1,30 +1,89 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+import { formatDateOnly, startOfMonth, startOfNextMonth, trailingDates } from '../../common/dates';
+
+import { RollupRepository } from './rollup.repository';
+
 /**
- * Rollup maintenance service (stub).
+ * Rollup maintenance service (Phase 2, T-202/T-203).
  *
- * In Phase 2 this incrementally maintains the aggregate tables
- * (DailyTonnage, MonthlyTonnageBySource/BySite, DailyFuelByVehicle,
- * MonthlyRouteActivity) as transactions are recorded/verified, so monitoring
- * dashboards read pre-aggregated rows instead of scanning partitioned history.
- * The method signatures are fixed here so Phase 1 write paths can call them.
+ * Keeps the aggregate tables (DailyTonnage, MonthlyTonnageBySource/BySite,
+ * DailyFuelByVehicle, MonthlyRouteActivity) current so monitoring dashboards read
+ * pre-aggregated rows instead of scanning partitioned history. Two maintenance
+ * paths, both idempotent (recompute-from-scratch):
+ *   - **incremental** — {@link refreshForOperationDate} on the trip write path,
+ *     keeping the affected day live within a second;
+ *   - **nightly** — {@link recomputeRecentDays} / {@link recomputeMonths} from the
+ *     cron host, the correctness safety net that heals any incremental drift.
  */
 @Injectable()
 export class RollupService {
   private readonly logger = new Logger(RollupService.name);
 
+  constructor(private readonly repo: RollupRepository) {}
+
   /** Recompute/upsert the daily tonnage aggregate for a given operation date. */
-  async refreshDailyTonnage(_date: Date): Promise<void> {
-    this.logger.debug('refreshDailyTonnage is a Phase 2 no-op');
+  async refreshDailyTonnage(date: Date): Promise<void> {
+    const { amount, haulCount } = await this.repo.aggregateDailyTonnage(date);
+    await this.repo.upsertDailyTonnage(date, amount, haulCount);
   }
 
-  /** Recompute monthly tonnage cross-tabs (by waste source and site). */
-  async refreshMonthlyTonnage(_month: Date): Promise<void> {
-    this.logger.debug('refreshMonthlyTonnage is a Phase 2 no-op');
+  /** Recompute the per-vehicle daily fuel aggregate for a given date. */
+  async refreshDailyFuel(date: Date): Promise<void> {
+    const rows = await this.repo.aggregateDailyFuel(date);
+    await this.repo.replaceDailyFuel(date, rows);
   }
 
-  /** Recompute the per-vehicle daily fuel aggregate. */
-  async refreshDailyFuel(_date: Date): Promise<void> {
-    this.logger.debug('refreshDailyFuel is a Phase 2 no-op');
+  /** Recompute monthly tonnage cross-tabs (by waste source and by site) for a month. */
+  async refreshMonthlyTonnage(monthAnchor: Date): Promise<void> {
+    const from = startOfMonth(monthAnchor);
+    const to = startOfNextMonth(monthAnchor);
+    const [bySource, bySite] = await Promise.all([
+      this.repo.aggregateMonthlyTonnageBySource(from, to),
+      this.repo.aggregateMonthlyTonnageBySite(from, to),
+    ]);
+    await this.repo.replaceMonthlyTonnageBySource(from, bySource);
+    await this.repo.replaceMonthlyTonnageBySite(from, bySite);
+  }
+
+  /** Recompute the monthly route-activity (ritase) cross-tab for a month. */
+  async refreshMonthlyRouteActivity(monthAnchor: Date): Promise<void> {
+    const from = startOfMonth(monthAnchor);
+    const to = startOfNextMonth(monthAnchor);
+    const rows = await this.repo.aggregateMonthlyRouteActivity(from, to);
+    await this.repo.replaceMonthlyRouteActivity(from, rows);
+  }
+
+  /**
+   * Incremental hook for the trip write path. Recomputes the day's tonnage and
+   * fuel rollups (idempotent). Never throws — a rollup hiccup must not fail the
+   * trip mutation; the nightly recompute is the safety net.
+   */
+  async refreshForOperationDate(date: Date): Promise<void> {
+    try {
+      await this.refreshDailyTonnage(date);
+      await this.refreshDailyFuel(date);
+    } catch (error) {
+      this.logger.error(
+        `Gagal memperbarui rollup harian untuk ${formatDateOnly(date)}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
+  }
+
+  /** Nightly: recompute the trailing `days` of daily tonnage + fuel rollups. */
+  async recomputeRecentDays(end: Date, days = 7): Promise<void> {
+    for (const date of trailingDates(end, days)) {
+      await this.refreshDailyTonnage(date);
+      await this.refreshDailyFuel(date);
+    }
+  }
+
+  /** Nightly: recompute monthly tonnage + route-activity rollups for each anchor month. */
+  async recomputeMonths(anchors: readonly Date[]): Promise<void> {
+    for (const anchor of anchors) {
+      await this.refreshMonthlyTonnage(anchor);
+      await this.refreshMonthlyRouteActivity(anchor);
+    }
   }
 }

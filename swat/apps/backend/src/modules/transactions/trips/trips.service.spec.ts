@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 
 import { type RolePermissionsService } from '../../../common/auth/role-permissions.service';
 import { type SessionUser } from '../../../common/auth/session.types';
+import { type RollupService } from '../../analytics/rollup.service';
 import { type AuditService } from '../../audit/audit.service';
 
 import { type TripsRepository } from './trips.repository';
@@ -55,6 +56,7 @@ describe('TripsService', () => {
   let repo: { findForRecording: jest.Mock; findFull: jest.Mock; update: jest.Mock };
   let rolePermissions: { getPermissionKeys: jest.Mock };
   let audit: { record: jest.Mock };
+  let rollups: { refreshForOperationDate: jest.Mock };
   let service: TripsService;
 
   beforeEach(() => {
@@ -76,10 +78,12 @@ describe('TripsService', () => {
         ]),
     };
     audit = { record: jest.fn().mockResolvedValue(undefined) };
+    rollups = { refreshForOperationDate: jest.fn().mockResolvedValue(undefined) };
     service = new TripsService(
       repo as unknown as TripsRepository,
       rolePermissions as unknown as RolePermissionsService,
       audit as unknown as AuditService,
+      rollups as unknown as RollupService,
     );
   });
 
@@ -280,6 +284,14 @@ describe('TripsService', () => {
       expect(repo.update).toHaveBeenCalledWith(
         10000n,
         expect.objectContaining({ status: 'VERIFIED', verifiedBy: { connect: { id: 9 } } }),
+      );
+    });
+
+    it("refreshes the day's rollups for the verified trip", async () => {
+      repo.findForRecording.mockResolvedValue(buildTrip({ status: 'DONE' }));
+      await service.verify('10000', USER);
+      expect(rollups.refreshForOperationDate).toHaveBeenCalledWith(
+        new Date('2026-06-08T00:00:00Z'),
       );
     });
   });

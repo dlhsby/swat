@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { AnalyticsModule } from '../analytics/analytics.module';
+
 import { DailyInitService } from './daily-init/daily-init.service';
 import { HaulAssignmentsController } from './haul-assignments/haul-assignments.controller';
 import { HaulAssignmentsRepository } from './haul-assignments/haul-assignments.repository';
@@ -17,6 +19,7 @@ import { TripsService } from './trips/trips.service';
  * recording + verification.
  */
 @Module({
+  imports: [AnalyticsModule],
   controllers: [TransactionDaysController, HaulAssignmentsController, TripsController],
   providers: [
     DailyInitService,

@@ -32,6 +32,13 @@ enum SiteType {
   TPA
 }
 
+/// Ownership split for the monitoring tonnage "Total / Dinas / Swasta" toggle
+/// (parity G9). Not derivable from WasteSource.code, so stored explicitly.
+enum WasteSourceOwnership {
+  DINAS
+  SWASTA
+}
+
 enum RouteCategory {
   DEPART_POOL
   REFUEL
@@ -382,6 +389,7 @@ model WasteSource {
   legacyId  Int?                 @unique
   code      String               @unique @db.VarChar(5)
   name      String               @db.VarChar(128)
+  ownership WasteSourceOwnership @default(SWASTA)
   notes     String?              @db.VarChar(1024)
   createdAt DateTime             @default(now()) @db.Timestamptz(6)
   updatedAt DateTime             @updatedAt @db.Timestamptz(6)
@@ -688,13 +696,81 @@ model TpaInboundLog {
   @@index([legacyId])
 }
 
+// ---------------------------------------------------------------------------
+// Aggregation / rollup tables (specs/12-scalability-archiving.md §4). Small,
+// always-hot, NEVER archived — they back monitoring/reporting at scale so
+// dashboards read pre-aggregated rows instead of scanning partitioned history.
+// Maintained by RollupService (incrementally on trip verify/record + nightly
+// recompute). DailyTonnage was created in the init migration; the four cross-tab
+// tables were created raw in `..._rollups` and promoted to Prisma models here.
+//
+// FK columns (wasteSourceId/siteId/vehicleId/routeId) are intentionally modelled
+// as plain scalars: the DB-level foreign keys exist (from the raw migrations) but
+// are not declared as Prisma relations, to avoid adding back-relations to the
+// reference models. Joins are done explicitly in RollupRepository / the monitoring
+// service. `migrate dev` is never run on this project, so the undeclared FKs are
+// inert (no drift surfaces at runtime or under `migrate deploy`).
+// ---------------------------------------------------------------------------
+
 model DailyTonnage {
   id        Int      @id @default(autoincrement())
   legacyId  Int?     @unique
   date      DateTime @unique @db.Date
   amount    BigInt   @default(0)
+  haulCount Int      @default(0)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model MonthlyTonnageBySource {
+  id             Int      @id @default(autoincrement())
+  month          DateTime @db.Date
+  wasteSourceId  Int
+  totalNetWeight BigInt   @default(0)
+  haulCount      Int      @default(0)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([month, wasteSourceId], map: "MonthlyTonnageBySource_month_source_key")
+  @@index([month], map: "MonthlyTonnageBySource_month_idx")
+}
+
+model MonthlyTonnageBySite {
+  id             Int      @id @default(autoincrement())
+  month          DateTime @db.Date
+  siteId         Int
+  totalNetWeight BigInt   @default(0)
+  haulCount      Int      @default(0)
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([month, siteId], map: "MonthlyTonnageBySite_month_site_key")
+  @@index([month], map: "MonthlyTonnageBySite_month_idx")
+}
+
+model DailyFuelByVehicle {
+  id                  Int      @id @default(autoincrement())
+  date                DateTime @db.Date
+  vehicleId           Int
+  fuelApprovedLiters  Decimal  @default(0) @db.Decimal(12, 2)
+  fuelRequestedLiters Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt           DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([date, vehicleId], map: "DailyFuelByVehicle_date_vehicle_key")
+  @@index([date], map: "DailyFuelByVehicle_date_idx")
+}
+
+model MonthlyRouteActivity {
+  id        Int      @id @default(autoincrement())
+  month     DateTime @db.Date
+  routeId   Int
+  tripCount Int      @default(0)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@unique([month, routeId], map: "MonthlyRouteActivity_month_route_key")
+  @@index([month], map: "MonthlyRouteActivity_month_idx")
 }
 
 model LegacyNameMap {

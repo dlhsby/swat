@@ -38,3 +38,32 @@ export function todayDateOnly(): Date {
 export function combineDateAndTime(date: Date, time: Date): Date {
   return new Date(`${formatDateOnly(date)}T${formatTimeOnly(time)}:00.000Z`);
 }
+
+/** Add `days` (may be negative) to a `@db.Date`, staying UTC-midnight anchored. */
+export function addDays(date: Date, days: number): Date {
+  const result = new Date(date.getTime());
+  result.setUTCDate(result.getUTCDate() + days);
+  return parseDateOnly(formatDateOnly(result));
+}
+
+/** First day of `date`'s month as a UTC-midnight `@db.Date`. */
+export function startOfMonth(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+/** First day of the month after `date`'s month — the exclusive end of a month range. */
+export function startOfNextMonth(date: Date): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+}
+
+/**
+ * The `count` calendar dates ending at and including `end` (oldest first) —
+ * the trailing window the nightly rollup/reconciliation jobs recompute.
+ */
+export function trailingDates(end: Date, count: number): Date[] {
+  const dates: Date[] = [];
+  for (let offset = count - 1; offset >= 0; offset -= 1) {
+    dates.push(addDays(end, -offset));
+  }
+  return dates;
+}

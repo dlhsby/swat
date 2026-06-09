@@ -10,6 +10,7 @@ import { hasPermission } from '../../../common/auth/permission-matcher';
 import { RolePermissionsService } from '../../../common/auth/role-permissions.service';
 import { type SessionUser } from '../../../common/auth/session.types';
 import { parseBigIntId } from '../../../common/parse-bigint';
+import { RollupService } from '../../analytics/rollup.service';
 import { AuditService } from '../../audit/audit.service';
 
 import { type RecordTripDto } from './dto/record-trip.dto';
@@ -72,6 +73,7 @@ export class TripsService {
     private readonly repo: TripsRepository,
     private readonly rolePermissions: RolePermissionsService,
     private readonly audit: AuditService,
+    private readonly rollups: RollupService,
   ) {}
 
   async getById(idParam: string): Promise<TripDetailDto> {
@@ -135,6 +137,9 @@ export class TripsService {
       });
     }
 
+    // Keep the day's monitoring rollups live (idempotent; never throws).
+    await this.rollups.refreshForOperationDate(updated.operationDate);
+
     return toTripDto(updated);
   }
 
@@ -158,6 +163,10 @@ export class TripsService {
       entityType: 'Trip',
       entityId: id,
     });
+
+    // A verified DISPOSAL trip is what daily tonnage counts — refresh the day.
+    await this.rollups.refreshForOperationDate(updated.operationDate);
+
     return toTripDto(updated);
   }
 
