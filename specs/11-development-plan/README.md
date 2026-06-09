@@ -30,7 +30,9 @@ Build-side progress records sit next to each phase plan (`phase-N-status.md`): t
 | Phase | Status | Record |
 |-------|--------|--------|
 | 0 | ✅ Complete | [`phase-0-status.md`](./phase-0-status.md) |
-| 1–5 | ⏳ Not started | — |
+| 1 | ✅ Code-complete (operator cutover pending) | [`phase-1-status.md`](./phase-1-status.md) · [`PHASE-1-VERIFICATION.md`](./PHASE-1-VERIFICATION.md) |
+| 2 | ✅ Code-complete (operator live steps pending) | [`phase-2-status.md`](./phase-2-status.md) · [`PHASE-2-VERIFICATION.md`](./PHASE-2-VERIFICATION.md) |
+| 3–5 | ⏳ Not started | — |
 
 ## Design & legacy parity (read before Phase 1 frontend)
 
@@ -42,7 +44,8 @@ Build-side progress records sit next to each phase plan (`phase-N-status.md`): t
   audit (in the plan doc) closes gaps **G1–G15**; the parity additions live in **Epic 1.17**
   (reference masters G1–G3, kitir bulk import G6/G8, refuel log G7, inspection G4, maintenance G5) and
   the Screen→Phase traceability table in [`../08-frontend-spec.md`](../08-frontend-spec.md). Monitoring
-  Swasta/Dinas split (G9) = P2; reports/levy (G11/G12) = P3; weighbridge SOAP→REST + Excel upload
+  Swasta/Non-Swasta split (G9) = P2 (**as-built:** Semua / Non-Swasta / Swasta `group` toggle derived
+  from `WasteSource.code`, no stored ownership flag); reports/levy (G11/G12) = P3; weighbridge SOAP→REST + Excel upload
   (G13/G14) = P4. Menu-grant/status tables (G15) are **superseded** (permission RBAC + enums), documented.
 - **Priority order when sequencing:** (1) legacy parity, (2) design system + dark mode, (3) genuinely
   new ideas (after parity, clearly marked).

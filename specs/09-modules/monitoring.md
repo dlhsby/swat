@@ -7,11 +7,14 @@ The Monitoring module provides real-time operational dashboards for management a
 **Scope:** Dashboards only (data visualization). Reporting/export covered in Phase 3.
 
 > **Legacy-parity notes (design-ready; build in Phase 2):**
-> - **Source-type split (Total / Dinas / Swasta)** — legacy had separate tonnage dashboards for
->   government (`Dinas`) vs private (`Swasta`) sources (`monitoring/tonase`, `tonaseswasta`,
->   `tonasesemua`). In the new model these are **filters on `WasteSource.code`** (`D` = Dinas,
->   `S` = Swasta; see `01-glossary.md` §3), exposed as a **Total / Dinas / Swasta toggle** on the
->   "Volume per Hari" dashboard. No new entity required.
+> - **Source-group split (Semua / Non-Swasta / Swasta)** — legacy had separate tonnage dashboards
+>   for private (`Swasta`) vs everything-else sources (`monitoring/tonase`, `tonaseswasta`,
+>   `tonasesemua`). The six waste sources are modelled **individually** (`D`, `R`, `PS`, `PU`, `PL`,
+>   `S`; see `01-glossary.md` §3) with **no stored ownership flag**; the toggle is derived from
+>   `WasteSource.code` at query time — `SWASTA` = code `S`, `NON_SWASTA` = the other five, omit for
+>   `Semua`. Exposed as a **Semua / Non-Swasta / Swasta toggle** (`group` query param) on the
+>   "Volume per Hari" dashboard. No new entity required. **As-built:** see "Known Limitations" below
+>   for the by-source (per-vehicle) attribution caveat.
 > - **Rekapitulasi / monthly disposal** (legacy `transaksi/rekapitulasi`, `pembuangansampahbulantahun`)
 >   maps to the monthly tonnage aggregates here (Phase 2) + the report exports in Phase 3
 >   (`reports.md`) — not a separate module.

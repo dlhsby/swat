@@ -43,12 +43,15 @@ Phase 1 complete; transactional data populated; trip verification working; parti
        - Unique/composite indexes on each table
        - Partitions or CLUSTER hints for fast aggregations
        - Comment: "Rollup tables must be retained during archiving (doc 12 §3)"
-    3. Test Prisma schema validity; run migration in dev.
+    3. Test Prisma schema validity; apply via hand-authored raw SQL + `migrate deploy`.
     4. Seed a year of synthetic rollup data for dashboard testing.
   - Acceptance criteria:
     - [ ] All 5 rollup tables created with correct indexes
     - [ ] Prisma models compile without error
-    - [ ] `pnpm prisma migrate dev` succeeds
+    - [ ] **As-built:** `migrate dev` is **forbidden** (resets partition shape → drift). Use a
+          hand-authored raw-SQL migration applied with `pnpm prisma migrate deploy`; confirm no
+          drift with `prisma migrate diff`. The 4 raw rollup tables already existed and were
+          promoted to Prisma models + augmented (`haulCount`, fuel approved/requested split).
     - [ ] Test data seeded; sample queries return in < 10ms
 
 ---
@@ -439,7 +442,8 @@ Phase 1 complete; transactional data populated; trip verification working; parti
          @@index([tableName])
        }
        ```
-    2. Run migration: `pnpm prisma migrate dev`
+    2. Run migration: hand-authored raw SQL + `pnpm prisma migrate deploy` (**never `migrate dev`** —
+       partitioned tables are migration-managed; `dev` resets the partition shape → drift)
     3. Create a seed for a test archive entry (year 2020)
   - Acceptance criteria:
     - [ ] ArchiveCatalog table created with indexes
