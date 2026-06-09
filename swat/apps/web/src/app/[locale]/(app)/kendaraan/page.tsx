@@ -1,10 +1,12 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
+import { Recycle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { z } from 'zod';
 
+import { ProtectedAction } from '@/components/auth/protected-action';
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
 import { CrudListShell } from '@/components/crud/crud-list-shell';
 import {
@@ -16,7 +18,8 @@ import {
   TextField,
 } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
-import { StatusPill } from '@/components/ui';
+import { VehicleWasteSourcesSheet } from '@/components/fleet/vehicle-waste-sources-sheet';
+import { DropdownMenuItem, StatusPill } from '@/components/ui';
 import { useOptions } from '@/hooks/use-options';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { formatNumber } from '@/lib/format';
@@ -104,6 +107,7 @@ export default function VehiclesPage(): JSX.Element {
   const manager = useResourceManager(vehiclesApi, (r) => r.id);
   const { options: models } = useOptions(vehicleModelsApi.list, modelOption);
   const { options: pools } = useOptions(sitesApi.list, poolOption);
+  const [sourcesFor, setSourcesFor] = useState<VehicleDto | null>(null);
 
   const columns = useMemo<ColumnDef<VehicleDto, unknown>[]>(
     () => [
@@ -143,6 +147,14 @@ export default function VehiclesPage(): JSX.Element {
               resource="vehicle"
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
+              extra={
+                <ProtectedAction permission="vehicle:read">
+                  <DropdownMenuItem onSelect={() => setSourcesFor(row.original)}>
+                    <Recycle aria-hidden />
+                    Kelola Sumber Sampah
+                  </DropdownMenuItem>
+                </ProtectedAction>
+              }
             />
           </div>
         ),
@@ -206,6 +218,11 @@ export default function VehiclesPage(): JSX.Element {
 
         <TextareaField name="notes" label="Catatan" placeholder="Opsional" />
       </CrudFormDialog>
+
+      <VehicleWasteSourcesSheet
+        vehicle={sourcesFor}
+        onOpenChange={(open) => !open && setSourcesFor(null)}
+      />
     </CrudListShell>
   );
 }
