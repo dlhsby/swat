@@ -10,8 +10,16 @@ import { PrismaService } from '../prisma/prisma.service';
  * Tonnage is attributed to a waste source through the **vehicle**, mirroring the
  * legacy SWAT model (`trayek → kendaraan → kategorisumbersampahkendaraan →
  * kategorisumbersampah`): a trip's net weight belongs to the source(s) its
- * vehicle is assigned to via {@link VehicleWasteSource}. Operationally a vehicle
- * serves a single source, so there is no double counting.
+ * vehicle is assigned to via {@link VehicleWasteSource}.
+ *
+ * KNOWN LIMITATION (legacy parity — improve later): the mapping is many-to-many
+ * (≈1.5% of legacy vehicles serve 2–5 sources), so the by-source split is
+ * inherently ambiguous for those vehicles — the data never records which source
+ * a given trip actually served. We pick one source per vehicle (`MIN`) below so
+ * the per-source totals still sum to the grand total (the legacy join instead
+ * double-counted them). Exact attribution would require capturing the source on
+ * the trip itself (`Trip.wasteSourceId`, set at record time). Deferred — see the
+ * monitoring spec's "Known limitations".
  *
  * Every read filters on `operationDate` (the monthly partition key) so Postgres
  * prunes to the relevant partitions. Thin Prisma wrapper — exercised by the
@@ -63,9 +71,11 @@ export class RollupRepository {
                                  AND ha."id" = t."haulAssignmentId"
       JOIN "Haul" h               ON h."operationDate" = ha."operationDate"
                                  AND h."id" = ha."haulId"
-      -- Resolve one source per vehicle so a vehicle mapped to several sources
-      -- can never multiply its net weight across them (operationally a vehicle
-      -- serves a single source; this guards a dirty-data anomaly deterministically).
+      -- Legacy-parity heuristic (see the class doc's KNOWN LIMITATION): pick one
+      -- source per vehicle (MIN) so a multi-source vehicle can't multiply its net
+      -- weight across its sources. Conservation holds, but a multi-source vehicle
+      -- is mis-attributed to its lowest-id source — exact attribution needs a
+      -- per-trip source. Improve later.
       JOIN (
         SELECT "vehicleId", MIN("wasteSourceId") AS "wasteSourceId"
         FROM "VehicleWasteSource"

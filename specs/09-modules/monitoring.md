@@ -376,3 +376,29 @@ Per doc 12 §5 **Dashboard KPIs / aggregates** layer:
 | T8 | Levy summary monthly | 5 levy records (May), 3 (June); amounts 500k, 600k, 700k (June) | GET /monitoring/levy-summary?dateFrom=2026-06-01&dateTo=2026-06-30 | June total = 1.8M IDR |
 | T9 | Active routes count | 7 routes defined; 4 have DONE/VERIFIED trips today | GET /monitoring/routes-active?dateFrom=today&dateTo=today | Response count = 4 |
 | T10 | Fuel by type aggregation | 5 REFUEL trips: 3× Premium (40L approved each), 2× Solar (50L each) | GET /monitoring/fuel-by-type | Response: Premium=120L, Solar=100L |
+
+---
+
+## Known Limitations / Future Improvements
+
+### By-source attribution for multi-source vehicles (deferred)
+
+`tonnage-by-source` attributes a trip's net weight to a waste source **through the
+vehicle** (`Trip → Haul → Vehicle → VehicleWasteSource → WasteSource`), matching the
+legacy SWAT model. The vehicle↔source mapping is **many-to-many**: ≈1.5% of legacy
+vehicles serve 2–5 sources. For those vehicles the split is **inherently ambiguous** —
+the data never records which source a given trip actually served.
+
+- **Current behaviour (kept for legacy parity):** the rollup resolves one source per
+  vehicle (`MIN(wasteSourceId)`) so per-source totals still sum to the grand total.
+  The legacy query instead joined all of a vehicle's sources and double-counted them.
+  Exact for the ≈98.5% single-source vehicles; a multi-source vehicle's tonnage is
+  attributed to its lowest-id source.
+- **Exact fix (future):** capture the source **on the trip** — add `Trip.wasteSourceId`,
+  set at record time (auto-defaulted when the vehicle has a single source, operator-
+  selected when several), and have `aggregateMonthlyTonnageBySource` prefer
+  `COALESCE(Trip.wasteSourceId, <vehicle fallback>)`. This removes the ambiguity for
+  newly recorded trips while keeping the vehicle-based fallback for historical data.
+  Touches the partitioned `Trip` table (raw-SQL migration) and the trip-record flow,
+  so it was deferred. Implementation note lives at
+  `apps/backend/src/modules/analytics/rollup.repository.ts` (`aggregateMonthlyTonnageBySource`).
