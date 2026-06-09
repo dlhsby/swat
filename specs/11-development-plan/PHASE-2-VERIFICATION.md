@@ -18,7 +18,10 @@ verified ([`PHASE-1-VERIFICATION.md`](./PHASE-1-VERIFICATION.md)).
   `docker compose exec postgres psql -U swat -d swat -c '\dt "DailyTonnage" "MonthlyTonnageBySource" "MonthlyTonnageBySite" "DailyFuelByVehicle" "MonthlyRouteActivity" "ArchiveCatalog"'`
   → all six listed.
 - [ ] **P2. Seed.** Run `pnpm db:seed`. **Expected:** 6 waste sources (`D`/`R`/`PS`/`PU`/`PL`/`S`),
-  demo vehicles mapped to sources via `VehicleWasteSource` (vehicle 1 → Dinas `D`, vehicle 2 → Swasta `S`).
+  demo vehicles mapped to sources via `VehicleWasteSource` (vehicle 1 → Dinas `D`, vehicle 2 → Swasta `S`),
+  plus a year of synthetic **disposal + refuel** trips and per-day **TPA weighbridge logs** (a
+  MATCHED/DISCREPANCY/PENDING mix) so the BBM and reconciliation surfaces have data. The synthetic
+  pass is idempotent — re-running back-fills refuel/TPA onto an already-seeded DB without a wipe.
 - [ ] **P3. Backfill rollups.** From inner `swat/`: `pnpm --filter @swat/backend run rollup:backfill`
   (resolves the Trip date range automatically, or pass `YYYY-MM-DD YYYY-MM-DD`). **Expected:** logs
   `{days, months}` processed; idempotent (safe to re-run).
@@ -45,9 +48,10 @@ verified ([`PHASE-1-VERIFICATION.md`](./PHASE-1-VERIFICATION.md)).
 
 All under `/api/v1/monitoring/`, `monitoring:read` guarded, `ApiResponse<T>` envelope.
 
-- [ ] **A1. tonnage-5day** — `GET /monitoring/tonnage-5day` → last 5 days of daily totals, each row
-  carrying its per-day `reconciliationStatus` (`MATCHED`/`DISCREPANCY`/`PENDING`, computed on read
-  from `DailyTonnage` vs `TpaInboundLog` — see section RC).
+- [ ] **A1. tonnage-5day** — `GET /monitoring/tonnage-5day?dateFrom=…&dateTo=…` → daily totals over
+  the window (the dashboard passes the last-5-days range; `dateFrom`/`dateTo` are **required** — a
+  bare call returns 422). Each row carries its per-day `reconciliationStatus`
+  (`MATCHED`/`DISCREPANCY`/`PENDING`, computed on read from `DailyTonnage` vs `TpaInboundLog` — see RC).
 - [ ] **A2. tonnage-monthly** — `?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD` → monthly series.
 - [ ] **A3. tonnage-by-source** — verify the toggle: no `group` (Semua) → all six sources;
   `?group=SWASTA` → only code `S`; `?group=NON_SWASTA` → the other five. **Expected:** Semua total =
@@ -55,8 +59,10 @@ All under `/api/v1/monitoring/`, `monitoring:read` guarded, `ApiResponse<T>` env
 - [ ] **A4. tonnage-by-site**, **A5. fuel-consumption**, **A6. fuel-by-type**, **A7. routes-active**,
   **A8. trip-summary** (paged), **A9. kpi-overview**, **A10. levy-summary** — each returns a 200
   envelope. `levy-summary` is empty until live legacy levy data lands (post-T-155).
-- [ ] **A11. Validation.** Bad date (`?dateFrom=2026-13-40`) → **400**. Invalid `group` → **400**.
-- [ ] **A12. AuthZ.** Call without `monitoring:read` → **403**.
+- [ ] **A11. Validation.** Malformed shape (`?dateFrom=not-a-date`) → **422**. Impossible-but-shaped
+  date (`?dateFrom=2026-13-40`) → **422** (not 500 — regressed once; guarded by `@IsISO8601`).
+  Invalid `group` → **422**. (Envelope: `{success:false, error:{code:'VALIDATION_ERROR', details}}`.)
+- [ ] **A12. AuthZ.** Call without auth → **401**; with a session lacking `monitoring:read` → **403**.
 
 ---
 
