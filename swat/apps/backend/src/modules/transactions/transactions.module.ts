@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { CacheInvalidationInterceptor } from '../../common/interceptors/cache-invalidation.interceptor';
 import { AnalyticsModule } from '../analytics/analytics.module';
 
 import { DailyInitService } from './daily-init/daily-init.service';
@@ -29,6 +30,7 @@ import { TripsService } from './trips/trips.service';
     HaulAssignmentsRepository,
     TripsService,
     TripsRepository,
+    CacheInvalidationInterceptor,
   ],
   exports: [DailyInitService],
 })
