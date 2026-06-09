@@ -412,6 +412,39 @@ async function seedSyntheticData(): Promise<void> {
       },
     }));
 
+  const vehicle2 =
+    (await prisma.vehicle.findFirst({ where: { plateNumber: 'L 0002 SW' } })) ??
+    (await prisma.vehicle.create({
+      data: {
+        plateNumber: 'L 0002 SW',
+        poolSiteId: pool.id,
+        modelId: model.id,
+        status: VehicleStatus.GOOD,
+        chassisNumber: 'DEMO-CHASSIS-0002',
+        engineNumber: 'DEMO-ENGINE-0002',
+        currentTareWeight: 8000,
+        currentOdometer: 90000,
+        registrationExpiry: dateOnly(2027, 0, 1),
+        taxExpiry: dateOnly(2027, 0, 1),
+      },
+    }));
+
+  // Link each demo vehicle to a waste source so the monitoring by-source
+  // breakdown and the Semua / Non-Swasta / Swasta toggle have data in dev:
+  // vehicle 1 → Dinas (non-Swasta), vehicle 2 → Swasta. Idempotent on the pair.
+  const dinas = (await prisma.wasteSource.findUnique({ where: { code: 'D' } }))!;
+  const swasta = (await prisma.wasteSource.findUnique({ where: { code: 'S' } }))!;
+  for (const [linkVehicle, source] of [
+    [vehicle, dinas],
+    [vehicle2, swasta],
+  ] as const) {
+    await prisma.vehicleWasteSource.upsert({
+      where: { vehicleId_wasteSourceId: { vehicleId: linkVehicle.id, wasteSourceId: source.id } },
+      update: {},
+      create: { vehicleId: linkVehicle.id, wasteSourceId: source.id },
+    });
+  }
+
   const driver =
     (await prisma.driver.findFirst({ where: { idCardNumber: '3500000000000001' } })) ??
     (await prisma.driver.create({
@@ -457,10 +490,13 @@ async function seedSyntheticData(): Promise<void> {
     const day = await prisma.transactionDay.create({
       data: { date: opDate, status: inProgress },
     });
+    // Alternate the day's haul between the two vehicles so tonnage splits across
+    // their sources (Dinas vs Swasta) — exercising the by-source toggle in dev.
+    const dayVehicle = offset % 2 === 0 ? vehicle : vehicle2;
     const haul = await prisma.haul.create({
       data: {
         transactionDayId: day.id,
-        vehicleId: vehicle.id,
+        vehicleId: dayVehicle.id,
         operationDate: opDate,
         status: inProgress,
       },
