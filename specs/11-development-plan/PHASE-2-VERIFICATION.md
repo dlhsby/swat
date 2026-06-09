@@ -19,9 +19,10 @@ verified ([`PHASE-1-VERIFICATION.md`](./PHASE-1-VERIFICATION.md)).
   → all six listed.
 - [ ] **P2. Seed.** Run `pnpm db:seed`. **Expected:** 6 waste sources (`D`/`R`/`PS`/`PU`/`PL`/`S`),
   demo vehicles mapped to sources via `VehicleWasteSource` (vehicle 1 → Dinas `D`, vehicle 2 → Swasta `S`),
-  plus a year of synthetic **disposal + refuel** trips and per-day **TPA weighbridge logs** (a
-  MATCHED/DISCREPANCY/PENDING mix) so the BBM and reconciliation surfaces have data. The synthetic
-  pass is idempotent — re-running back-fills refuel/TPA onto an already-seeded DB without a wipe.
+  plus a year of synthetic **disposal + refuel** trips, per-day **TPA weighbridge logs** (a
+  MATCHED/DISCREPANCY/PENDING mix), and demo **levy** rows (12 months × 5 categories) so the BBM,
+  reconciliation, and Retribusi surfaces all have data. The synthetic pass is idempotent — re-running
+  back-fills refuel/TPA/levy onto an already-seeded DB without a wipe.
 - [ ] **P3. Backfill rollups.** From inner `swat/`: `pnpm --filter @swat/backend run rollup:backfill`
   (resolves the Trip date range automatically, or pass `YYYY-MM-DD YYYY-MM-DD`). **Expected:** logs
   `{days, months}` processed; idempotent (safe to re-run).
@@ -99,10 +100,12 @@ the same status on read (`tonnage-5day`, A1). Tolerance and rules live in `monit
 - [ ] **W1. Volume** (`/monitoring/volume`) — KPI cards, stacked tonnage columns, source donut, per-site
   table, reconciliation badge. **Semua / Non-Swasta / Swasta** toggle drives every widget.
 - [ ] **W2. BBM** (`/monitoring/bbm`) — KPI cards, grouped requested-vs-approved bars (red on variance
-  < −5%), vehicle variance table.
+  < −5%), vehicle variance table. With the demo seed: `L 0001 SW` ≈ −2% **OK**, `L 0002 SW` ≈ −12%
+  **RED** (one vehicle is seeded chronically under-approved so the red flag is visible).
 - [ ] **W3. Rute** (`/monitoring/rute`) — KPI cards + route-activity (ritase) table.
-- [ ] **W4. Retribusi** (`/monitoring/retribusi`) — KPI cards + levy table (IDR-formatted); empty state
-  until live levy data lands.
+- [ ] **W4. Retribusi** (`/monitoring/retribusi`) — KPI cards + levy table (IDR-formatted). The demo
+  seed populates 12 months × 5 categories (Industri/Komersial/Hotel & Restoran/Rumah Tangga/Pasar);
+  live legacy levy data replaces it post-T-155.
 - [ ] **W5. Date range.** Changing the date range updates all widgets; perceived < 1 s from cache.
 - [ ] **W6. Vehicle → source mapping** (`/kendaraan` → row action "Kelola Sumber Sampah") — add/remove a
   source for a vehicle; re-run backfill; the by-source breakdown reflects the change.
