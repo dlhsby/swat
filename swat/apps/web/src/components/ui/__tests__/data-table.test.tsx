@@ -85,7 +85,7 @@ describe('DataTable', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('filters a number column by a min/max range and badges the active count', async () => {
+  it('contains-filters a number column, badges the count, and clears all filters', async () => {
     const numColumns: ColumnDef<Row>[] = [
       { accessorKey: 'plate', header: 'Nomor Polisi', meta: { label: 'Nomor Polisi' } },
       {
@@ -95,13 +95,19 @@ describe('DataTable', () => {
       },
     ];
     render(<DataTable columns={numColumns} data={data} />);
-    // Open the per-column filter row, then constrain odometer to ≥ 2000.
+    // Open the per-column filter row, then type a plain substring into the
+    // numeric column — the text "contains" filter must work on numbers.
     await userEvent.click(screen.getByRole('button', { name: /Filter/ }));
-    await userEvent.type(screen.getByLabelText('Filter Odometer minimum'), '2000');
+    await userEvent.type(screen.getByLabelText('Filter Odometer'), '2000');
 
     expect(within(desktop()).queryByText('L 1234 AB')).not.toBeInTheDocument();
     expect(within(desktop()).getByText('L 5678 CD')).toBeInTheDocument();
     // The Filter button surfaces a "1 active" count badge.
     expect(screen.getByLabelText('1 filter aktif')).toHaveTextContent('1');
+
+    // "Hapus Filter" clears every column filter at once.
+    await userEvent.click(screen.getByRole('button', { name: 'Hapus Filter' }));
+    expect(within(desktop()).getByText('L 1234 AB')).toBeInTheDocument();
+    expect(screen.queryByLabelText('1 filter aktif')).not.toBeInTheDocument();
   });
 });

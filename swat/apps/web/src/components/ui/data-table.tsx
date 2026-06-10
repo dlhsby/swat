@@ -19,6 +19,7 @@ import {
   Filter,
   Search,
   SlidersHorizontal,
+  X,
 } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
@@ -220,6 +221,17 @@ export function DataTable<TData, TValue>({
                   ) : null}
                 </Button>
               ) : null}
+              {hasFilterableColumns && columnFilters.length > 0 ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => table.resetColumnFilters()}
+                  title="Hapus semua filter kolom"
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                  Hapus Filter
+                </Button>
+              ) : null}
               {enableColumnToggle ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -307,7 +319,6 @@ export function DataTable<TData, TValue>({
                           {showFilters && header.column.getCanFilter() ? (
                             <ColumnFilter
                               column={header.column}
-                              variant={header.column.columnDef.meta?.filterVariant ?? 'text'}
                               label={String(
                                 header.column.columnDef.meta?.label ?? header.column.id,
                               )}
