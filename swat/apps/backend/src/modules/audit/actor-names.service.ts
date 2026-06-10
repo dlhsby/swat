@@ -15,16 +15,17 @@ export interface ActorNames {
 }
 
 /**
- * Resolves audit actor ids (`createdById`/`updatedById`) to usernames in a
- * single batched query, so list responses can surface "Dibuat oleh / Diubah
- * oleh" without an N+1. Unknown ids (e.g. deleted users, system writes) resolve
- * to `null`.
+ * Resolves audit actor ids (`createdById`/`updatedById`) to user display names
+ * in a single batched query, so list responses can surface "Dibuat oleh /
+ * Diubah oleh" without an N+1. Uses the person's `name` (not the login
+ * `username`). Unknown ids (e.g. deleted users, system writes) resolve to
+ * `null`.
  */
 @Injectable()
 export class ActorNamesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Batch-resolve a set of user ids → `id`→`username` map. */
+  /** Batch-resolve a set of user ids → `id`→display-`name` map. */
   async resolve(ids: readonly string[]): Promise<Map<string, string>> {
     const distinct = [...new Set(ids)];
     if (distinct.length === 0) {
@@ -32,9 +33,9 @@ export class ActorNamesService {
     }
     const users = await this.prisma.user.findMany({
       where: { id: { in: distinct } },
-      select: { id: true, username: true },
+      select: { id: true, name: true },
     });
-    return new Map(users.map((u) => [u.id, u.username]));
+    return new Map(users.map((u) => [u.id, u.name]));
   }
 
   /**

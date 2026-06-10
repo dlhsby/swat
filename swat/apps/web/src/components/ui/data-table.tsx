@@ -178,7 +178,7 @@ export function DataTable<TData, TValue>({
             <div className="ml-auto flex items-center gap-2">
               {hasFilterableColumns ? (
                 <Button
-                  variant={showFilters || columnFilters.length > 0 ? 'secondary' : 'outline'}
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowFilters((v) => !v)}
                   aria-pressed={showFilters}
@@ -187,6 +187,10 @@ export function DataTable<TData, TValue>({
                       ? `${columnFilters.length} filter aktif`
                       : 'Filter per kolom'
                   }
+                  className={cn(
+                    (showFilters || columnFilters.length > 0) &&
+                      'border-primary-700 bg-primary-50 text-primary-700 hover:bg-primary-100 dark:text-primary-400',
+                  )}
                 >
                   <Filter className="h-4 w-4" aria-hidden />
                   Filter
