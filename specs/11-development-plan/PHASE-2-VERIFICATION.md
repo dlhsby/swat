@@ -5,7 +5,7 @@ has **Steps** and an **Expected** result. Check the box when it passes. Items ar
 (curl/Postman/psql), **[WEB]** (browser), or **[OPS]** (operator). Assumes Phase 1 already
 verified ([`PHASE-1-VERIFICATION.md`](./PHASE-1-VERIFICATION.md)).
 
-- **Admin login:** `admin` / `Password1234!`. **API base:** `http://<host>/api/v1` · **Swagger:** `/api/docs`
+- **Admin login:** `admin` / `Password123!`. **API base:** `http://<host>/api/v1` · **Swagger:** `/api/docs`
 - **Web base:** `http://<host>/` (redirects to `/id-ID`). Monitoring nav requires `monitoring:read`.
 - Docker is the operator's environment; none of this runs in the dev WSL.
 

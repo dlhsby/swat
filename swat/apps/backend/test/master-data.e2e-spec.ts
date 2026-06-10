@@ -12,7 +12,7 @@ import { CacheService } from '../src/modules/cache/cache.service';
  * business rules). Requires the docker-compose stack and a seeded admin. Each
  * run creates fresh sites so the route uniqueness checks stay idempotent.
  */
-const ADMIN = { username: 'admin', password: 'Password1234!' };
+const ADMIN = { username: 'admin', password: 'Password123!' };
 
 describe('Master data (e2e)', () => {
   let app: INestApplication;

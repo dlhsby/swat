@@ -182,7 +182,7 @@ docker compose --env-file infra/docker-compose.env up -d postgres redis
 cp .env.example .env.local                              # fill secrets
 pnpm install
 pnpm --filter @swat/backend prisma:deploy               # migrate deploy (NOT migrate dev)
-pnpm --filter @swat/backend prisma:seed                 # admin / Password1234!
+pnpm --filter @swat/backend prisma:seed                 # admin / Password123!
 pnpm lint && pnpm typecheck
 pnpm --filter @swat/backend test -- --coverage          # 271 unit tests + coverage gate
 pnpm --filter @swat/backend test:e2e                    # live auth + master-data + transactions e2e

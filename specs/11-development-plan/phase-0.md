@@ -306,7 +306,8 @@
   5. Populate `seed.ts` (per [`01-glossary.md`](../01-glossary.md) §2–5 for canonical names):
      - Create roles: Admin (all permissions), Administrasi Data, Checker, Operator Pool, Petugas TPA, Supervisor.
      - Create permissions: user:read, user:create, user:update, user:delete; vehicle:read, vehicle:create, vehicle:update, vehicle:delete; (and similarly for all resources per T-108 of Phase 1).
-     - Create one admin user (username: admin, name: Admin, Argon2id hashed password, `mustChangePassword: true`).
+     - Create the admin user (username: admin, name: Administrator, Argon2id hashed password, `mustChangePassword: false` — admin is **not** force-reset and exists in every environment).
+     - Dev/CI seed only (never in production): also create `adminreset` (Argon2id, `mustChangePassword: true`) to exercise the forced first-login password change.
      - Create `LicenseClass`: A, BI, BI Umum, BII, BII Umum, C, D.
      - Create `FuelCategory`: Bersubsidi, Non-Subsidi.
      - Create `Fuel` entries: Premium, Pertamax, Solar, Solar Keekonomian, Pertalite, Dexlite (with placeholder prices).
@@ -692,7 +693,8 @@
 - [ ] Database: initial migration creates all tables, indexes, constraints without errors.
 - [ ] Partitioning migration creates monthly partitions for `Trip`, `Haul`, `HaulAssignment`, `TpaInboundLog` (e.g., `trip_y2026m06`).
 - [ ] `pnpm --filter=backend prisma db seed` populates roles, permissions, users, lookup data, and synthetic data without errors.
-- [ ] Admin user exists with bcrypt hash and `mustChangePassword: true`.
+- [ ] Admin user exists with an **Argon2id** hash (verify: starts with `$argon2id$`) and `mustChangePassword: false` (admin is not force-reset).
+- [ ] Dev/CI only: `adminreset` user exists with `mustChangePassword: true` to exercise the forced first-login change (never seeded in production).
 - [ ] Rollup tables exist (empty, ready for Phase 2).
 - [ ] `pnpm lint` and `pnpm typecheck` pass with 0 errors, 0 warnings across all packages.
 - [ ] `pnpm test` runs unit tests for at least 3 packages (backend modules, shared schemas); baseline coverage established (no minimum coverage for Phase 0, but foundation for Phase 1 ≥80%).

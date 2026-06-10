@@ -4,7 +4,7 @@ Step-by-step acceptance pass for Phase 1 (MVP). Work top-to-bottom; each item ha
 **Steps** and an **Expected** result. Check the box when it passes. Items are
 tagged **[API]** (curl/Postman/psql), **[WEB]** (browser), or **[OPS]** (operator).
 
-- **Admin login:** `admin` / `Password1234!` (forces a password change on first login).
+- **Admin login:** `admin` / `Password123!` (forces a password change on first login).
 - **API base:** `http://<host>/api/v1` · **Liveness:** `/health` · **Readiness:** `/health/ready` · **Swagger:** `/api/docs`
 - **Web base:** `http://<host>/` (redirects to `/id-ID`). Postman collection: `swat/apps/backend/postman/`.
 - Docker is the operator's environment; none of this runs in the dev WSL.
@@ -54,7 +54,7 @@ tagged **[API]** (curl/Postman/psql), **[WEB]** (browser), or **[OPS]** (operato
 
 ## AUTH · Authentication & RBAC  [API unless noted]
 
-- [ ] **AUTH1. Login happy path.** POST `/auth/login {admin, Password1234!}` → 200, `Set-Cookie: swat.sid` (httpOnly, SameSite=Strict), body has `mustChangePassword:true`.
+- [ ] **AUTH1. Login happy path.** POST `/auth/login {admin, Password123!}` → 200, `Set-Cookie: swat.sid` (httpOnly, SameSite=Strict), body has `mustChangePassword:true`.
 - [ ] **AUTH2. Bad credentials.** Wrong username and wrong password each → 400 with the **generic** "Kredensial tidak valid" (no hint which field).
 - [ ] **AUTH3. /auth/me.** With the cookie → 200, returns user + role + **flattened permission keys**. No cookie → 401.
 - [ ] **AUTH4. Forced change-password [WEB].** Log in via the UI → you are forced to `/id-ID/change-password` and cannot reach the app until you change it. After change, `mustChangePassword` is cleared and `/auth/me` reflects it.

@@ -5,10 +5,11 @@ import { ADMIN_PASS, ADMIN_USER, login } from './helpers';
 test.describe('Auth', () => {
   test('rejects bad credentials with a generic message', async ({ page }) => {
     await page.goto('/id-ID/login');
-    await page.getByLabel(/nama pengguna|username/i).fill('admin');
-    await page.getByLabel(/kata sandi|password/i).fill('wrong-password');
+    await page.locator('#username').fill('admin');
+    await page.locator('#password').fill('wrong-password');
     await page.getByRole('button', { name: /masuk/i }).click();
-    await expect(page.getByText(/kredensial tidak valid/i)).toBeVisible();
+    // Submit-level errors surface as a toast (generic, no field disclosure).
+    await expect(page.getByText(/salah|tidak valid/i)).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
   });
 

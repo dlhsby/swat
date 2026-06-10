@@ -9,10 +9,10 @@ import { CacheService } from '../src/modules/cache/cache.service';
 
 /**
  * Live integration test for the auth + RBAC pipeline. Requires the docker-compose
- * stack (Postgres + Redis) and a seeded admin (`admin` / `Password1234!`). Run
+ * stack (Postgres + Redis) and a seeded admin (`admin` / `Password123!`). Run
  * via `pnpm --filter @swat/backend test:e2e`.
  */
-const ADMIN = { username: 'admin', password: 'Password1234!' };
+const ADMIN = { username: 'admin', password: 'Password123!' };
 
 describe('Auth & RBAC (e2e)', () => {
   let app: INestApplication;
@@ -59,13 +59,16 @@ describe('Auth & RBAC (e2e)', () => {
     expect(res.headers['set-cookie']).toBeUndefined();
   });
 
-  it('logs in the admin, sets an httpOnly session cookie, and flags mustChangePassword', async () => {
+  it('logs in the admin and sets a secure session cookie (admin is not force-reset)', async () => {
     const res = await request(server).post('/api/v1/auth/login').send(ADMIN).expect(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data).toMatchObject({ username: 'admin', mustChangePassword: true });
+    // Admin is the ready-to-use bootstrap account: mustChangePassword is false.
+    // The forced first-login change is exercised by the dev-only `adminreset`.
+    expect(res.body.data).toMatchObject({ username: 'admin', mustChangePassword: false });
     const cookie = cookiesOf(res)[0] ?? '';
     expect(cookie).toContain('swat.sid=');
     expect(cookie.toLowerCase()).toContain('httponly');
+    expect(cookie.toLowerCase()).toContain('samesite=strict');
   });
 
   it('returns 401 from /auth/me without a session', async () => {

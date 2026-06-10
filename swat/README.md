@@ -55,7 +55,7 @@ Two helper scripts in [`scripts/`](./scripts/) wrap the whole flow:
 ./scripts/start.sh
 #   Backend  http://localhost:3000  (GET /health · Swagger /api/docs)
 #   Frontend http://localhost:3001  (redirects to /id-ID)
-#   Admin login → admin / Password1234!  (mustChangePassword)
+#   Admin login → admin / Password123!  (mustChangePassword)
 ```
 
 `setup.sh` is idempotent — re-run it anytime. Flags: `--synthetic` (seed synthetic dataset),

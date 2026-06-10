@@ -29,7 +29,7 @@ Deliver a production-ready operational system with complete RBAC, all master-dat
   6. Run `prisma db seed` — verify admin user + roles created.
 - **Acceptance criteria:**
   - [ ] `User`, `Role`, `Permission`, `RolePermission` tables exist in PostgreSQL.
-  - [ ] Admin user (username: `admin`, email: `admin@wahyutrip.com`, mustChangePassword: true) seeded.
+  - [ ] Admin user (username: `admin`, email: `admin@wahyutrip.com`, **`mustChangePassword: false`** — not force-reset) seeded. Dev/CI also seeds `adminreset` (`mustChangePassword: true`) to exercise the forced first-login change; never in production.
   - [ ] At least 1 admin role with all permissions seeded.
   - [ ] No lint/typecheck errors.
 
@@ -207,7 +207,7 @@ Deliver a production-ready operational system with complete RBAC, all master-dat
      - levy:read, levy:create, levy:update, levy:delete
      - report:generate, report:download
      - admin:* (superuser; bypasses all checks)
-     - (Total ~55–65 permissions)
+     - (Total 96 permissions as seeded)
   2. **Seed initial roles:**
      - Admin (all permissions, including admin:*)
      - Administrasi Data (vehicle:*, driver:*, site:*, route:*, crew-schedule:*, disposal-permit:*, trip:read)
@@ -215,11 +215,11 @@ Deliver a production-ready operational system with complete RBAC, all master-dat
      - Operator Pool (trip:record, trip:read)
      - Petugas TPA (trip:read)
      - Supervisor (trip:verify, trip:verify:override, user:read, role:read)
-  3. **Seed admin user:** username: admin, name: Admin, roleId: (admin role), password: Argon2id(random), mustChangePassword: true.
+  3. **Seed admin user:** username: admin, name: Administrator, roleId: (admin role), Argon2id password, `mustChangePassword: false` (admin is not force-reset). Dev/CI only: also seed `adminreset` (Argon2id, `mustChangePassword: true`) to exercise the forced first-login change.
 - **Acceptance criteria:**
-  - [ ] 55–65 Permission rows in DB.
-  - [ ] 6–8 initial Role rows.
-  - [ ] Admin user seeded, mustChangePassword=true.
+  - [ ] 96 Permission rows in DB.
+  - [ ] 6 initial Role rows (Administrator, Administrasi Data, Checker, Operator Pool, Petugas TPA, Supervisor).
+  - [ ] Admin user seeded, `mustChangePassword=false` (not force-reset); dev/CI `adminreset` seeded with `mustChangePassword=true`.
   - [ ] `prisma db seed` runs without error.
 
 ---
