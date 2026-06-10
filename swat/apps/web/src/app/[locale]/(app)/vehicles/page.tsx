@@ -17,20 +17,21 @@ export default function VehiclesPage(): JSX.Element {
   return (
     <>
       <PageHead title={t('vehicles')} />
+      {/* Order Tipe → Model → Kendaraan (broad → specific → unit); open on Kendaraan. */}
       <Tabs defaultValue="vehicles">
         <TabsList>
-          <TabsTrigger value="vehicles">Kendaraan</TabsTrigger>
-          <TabsTrigger value="models">Model Kendaraan</TabsTrigger>
           <TabsTrigger value="types">Tipe Kendaraan</TabsTrigger>
+          <TabsTrigger value="models">Model Kendaraan</TabsTrigger>
+          <TabsTrigger value="vehicles">Kendaraan</TabsTrigger>
         </TabsList>
-        <TabsContent value="vehicles">
-          <VehiclesTab />
+        <TabsContent value="types">
+          <VehicleTypesTab />
         </TabsContent>
         <TabsContent value="models">
           <VehicleModelsTab />
         </TabsContent>
-        <TabsContent value="types">
-          <VehicleTypesTab />
+        <TabsContent value="vehicles">
+          <VehiclesTab />
         </TabsContent>
       </Tabs>
     </>

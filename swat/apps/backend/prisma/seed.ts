@@ -32,6 +32,8 @@ import {
 } from '@prisma/client';
 import { hash } from 'argon2';
 
+import { LEGACY_VEHICLE_MODELS } from './legacy-vehicle-models';
+
 const prisma = new PrismaClient();
 
 // Default admin password — meets the policy in specs/06-auth-rbac.md §1.4
@@ -381,24 +383,62 @@ async function seedReferenceData(): Promise<void> {
     categoryIdByName.set(name, record.id);
   }
 
+  const fuelIdByName = new Map<string, string>();
   for (const fuel of FUELS) {
     const existing = await prisma.fuel.findFirst({ where: { name: fuel.name } });
-    if (!existing) {
-      await prisma.fuel.create({
+    const record =
+      existing ??
+      (await prisma.fuel.create({
         data: {
           name: fuel.name,
           pricePerLiter: fuel.pricePerLiter,
           fuelCategoryId: categoryIdByName.get(fuel.category)!,
         },
-      });
-    }
+      }));
+    fuelIdByName.set(fuel.name, record.id);
   }
 
+  const vehicleTypeIdByLegacy = new Map<number, string>();
   for (const vehicleType of VEHICLE_TYPES) {
-    await prisma.vehicleType.upsert({
+    const record = await prisma.vehicleType.upsert({
       where: { legacyId: vehicleType.legacyId },
       update: { name: vehicleType.name },
       create: { legacyId: vehicleType.legacyId, name: vehicleType.name },
+    });
+    vehicleTypeIdByLegacy.set(vehicleType.legacyId, record.id);
+  }
+
+  // Legacy vehicle models (kategorikendaraan): resolve the vehicle-type FK by
+  // legacyId and the fuel FK by the legacy bahanbakar id → SWAT fuel name.
+  const FUEL_NAME_BY_LEGACY: Record<number, string> = {
+    1: 'Premium',
+    2: 'Pertamax',
+    3: 'Solar Keekonomian',
+    4: 'Solar',
+    5: 'Pertalite',
+    6: 'Dexlite',
+  };
+  for (const model of LEGACY_VEHICLE_MODELS) {
+    const vehicleTypeId = vehicleTypeIdByLegacy.get(model.appLegacyId);
+    const fuelId = fuelIdByName.get(FUEL_NAME_BY_LEGACY[model.fuelLegacyId] ?? '');
+    if (vehicleTypeId === undefined || fuelId === undefined) {
+      continue;
+    }
+    const data = {
+      brand: model.brand,
+      vehicleTypeId,
+      fuelId,
+      fuelTankCapacity: model.fuelTankCapacity,
+      normalFuelRatio: model.normalFuelRatio,
+      normalTareWeight: model.normalTareWeight,
+      maxNetLoad: model.maxNetLoad,
+      maxNetVolume: model.maxNetVolume,
+      wheelCount: model.wheelCount,
+    };
+    await prisma.vehicleModel.upsert({
+      where: { legacyId: model.legacyId },
+      update: data,
+      create: { legacyId: model.legacyId, ...data },
     });
   }
 
