@@ -99,7 +99,7 @@ export default function VolumePage(): JSX.Element {
           icon={Truck}
           label={t('kpiHauls')}
           value={formatNumber(totalHauls)}
-          unit="haul"
+          unit="angkut sampah"
           loading={daily.isLoading}
         />
         <MetricCard

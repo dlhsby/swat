@@ -115,7 +115,7 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
     <>
       <PageHead
         breadcrumb={[{ label: 'Hari Transaksi', href: '/transaction-days' }, { label: day.date }]}
-        title={`Haul · ${formatDateDisplay(day.date)}`}
+        title={`Angkut Sampah · ${formatDateDisplay(day.date)}`}
         description={`${verifiedCount}/${allTrips.length} trayek terverifikasi`}
         actions={
           <div className="flex items-center gap-2">
@@ -125,7 +125,9 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
                 <Button
                   onClick={() => setMarkDone(true)}
                   disabled={openHauls}
-                  title={openHauls ? 'Semua haul harus selesai terlebih dahulu.' : undefined}
+                  title={
+                    openHauls ? 'Semua angkut sampah harus selesai terlebih dahulu.' : undefined
+                  }
                 >
                   Tandai Hari Selesai
                 </Button>
@@ -219,7 +221,7 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
           <Card>
             <CardContent className="flex items-center gap-2 py-8 text-body-sm text-neutral-500">
               <CheckCircle2 className="h-5 w-5 text-neutral-400" aria-hidden />
-              Tidak ada haul untuk hari ini.
+              Tidak ada angkut sampah untuk hari ini.
             </CardContent>
           </Card>
         ) : null}
@@ -252,7 +254,7 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
         open={markDone}
         onOpenChange={setMarkDone}
         title="Tandai hari transaksi selesai?"
-        description="Pastikan semua haul telah selesai dan diverifikasi."
+        description="Pastikan semua angkut sampah telah selesai dan diverifikasi."
         confirmLabel="Tandai Selesai"
         onConfirm={() => void onMarkDone()}
       />

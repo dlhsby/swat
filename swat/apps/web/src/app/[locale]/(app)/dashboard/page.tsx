@@ -194,7 +194,7 @@ export default function DashboardPage(): JSX.Element {
                   </Alert>
                 ) : null}
                 {metrics.runningHauls > 0 ? (
-                  <Alert variant="info">{metrics.runningHauls} haul masih berjalan.</Alert>
+                  <Alert variant="info">{metrics.runningHauls} angkut sampah masih berjalan.</Alert>
                 ) : null}
               </div>
             )}

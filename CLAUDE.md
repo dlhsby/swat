@@ -20,6 +20,9 @@ change; it is never created in production.
 - **Routes use English slugs** under `[locale]` (e.g. `/id-ID/dashboard`, `/vehicles`,
   `/transaction-days`, `/monitoring/fuel`); **UI labels stay localized** via next-intl. IA lives in
   `src/lib/nav.ts`.
+- **Code/DB keep English domain terms (`Haul`, `Levy`); user-facing display reconciles to the
+  operators' vocabulary** — `Haul` → "Angkut Sampah", `Levy` → "Retribusi". Don't surface the raw
+  English entity name in id-ID UI strings (en-US may keep "Haul" — it's valid English).
 - **Default locale `id-ID`**, enforced with `localeDetection: false` in `src/i18n/routing.ts` so the
   browser `Accept-Language` can't redirect `/` to en-US.
 - **Design tokens** ship as CSS variables in `src/app/globals.css` (light + `.dark`), ported verbatim
