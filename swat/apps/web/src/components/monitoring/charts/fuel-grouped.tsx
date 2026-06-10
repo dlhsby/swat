@@ -38,7 +38,7 @@ export function FuelGrouped({ data }: { data: readonly FuelBar[] }): JSX.Element
           contentStyle={{
             background: 'var(--neutral-0)',
             border: '1px solid var(--neutral-200)',
-            borderRadius: 8,
+            borderRadius: 6,
             fontSize: 12,
           }}
         />
@@ -47,10 +47,10 @@ export function FuelGrouped({ data }: { data: readonly FuelBar[] }): JSX.Element
           dataKey="requested"
           name="Diminta"
           fill="var(--neutral-300)"
-          radius={[3, 3, 0, 0]}
+          radius={[4, 4, 0, 0]}
           isAnimationActive={false}
         />
-        <Bar dataKey="approved" name="Disetujui" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+        <Bar dataKey="approved" name="Disetujui" radius={[4, 4, 0, 0]} isAnimationActive={false}>
           {data.map((bar) => (
             <Cell key={bar.plate} fill={bar.flagged ? 'var(--danger-500)' : 'var(--primary-600)'} />
           ))}

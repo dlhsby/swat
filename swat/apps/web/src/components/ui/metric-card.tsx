@@ -31,7 +31,7 @@ export function MetricCard({
   return (
     <Card>
       <CardContent className="space-y-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-primary-50 text-primary-700">
+        <span className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-primary-50 text-primary-700 dark:text-primary-400">
           <Icon className="h-5 w-5" />
         </span>
         <p className="text-[13px] font-medium text-neutral-500">{label}</p>

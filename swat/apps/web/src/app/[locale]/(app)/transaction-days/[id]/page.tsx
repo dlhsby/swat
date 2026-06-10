@@ -135,62 +135,84 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
         }
       />
 
-      <div className="space-y-3">
+      <div className="space-y-2.5">
+        {/* Column header (hi-fi `.hf-haulhead`) — desktop only. */}
+        {rows.length > 0 ? (
+          <div className="hidden grid-cols-[1.3fr_1.1fr_1.2fr_1.2fr_0.7fr_auto] items-center gap-4 px-[18px] pb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-400 lg:grid">
+            <span>Kendaraan</span>
+            <span>Verifikasi</span>
+            <span>Berangkat (T/A)</span>
+            <span>Kembali (T/A)</span>
+            <span>Ritase</span>
+            <span />
+          </div>
+        ) : null}
+
         {rows.map((row) => {
           const total = row.trips.length;
           const verified = row.trips.filter((t) => t.status === 'VERIFIED').length;
           return (
-            <Card key={row.id}>
-              <CardContent className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-body font-semibold text-neutral-900">
-                    {row.vehiclePlate}
-                  </span>
-                  <span className="text-body-sm text-neutral-500">{row.driverName}</span>
+            <div
+              key={row.id}
+              className="grid grid-cols-1 items-center gap-x-4 gap-y-3 rounded-lg border border-neutral-200 bg-neutral-0 px-[18px] py-4 transition-shadow hover:shadow-sm sm:grid-cols-2 lg:grid-cols-[1.3fr_1.1fr_1.2fr_1.2fr_0.7fr_auto]"
+            >
+              {/* Vehicle + driver (hi-fi `.plate` / `.drv`). */}
+              <div className="sm:col-span-2 lg:col-span-1">
+                <div className="font-mono text-[14px] font-semibold text-neutral-900">
+                  {row.vehiclePlate}
                 </div>
+                <div className="mt-0.5 text-[12px] text-neutral-500">{row.driverName}</div>
+              </div>
 
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-body-sm">
-                  <span className="text-neutral-500">
-                    Berangkat T/A:{' '}
-                    <span className="tabular-nums text-neutral-900">
-                      {leg(row.departTargetTime, row.departActualTime)}
-                    </span>
-                  </span>
-                  <span className="text-neutral-500">
-                    Kembali T/A:{' '}
-                    <span className="tabular-nums text-neutral-900">
-                      {leg(row.returnTargetTime, row.returnActualTime)}
-                    </span>
-                  </span>
-                  <span className="text-neutral-500">
-                    Ritase:{' '}
-                    <span className="tabular-nums text-neutral-900">{formatNumber(total)}</span>
-                  </span>
-                  {verified === total && total > 0 ? (
-                    <Badge variant="green" dot>
-                      {verified}/{total} Terverifikasi
-                    </Badge>
-                  ) : (
-                    <Badge variant={verified > 0 ? 'amber' : 'slate'} dot>
-                      {verified}/{total} Terverifikasi
-                    </Badge>
-                  )}
-                </div>
+              {/* Verification badge. */}
+              <div>
+                {verified === total && total > 0 ? (
+                  <Badge variant="green" dot>
+                    {verified}/{total} Terverifikasi
+                  </Badge>
+                ) : (
+                  <Badge variant={verified > 0 ? 'amber' : 'slate'} dot>
+                    {verified}/{total} Terverifikasi
+                  </Badge>
+                )}
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <ProtectedAction permission="trip:update">
-                    <Button variant="outline" size="sm" onClick={() => setReconcileId(row.id)}>
-                      <Pencil className="h-4 w-4" aria-hidden />
-                      Edit
-                    </Button>
-                  </ProtectedAction>
-                  <Button variant="secondary" size="sm" onClick={() => setSheetId(row.id)}>
-                    <Eye className="h-4 w-4" aria-hidden />
-                    Lihat
+              {/* Time/target columns (hi-fi `.hf-tt`). */}
+              <div className="text-[12px] text-neutral-500">
+                <span className="lg:hidden">Berangkat T/A</span>
+                <span className="hidden lg:inline">Berangkat</span>
+                <b className="mt-0.5 block text-[14px] font-semibold tabular-nums text-neutral-900">
+                  {leg(row.departTargetTime, row.departActualTime)}
+                </b>
+              </div>
+              <div className="text-[12px] text-neutral-500">
+                <span className="lg:hidden">Kembali T/A</span>
+                <span className="hidden lg:inline">Kembali</span>
+                <b className="mt-0.5 block text-[14px] font-semibold tabular-nums text-neutral-900">
+                  {leg(row.returnTargetTime, row.returnActualTime)}
+                </b>
+              </div>
+              <div className="text-[12px] text-neutral-500">
+                Ritase
+                <b className="mt-0.5 block text-[14px] font-semibold tabular-nums text-neutral-900">
+                  {formatNumber(total)}
+                </b>
+              </div>
+
+              {/* Actions. */}
+              <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
+                <ProtectedAction permission="trip:update">
+                  <Button variant="outline" size="sm" onClick={() => setReconcileId(row.id)}>
+                    <Pencil className="h-4 w-4" aria-hidden />
+                    Edit
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </ProtectedAction>
+                <Button variant="secondary" size="sm" onClick={() => setSheetId(row.id)}>
+                  <Eye className="h-4 w-4" aria-hidden />
+                  Lihat
+                </Button>
+              </div>
+            </div>
           );
         })}
         {rows.length === 0 ? (

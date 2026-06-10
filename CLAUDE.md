@@ -25,7 +25,18 @@ Admin seed login: `admin / Password1234!`.
   `.dark` flips every `bg-/text-*` utility. Opacity can't be applied to a hex `var()` — overlays use
   the dedicated `--scrim` token (`bg-scrim`), not `bg-neutral-900/50`.
 - **Theme**: default follows system (`prefers-color-scheme`); user choice persists in
-  `localStorage['swat-theme']` and is applied pre-paint. Controller: `src/lib/theme.ts`.
+  `localStorage['swat-theme']` and is applied pre-paint. Controller: `src/lib/theme.ts`. The
+  in-app **Settings** page (`/settings`, avatar menu) switches appearance (System/Light/Dark) +
+  language (id-ID/en-US, via `router.replace(pathname, {locale})`).
+- **`cn()` must know the custom font sizes** (`src/lib/cn.ts` uses `extendTailwindMerge` to register
+  `text-{h1,h2,h3,body-lg,body,body-sm,label,tiny}` as `font-size`). Without it, tailwind-merge
+  mistakes a named `text-body*` for a text *color* and **strips a real color** like `text-white`
+  that precedes it — buttons render green-bg with inherited dark text. Keep this list in sync when
+  adding a `fontSize` token; a `cn` regression test guards it.
+- **Selected/active contrast (dark mode):** the `.dark` primary ramp is non-monotonic (only
+  `primary-50..300` invert; `400..900` unchanged). So emphatic selections use a mode-stable fill
+  `bg-primary-700 text-white` (literal white, NOT `text-neutral-0` which flips); subtle tints
+  (`bg-primary-50 text-primary-700`) need `dark:text-primary-400` or they're dark-on-dark.
 - **`designs/` is the visual source of truth** (Claude Design handoff bundle); on conflict the bundle
   wins — see `designs/INDEX.md`.
 

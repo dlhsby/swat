@@ -45,7 +45,8 @@ export function Calendar({
         outside: 'text-neutral-400 opacity-60',
         disabled: 'text-neutral-300 opacity-50',
         hidden: 'invisible',
-        range_middle: 'aria-selected:bg-primary-50 aria-selected:text-primary-800',
+        range_middle:
+          'aria-selected:bg-primary-50 aria-selected:text-primary-800 dark:aria-selected:text-primary-400',
         ...classNames,
       }}
       components={{

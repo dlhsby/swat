@@ -175,7 +175,7 @@ export function DataTable<TData, TValue>({
       ) : null}
 
       {/* Desktop table (md+) */}
-      <div className="hidden rounded-lg border border-neutral-200 md:block">
+      <div className="hidden overflow-hidden rounded-lg border border-neutral-200 md:block">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (

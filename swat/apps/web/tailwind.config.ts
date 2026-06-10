@@ -98,8 +98,8 @@ export default {
         mono: ['var(--font-mono)', 'JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        h1: ['32px', { lineHeight: '1.25', fontWeight: '700' }],
-        h2: ['24px', { lineHeight: '1.33', fontWeight: '700' }],
+        h1: ['32px', { lineHeight: '1.25', fontWeight: '700', letterSpacing: '-0.02em' }],
+        h2: ['24px', { lineHeight: '1.33', fontWeight: '700', letterSpacing: '-0.01em' }],
         h3: ['20px', { lineHeight: '1.4', fontWeight: '600' }],
         'body-lg': ['18px', { lineHeight: '1.5' }],
         body: ['16px', { lineHeight: '1.5' }],

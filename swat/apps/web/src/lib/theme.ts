@@ -4,6 +4,8 @@
  * The pre-paint script in the root layout reads the same key to avoid a flash.
  */
 export type Theme = 'light' | 'dark';
+/** User-facing preference: `system` follows the OS, otherwise an explicit theme. */
+export type ThemePreference = 'system' | Theme;
 
 const STORAGE_KEY = 'swat-theme';
 const THEME_COLOR_LIGHT = '#f8fafc';
@@ -45,6 +47,26 @@ export function setTheme(theme: Theme): void {
     window.localStorage.setItem(STORAGE_KEY, theme);
   }
   applyTheme(theme);
+}
+
+/** The stored preference, defaulting to `system` when nothing is persisted. */
+export function getThemePreference(): ThemePreference {
+  return getStoredTheme() ?? 'system';
+}
+
+/**
+ * Persist a theme preference and apply it immediately. `system` clears the
+ * stored override so the OS preference (and future changes to it) win.
+ */
+export function setThemePreference(preference: ThemePreference): void {
+  if (typeof window !== 'undefined') {
+    if (preference === 'system') {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } else {
+      window.localStorage.setItem(STORAGE_KEY, preference);
+    }
+  }
+  applyTheme(preference === 'system' ? getSystemTheme() : preference);
 }
 
 export function toggleTheme(): Theme {

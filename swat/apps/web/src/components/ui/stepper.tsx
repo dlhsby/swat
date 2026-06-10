@@ -39,7 +39,8 @@ export function Stepper({ steps, current, className }: StepperProps): JSX.Elemen
                   className={cn(
                     'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-tiny font-semibold',
                     done && 'bg-primary-700 text-white',
-                    active && 'bg-primary-50 text-primary-700 ring-2 ring-primary-600',
+                    active &&
+                      'bg-primary-50 text-primary-700 ring-2 ring-primary-600 dark:text-primary-400',
                     !done && !active && 'bg-neutral-100 text-neutral-400',
                   )}
                 >

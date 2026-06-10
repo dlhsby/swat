@@ -27,7 +27,13 @@ export const TableHeader = forwardRef<
   HTMLTableSectionElement,
   HTMLAttributes<HTMLTableSectionElement>
 >(function TableHeader({ className, ...props }, ref) {
-  return <thead ref={ref} className={cn('bg-neutral-50', className)} {...props} />;
+  return (
+    <thead
+      ref={ref}
+      className={cn('border-b border-neutral-200 bg-neutral-50', className)}
+      {...props}
+    />
+  );
 });
 
 export const TableBody = forwardRef<

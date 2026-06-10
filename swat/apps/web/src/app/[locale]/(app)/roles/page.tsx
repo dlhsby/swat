@@ -95,11 +95,16 @@ export default function RolesPage(): JSX.Element {
     <>
       <PageHead title={t('roles')} description="Kelola izin per peran." />
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        {/* Role list */}
-        <div className="space-y-2">
+      <div className="grid gap-[18px] lg:grid-cols-[320px_1fr]">
+        {/* Role list (hi-fi `.hf-rolelist`). */}
+        <div className="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0">
+          <div className="border-b border-neutral-200 px-4 py-[13px]">
+            <b className="text-[13px] font-bold text-neutral-900">Peran</b>
+          </div>
           {roles.length === 0 ? (
-            <Skeleton className="h-40" />
+            <div className="p-4">
+              <Skeleton className="h-40" />
+            </div>
           ) : (
             roles.map((role) => {
               const active = role.id === selectedId;
@@ -109,34 +114,24 @@ export default function RolesPage(): JSX.Element {
                   type="button"
                   onClick={() => setSelectedId(role.id)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
+                    'flex w-full items-center gap-2.5 border-b border-l-[3px] border-b-neutral-100 px-4 py-[13px] text-left text-[13.5px] transition-colors last:border-b-0',
                     active
-                      ? 'border-primary-200 bg-primary-50'
-                      : 'border-neutral-200 bg-neutral-0 hover:bg-neutral-50',
+                      ? 'border-l-transparent bg-primary-700 font-semibold text-white'
+                      : 'border-l-transparent text-neutral-700 hover:bg-neutral-50',
                   )}
                 >
+                  <ShieldCheck
+                    className={cn('h-4 w-4 shrink-0', active ? 'text-white' : 'text-neutral-400')}
+                    aria-hidden
+                  />
+                  <span className="min-w-0 flex-1 truncate">{role.name}</span>
                   <span
                     className={cn(
-                      'flex h-9 w-9 items-center justify-center rounded-base',
-                      active
-                        ? 'bg-primary-100 text-primary-700'
-                        : 'bg-neutral-100 text-neutral-500',
+                      'shrink-0 font-mono text-[11px]',
+                      active ? 'text-white/75' : 'text-neutral-400',
                     )}
                   >
-                    <ShieldCheck className="h-5 w-5" aria-hidden />
-                  </span>
-                  <span className="min-w-0">
-                    <span
-                      className={cn(
-                        'block truncate font-medium',
-                        active ? 'text-primary-800' : 'text-neutral-900',
-                      )}
-                    >
-                      {role.name}
-                    </span>
-                    <span className="block text-tiny text-neutral-500">
-                      {role.permissionIds.length} izin · {role.userCount} pengguna
-                    </span>
+                    {role.permissionIds.length} izin · {role.userCount} pengguna
                   </span>
                 </button>
               );
@@ -175,17 +170,17 @@ export default function RolesPage(): JSX.Element {
                     <p className="mb-2 text-tiny font-semibold uppercase tracking-wide text-neutral-400">
                       {resource}
                     </p>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="flex flex-col gap-3">
                       {perms.map((p) => (
                         <label
                           key={p.id}
-                          className="flex items-center justify-between gap-3 rounded-base border border-neutral-200 px-3 py-2"
+                          className="flex cursor-pointer items-center justify-between gap-2.5"
                         >
-                          <span className="min-w-0">
-                            <span className="block truncate text-body-sm text-neutral-900">
+                          <span className="flex min-w-0 flex-col">
+                            <span className="truncate text-body-sm font-medium text-neutral-900">
                               {p.description}
                             </span>
-                            <span className="block font-mono text-tiny text-neutral-400">
+                            <span className="truncate font-mono text-[11.5px] text-neutral-400">
                               {p.key}
                             </span>
                           </span>

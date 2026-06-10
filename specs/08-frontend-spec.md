@@ -234,21 +234,29 @@ phase. This is the parity contract.
 
 ### Login (`/login`)
 - **Form:** username, password
+- **Password field:** uses the shared `PasswordInput` (eye icon toggles masked/plain; `aria-pressed`)
 - **Submit:** POST `/api/auth/login`, set httpOnly session cookie
 - **On success:** redirect to `/dashboard` (or referrer)
 - **On error:** show inline error "Username atau password salah"
 - **MFA / second factor:** deferred (Phase 2)
 
 ### Change Password (forced on first login)
-- **Route:** `/auth/change-password` (automatic redirect if `mustChangePassword = true`)
-- **Form:** current password, new password (strength indicator), confirm new
+- **Route:** `/change-password` (automatic redirect if `mustChangePassword = true`)
+- **Form:** current password, new password (strength indicator), confirm new — all three use `PasswordInput`
 - **Submit:** POST `/api/auth/change-password`; set `mustChangePassword = false` on user
 - **Redirect:** post-change, go to dashboard
+- **Escape hatch:** the forced screen offers Sign-out (back to `/login`) so a stale/forced session is never trapped
 
 ### Profile page (`/profile`)
 - **Display:** user name, username, role, photo
-- **Actions:** edit name/photo, change password (always allowed), logout
+- **Actions:** change password (always allowed, links to `/change-password`), logout
 - **Edit:** PATCH `/api/users/me` (authenticated endpoint)
+
+### Settings page (`/settings`)
+Account-level preferences, reachable from the topbar avatar menu (which holds **Profil · Pengaturan · Keluar** — change-password is *not* duplicated here; it lives under Profile). No permission gate.
+- **Tampilan (Appearance):** System / Light / Dark via a reusable `SegmentedControl`. "System" clears the stored override and follows the OS; persisted through `theme.ts` (`setThemePreference`).
+- **Bahasa (Language):** id-ID / en-US — switches the active locale via `router.replace(pathname, { locale })`, preserving the current route.
+- **Tentang (About):** app name, organisation, version (`APP_VERSION`).
 
 ---
 
@@ -332,6 +340,7 @@ apps/web/
 │   │   │   │   └── bahan-bakar/[haulId]/page.tsx
 │   │   │   ├── pengguna/page.tsx
 │   │   │   ├── profile/page.tsx
+│   │   │   ├── settings/page.tsx (appearance · language · about)
 │   │   │   ├── layout.tsx (sidebar, nav)
 │   │   │   └── error.tsx, not-found.tsx
 │   │   ├── api/
@@ -355,7 +364,9 @@ apps/web/
 │   │   │   ├── breadcrumb.tsx, tooltip.tsx, avatar.tsx, dropdown-menu.tsx
 │   │   │   ├── stepper.tsx, dropzone.tsx, progress.tsx, description-list.tsx
 │   │   │   ├── skeleton.tsx, empty-state.tsx (illustration-aware)
+│   │   │   ├── password-input.tsx (Input + show/hide eye toggle)
 │   │   │   └── (matches 13-design/01-design-system.md §3 exactly)
+│   │   ├── settings/ (SegmentedControl, AppearanceControl, LanguageControl)
 │   │   ├── charts/ (Phase 2 — Recharts: StackedColumns, GroupedColumns, AreaTrend, Donut, KpiCard)
 │   │   ├── illustrations/ (Illustration.tsx + Icon.tsx wrapping lucide-react)
 │   │   ├── forms/

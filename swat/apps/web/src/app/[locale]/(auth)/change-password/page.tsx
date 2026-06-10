@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useState } from 'react';
 
 import { AuthShell } from '@/components/auth/auth-shell';
-import { Alert, Button, Label, Input, notify } from '@/components/ui';
+import { Alert, Button, Label, PasswordInput, notify } from '@/components/ui';
 import { useRouter } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api-error';
 import { changePassword } from '@/lib/auth-api';
@@ -91,9 +91,8 @@ export default function ChangePasswordPage(): JSX.Element {
             <Label htmlFor="current" required>
               {t('currentPassword')}
             </Label>
-            <Input
+            <PasswordInput
               id="current"
-              type="password"
               autoComplete="current-password"
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
@@ -104,9 +103,8 @@ export default function ChangePasswordPage(): JSX.Element {
             <Label htmlFor="next" required>
               {t('newPassword')}
             </Label>
-            <Input
+            <PasswordInput
               id="next"
-              type="password"
               autoComplete="new-password"
               value={next}
               onChange={(e) => setNext(e.target.value)}
@@ -133,9 +131,8 @@ export default function ChangePasswordPage(): JSX.Element {
             <Label htmlFor="confirm" required>
               {t('confirmPassword')}
             </Label>
-            <Input
+            <PasswordInput
               id="confirm"
-              type="password"
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}

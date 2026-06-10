@@ -16,6 +16,8 @@
     "retry": "Coba Lagi",
     "create": "Buat Baru",
     "themeToggle": "Ganti Tema",
+    "showPassword": "Tampilkan kata sandi",
+    "hidePassword": "Sembunyikan kata sandi",
     "comingSoon": "Segera",
     "loadError": "Gagal memuat data",
     "loadErrorBody": "Terjadi kesalahan saat memuat data. Silakan coba lagi.",
@@ -56,7 +58,7 @@
     "notifications": "Notifikasi",
     "userMenu": "Menu pengguna",
     "profile": "Profil",
-    "changePassword": "Ubah Kata Sandi",
+    "settings": "Pengaturan",
     "logout": "Keluar",
     "logoutConfirmTitle": "Keluar dari SWAT?",
     "logoutConfirmBody": "Anda akan keluar dari sesi ini dan kembali ke halaman masuk."
@@ -120,6 +122,21 @@
     "sessionCard": "Sesi",
     "sessionBody": "Keluar dari sesi pada perangkat ini.",
     "logout": "Keluar"
+  },
+  "settings": {
+    "title": "Pengaturan",
+    "subtitle": "Sesuaikan tampilan dan preferensi aplikasi.",
+    "appearance": "Tampilan",
+    "appearanceBody": "Pilih tema terang, gelap, atau ikuti sistem.",
+    "themeSystem": "Sistem",
+    "themeLight": "Terang",
+    "themeDark": "Gelap",
+    "language": "Bahasa",
+    "languageBody": "Pilih bahasa antarmuka aplikasi.",
+    "about": "Tentang",
+    "aboutApp": "Aplikasi",
+    "aboutOrg": "Instansi",
+    "aboutVersion": "Versi"
   },
   "dashboard": {
     "greetingMorning": "Selamat pagi",

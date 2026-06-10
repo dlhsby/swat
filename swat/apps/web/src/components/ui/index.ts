@@ -18,6 +18,7 @@ export * from './input';
 export * from './label';
 export * from './metric-card';
 export * from './number-input';
+export * from './password-input';
 export * from './popover';
 export * from './radio-group';
 export * from './select';

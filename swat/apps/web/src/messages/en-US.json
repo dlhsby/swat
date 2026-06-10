@@ -16,6 +16,8 @@
     "retry": "Try again",
     "create": "New",
     "themeToggle": "Toggle theme",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "comingSoon": "Soon",
     "loadError": "Failed to load data",
     "loadErrorBody": "Something went wrong while loading. Please try again.",
@@ -56,7 +58,7 @@
     "notifications": "Notifications",
     "userMenu": "User menu",
     "profile": "Profile",
-    "changePassword": "Change Password",
+    "settings": "Settings",
     "logout": "Log out",
     "logoutConfirmTitle": "Log out of SWAT?",
     "logoutConfirmBody": "You will end this session and return to the sign-in page."
@@ -120,6 +122,21 @@
     "sessionCard": "Session",
     "sessionBody": "Sign out of this device.",
     "logout": "Log out"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Customize the app's appearance and preferences.",
+    "appearance": "Appearance",
+    "appearanceBody": "Choose a light or dark theme, or follow the system.",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "language": "Language",
+    "languageBody": "Choose the application interface language.",
+    "about": "About",
+    "aboutApp": "Application",
+    "aboutOrg": "Organization",
+    "aboutVersion": "Version"
   },
   "dashboard": {
     "greetingMorning": "Good morning",

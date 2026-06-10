@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, ChevronDown, KeyRound, LogOut, Menu, UserCircle } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, Menu, Settings, UserCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
@@ -100,9 +100,9 @@ export function Topbar(): JSX.Element {
               <UserCircle aria-hidden />
               {t('profile')}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => router.push('/change-password')}>
-              <KeyRound aria-hidden />
-              {t('changePassword')}
+            <DropdownMenuItem onSelect={() => router.push('/settings')}>
+              <Settings aria-hidden />
+              {t('settings')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem destructive onSelect={() => setConfirmLogout(true)}>

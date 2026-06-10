@@ -29,7 +29,7 @@ export function SourceDonut({ slices }: { slices: readonly DonutSlice[] }): JSX.
             contentStyle={{
               background: 'var(--neutral-0)',
               border: '1px solid var(--neutral-200)',
-              borderRadius: 8,
+              borderRadius: 6,
               fontSize: 12,
             }}
           />

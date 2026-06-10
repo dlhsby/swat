@@ -26,7 +26,9 @@ export function PageHead({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-h1 font-bold text-neutral-900">{title}</h1>
-          {description ? <p className="mt-1 text-body-sm text-neutral-500">{description}</p> : null}
+          {description ? (
+            <p className="mt-1.5 text-body-sm text-neutral-500">{description}</p>
+          ) : null}
         </div>
         {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
       </div>

@@ -39,7 +39,7 @@ function NavLink({ leaf, onNavigate }: { leaf: NavLeaf; onNavigate?: () => void 
       className={cn(
         'ml-[-3px] flex items-center gap-2.5 rounded-lg border-l-[3px] py-2 pl-[38px] pr-2.5 text-[13px] font-medium leading-tight transition-colors',
         active
-          ? 'border-primary-600 bg-primary-50 font-semibold text-primary-700'
+          ? 'border-transparent bg-primary-700 font-semibold text-white shadow-subtle'
           : 'border-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
       )}
     >
@@ -73,15 +73,12 @@ function NavTop({
         'ml-[-3px] flex items-center gap-2.5 rounded-lg border-l-[3px] py-2.5 text-[13px] font-semibold transition-colors',
         collapsed ? 'justify-center px-0' : 'px-2.5',
         active
-          ? 'border-primary-600 bg-primary-50 text-primary-700'
+          ? 'border-transparent bg-primary-700 text-white shadow-subtle'
           : 'border-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
       )}
     >
       <Icon
-        className={cn(
-          'h-[18px] w-[18px] shrink-0',
-          active ? 'text-primary-700' : 'text-neutral-400',
-        )}
+        className={cn('h-[18px] w-[18px] shrink-0', active ? 'text-white' : 'text-neutral-400')}
         aria-hidden
       />
       {collapsed ? null : <span className="truncate">{t(leaf.key)}</span>}
