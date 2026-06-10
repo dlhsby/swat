@@ -772,6 +772,42 @@ async function upsertSiteByName(name: string, type: SiteType): Promise<{ id: str
 // ---------------------------------------------------------------------------
 // Orchestration
 // ---------------------------------------------------------------------------
+/**
+ * Dev/CI-only demo users — one per non-admin role — so RBAC and permission-gated
+ * UI can be exercised without hand-creating accounts. All share the default
+ * password and are ready to use (no forced reset). Never seeded in production.
+ */
+async function seedDemoRoleUsers(roleIdByName: Map<string, string>): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+  const passwordHash = await hash(ADMIN_DEFAULT_PASSWORD, ARGON2_OPTIONS);
+  const demoUsers: ReadonlyArray<{ username: string; name: string; role: string }> = [
+    { username: 'administrasi', name: 'Demo Administrasi Data', role: 'Administrasi Data' },
+    { username: 'checker', name: 'Demo Checker', role: 'Checker' },
+    { username: 'operator', name: 'Demo Operator Pool', role: 'Operator Pool' },
+    { username: 'petugastpa', name: 'Demo Petugas TPA', role: 'Petugas TPA' },
+    { username: 'supervisor', name: 'Demo Supervisor', role: 'Supervisor' },
+  ];
+  for (const demo of demoUsers) {
+    const roleId = roleIdByName.get(demo.role);
+    if (roleId === undefined) {
+      continue;
+    }
+    await prisma.user.upsert({
+      where: { username: demo.username },
+      update: { passwordHash, mustChangePassword: false, roleId },
+      create: {
+        username: demo.username,
+        name: demo.name,
+        passwordHash,
+        roleId,
+        mustChangePassword: false,
+      },
+    });
+  }
+}
+
 async function main(): Promise<void> {
   const permissionIdByKey = await seedPermissions();
   const roleIdByName = await seedRoles(permissionIdByKey);
@@ -781,6 +817,7 @@ async function main(): Promise<void> {
     throw new Error('Administrator role was not created');
   }
   await seedAdminUser(adminRoleId);
+  await seedDemoRoleUsers(roleIdByName);
 
   // Legacy-migration target: seed ONLY the auth bootstrap (permissions, roles,
   // admin). All reference + master + transactional data comes from the legacy DB
@@ -806,6 +843,12 @@ async function main(): Promise<void> {
   if (process.env.NODE_ENV !== 'production') {
     // eslint-disable-next-line no-console
     console.log('Forced-reset demo: adminreset / ' + ADMIN_DEFAULT_PASSWORD);
+    // eslint-disable-next-line no-console
+    console.log(
+      'Role demo users (password ' +
+        ADMIN_DEFAULT_PASSWORD +
+        '): administrasi, checker, operator, petugastpa, supervisor',
+    );
   }
 }
 
