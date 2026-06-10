@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 
+import { ActorContextMiddleware } from './common/audit/actor-context.middleware';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
@@ -66,4 +67,10 @@ import { SessionModule } from './session.module';
     { provide: APP_PIPE, useClass: AppValidationPipe },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  // Establish the per-request actor context (from the session) for every route,
+  // so the Prisma audit middleware can stamp who created/updated/deleted.
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(ActorContextMiddleware).forRoutes('*');
+  }
+}

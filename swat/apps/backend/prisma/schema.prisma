@@ -140,6 +140,10 @@ model User {
   inspectionsInspector        VehicleInspection[] @relation("VehicleInspectionInspector")
   inspectionsCreatedBy        VehicleInspection[] @relation("VehicleInspectionCreatedBy")
 
+  createdById String? @map("created_by_id") @db.Uuid
+  updatedById String? @map("updated_by_id") @db.Uuid
+  deletedById String? @map("deleted_by_id") @db.Uuid
+
   @@map("user")
 }
 
@@ -151,6 +155,11 @@ model Role {
   updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   users       User[]
   permissions RolePermission[]
+
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@map("role")
 }
@@ -228,6 +237,11 @@ model VehicleType {
   updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   models    VehicleModel[]
 
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
+
   @@map("vehicle_type")
 }
 
@@ -238,6 +252,11 @@ model FuelCategory {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   fuels     Fuel[]
+
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@map("fuel_category")
 }
@@ -253,26 +272,36 @@ model Fuel {
   updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   models         VehicleModel[]
 
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
+
   @@map("fuel")
 }
 
 model VehicleModel {
-  id               String             @id @default(uuid(7)) @db.Uuid
-  legacyId         Int?               @unique @map("legacy_id")
-  vehicleTypeId    String             @map("vehicle_type_id") @db.Uuid
+  id               String      @id @default(uuid(7)) @db.Uuid
+  legacyId         Int?        @unique @map("legacy_id")
+  vehicleTypeId    String      @map("vehicle_type_id") @db.Uuid
   vehicleType      VehicleType @relation(fields: [vehicleTypeId], references: [id])
-  fuelId           String             @map("fuel_id") @db.Uuid
-  fuel             Fuel               @relation(fields: [fuelId], references: [id])
-  brand            String             @db.VarChar(100)
-  fuelTankCapacity Int                @map("fuel_tank_capacity")
-  normalFuelRatio  Int                @default(1) @map("normal_fuel_ratio")
-  normalTareWeight Int                @map("normal_tare_weight")
-  maxNetLoad       Int?               @default(0) @map("max_net_load")
-  maxNetVolume     Int?               @default(0) @map("max_net_volume")
-  wheelCount       Int                @map("wheel_count")
-  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  fuelId           String      @map("fuel_id") @db.Uuid
+  fuel             Fuel        @relation(fields: [fuelId], references: [id])
+  brand            String      @db.VarChar(100)
+  fuelTankCapacity Int         @map("fuel_tank_capacity")
+  normalFuelRatio  Int         @default(1) @map("normal_fuel_ratio")
+  normalTareWeight Int         @map("normal_tare_weight")
+  maxNetLoad       Int?        @default(0) @map("max_net_load")
+  maxNetVolume     Int?        @default(0) @map("max_net_volume")
+  wheelCount       Int         @map("wheel_count")
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
   vehicles         Vehicle[]
+
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@map("vehicle_model")
 }
@@ -309,6 +338,10 @@ model Vehicle {
   maintenance        MaintenanceRecord[]
   inspections        VehicleInspection[]
 
+  createdById String? @map("created_by_id") @db.Uuid
+  updatedById String? @map("updated_by_id") @db.Uuid
+  deletedById String? @map("deleted_by_id") @db.Uuid
+
   @@index([poolSiteId])
   @@index([modelId])
   @@map("vehicle")
@@ -324,6 +357,11 @@ model LicenseClass {
   createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
   licenses  DriverLicense[]
+
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@map("license_class")
 }
@@ -349,6 +387,10 @@ model Driver {
   crewSchedules    CrewSchedule[]
   haulAssignments  HaulAssignment[]
 
+  createdById String? @map("created_by_id") @db.Uuid
+  updatedById String? @map("updated_by_id") @db.Uuid
+  deletedById String? @map("deleted_by_id") @db.Uuid
+
   @@index([poolSiteId])
   @@map("driver")
 }
@@ -364,6 +406,11 @@ model DriverLicense {
   expiry         DateTime     @db.Date
   createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@map("driver_license")
 }
@@ -388,6 +435,10 @@ model Site {
   pooledDrivers     Driver[]         @relation("DriverPool")
   disposalPermits   DisposalPermit[]
 
+  createdById String? @map("created_by_id") @db.Uuid
+  updatedById String? @map("updated_by_id") @db.Uuid
+  deletedById String? @map("deleted_by_id") @db.Uuid
+
   @@index([type])
   @@map("site")
 }
@@ -407,6 +458,10 @@ model Route {
   trips             Trip[]
   tripTemplates     TripTemplate[]
 
+  createdById String? @map("created_by_id") @db.Uuid
+  updatedById String? @map("updated_by_id") @db.Uuid
+  deletedById String? @map("deleted_by_id") @db.Uuid
+
   @@unique([originSiteId, destinationSiteId, category])
   @@map("route")
 }
@@ -424,6 +479,11 @@ model WasteSource {
   updatedAt DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   vehicles  VehicleWasteSource[]
 
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
+
   @@map("waste_source")
 }
 
@@ -435,6 +495,11 @@ model VehicleWasteSource {
   wasteSource   WasteSource @relation(fields: [wasteSourceId], references: [id])
   createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@unique([vehicleId, wasteSourceId])
   @@map("vehicle_waste_source")
@@ -457,6 +522,11 @@ model CrewSchedule {
   tripTemplates   TripTemplate[]
   haulAssignments HaulAssignment[]
 
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
+
   @@unique([vehicleId, driverId])
   @@map("crew_schedule")
 }
@@ -472,6 +542,11 @@ model TripTemplate {
   fuelRequestedLiters Decimal?     @map("fuel_requested_liters") @db.Decimal(8, 2)
   createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdById String?   @map("created_by_id") @db.Uuid
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@map("trip_template")
 }
@@ -496,6 +571,9 @@ model DisposalPermit {
   createdBy   User?                @relation("DisposalPermitCreatedBy", fields: [createdById], references: [id])
   updatedById String?              @map("updated_by_id") @db.Uuid
   updatedBy   User?                @relation("DisposalPermitUpdatedBy", fields: [updatedById], references: [id])
+
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@index([code])
   @@index([vehicleId, status, validFrom, validTo])
@@ -661,6 +739,9 @@ model MaintenanceRecord {
   updatedBy   User?             @relation("MaintenanceRecordUpdatedBy", fields: [updatedById], references: [id])
   items       MaintenanceItem[]
 
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  deletedById String?   @map("deleted_by_id") @db.Uuid
+
   @@index([vehicleId])
   @@index([date])
   @@map("maintenance_record")
@@ -701,6 +782,10 @@ model VehicleInspection {
   createdById String?          @map("created_by_id") @db.Uuid
   createdBy   User?            @relation("VehicleInspectionCreatedBy", fields: [createdById], references: [id])
   items       InspectionItem[]
+
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+  updatedById String?   @map("updated_by_id") @db.Uuid
+  deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@index([vehicleId])
   @@index([date])
