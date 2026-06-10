@@ -100,7 +100,9 @@ export function CrudFormDialog<T, F extends FieldValues>({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="max-h-[65vh] space-y-4 overflow-y-auto px-0.5">{children}</div>
+            {/* px/py gutter so a focused field's primary border isn't clipped
+                by the scroll container's overflow boundary. */}
+            <div className="max-h-[65vh] space-y-4 overflow-y-auto px-1 py-1">{children}</div>
             <DialogFooter>
               <Button
                 type="button"

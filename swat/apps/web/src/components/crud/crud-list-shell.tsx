@@ -61,15 +61,8 @@ export function CrudListShell<T>({
 
   return (
     <>
-      {embedded ? (
-        <div className="mb-3 flex justify-end">{createButton}</div>
-      ) : (
-        <PageHead
-          title={title}
-          description={description}
-          breadcrumb={breadcrumb}
-          actions={createButton}
-        />
+      {embedded ? null : (
+        <PageHead title={title} description={description} breadcrumb={breadcrumb} />
       )}
 
       <DataTable
@@ -80,6 +73,7 @@ export function CrudListShell<T>({
         onRetry={() => void manager.reload()}
         searchPlaceholder={searchPlaceholder ?? t('search')}
         toolbar={toolbar}
+        actions={createButton}
         emptyAction={createButton}
       />
 

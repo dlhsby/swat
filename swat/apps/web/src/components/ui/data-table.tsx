@@ -40,7 +40,7 @@ declare module '@tanstack/react-table' {
   }
 }
 
-const PAGE_SIZES = [25, 50, 100] as const;
+const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 export interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -57,6 +57,9 @@ export interface DataTableProps<TData, TValue> {
   emptyTitle?: string;
   /** Extra toolbar content (filters) rendered between search and column-toggle. */
   toolbar?: ReactNode;
+  /** Primary action(s) (e.g. [Buat Baru]) shown at the toolbar's right edge,
+   * after the column-toggle, so the data controls sit together. */
+  actions?: ReactNode;
   /** Per-row mobile card title accessor. */
   getRowId?: (row: TData) => string;
   className?: string;
@@ -89,6 +92,7 @@ export function DataTable<TData, TValue>({
   emptyAction,
   emptyTitle = 'Belum ada data',
   toolbar,
+  actions,
   className,
 }: DataTableProps<TData, TValue>): JSX.Element {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -127,7 +131,7 @@ export function DataTable<TData, TValue>({
   const isFiltered = globalFilter.length > 0 || columnFilters.length > 0;
 
   const colCount = table.getVisibleLeafColumns().length || 1;
-  const showToolbar = hasSearch || Boolean(toolbar) || enableColumnToggle;
+  const showToolbar = hasSearch || Boolean(toolbar) || enableColumnToggle || Boolean(actions);
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -144,32 +148,37 @@ export function DataTable<TData, TValue>({
             />
           ) : null}
           {toolbar}
-          {enableColumnToggle ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="ml-auto">
-                  <SlidersHorizontal className="h-4 w-4" aria-hidden />
-                  Kolom
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Tampilkan kolom</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {table
-                  .getAllColumns()
-                  .filter((c) => c.getCanHide())
-                  .map((column) => (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      {String(column.columnDef.meta?.label ?? column.id)}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {enableColumnToggle || actions ? (
+            <div className="ml-auto flex items-center gap-2">
+              {enableColumnToggle ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                      Kolom
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Tampilkan kolom</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {table
+                      .getAllColumns()
+                      .filter((c) => c.getCanHide())
+                      .map((column) => (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          checked={column.getIsVisible()}
+                          onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          {String(column.columnDef.meta?.label ?? column.id)}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
+              {actions}
+            </div>
           ) : null}
         </div>
       ) : null}
