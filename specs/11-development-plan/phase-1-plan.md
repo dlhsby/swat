@@ -78,7 +78,7 @@ component library (different files, different stack).
 | M | Scope (epics) | DoD |
 |---|---------------|-----|
 | **M1** | 1.1 Auth & RBAC | login/logout/me/change-password + admin force-reset; AuthGuard + PermissionsGuard + `@CurrentUser`/`@RequirePermissions`; users + roles CRUD; AuthAuditLog; login rate-limit; **auth ≥95% / others ≥80%**; lint+typecheck+test green |
-| **M2** | 1.2–1.6 backend master data | All master CRUD endpoints (vehicles+models+apps+fuels, drivers+licenses, sites, routes, waste-sources, crew-schedules, trip-templates, fuel-quotas) guarded, validated, soft-delete; ≥85% services |
+| **M2** | 1.2–1.6 backend master data | All master CRUD endpoints (vehicles+models+apps+fuels, drivers+licenses, sites, routes, waste-sources, crew-schedules, trip-templates, disposal-permits) guarded, validated, soft-delete; ≥85% services |
 | **M3** | 1.8.5 component library | 28 token-driven components (13 primitives + 15 composites), dark-mode + `:focus-visible` verified, DataTable all states; component tests |
 | **M4** | 1.7–1.8 transactions backend | daily-init cron (idempotent) + TransactionDay CRUD; depart/return; REFUEL/PICKUP/DISPOSAL(net=gross−tare gate)/passive trips; verify+lock; ≥90% trip paths |
 | **M5** | 1.9–1.12 frontend | App shell, login, forced-change, profile, dashboard; 7 master-data CRUD pages; Haul Board + Trip Sheet + record/verify forms; route guards + permission-gated UI |
@@ -116,7 +116,7 @@ Seed adds: WasteSource already present; ensure delete-blocked-when-referenced wh
 
 ### M2 · Epic 1.6 scheduling (T-120–T-122)
 CrewSchedule (unique vehicle+driver, depart<return), TripTemplate (nested under schedule, `@db.Time`),
-FuelQuota (BigInt `id` + `code`, validFrom≤validTo, status filter).
+DisposalPermit (UUID v7 `id` + `code`, validFrom≤validTo, status filter, `legacyId` bridge).
 
 ### M3 · Epic 1.8.5 component library (T-132a/b)
 Add deps to `apps/web`: `sonner`, `react-hook-form`, `zod`, `cmdk`, `date-fns`, `@tanstack/react-table`
@@ -143,7 +143,7 @@ record/verify forms; `usePermissions()` hook + `ProtectedAction` + middleware ro
 
 ### M6 · Epic 1.17 parity (T-170–T-175)
 Models already exist. Ref-master CRUD (vehicle-models/applications/fuels) with
-delete-blocked-when-referenced (409 + Indonesian msg); kitir `POST /fuel-quotas/bulk-import`
+delete-blocked-when-referenced (409 + Indonesian msg); kitir `POST /disposal-permits/bulk-import`
 (CSV/Excel upsert by `legacyId`, counts + error CSV); refuel read view (cost = approved×price/L +
 anomaly flag); inspection (server-derived result: any FAIL→FAIL, any ATTENTION→ATTENTION, else PASS;
 seed 12-item template); maintenance (nested items, `totalCost`=Σ, `PATCH /approve` gated). T-175 seed
@@ -173,7 +173,7 @@ rollback plan (docs + staging dry-run). **Live cutover execution is the user's o
 | **DISPOSAL weighing integrity** | Server authoritative `netWeight`; reject `gross<tare`; ≥90% coverage on trip recording |
 | **Legacy migration fidelity** (live volumes unknown) | Discovery-first; idempotent + resumable; per-year ≤1% reconciliation gate; dry-run vs sample before live |
 | **Image-corpus volume** (multi-TB) | Bounded-concurrency streamed upload + checksum + orphan report; resumable; deferred to on-prem |
-| **Parity gaps vs `old_swat`** | Epic 1.17 gates cutover; module specs (`inspection/maintenance/fuel-quota-kitir.md`) + legacy controllers as reference |
+| **Parity gaps vs `old_swat`** | Epic 1.17 gates cutover; module specs (`inspection/maintenance/disposal-permits.md`) + legacy controllers as reference |
 | **Component-library drift from hi-fi** | Build 1.8.5 first; token-driven only; dark + `:focus-visible` verified per component before screens |
 
 ---

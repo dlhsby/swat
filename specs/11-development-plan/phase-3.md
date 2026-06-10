@@ -117,8 +117,8 @@ Phase 1 complete (Trip, Haul, HaulAssignment, Levy entities); Phase 2 complete (
     1. **ReportJob model:**
        ```prisma
        model ReportJob {
-         id            String          @id @default(cuid())  // UUID or CUID
-         userId        Int
+         id            String          @id @default(uuid(7))  // UUID v7
+         userId        String
          user          User            @relation(fields: [userId], references: [id])
          reportType    String          // 'tonnage' | 'fuel' | 'route' | 'levy'
          format        String          // 'xlsx' | 'pdf'

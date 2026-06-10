@@ -25,7 +25,7 @@ export interface DailyTonnageRow {
 }
 
 export interface TonnageBySourceRow {
-  readonly wasteSourceId: number;
+  readonly wasteSourceId: string;
   readonly code: string;
   readonly name: string;
   readonly totalTonnageKg: number;
@@ -33,7 +33,7 @@ export interface TonnageBySourceRow {
 }
 
 export interface TonnageBySiteRow {
-  readonly siteId: number;
+  readonly siteId: string;
   readonly name: string;
   readonly type: string;
   readonly totalTonnageKg: number;
@@ -41,7 +41,7 @@ export interface TonnageBySiteRow {
 }
 
 export interface FuelConsumptionRow {
-  readonly vehicleId: number;
+  readonly vehicleId: string;
   readonly plateNumber: string;
   readonly fuelApprovedLiters: number;
   readonly fuelRequestedLiters: number;
@@ -50,7 +50,7 @@ export interface FuelConsumptionRow {
 }
 
 export interface RouteActivityRow {
-  readonly routeId: number;
+  readonly routeId: string;
   readonly category: string;
   readonly originSiteName: string;
   readonly destinationSiteName: string;

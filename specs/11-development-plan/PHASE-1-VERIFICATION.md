@@ -99,7 +99,7 @@ For each resource, exercise list → create → edit → delete and confirm the 
 - [ ] **OPS1. Inspection [WEB] (`/inspections`).** Create with the 12-item checklist; the **result is server-derived** (any FAIL→FAIL; any ATTENTION→ATTENTION; else PASS) — the client cannot set it. Detail sheet shows per-item status. *(Known gap: no result/vehicle/date filter dropdowns — search only.)*
 - [ ] **OPS2. Maintenance [WEB] (`/maintenance`).** Line items → **`totalCost` server-computed**; auto code `PRW-YYYYMM-NNNN`; `PATCH :id/approve` (needs `maintenance:approve`) → APPROVED; once APPROVED, edit/delete are **blocked**. *(Same filter gap.)*
 - [ ] **OPS3. Refuel log [WEB] (`/refuel-log`).** Read-only view; cost = `approved × fuel.pricePerLiter`; rows where `approved < requested` flagged as **anomaly**.
-- [ ] **OPS4. Kitir bulk import [WEB] (`/fuel-quotas` → Impor Massal).** Upload a CSV → preview → import; upsert by `legacyId`; per-row error report for bad rows; duplicate `legacyId` within one file handled (UPSERT/SKIP), no spurious failure.
+- [ ] **OPS4. Kitir bulk import [WEB] (`/disposal-permits` → Impor Massal).** Upload a CSV → preview → import; upsert by `legacyId`; per-row error report for bad rows; duplicate `legacyId` within one file handled (UPSERT/SKIP), no spurious failure.
 
 ---
 

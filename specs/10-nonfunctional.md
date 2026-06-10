@@ -236,11 +236,11 @@ Per data model spec ([`03-data-model.md`](./03-data-model.md)) and partitioning 
 - `Haul.operationDate` (monthly)
 - `HaulAssignment.operationDate` (monthly)
 - `TpaInboundLog.date` (monthly)
-- `FuelQuota.validFrom` (yearly)
+- `DisposalPermit.validFrom` (yearly)
 
 **Secondary indexes within partitions** (speed status/date range filtering):
 - `Trip(operationDate, status)` (for filtering IN_PROGRESS/DONE/VERIFIED within a date range)
-- `FuelQuota(vehicleId, validFrom, validTo)` (for active-quota lookups)
+- `DisposalPermit(vehicleId, validFrom, validTo)` (for active-permit lookups)
 - `TpaInboundLog(date, plateNumber)` (for weighbridge reconciliation by date and vehicle)
 - `TransactionDay(date)` unique (daily operations)
 - `DailyTonnage(date)` unique (daily aggregates)
@@ -437,7 +437,7 @@ Example:
 ```
 feat: add fuel quota validation
 
-Validate that vehicle has active FuelQuota for disposal site.
+Validate that vehicle has active DisposalPermit for disposal site.
 Reject DISPOSAL trip if no valid fuel quota.
 ```
 

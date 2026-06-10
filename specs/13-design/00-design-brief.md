@@ -124,7 +124,7 @@ The rebuilt system is written in **NestJS (backend) + Next.js (frontend)**, UI i
   - `TripStatus.DONE` → `blue-100` / `blue-700` text
   - `TripStatus.VERIFIED` → `green-100` / `green-700` text
   - `VehicleStatus.GOOD` → green, `MINOR_DAMAGE` → amber, `MAJOR_DAMAGE` → red, `LOST` → gray
-  - `FuelQuotaStatus.ACTIVE` → green, `INACTIVE` → gray
+  - `DisposalPermitStatus.ACTIVE` → green, `INACTIVE` → gray
 
 ### Typography
 - **Font family (committed):** **Plus Jakarta Sans** (UI; fallback Inter, system-ui) +

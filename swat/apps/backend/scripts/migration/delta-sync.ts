@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 
 import type { LegacyDisposalPermit, LegacySite, LegacyVehicle } from './lib/legacy-types';
-import { mapDisposalPermit, mapSite, mapVehicle } from './lib/mappers';
+import { mapDisposalPermit, mapSite, mapVehicle, toLegacyMap } from './lib/mappers';
 import { reconcileRow, renderReportMarkdown, type MigrationReport } from './lib/reconcile';
 import { connectLegacy, countRows, legacyDbConfigFromEnv, log, query, warn } from './lib/runtime';
 
@@ -58,9 +58,17 @@ async function resyncMasters(sysUser: string): Promise<void> {
         });
       }
     }
+    // Resolve FKs against the now-current DB (legacy id → new UUID). Models are
+    // not re-synced here, so their map comes straight from the migrated rows.
+    const siteMap = toLegacyMap(
+      await prisma.site.findMany({ select: { id: true, legacyId: true } }),
+    );
+    const modelMap = toLegacyMap(
+      await prisma.vehicleModel.findMany({ select: { id: true, legacyId: true } }),
+    );
     const vehicles = await query<LegacyVehicle>(conn, 'SELECT * FROM kendaraan');
     for (const v of vehicles) {
-      const mapped = mapVehicle(v, NOW);
+      const mapped = mapVehicle(v, NOW, siteMap, modelMap);
       const { legacyId, createdAt, ...update } = mapped;
       if (!legacyId) {
         continue;
@@ -77,9 +85,12 @@ async function resyncMasters(sysUser: string): Promise<void> {
         });
       }
     }
+    const vehicleMap = toLegacyMap(
+      await prisma.vehicle.findMany({ select: { id: true, legacyId: true } }),
+    );
     const quotas = await query<LegacyDisposalPermit>(conn, 'SELECT * FROM jatahkitir');
     for (const q of quotas) {
-      const mapped = mapDisposalPermit(q, NOW, sysUser);
+      const mapped = mapDisposalPermit(q, NOW, sysUser, vehicleMap, siteMap);
       const { legacyId, createdAt, ...update } = mapped;
       if (!legacyId) {
         continue;

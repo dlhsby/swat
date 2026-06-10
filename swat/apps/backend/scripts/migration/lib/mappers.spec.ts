@@ -1,5 +1,6 @@
 import { type LegacyDriver, type LegacySite, type LegacyVehicle } from './legacy-types';
 import {
+  type LegacyIdMap,
   mapDailyTonnage,
   mapDriver,
   mapDisposalPermit,
@@ -7,9 +8,31 @@ import {
   mapSite,
   mapVehicle,
   mapVehicleModel,
+  resolveFk,
 } from './mappers';
 
 const NOW = new Date('2026-06-08T00:00:00.000Z');
+
+// Stand-in legacy→UUID maps. The loader builds these from each parent table
+// after insert; the mappers only resolve through them (PKs are real UUID v7).
+const siteMap: LegacyIdMap = new Map([
+  [1, 'uuid-site-1'],
+  [2, 'uuid-site-2'],
+  [3, 'uuid-site-3'],
+]);
+const modelMap: LegacyIdMap = new Map([[2, 'uuid-model-2']]);
+const appMap: LegacyIdMap = new Map([[1, 'uuid-app-1']]);
+const fuelMap: LegacyIdMap = new Map([[3, 'uuid-fuel-3']]);
+const vehicleMap: LegacyIdMap = new Map([[42, 'uuid-vehicle-42']]);
+
+describe('resolveFk', () => {
+  it('returns the migrated UUID for a known legacy id', () => {
+    expect(resolveFk(siteMap, 2, 'x.siteId')).toBe('uuid-site-2');
+  });
+  it('throws (named) when the legacy id has no migrated row', () => {
+    expect(() => resolveFk(siteMap, 999, 'route.originSiteId')).toThrow(/route.originSiteId.*999/);
+  });
+});
 
 describe('mapSite', () => {
   it('preserves the legacy PK as legacyId (id auto-generates) and nulls (0,0) GPS', () => {
@@ -60,10 +83,12 @@ describe('mapVehicle', () => {
     KENDARAAN_MASABERLAKUPAJAKSTNK: '2027-01-01',
     KENDARAAN_KETERANGAN: '  ',
   };
-  it('nulls bogus 1900 year, clamps negative odometer, falls back zero-date STNK to now', () => {
-    const out = mapVehicle(base, NOW);
+  it('resolves pool/model FKs, nulls bogus 1900 year, clamps odometer, falls back zero-date STNK', () => {
+    const out = mapVehicle(base, NOW, siteMap, modelMap);
     expect(out).toMatchObject({
       legacyId: 5,
+      poolSiteId: 'uuid-site-1',
+      modelId: 'uuid-model-2',
       status: 'GOOD',
       manufactureYear: null,
       currentOdometer: 0,
@@ -75,7 +100,7 @@ describe('mapVehicle', () => {
 });
 
 describe('mapVehicleModel', () => {
-  it('defaults a zero fuel ratio to 1 and nulls optional maxima', () => {
+  it('resolves application/fuel FKs, defaults a zero fuel ratio to 1 and nulls optional maxima', () => {
     const out = mapVehicleModel(
       {
         KATEGORIKENDARAAN_ID: 2,
@@ -90,13 +115,21 @@ describe('mapVehicleModel', () => {
         KATEGORIKENDARAAN_JUMLAHRODA: 6,
       },
       NOW,
+      appMap,
+      fuelMap,
     );
-    expect(out).toMatchObject({ normalFuelRatio: 1, maxNetLoad: null, maxNetVolume: null });
+    expect(out).toMatchObject({
+      applicationId: 'uuid-app-1',
+      fuelId: 'uuid-fuel-3',
+      normalFuelRatio: 1,
+      maxNetLoad: null,
+      maxNetVolume: null,
+    });
   });
 });
 
 describe('mapDriver', () => {
-  it('falls back a missing birth date to the epoch and trims notes', () => {
+  it('resolves the pool FK, falls back a missing birth date to the epoch and trims notes', () => {
     const row: LegacyDriver = {
       PENGEMUDI_ID: 3,
       SPOT_POOL_ID: 1,
@@ -110,22 +143,34 @@ describe('mapDriver', () => {
       PENGEMUDI_PELATIHANSAFETY: 'BELUM',
       PENGEMUDI_KETERANGAN: ' AKTIF ',
     };
-    const out = mapDriver(row, NOW);
-    expect(out).toMatchObject({ legacyId: 3, employmentStatus: 'PNS', notes: 'AKTIF' });
+    const out = mapDriver(row, NOW, siteMap);
+    expect(out).toMatchObject({
+      legacyId: 3,
+      poolSiteId: 'uuid-site-1',
+      employmentStatus: 'PNS',
+      notes: 'AKTIF',
+    });
     expect(out.birthDate).toEqual(new Date('1970-01-01T00:00:00.000Z'));
   });
 });
 
 describe('mapRoute / mapDisposalPermit / mapDailyTonnage', () => {
-  it('maps a route category + distance', () => {
+  it('maps a route category + distance and resolves the site FKs', () => {
     expect(
       mapRoute(
         { RUTE_ID: 7, KATEGORIRUTE_ID: 3, SPOT_ASAL_ID: 1, SPOT_TUJUAN_ID: 2, RUTE_JARAK: 12 },
         NOW,
+        siteMap,
       ),
-    ).toMatchObject({ legacyId: 7, category: 'PICKUP', originSiteId: '1', distanceKm: 12 });
+    ).toMatchObject({
+      legacyId: 7,
+      category: 'PICKUP',
+      originSiteId: 'uuid-site-1',
+      destinationSiteId: 'uuid-site-2',
+      distanceKm: 12,
+    });
   });
-  it('maps a kitir to a disposal permit with the system user as creator', () => {
+  it('maps a kitir to a disposal permit, resolving vehicle/site FKs + system creator', () => {
     const out = mapDisposalPermit(
       {
         JATAHKITIR_ID: 5001,
@@ -138,8 +183,16 @@ describe('mapRoute / mapDisposalPermit / mapDailyTonnage', () => {
       },
       NOW,
       'system-user-id',
+      vehicleMap,
+      siteMap,
     );
-    expect(out).toMatchObject({ legacyId: 5001, status: 'ACTIVE', createdById: 'system-user-id' });
+    expect(out).toMatchObject({
+      legacyId: 5001,
+      vehicleId: 'uuid-vehicle-42',
+      siteId: 'uuid-site-3',
+      status: 'ACTIVE',
+      createdById: 'system-user-id',
+    });
   });
   it('rounds tonnage double to a BigInt amount', () => {
     const out = mapDailyTonnage(

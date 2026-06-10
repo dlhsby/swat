@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Monitoring module provides real-time operational dashboards for management and supervisory staff to track fleet performance, tonnage, fuel consumption, and route activity. It aggregates data from the transactional layer (Trip, HaulAssignment, FuelQuota) and external sources (TpaInboundLog, DailyTonnage) into visual KPI cards, charts, and drillable reports. This module is read-only; it supplies decision makers with current-day and historical trending data.
+The Monitoring module provides real-time operational dashboards for management and supervisory staff to track fleet performance, tonnage, fuel consumption, and route activity. It aggregates data from the transactional layer (Trip, HaulAssignment, DisposalPermit) and external sources (TpaInboundLog, DailyTonnage) into visual KPI cards, charts, and drillable reports. This module is read-only; it supplies decision makers with current-day and historical trending data.
 
 **Scope:** Dashboards only (data visualization). Reporting/export covered in Phase 3.
 
@@ -42,9 +42,9 @@ The Monitoring module provides real-time operational dashboards for management a
    - `vehicleId` → Vehicle → model, site; used to group trips per vehicle
    - `status`: marks completion of daily haul
 
-4. **FuelQuota** — authorization & vessel identity
-   - `vehicleId`, `siteId` (TPA): enables matching trips to quota/kitir
-   - `validFrom`, `validTo`: tracks active quotas over date range
+4. **DisposalPermit** — authorization & vessel identity
+   - `vehicleId`, `siteId` (TPA): enables matching trips to permit/kitir
+   - `validFrom`, `validTo`: tracks active permits over date range
 
 5. **TpaInboundLog** — external weighbridge ingest
    - `date`, `plateNumber`, `grossWeight`, `tareWeight`, `netWeight`: reconciliation source

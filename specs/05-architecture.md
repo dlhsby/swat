@@ -212,7 +212,7 @@ src/
 │   │   │   └── dto/
 │   │   ├── trip-templates/
 │   │   │   └── ...
-│   │   ├── fuel-quotas/
+│   │   ├── disposal-permits/
 │   │   │   └── ...
 │   │   └── scheduling.module.ts
 │   │
@@ -442,7 +442,7 @@ app/
 │   │   ├── tonnage/ · fuel/ · reports/   # Volume per Hari · Konsumsi BBM · Laporan(Phase 3)
 │   ├── scheduling/
 │   │   ├── crew-schedules/        # Jadwal Kru → Template Trayek
-│   │   └── fuel-quotas/           # Jatah Kitir (issue + bulk import) — parity G6/G8
+│   │   └── disposal-permits/      # Jatah Kitir (issue + bulk import) — parity G6/G8
 │   ├── transactions/
 │   │   ├── transaction-days/
 │   │   │   ├── page.tsx

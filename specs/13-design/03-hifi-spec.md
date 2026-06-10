@@ -78,7 +78,7 @@ Reports screens are **designed** but **built** in Phases 2–3.
 ## Status enums → pill mapping
 
 Every status renders as a `Badge` (pill with a leading dot + label — **color is never the only
-signal**). See `01-design-system.md` §1.4 for the full enum→token table (Trip, Day, FuelQuota,
+signal**). See `01-design-system.md` §1.4 for the full enum→token table (Trip, Day, DisposalPermit,
 Vehicle, Maintenance, Inspection, Employment, License, Refuel, Report, User).
 
 ---

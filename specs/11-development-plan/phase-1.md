@@ -200,7 +200,7 @@ Deliver a production-ready operational system with complete RBAC, all master-dat
      - site:read, site:create, site:update, site:delete
      - route:read, route:create, route:update, route:delete
      - crew-schedule:read, crew-schedule:create, crew-schedule:update, crew-schedule:delete
-     - fuel-quota:read, fuel-quota:create, fuel-quota:update, fuel-quota:delete
+     - disposal-permit:read, disposal-permit:create, disposal-permit:update, disposal-permit:delete
      - trip:read, trip:record, trip:verify, trip:verify:override
      - user:read, user:create, user:update, user:delete
      - role:read, role:create, role:update, role:delete
@@ -210,7 +210,7 @@ Deliver a production-ready operational system with complete RBAC, all master-dat
      - (Total ~55–65 permissions)
   2. **Seed initial roles:**
      - Admin (all permissions, including admin:*)
-     - Administrasi Data (vehicle:*, driver:*, site:*, route:*, crew-schedule:*, fuel-quota:*, trip:read)
+     - Administrasi Data (vehicle:*, driver:*, site:*, route:*, crew-schedule:*, disposal-permit:*, trip:read)
      - Checker (trip:verify, trip:read)
      - Operator Pool (trip:record, trip:read)
      - Petugas TPA (trip:read)
@@ -1003,20 +1003,20 @@ For each entity, build: list (table + filters + pagination), create (form + vali
   - [ ] CrewSchedule list + CRUD working.
   - [ ] Tests ≥80%; lint/typecheck clean.
 
-#### T-142. FuelQuota (kitir) list & CRUD
+#### T-142. DisposalPermit (kitir) list & CRUD
 - **Size:** M · **Coverage:** ≥80%
 - **Depends on:** T-122, T-134
 - **Files:**
-  - `apps/web/app/(admin)/scheduling/fuel-quotas/page.tsx` (create)
-  - `apps/web/src/components/FuelQuotaTable.tsx` (create)
-  - `apps/web/src/components/FuelQuotaForm.tsx` (create)
-  - `apps/web/src/lib/api/fuel-quotas.ts` (create)
-  - `apps/web/test/fuel-quotas.spec.tsx` (create)
+  - `apps/web/app/(admin)/scheduling/disposal-permits/page.tsx` (create)
+  - `apps/web/src/components/DisposalPermitTable.tsx` (create)
+  - `apps/web/src/components/DisposalPermitForm.tsx` (create)
+  - `apps/web/src/lib/api/disposal-permits.ts` (create)
+  - `apps/web/test/disposal-permits.spec.tsx` (create)
 - **Steps:**
-  1. **List page:** vehicle, site, issued date, valid from/to, status, kitir ID (big int).
+  1. **List page:** vehicle, site, issued date, valid from/to, status, kitir ID (UUID).
   2. Create/edit (extend, revoke), delete.
 - **Acceptance criteria:**
-  - [ ] FuelQuota list + CRUD working; kitir ID displayed.
+  - [ ] DisposalPermit list + CRUD working; kitir ID displayed.
   - [ ] Tests ≥80%; lint/typecheck clean.
 
 ---
@@ -1267,7 +1267,7 @@ For each entity, build: list (table + filters + pagination), create (form + vali
 - **Depends on:** T-152
 - **Files:**
   - `scripts/migrate-legacy.ts` (modify)
-  - Partitioned tables: Trip, HaulAssignment, Haul, FuelQuota (monthly RANGE partitions pre-created).
+  - Partitioned tables: Trip, HaulAssignment, Haul, DisposalPermit (monthly/yearly RANGE partitions pre-created).
 - **Steps:**
   1. Legacy `transaksiangkutsampah`, `detailtransaksiangkutsampah`, `trayek`, `sampahmasuktpa` → partitioned PG tables.
   2. **Oldest → newest** (chronological order by operationDate).
@@ -1321,18 +1321,18 @@ For each entity, build: list (table + filters + pagination), create (form + vali
   - [ ] TripTemplates migrated.
   - [ ] Counts match legacy.
 
-#### T-158. FuelQuota (kitir) migration
+#### T-158. DisposalPermit (kitir) migration
 - **Size:** M · **Coverage:** N/A
 - **Depends on:** T-152
 - **Files:**
   - `scripts/migrate-legacy.ts` (modify)
 - **Steps:**
-  1. Legacy `jatahkitir` → `FuelQuota`.
-  2. Preserve ID (if numeric, use as bigint).
+  1. Legacy `jatahkitir` → `DisposalPermit`.
+  2. Create new UUID v7 PK; preserve legacy numeric ID in `legacyId` (indexed, unique).
   3. Map validFrom, validTo, status.
 - **Acceptance criteria:**
-  - [ ] FuelQuotas migrated.
-  - [ ] ID preserved for TPA matching (§4 of 04-migration).
+  - [ ] DisposalPermits migrated with UUID v7 PKs.
+  - [ ] legacyId preserved for TPA matching (§4 of 04-migration).
   - [ ] Counts match legacy.
 
 #### T-159. Migration validation & report
@@ -1622,10 +1622,10 @@ Backend + frontend tasks together.
 
 #### T-171. Jatah Kitir bulk import ("Impor Massal") *(G6/G8)*
 - **Size:** S · **Coverage:** ≥80%
-- **Depends on:** T-142 (FuelQuota CRUD), T-132b
-- **Backend:** `POST /api/v1/fuel-quotas/bulk-import` (CSV/Excel; upsert by legacyId; validate vehicle/
+- **Depends on:** T-142 (DisposalPermit CRUD), T-132b
+- **Backend:** `POST /api/v1/disposal-permits/bulk-import` (CSV/Excel; upsert by legacyId; validate vehicle/
   site exist + validTo≥validFrom; return imported/duplicate/error counts + error CSV) per
-  `fuel-quota-kitir.md` §3.4/§4. **Phase 1** (not P2).
+  `disposal-permits.md` §3.4/§4. **Phase 1** (not P2).
 - **Frontend:** "Impor Massal" dropzone + preview + strategy + progress + summary on the Jatah Kitir screen.
 - **Acceptance:** 10k-row import upserts correctly; error rows reported; matches design.
 
@@ -1675,18 +1675,18 @@ Backend + frontend tasks together.
 **Phase 1 is complete when ALL of the following are verified:**
 
 ### Functional Requirements
-- [ ] **Master-data CRUD:** All endpoints (Vehicle, Driver, Site, Route, CrewSchedule, FuelQuota, WasteSource) tested ≥80% coverage, all working.
+- [ ] **Master-data CRUD:** All endpoints (Vehicle, Driver, Site, Route, CrewSchedule, DisposalPermit, WasteSource) tested ≥80% coverage, all working.
 - [ ] **Auth & RBAC:** Login, logout, current user, user/role CRUD all working; permission guards enforced.
 - [ ] **Daily-init job:** Runs daily at 03:00 (or manual trigger), creates TransactionDay + seeds Hauls/Assignments/Trips; idempotent.
 - [ ] **Trip recording endpoints:** Depart, return, refuel, pickup, disposal all working.
 - [ ] **Trip verification:** Mark DONE → VERIFIED, lock against further edits (except override perm).
 - [ ] **Frontend auth:** Login page, route guards, permission-based UI.
-- [ ] **Frontend master-data pages:** List + create/edit/delete for all 7 entities (Vehicle, Driver, Site, Route, CrewSchedule, FuelQuota, WasteSource).
+- [ ] **Frontend master-data pages:** List + create/edit/delete for all 7 entities (Vehicle, Driver, Site, Route, CrewSchedule, DisposalPermit, WasteSource).
 - [ ] **Frontend transaction workflow:** Transaction day list/detail, record-depart/return/trip forms, verification UI; all working.
 
 ### Data Migration
 - [ ] **Migration discovery report:** Profiled live DB; per-year row counts, image inventory, data-quality issues documented.
-- [ ] **All legacy tables migrated:** Master (Site, Route, Vehicle, Driver, etc.) + transactional (Trip, Haul, HaulAssignment, FuelQuota) into partitioned PostgreSQL.
+- [ ] **All legacy tables migrated:** Master (Site, Route, Vehicle, Driver, etc.) + transactional (Trip, Haul, HaulAssignment, DisposalPermit) into partitioned PostgreSQL.
 - [ ] **Per-year row counts reconciled:** Variance ≤1% per table/year.
 - [ ] **Data-quality fixes applied:** No (0,0) GPS, no 1900 years, duplicate routes deduplicated.
 - [ ] **User & role migration:** No MD5 hashes; all users set to mustChangePassword=true; permissions mapped from legacy menu grants.
@@ -1782,7 +1782,7 @@ All legacy data (2013–present) migrated into partitioned PostgreSQL, reconcile
 | T-139 | 1.10 | Site list & CRUD | M |
 | T-140 | 1.10 | Route list & CRUD | M |
 | T-141 | 1.10 | CrewSchedule list & CRUD | M |
-| T-142 | 1.10 | FuelQuota (kitir) list & CRUD | M |
+| T-142 | 1.10 | DisposalPermit (kitir) list & CRUD | M |
 | T-143 | 1.11 | Transaction day list & detail | L |
 | T-144 | 1.11 | Record-depart form | M |
 | T-145 | 1.11 | Record-return form | M |
@@ -1798,7 +1798,7 @@ All legacy data (2013–present) migrated into partitioned PostgreSQL, reconcile
 | T-155 | 1.13 | Transactional data migration (partitioned) | L |
 | T-156 | 1.13 | Image migration (filesystem → object storage) | L |
 | T-157 | 1.13 | Crew schedule & template migration | M |
-| T-158 | 1.13 | FuelQuota (kitir) migration | M |
+| T-158 | 1.13 | DisposalPermit (kitir) migration | M |
 | T-159 | 1.13 | Migration validation & report | M |
 | T-160 | 1.14 | Unit test suite (services) | L |
 | T-161 | 1.14 | Integration test suite (endpoints) | L |

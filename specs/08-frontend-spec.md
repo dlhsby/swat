@@ -53,10 +53,10 @@ Menu visibility derives from user permissions (fetched via `GET /api/current-use
 | | WasteSource | Sumber Sampah | `waste-source:read` |
 | Scheduling | CrewSchedule | Jadwal Kru | `crew-schedule:read` |
 | | TripTemplate | Template Trayek | `trip-template:read` |
-| | FuelQuota | Jatah Kitir | `fuel-quota:read` |
+| | DisposalPermit | Jatah Kitir | `disposal-permit:read` |
 | Master Data | VehicleApplication | Aplikasi Kendaraan | `vehicle-application:read` |
 | | WasteSource | Sumber Sampah | `waste-source:read` |
-| Scheduling | FuelQuota | Jatah Kitir | `fuel-quota:read` |
+| Scheduling | DisposalPermit | Jatah Kitir | `disposal-permit:read` |
 | Transactions | TransactionDay | Hari Transaksi (→ Haul Board → Trip Sheet) | `transaction-day:read` |
 | | RefuelLog | Pengisian Bahan Bakar | `trip:record-fuel` |
 | | VehicleInspection | Pemeriksaan Kendaraan | `inspection:read` |
@@ -87,7 +87,7 @@ phase. This is the parity contract.
 | Spot & Rute | `master-geography.md` | `spot`,`rute`,`kategori*` | 1 |
 | Sumber Sampah | `master-waste-fuel.md` | `kategorisumbersampah*` | 1 |
 | Jadwal Kru · Template Trayek | `scheduling.md` | `masterdetailtransaksi`,`mastertrayek` | 1 |
-| Jatah Kitir (+ Impor Massal) *(G6,G8)* | `fuel-quota-kitir.md` | `jatahkitir`,`importexcel` | 1 |
+| Jatah Kitir (+ Impor Massal) *(G6,G8)* | `disposal-permits.md` | `jatahkitir`,`importexcel` | 1 |
 | Hari Transaksi · Haul Board · Trip Sheet · Pickup/Disposal/Refuel/Verify/Reconcile | `transactions.md` | `transaksi/*`,`inisiasi*`,`monitoringpengangkutan*` | 1 |
 | Pengisian Bahan Bakar (log) *(G7)* | `transactions.md` | `pengisianbahanbakar` | 1 |
 | Pemeriksaan Kendaraan *(G4)* | `inspection.md` | `pemeriksaankendaraan` | 1 |

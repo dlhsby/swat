@@ -40,7 +40,7 @@ describe('tonnageTrend', () => {
 
 describe('sourceComposition', () => {
   const row = (name: string, kg: number): TonnageBySourceRow => ({
-    wasteSourceId: 1,
+    wasteSourceId: 'ws-1',
     code: name[0]!,
     name,
     totalTonnageKg: kg,
@@ -70,7 +70,7 @@ describe('fuelBars', () => {
   it('maps fuel rows and surfaces the RED flag', () => {
     const rows: FuelConsumptionRow[] = [
       {
-        vehicleId: 1,
+        vehicleId: 'veh-1',
         plateNumber: 'L 1 AB',
         fuelApprovedLiters: 80,
         fuelRequestedLiters: 100,

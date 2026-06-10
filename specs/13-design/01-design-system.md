@@ -111,8 +111,8 @@ A leading dot (`-500`) or icon reinforces state so **color is never the sole ind
 | `TripStatus.VERIFIED` | Terverifikasi | green-100 → green-700 | `bg-green-100 text-green-700` |
 | `DayStatus.IN_PROGRESS` | Belum Selesai | amber-100 → amber-700 | `bg-amber-100 text-amber-700` |
 | `DayStatus.DONE` | Selesai | blue-100 → blue-700 | `bg-blue-100 text-blue-700` |
-| `FuelQuotaStatus.ACTIVE` | Berlaku | green-100 → green-700 | `bg-green-100 text-green-700` |
-| `FuelQuotaStatus.INACTIVE` | Tidak Berlaku | slate-100 → slate-700 | `bg-slate-100 text-slate-700` |
+| `DisposalPermitStatus.ACTIVE` | Berlaku | green-100 → green-700 | `bg-green-100 text-green-700` |
+| `DisposalPermitStatus.INACTIVE` | Tidak Berlaku | slate-100 → slate-700 | `bg-slate-100 text-slate-700` |
 | `VehicleStatus.GOOD` | Baik | green-100 → green-700 | `bg-green-100 text-green-700` |
 | `VehicleStatus.MINOR_DAMAGE` | Rusak Ringan | amber-100 → amber-700 | `bg-amber-100 text-amber-700` |
 | `VehicleStatus.MAJOR_DAMAGE` | Rusak Berat | red-100 → red-700 | `bg-red-100 text-red-700` |
@@ -499,7 +499,7 @@ Help text           ← tiny neutral-500, 4px top
   themed-variable `background` inside a CSS `transition`; it can leave a stale color on theme switch.)
 
 ### 3.27 Progress — `<Progress>`
-- Track `neutral-200`, radius full, height 8; fill `primary-600`. Determinate (upload %, fuel-quota
+- Track `neutral-200`, radius full, height 8; fill `primary-600`. Determinate (upload %, disposal-permit
   usage, password strength) or indeterminate (animated sweep). Pair with a numeric/text label for
   screen readers (`role="progressbar"` + `aria-valuenow`).
 

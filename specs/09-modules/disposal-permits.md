@@ -344,7 +344,7 @@ From [`06-auth-rbac.md`](../06-auth-rbac.md):
 ## 11. Non-Functional Notes
 
 - **Indexing critical:** Without indexes, 3.3M rows would cause timeouts. Indexes on `(status, siteId, vehicleId, validFrom, validTo)` and `(vehicleId, validFrom, validTo)` are essential for weighbridge resolution queries.
-- **Partitioning:** FuelQuota partitioned yearly by `validFrom` (see 12-scalability-archiving.md §2); archive old partitions (>13 months) to cold tier.
+- **Partitioning:** DisposalPermit partitioned yearly by `validFrom` (see 12-scalability-archiving.md §2); archive old partitions (>13 months) to cold tier.
 - **Bulk import:** Use database-level COPY or batched inserts (1,000 rows per batch) to avoid transaction bloat. Phase 2 task.
 - **Concurrency:** Multiple admins issuing quotas concurrently; optimistic locking via `updatedAt` + version checks if needed.
 - **Soft delete:** Do not delete quotas; mark `status = INACTIVE` instead (preserve audit trail and historical linkage).

@@ -276,7 +276,7 @@
   1. Install `@prisma/client` and `prisma` in backend.
   2. Create `apps/backend/prisma/` directory.
   3. Copy Prisma schema from [`03-data-model.md`](../03-data-model.md) into `schema.prisma`.
-  4. Include all models: User, Role, Permission, Vehicle, Driver, Site, Route, Trip, Haul, HaulAssignment, FuelQuota, TransactionDay, Photo, TpaInboundLog, etc.
+  4. Include all models: User, Role, Permission, Vehicle, Driver, Site, Route, Trip, Haul, HaulAssignment, DisposalPermit, TransactionDay, Photo, TpaInboundLog, etc.
   5. Include all enums: SiteType, RouteCategory, TripStatus, DayStatus, VehicleStatus, FuelCategory, EmploymentStatus, MaintenanceStatus (per [`01-glossary.md`](../01-glossary.md) §4).
   6. Add indexes per data model spec (legacyId, status, dates).
   7. Create `.env` file that references root DATABASE_URL via `.env.local`.
@@ -410,7 +410,7 @@
     `formatDateDisplay`(`d MMM yyyy`, id), `formatTime`(`HH:mm:ss`), `formatWeight`(kg),
     `formatDistance`(km), `formatFuel`(`L`, 2dp), `formatTonnage`(ton) — id-ID separators, WIB.
   - `apps/web/src/lib/status-pill.ts` (create) — enum→{label, badgeVariant} map mirroring
-    `01-design-system.md` §1.4 (Trip/Day/FuelQuota/Vehicle/Maintenance/Inspection/Employment/License/
+    `01-design-system.md` §1.4 (Trip/Day/DisposalPermit/Vehicle/Maintenance/Inspection/Employment/License/
     Refuel/Report/User).
   - `apps/web/src/lib/__tests__/format.test.ts` (create) — unit tests for every formatter + pill mapping.
 - **Acceptance:** ≥90% coverage; examples match the design system table (`Rp 8.500.000`, `15 Mar 2026`,

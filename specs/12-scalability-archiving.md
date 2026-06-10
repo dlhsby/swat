@@ -2,7 +2,7 @@
 
 **Why this document exists:** SWAT has been in production **since 2013**. Each operational day it
 records **thousands of trips** (`Trip` rows) plus driver/site/disposal **photos**, alongside
-weighbridge logs (`TpaInboundLog`) and fuel-quota issuance (`jatahkitir` reached an
+weighbridge logs (`TpaInboundLog`) and disposal-permit issuance (`jatahkitir` reached an
 AUTO_INCREMENT high-water of ~3.3M historically). Over 10+ years that is **tens of millions of
 transactional rows and a large image corpus**. The MVP must stay fast for **daily operational
 entry** while still letting reporting/monitoring reach **all historical years**.
@@ -24,7 +24,7 @@ Rough estimate to design against (tune with real numbers during migration discov
 | `HaulAssignment` | ~1,000–2,000 | ~0.5M | ~6M |
 | `Haul` | ~800–1,500 | ~0.4M | ~5M |
 | `TpaInboundLog` (weighbridge) | ~1,000–3,000 | ~0.7M | ~9M |
-| `FuelQuota` (kitir) | ~1,000 | ~0.3M | ~3.3M (matches legacy) |
+| `DisposalPermit` (kitir) | ~1,000 | ~0.3M | ~3.3M (matches legacy) |
 | `DailyTonnage` (aggregate) | 1 | 365 | ~4.7k |
 | **Trip photos** | ~3,000–10,000 files | ~2M files | **~25M files / multiple TB** |
 
@@ -49,7 +49,7 @@ archival. PostgreSQL declarative partitioning + `pg_partman` for automated rollo
 | `HaulAssignment` | `operationDate` (denormalized from `Haul`) | monthly | follows Trip |
 | `Haul` | `operationDate` (denormalized from `TransactionDay`) | monthly | follows Trip |
 | `TpaInboundLog` | `date` | monthly | weighbridge history |
-| `DisposalPermit` | `validFrom` | yearly | lower volume, range lookups (was `FuelQuota`) |
+| `DisposalPermit` | `validFrom` | yearly | lower volume, range lookups |
 
 > **Schema note:** per [`03-data-model.md`](./03-data-model.md) §8, `Haul`, `HaulAssignment`, and `Trip` each have a denormalized,
 > non-null `operationDate DATE` (copied from the owning `TransactionDay.date`) as the **partition key**.
@@ -195,7 +195,8 @@ of trip photos this must move to dedicated object storage.
 Replace `photo String?` URL columns with a generic `Photo`/attachment relation:
 ```prisma
 model Photo {
-  id          BigInt   @id @default(autoincrement())
+  id          String   @id @db.Uuid @default(uuid(7))
+  legacyId    BigInt?  @unique
   objectKey   String   @unique @db.VarChar(512)   // bucket-relative key
   contentType String   @db.VarChar(100)
   sizeBytes   Int
@@ -226,7 +227,7 @@ Output feeds the sizing in §1 and the partition/archive config. See
 
 ## 8. Operational performance checklist
 
-- [ ] Partitioned `Trip`/`Haul`/`HaulAssignment`/`TpaInboundLog`/`FuelQuota` with monthly/yearly granularity and partition pruning.
+- [ ] Partitioned `Trip`/`Haul`/`HaulAssignment`/`TpaInboundLog`/`DisposalPermit` with monthly/yearly granularity and partition pruning.
 - [ ] `operationDate` denormalized + indexed on partitioned tables; Haul unique constraint includes partition key.
 - [ ] Rollup tables created and maintained incrementally (on trip verify) + nightly batch (2 AM UTC) reconciliation.
 - [ ] Archive job scheduled monthly to detach partitions > 13 months old; rollups retained indefinitely.

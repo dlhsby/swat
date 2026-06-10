@@ -4,7 +4,7 @@
 
 Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via RESTful API. Replace legacy SOAP endpoints. Enable automatic posting of weighing results from the TPA scale system, with server-side validation, idempotency, and reconciliation against daily trip data.
 
-**Effort:** 2–3 weeks. **Dependencies:** Phase 1 complete; FuelQuota, trip recording, and TransactionDay operational.
+**Effort:** 2–3 weeks. **Dependencies:** Phase 1 complete; DisposalPermit, trip recording, and TransactionDay operational.
 
 > **Parity scope (see [`09-modules/integration-weighbridge.md`](../09-modules/integration-weighbridge.md)):**
 > the new REST API must cover **all 5 legacy SOAP methods** (`insertDB`, `insertPenimbanganTerverifikasi`,
@@ -115,20 +115,20 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
 
 **Parallel group:** 4.2 in parallel with 4.1; both before 4.3.
 
-#### T-404. FuelQuota resolution service (by code or plate)
+#### T-404. DisposalPermit resolution service (by code or plate)
 
 - **Size:** M · **Coverage:** ≥90%
-- **Depends on:** Phase 1 (FuelQuota CRUD + schema complete)
+- **Depends on:** Phase 1 (DisposalPermit CRUD + schema complete)
 - **Files:**
   - `apps/backend/src/modules/integrations/weighbridge/weighbridge-resolution.service.ts` (create)
   - `packages/schemas/src/weighbridge.schema.ts` (create)
   - `apps/backend/test/weighbridge-resolution.service.spec.ts` (create)
 - **Steps:**
   1. **Test (RED):**
-     - `resolveKitir(code, date)` → find FuelQuota by parsed ID, check ACTIVE status, within validity window → return { id, vehicleId, plateNumber, siteId, siteName, vehicle: { brand, model, currentTareWeight, normalTareWeight, maxNetLoad, maxNetVolume } }.
+     - `resolveKitir(code, date)` → find DisposalPermit by parsed ID, check ACTIVE status, within validity window → return { id, vehicleId, plateNumber, siteId, siteName, vehicle: { brand, model, currentTareWeight, normalTareWeight, maxNetLoad, maxNetVolume } }.
      - `resolveKitir(null, date)` → throw ValidationError "code required".
-     - Expired quota (validTo < date) → throw NotFoundError "kitir expired".
-     - `resolveKitirByPlate(plate, date)` → find Vehicle by plate, then FuelQuota for TPA site within date range → same return.
+     - Expired permit (validTo < date) → throw NotFoundError "kitir expired".
+     - `resolveKitirByPlate(plate, date)` → find Vehicle by plate, then DisposalPermit for TPA site within date range → same return.
      - Plate not found → throw NotFoundError.
   2. **Implement (GREEN):**
      - Service: database queries with indexes on (vehicleId, validFrom, validTo, status).
@@ -136,7 +136,7 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
      - Return DTO per integration-weighbridge spec §2.1.
   3. **Refactor:** extract query logic to repository.
 - **Acceptance criteria:**
-  - [ ] Resolve by kitir code: find FuelQuota, check status + date window, return full vehicle specs.
+  - [ ] Resolve by kitir code: find DisposalPermit, check status + date window, return full vehicle specs.
   - [ ] Resolve by plate: find vehicle, then quota for TPA site.
   - [ ] Invalid code / expired quota → 404 NotFoundError.
   - [ ] Unit tests ≥90% (critical path); lint/typecheck clean.
@@ -414,7 +414,7 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
      - Happy path: resolve-kitir by plate.
      - Error cases: invalid code, expired kitir, gross < tare, missing TransactionDay, plate mismatch, invalid API key, rate limit exceeded.
      - Idempotency: post-weighing twice with same key → 201, 201 (not 409 conflict).
-  2. **Setup:** spin up test DB, seed sample FuelQuota, Vehicle, TransactionDay, Trip data.
+  2. **Setup:** spin up test DB, seed sample DisposalPermit, Vehicle, TransactionDay, Trip data.
   3. **Assertions:** verify Trip updated, TpaInboundLog inserted, response matches spec.
 - **Acceptance criteria:**
   - [ ] E2E tests cover happy path + all error cases.
@@ -500,7 +500,7 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
 - [ ] **E2E tests:** ≥90% coverage of weighbridge module (happy path + all error cases).
 - [ ] **Unit tests:** ≥85% coverage per service (resolution, validation, idempotency, rate limit).
 - [ ] **Lint + typecheck:** `pnpm lint && pnpm typecheck` clean (0 errors, 0 warnings).
-- [ ] **Integration tests:** weighbridge endpoints tested with realistic data (TransactionDay, FuelQuota, Trip).
+- [ ] **Integration tests:** weighbridge endpoints tested with realistic data (TransactionDay, DisposalPermit, Trip).
 
 ### Documentation & Integration
 - [ ] **API documentation:** Swagger at `/api/docs` with all endpoints documented (descriptions, examples, error codes).
@@ -534,7 +534,7 @@ SWAT records all weighings in Trip + TpaInboundLog. Tonnage is reconciled daily 
 | T-401 | 4.1 | ServiceAccount entity & API key generation | M |
 | T-402 | 4.1 | Service account CRUD endpoints (admin UI) | M |
 | T-403 | 4.1 | API key authentication guard (middleware) | M |
-| T-404 | 4.2 | FuelQuota resolution service (by code or plate) | M |
+| T-404 | 4.2 | DisposalPermit resolution service (by code or plate) | M |
 | T-405 | 4.2 | Weighing validation service (weights, tare, net) | M |
 | T-406 | 4.3 | POST /api/v1/weighbridge/resolve-kitir endpoint | M |
 | T-407 | 4.4 | Find or create DISPOSAL trip for weighing | M |

@@ -67,7 +67,7 @@ the layer that holds the rules.
   `AuthGuard` → `PermissionsGuard`, validated by the global pipe, wrapped in the `ApiResponse<T>`
   envelope, Indonesian error messages. M4 added the transaction routes (transaction-days,
   haul-assignments depart/return, trip record/verify/read); M6 added the operations routes
-  (vehicle-inspections, maintenance-records + approve, refuels read view, fuel-quotas bulk-import).
+  (vehicle-inspections, maintenance-records + approve, refuels read view, disposal-permits bulk-import).
 - **Postman collection** (`apps/backend/postman/`): 74 requests / 7 folders + local environment,
   cookie-auth, id-capturing POSTs. Regenerate with `node apps/backend/postman/generate.mjs`.
 
@@ -109,7 +109,7 @@ httpOnly + `SameSite=Strict` + Secure-in-prod + 8h rolling inactivity window.
 | T-119 | WasteSource CRUD | ✅ | `waste/waste-sources`; soft-delete. |
 | T-120 | CrewSchedule CRUD (TDD) | ✅ | unique vehicle+driver; depart < return. |
 | T-121 | TripTemplate CRUD (TDD) | ✅ | nested under schedule; `@db.Time` parse/format anchored UTC; `fuelRequestedLiters` Decimal → Number. |
-| T-122 | FuelQuota (kitir) CRUD (TDD) | ✅ | BigInt `id` → string; `validFrom ≤ validTo`; status filter. |
+| T-122 | DisposalPermit (kitir) CRUD (TDD) | ✅ | UUID v7 `id`; `validFrom ≤ validTo`; status filter; `legacyId` bridge. |
 
 **Patterns held across all entities:** Repository → Service → Controller; paginated `findMany`
 excluding `deletedAt`; soft-delete or delete-blocked-when-referenced (409); immutable returns;
@@ -155,7 +155,7 @@ class-validator DTOs (Zod `@swat/schemas` reserved for frontend sharing).
    `eslint-plugin-import` (one via `eslint-config-next`, one via `@swat/eslint-config`), which ESLint 8
    rejects as a plugin conflict, breaking `next lint`. `pnpm dedupe` collapses them; the lockfile change
    is committed with the M5 foundation.
-9. **Kitir bulk-import parses the file client-side** (M6) — the spec names `POST /fuel-quotas/bulk-import
+9. **Kitir bulk-import parses the file client-side** (M6) — the spec names `POST /disposal-permits/bulk-import
    (CSV/Excel)`. The frontend reads + parses the CSV (and resolves plate/site-name → id against loaded
    options) and posts **structured, validated rows** as JSON; the server re-validates vehicle/site
    existence + date order and upserts by `legacyId`. This keeps the backend free of a multipart/Excel
@@ -166,11 +166,11 @@ class-validator DTOs (Zod `@swat/schemas` reserved for frontend sharing).
    client, `argon2`, the S3 client, the `tsconfig`, and the Jest runner (so the pure transform/mapper/
    enum/reconcile/pagination/image logic is unit-tested in CI). The app build (`tsconfig.build.json`,
    `src/**` only) still excludes them.
-11. **Identity = preserve legacy integer PKs as new PKs** (M7) — rather than autoincrement + a
-   `legacyId→newId` remap table, the loader inserts each row with its legacy id as the PK *and* stores
-   `legacyId`, so intra-batch FKs resolve directly (sequences are reset to `max(id)+1` after load). The
-   one deduplicated table (routes) carries a remap so trip templates that referenced a dropped duplicate
-   point at the kept route; `verify` is drop-aware so the variance check stays fair.
+11. **Identity = UUID v7 PKs with legacyId bridge** (M7) — new PKs are UUID v7; the legacy numeric PK
+   is preserved in `legacyId` and indexed. The loader builds a per-table `legacyId→UUID map`, then resolves
+   all intra-batch FKs by looking up the parent's legacy id in the map. This preserves audit/debug traceability
+   without breaking FK resolution. The one deduplicated table (routes) carries a remap so trip templates that
+   referenced a dropped duplicate point at the kept route; `verify` is drop-aware so the variance check stays fair.
 
 ---
 
@@ -330,13 +330,13 @@ instances across the `(app)`/`(auth)` route groups (never co-mount, so no double
 ## M6 · Epic 1.17 — Legacy parity (T-170 … T-175)
 
 Closes the legacy feature gaps that gate cutover. Backend in a new `modules/operations/`
-(inspections · maintenance · refuels) plus a bulk-import endpoint on the existing fuel-quotas module;
+(inspections · maintenance · refuels) plus a bulk-import endpoint on the existing disposal-permits module;
 frontend promotes the three "Segera" placeholders to live screens and adds the kitir importer.
 
 | Task | Title | Status | Notes |
 |------|-------|--------|-------|
 | T-170 | Reference-master CRUD (model/application/fuel) | ✅ | Already delivered in **M2** backend (`fleet/{models,applications,fuels}`, delete-blocked-when-referenced → 409; fuel update carries `pricePerLiter`) + **M5** screens. Verified, no new work. |
-| T-171 | Jatah Kitir bulk import (Impor Massal) | ✅ | `POST /fuel-quotas/bulk-import` — validate vehicle/site + `validTo ≥ validFrom`, **upsert by `legacyId`** with **UPSERT/SKIP** strategy, per-row error reporting. Frontend: CSV dropzone → client parse + preview → import summary + downloadable error log (deviation #9). |
+| T-171 | Jatah Kitir bulk import (Impor Massal) | ✅ | `POST /disposal-permits/bulk-import` — validate vehicle/site + `validTo ≥ validFrom`, **upsert by `legacyId`** with **UPSERT/SKIP** strategy, per-row error reporting. Frontend: CSV dropzone → client parse + preview → import summary + downloadable error log (deviation #9). |
 | T-172 | Pengisian BBM — refuel log | ✅ | `GET /refuels` read view over REFUEL trips: derived **cost = approved × fuel.pricePerLiter**, **anomaly flag** when `approved < requested`; filters vehicle/fuel/status/date. Frontend `/refuel-log`: KPI grid + table. |
 | T-173 | Pemeriksaan Kendaraan — inspection | ✅ | CRUD with **server-derived** `result`/`passedCount`/`totalCount` (any FAIL→FAIL; any ATTENTION→ATTENTION; else PASS) from a seeded **12-item checklist**. Frontend `/inspections`: list + create/edit dialog (3-way per-item control + live result) + detail Sheet. |
 | T-174 | Perawatan — maintenance | ✅ | CRUD with nested line items, **server-computed `totalCost`**, auto code `PRW-YYYYMM-NNNN`, `PATCH …/approve` gated `maintenance:approve`; edit/delete **blocked once APPROVED**. Frontend `/maintenance`: KPI grid + list + record/edit dialog (line-item sub-table + live total) + approve flow + read-only view. |
@@ -365,7 +365,7 @@ Adversarial review of the M6 implementation. One real defect found + fixed; the 
 `{data, meta}` list shape vs the frontend `apiClient` unwrap; refuel relation filters
 (`haulAssignment.haul.vehicle.model.fuelId`) and BigInt→string serialization; the React dialogs'
 controlled state (the inspection checklist's `key={label}` is stable — labels are unique and never
-reorder). Reusing `fuel-quota:create` for bulk-import is spec-aligned (T-175 defined no separate key).
+reorder). Reusing `disposal-permit:create` for bulk-import is spec-aligned (T-175 defined no separate key).
 
 ---
 
@@ -387,7 +387,7 @@ the live transactional history is the streamed phase to run on-prem.
 | T-155 | Transactional (high-volume, partitioned) | ◐ **deferred — revisit with live data** | Empty in the snapshot, so the streamed loader can't be written/verified against real data here. Building blocks ready + unit-tested (keyset batches, watermark, status maps, PK-preserve); `TODO(T-155)` in `migrate-legacy.ts` + README §"Deferred — T-155" enumerate the steps for when the live DB is available. |
 | T-156 | Image migration (filesystem → S3) | ✅ | `migrate-images.ts` — enumerate path columns + `dokumentasi*`, bounded-concurrency upload, **SHA-256** verify, `Photo` rows, orphan logging, resumable; `lib/images.ts` (key/content-type) tested. |
 | T-157 | Crew schedule & template migration | ✅ | `masterdetailtransaksiangkutsampah` → CrewSchedule, `mastertrayek` → TripTemplate (route-remap applied; `@db.Time` parsing). |
-| T-158 | FuelQuota (kitir) migration | ✅ | `jatahkitir` → FuelQuota, BigInt id preserved for TPA matching, status + validity mapped. |
+| T-158 | DisposalPermit (kitir) migration | ✅ | `jatahkitir` → DisposalPermit, UUID v7 id with `legacyId` bridge for TPA matching, status + validity mapped. |
 | T-159 | Validation & report | ✅ | `verify-migration.ts` — per-table reconciliation (≤1%, route-drop-aware), FK spot-checks, security invariants (no non-Argon2, all `mustChangePassword`), markdown report, **exit 1 on critical**. |
 
 - **Tested core (53 unit tests):** `transforms` (date/year/GPS/encoding/clamp/time/dedupe), `enums`

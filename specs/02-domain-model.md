@@ -38,8 +38,8 @@ TransactionDay (1) ──< Haul (1) ──< HaulAssignment (1) ──< Trip
   populated by leg type. Consider, post-MVP, splitting into typed sub-records — **not now** (keep
   migration simple).
 - Legacy uses `0000-00-00 00:00:00` defaults for target/actual times → migrate to `NULL`.
-- IDs are huge `bigint` (AUTO_INCREMENT ~8M for `trayek`) → use `bigint`/`cuid` PKs; keep
-  `legacyId` for traceability (tables are empty anyway, so this mostly matters for the schema shape).
+- IDs are huge `bigint` (AUTO_INCREMENT ~8M for `trayek`) → use UUID v7 PKs; keep
+  `legacyId` for traceability to the legacy numeric PK (tables are empty anyway, so this mostly matters for the schema shape).
 
 ### 2.2 Scheduling (templates that seed each day)
 
@@ -200,8 +200,8 @@ erDiagram
     Driver ||--o{ CrewSchedule : in
     Route ||--o{ TripTemplate : on
 
-    Vehicle ||--o{ FuelQuota : authorized
-    Site ||--o{ FuelQuota : at
+    Vehicle ||--o{ DisposalPermit : authorized
+    Site ||--o{ DisposalPermit : at
 
     VehicleModel ||--o{ Vehicle : typed
     VehicleApplication ||--o{ VehicleModel : applies
@@ -232,6 +232,6 @@ erDiagram
 | `transaksi/pengambilansampah.php` | Record `PICKUP` trip actuals (time, odometer, tare) |
 | `transaksi/pembuangansampah.php` | Record `DISPOSAL` trip actuals + weighing (gross/tare/net/volume) |
 | `transaksi/pengisianbahanbakar.php` | Record `REFUEL` trip (requested/approved liters) |
-| `masterdata/jatahkitir.php` | `FuelQuota` CRUD |
+| `masterdata/jatahkitir.php` | `DisposalPermit` CRUD |
 | `masterdata/mastertrayek.php`, `penjadwalan.php` | `CrewSchedule` + `TripTemplate` CRUD |
 | `monitoring/tonase.php`, `laporan/*` | Phase 2/3 aggregations over `Trip`/`DailyTonnage` |

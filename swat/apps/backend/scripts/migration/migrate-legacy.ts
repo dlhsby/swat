@@ -56,6 +56,8 @@ import {
   mapVehicleModel,
   mapVehicleWasteSource,
   mapWasteSource,
+  resolveFk,
+  toLegacyMap,
 } from './lib/mappers';
 import { derivePermissionKeys } from './lib/permission-map';
 import { connectLegacy, legacyDbConfigFromEnv, log, parseFlags, query, warn } from './lib/runtime';
@@ -68,6 +70,9 @@ import {
 
 const prisma = new PrismaClient();
 const NOW = new Date();
+
+// `findMany` selection that feeds toLegacyMap (legacy id → new UUID).
+const ID_LEGACY = { select: { id: true, legacyId: true } } as const;
 
 /** Map a handful of well-known legacy role names → canonical seeded role names. */
 const ROLE_NAME_MAP: Record<string, string> = {
@@ -90,9 +95,9 @@ async function checkIdempotency(forceReset: boolean): Promise<void> {
   if (forceReset) {
     warn('Force reset: truncating migrated tables (CASCADE).');
     await prisma.$executeRawUnsafe(
-      `TRUNCATE TABLE "DisposalPermit","TripTemplate","CrewSchedule","DriverLicense","Driver",
-       "VehicleWasteSource","Vehicle","VehicleModel","WasteSource","Route","Site","Fuel",
-       "FuelCategory","VehicleApplication","LicenseClass","DailyTonnage","Levy","LegacyNameMap"
+      `TRUNCATE TABLE "disposal_permit","trip_template","crew_schedule","driver_license","driver",
+       "vehicle_waste_source","vehicle","vehicle_model","waste_source","route","site","fuel",
+       "fuel_category","vehicle_application","license_class","daily_tonnage","levy","legacy_name_map"
        CASCADE`,
     );
   }
@@ -110,11 +115,15 @@ async function systemUserId(): Promise<string> {
 async function migrateMasterData(): Promise<void> {
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
+    // Each table is loaded, then its `legacyId → new UUID` map is read back so the
+    // next table's FK mapper can resolve references (PKs are generated UUID v7,
+    // never the legacy integer). Order respects FK dependencies.
     const apps = await query<LegacyVehicleApplication>(conn, 'SELECT * FROM aplikasikendaraan');
     await prisma.vehicleApplication.createMany({
       data: apps.map((r) => mapVehicleApplication(r, NOW)),
       skipDuplicates: true,
     });
+    const appMap = toLegacyMap(await prisma.vehicleApplication.findMany(ID_LEGACY));
     log(`VehicleApplication: ${apps.length}`);
 
     const fuelCats = await query<LegacyFuelCategory>(conn, 'SELECT * FROM kategoribahanbakar');
@@ -122,18 +131,25 @@ async function migrateMasterData(): Promise<void> {
       data: fuelCats.map((r) => mapFuelCategory(r, NOW)),
       skipDuplicates: true,
     });
+    const fuelCatMap = toLegacyMap(await prisma.fuelCategory.findMany(ID_LEGACY));
 
     const fuels = await query<LegacyFuel>(conn, 'SELECT * FROM bahanbakar');
-    await prisma.fuel.createMany({ data: fuels.map((r) => mapFuel(r, NOW)), skipDuplicates: true });
+    await prisma.fuel.createMany({
+      data: fuels.map((r) => mapFuel(r, NOW, fuelCatMap)),
+      skipDuplicates: true,
+    });
+    const fuelMap = toLegacyMap(await prisma.fuel.findMany(ID_LEGACY));
 
     const licenseClasses = await query<LegacyLicenseClass>(conn, 'SELECT * FROM sim');
     await prisma.licenseClass.createMany({
       data: licenseClasses.map((r) => mapLicenseClass(r, NOW)),
       skipDuplicates: true,
     });
+    const licenseClassMap = toLegacyMap(await prisma.licenseClass.findMany(ID_LEGACY));
 
     const sites = await query<LegacySite>(conn, 'SELECT * FROM spot');
     await prisma.site.createMany({ data: sites.map((r) => mapSite(r, NOW)), skipDuplicates: true });
+    const siteMap = toLegacyMap(await prisma.site.findMany(ID_LEGACY));
     log(`Site: ${sites.length}`);
 
     // Routes — dedupe on (origin, destination, category). ORDER BY RUTE_ID makes
@@ -145,7 +161,7 @@ async function migrateMasterData(): Promise<void> {
       routeDedupeKey(r.SPOT_ASAL_ID, r.SPOT_TUJUAN_ID, r.KATEGORIRUTE_ID),
     );
     await prisma.route.createMany({
-      data: kept.map((r) => mapRoute(r, NOW)),
+      data: kept.map((r) => mapRoute(r, NOW, siteMap)),
       skipDuplicates: true,
     });
     log(`Route: ${kept.length} kept, ${dropped.length} duplicates dropped`);
@@ -155,18 +171,21 @@ async function migrateMasterData(): Promise<void> {
       data: wasteSources.map((r) => mapWasteSource(r, NOW)),
       skipDuplicates: true,
     });
+    const wasteSourceMap = toLegacyMap(await prisma.wasteSource.findMany(ID_LEGACY));
 
     const models = await query<LegacyVehicleModel>(conn, 'SELECT * FROM kategorikendaraan');
     await prisma.vehicleModel.createMany({
-      data: models.map((r) => mapVehicleModel(r, NOW)),
+      data: models.map((r) => mapVehicleModel(r, NOW, appMap, fuelMap)),
       skipDuplicates: true,
     });
+    const modelMap = toLegacyMap(await prisma.vehicleModel.findMany(ID_LEGACY));
 
     const vehicles = await query<LegacyVehicle>(conn, 'SELECT * FROM kendaraan');
     await prisma.vehicle.createMany({
-      data: vehicles.map((r) => mapVehicle(r, NOW)),
+      data: vehicles.map((r) => mapVehicle(r, NOW, siteMap, modelMap)),
       skipDuplicates: true,
     });
+    const vehicleMap = toLegacyMap(await prisma.vehicle.findMany(ID_LEGACY));
     log(`Vehicle: ${vehicles.length}`);
 
     const vws = await query<LegacyVehicleWasteSource>(
@@ -174,20 +193,21 @@ async function migrateMasterData(): Promise<void> {
       'SELECT * FROM kategorisumbersampahkendaraan',
     );
     await prisma.vehicleWasteSource.createMany({
-      data: vws.map(mapVehicleWasteSource),
+      data: vws.map((r) => mapVehicleWasteSource(r, vehicleMap, wasteSourceMap)),
       skipDuplicates: true,
     });
 
     const drivers = await query<LegacyDriver>(conn, 'SELECT * FROM pengemudi');
     await prisma.driver.createMany({
-      data: drivers.map((r) => mapDriver(r, NOW)),
+      data: drivers.map((r) => mapDriver(r, NOW, siteMap)),
       skipDuplicates: true,
     });
+    const driverMap = toLegacyMap(await prisma.driver.findMany(ID_LEGACY));
     log(`Driver: ${drivers.length}`);
 
     const licenses = await query<LegacyDriverLicense>(conn, 'SELECT * FROM kepemilikansim');
     await prisma.driverLicense.createMany({
-      data: licenses.map((r) => mapDriverLicense(r, NOW)),
+      data: licenses.map((r) => mapDriverLicense(r, NOW, driverMap, licenseClassMap)),
       skipDuplicates: true,
     });
   } finally {
@@ -280,6 +300,12 @@ async function migrateAuth(): Promise<void> {
 async function migrateScheduling(sysUser: string): Promise<void> {
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
+    // Resolve FKs against the master data loaded earlier (legacy id → new UUID).
+    const vehicleMap = toLegacyMap(await prisma.vehicle.findMany(ID_LEGACY));
+    const driverMap = toLegacyMap(await prisma.driver.findMany(ID_LEGACY));
+    const siteMap = toLegacyMap(await prisma.site.findMany(ID_LEGACY));
+    const routeMap = toLegacyMap(await prisma.route.findMany(ID_LEGACY));
+
     const schedules = await query<LegacyCrewSchedule>(
       conn,
       'SELECT * FROM masterdetailtransaksiangkutsampah',
@@ -289,8 +315,8 @@ async function migrateScheduling(sysUser: string): Promise<void> {
         where: { legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID },
         create: {
           legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID,
-          vehicleId: String(s.KENDARAAN_ID),
-          driverId: String(s.PENGEMUDI_ID),
+          vehicleId: resolveFk(vehicleMap, s.KENDARAAN_ID, 'crewSchedule.vehicleId'),
+          driverId: resolveFk(driverMap, s.PENGEMUDI_ID, 'crewSchedule.driverId'),
           departTime:
             legacyTimeToDate(s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_WAKTUBERANGKATKANDANG) ?? NOW,
           returnTime:
@@ -327,12 +353,13 @@ async function migrateScheduling(sysUser: string): Promise<void> {
       if (!crewScheduleId) {
         continue;
       }
+      const keptRouteLegacyId = routeRemap.get(t.RUTE_ID) ?? t.RUTE_ID;
       await prisma.tripTemplate.upsert({
         where: { legacyId: t.MASTERTRAYEK_ID },
         create: {
           legacyId: t.MASTERTRAYEK_ID,
           crewScheduleId,
-          routeId: String(routeRemap.get(t.RUTE_ID) ?? t.RUTE_ID),
+          routeId: resolveFk(routeMap, keptRouteLegacyId, 'tripTemplate.routeId'),
           targetTime: legacyTimeToDate(t.MASTERTRAYEK_WAKTUTARGET) ?? NOW,
           fuelRequestedLiters: nonNegativeOrNull(t.MASTERTRAYEK_JUMLAHISIBBMDIAJUKAN),
         },
@@ -344,7 +371,7 @@ async function migrateScheduling(sysUser: string): Promise<void> {
 
     const quotas = await query<LegacyDisposalPermit>(conn, 'SELECT * FROM jatahkitir');
     await prisma.disposalPermit.createMany({
-      data: quotas.map((r) => mapDisposalPermit(r, NOW, sysUser)),
+      data: quotas.map((r) => mapDisposalPermit(r, NOW, sysUser, vehicleMap, siteMap)),
       skipDuplicates: true,
     });
     log(`DisposalPermit: ${quotas.length}`);

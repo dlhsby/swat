@@ -73,7 +73,7 @@ enum AuthAction      { LOGIN LOGOUT FAILED_LOGIN PASSWORD_CHANGE ACCOUNT_LOCK FO
 ```prisma
 // ---------- Auth ----------
 model User {
-  id                 Int      @id @default(autoincrement())
+  id                 String   @id @db.Uuid @default(uuid(7))
   legacyId           Int?     @unique
   roleId             Int
   role               Role     @relation(fields: [roleId], references: [id])
@@ -102,7 +102,7 @@ model User {
 }
 
 model Role {
-  id          Int              @id @default(autoincrement())
+  id          String           @id @db.Uuid @default(uuid(7))
   legacyId    Int?             @unique
   name        String           @unique @db.VarChar(100)
   createdAt   DateTime         @default(now()) @db.Timestamptz(6)
@@ -112,7 +112,7 @@ model Role {
 }
 
 model Permission {
-  id          Int              @id @default(autoincrement())
+  id          String           @id @db.Uuid @default(uuid(7))
   key         String           @unique @db.VarChar(64)   // e.g. "vehicle:create"
   description String           @db.VarChar(255)
   createdAt   DateTime         @default(now()) @db.Timestamptz(6)
@@ -121,8 +121,8 @@ model Permission {
 }
 
 model RolePermission {
-  roleId       Int
-  permissionId Int
+  roleId       String
+  permissionId String
   createdAt    DateTime   @default(now()) @db.Timestamptz(6)
   updatedAt    DateTime   @updatedAt @db.Timestamptz(6)
   role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
@@ -131,8 +131,8 @@ model RolePermission {
 }
 
 model AuthAuditLog {
-  id        BigInt     @id @default(autoincrement())
-  userId    Int?                                         // FK to User (nullable if login fails before identification)
+  id        String     @id @db.Uuid @default(uuid(7))
+  userId    String?                                      // FK to User (nullable if login fails before identification)
   username  String     @db.VarChar(100)                 // Username attempted (always present)
   action    AuthAction                                  // login|logout|failed_login|password_change|account_lock|force_reset|permission_denied
   ip        String     @db.VarChar(45)                  // IPv4 or IPv6
@@ -148,7 +148,7 @@ model AuthAuditLog {
 
 // ---------- Fleet ----------
 model VehicleApplication {
-  id       Int            @id @default(autoincrement())
+  id       String         @id @db.Uuid @default(uuid(7))
   legacyId Int?           @unique
   name     String         @db.VarChar(100)
   createdAt DateTime      @default(now()) @db.Timestamptz(6)
@@ -157,7 +157,7 @@ model VehicleApplication {
 }
 
 model FuelCategory {
-  id        Int       @id @default(autoincrement())
+  id        String    @id @db.Uuid @default(uuid(7))
   legacyId  Int?      @unique
   name      String    @db.VarChar(20)
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
@@ -166,9 +166,9 @@ model FuelCategory {
 }
 
 model Fuel {
-  id             Int          @id @default(autoincrement())
+  id             String       @id @db.Uuid @default(uuid(7))
   legacyId       Int?         @unique
-  fuelCategoryId Int
+  fuelCategoryId String
   fuelCategory   FuelCategory @relation(fields: [fuelCategoryId], references: [id])
   name           String       @db.VarChar(100)
   pricePerLiter  Int          @default(0)   // IDR
@@ -178,11 +178,11 @@ model Fuel {
 }
 
 model VehicleModel {
-  id                   Int      @id @default(autoincrement())
+  id                   String   @id @db.Uuid @default(uuid(7))
   legacyId             Int?     @unique
-  applicationId        Int
+  applicationId        String
   application          VehicleApplication @relation(fields: [applicationId], references: [id])
-  fuelId               Int
+  fuelId               String
   fuel                 Fuel     @relation(fields: [fuelId], references: [id])
   brand                String   @db.VarChar(100)        // merk
   fuelTankCapacity     Int                              // liters
@@ -197,11 +197,11 @@ model VehicleModel {
 }
 
 model Vehicle {
-  id                  Int      @id @default(autoincrement())
+  id                  String   @id @db.Uuid @default(uuid(7))
   legacyId            Int?     @unique
-  poolSiteId          Int
+  poolSiteId          String
   poolSite            Site     @relation("VehiclePool", fields: [poolSiteId], references: [id])
-  modelId             Int
+  modelId             String
   model               VehicleModel @relation(fields: [modelId], references: [id])
   status              VehicleStatus @default(GOOD)
   plateNumber         String   @unique @db.VarChar(10)
@@ -220,7 +220,7 @@ model Vehicle {
   deletedAt           DateTime? @db.Timestamptz(6)
   hauls               Haul[]
   crewSchedules       CrewSchedule[]
-  fuelQuotas          FuelQuota[]
+  disposalPermits     DisposalPermit[]
   wasteSources        VehicleWasteSource[]
   maintenance         MaintenanceRecord[]
   inspections         VehicleInspection[]
@@ -230,7 +230,7 @@ model Vehicle {
 
 // ---------- Personnel ----------
 model LicenseClass {
-  id        Int       @id @default(autoincrement())
+  id        String    @id @db.Uuid @default(uuid(7))
   legacyId  Int?      @unique
   name      String    @db.VarChar(10)
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
@@ -239,9 +239,9 @@ model LicenseClass {
 }
 
 model Driver {
-  id               Int      @id @default(autoincrement())
+  id               String   @id @db.Uuid @default(uuid(7))
   legacyId         Int?     @unique
-  poolSiteId       Int
+  poolSiteId       String
   poolSite         Site     @relation("DriverPool", fields: [poolSiteId], references: [id])
   employmentStatus EmploymentStatus
   name             String   @db.VarChar(100)
@@ -263,11 +263,11 @@ model Driver {
 }
 
 model DriverLicense {
-  id             Int      @id @default(autoincrement())
+  id             String   @id @db.Uuid @default(uuid(7))
   legacyId       Int?     @unique
-  driverId       Int
+  driverId       String
   driver         Driver   @relation(fields: [driverId], references: [id])
-  licenseClassId Int
+  licenseClassId String
   licenseClass   LicenseClass @relation(fields: [licenseClassId], references: [id])
   licenseNumber  String   @db.VarChar(12)
   expiry         DateTime @db.Date
@@ -277,7 +277,7 @@ model DriverLicense {
 
 // ---------- Geography ----------
 model Site {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @db.Uuid @default(uuid(7))
   legacyId  Int?     @unique
   type      SiteType
   name      String   @db.VarChar(256)
@@ -292,17 +292,17 @@ model Site {
   destinationRoutes Route[]   @relation("RouteDestination")
   pooledVehicles    Vehicle[] @relation("VehiclePool")
   pooledDrivers     Driver[]  @relation("DriverPool")
-  fuelQuotas        FuelQuota[]
+  disposalPermits   DisposalPermit[]
   @@index([type])
 }
 
 model Route {
-  id                Int           @id @default(autoincrement())
+  id                String        @id @db.Uuid @default(uuid(7))
   legacyId          Int?          @unique
   category          RouteCategory
-  originSiteId      Int
+  originSiteId      String
   originSite        Site          @relation("RouteOrigin", fields: [originSiteId], references: [id])
-  destinationSiteId Int
+  destinationSiteId String
   destinationSite   Site          @relation("RouteDestination", fields: [destinationSiteId], references: [id])
   distanceKm        Int
   createdAt         DateTime      @default(now()) @db.Timestamptz(6)
@@ -315,7 +315,7 @@ model Route {
 
 // ---------- Waste ----------
 model WasteSource {
-  id       Int    @id @default(autoincrement())
+  id       String @id @db.Uuid @default(uuid(7))
   legacyId Int?   @unique
   code     String @unique @db.VarChar(5)
   name     String @db.VarChar(128)
@@ -326,10 +326,10 @@ model WasteSource {
 }
 
 model VehicleWasteSource {
-  id            Int         @id @default(autoincrement())
-  vehicleId     Int
+  id            String      @id @db.Uuid @default(uuid(7))
+  vehicleId     String
   vehicle       Vehicle     @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  wasteSourceId Int
+  wasteSourceId String
   wasteSource   WasteSource @relation(fields: [wasteSourceId], references: [id])
   createdAt     DateTime    @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime    @updatedAt @db.Timestamptz(6)
@@ -338,11 +338,11 @@ model VehicleWasteSource {
 
 // ---------- Scheduling ----------
 model CrewSchedule {
-  id            Int      @id @default(autoincrement())
+  id            String   @id @db.Uuid @default(uuid(7))
   legacyId      Int?     @unique
-  vehicleId     Int
+  vehicleId     String
   vehicle       Vehicle  @relation(fields: [vehicleId], references: [id])
-  driverId      Int
+  driverId      String
   driver        Driver   @relation(fields: [driverId], references: [id])
   departTime    DateTime @db.Time
   returnTime    DateTime @db.Time
@@ -354,11 +354,11 @@ model CrewSchedule {
 }
 
 model TripTemplate {
-  id                  Int          @id @default(autoincrement())
+  id                  String       @id @db.Uuid @default(uuid(7))
   legacyId            Int?         @unique
-  crewScheduleId      Int
+  crewScheduleId      String
   crewSchedule        CrewSchedule @relation(fields: [crewScheduleId], references: [id], onDelete: Cascade)
-  routeId             Int
+  routeId             String
   route               Route        @relation(fields: [routeId], references: [id])
   targetTime          DateTime     @db.Time
   fuelRequestedLiters Decimal?     @db.Decimal(8,2)
@@ -391,7 +391,7 @@ model DisposalPermit {   // "kitir" — TPA dumping permit
 
 // ---------- Transaction lifecycle ----------
 model TransactionDay {
-  id        Int       @id @default(autoincrement())
+  id        String    @id @db.Uuid @default(uuid(7))
   legacyId  Int?      @unique
   date      DateTime  @unique @db.Date
   status    DayStatus @default(IN_PROGRESS)
@@ -401,11 +401,11 @@ model TransactionDay {
 }
 
 model Haul {
-  id               BigInt   @id @default(autoincrement())
+  id               String   @id @db.Uuid @default(uuid(7))
   legacyId         BigInt?  @unique
-  transactionDayId Int
+  transactionDayId String
   transactionDay   TransactionDay @relation(fields: [transactionDayId], references: [id])
-  vehicleId        Int
+  vehicleId        String
   vehicle          Vehicle  @relation(fields: [vehicleId], references: [id])
   operationDate    DateTime @db.Date                    // denormalized from TransactionDay.date; partition key
   status           DayStatus @default(IN_PROGRESS)
@@ -418,13 +418,13 @@ model Haul {
 }
 
 model HaulAssignment {
-  id                       BigInt   @id @default(autoincrement())
+  id                       String   @id @db.Uuid @default(uuid(7))
   legacyId                 BigInt?  @unique
-  haulId                   BigInt
+  haulId                   String
   haul                     Haul     @relation(fields: [haulId], references: [id])
-  driverId                 Int
+  driverId                 String
   driver                   Driver   @relation(fields: [driverId], references: [id])
-  crewScheduleId           Int?
+  crewScheduleId           String?
   crewSchedule             CrewSchedule? @relation(fields: [crewScheduleId], references: [id])
   operationDate            DateTime @db.Date                    // denormalized from Haul; partition key
   status                   DayStatus @default(IN_PROGRESS)
@@ -439,9 +439,9 @@ model HaulAssignment {
   notes                    String?  @db.VarChar(256)
   createdAt                DateTime @default(now()) @db.Timestamptz(6)
   updatedAt                DateTime @updatedAt @db.Timestamptz(6)
-  createdById              Int?
+  createdById              String?
   createdBy                User?    @relation("HaulAssignmentCreatedBy", fields: [createdById], references: [id])
-  updatedById              Int?
+  updatedById              String?
   updatedBy                User?    @relation("HaulAssignmentUpdatedBy", fields: [updatedById], references: [id])
   trips                    Trip[]
   @@index([haulId])
@@ -449,13 +449,13 @@ model HaulAssignment {
 }
 
 model Trip {
-  id                   BigInt     @id @default(autoincrement())
+  id                   String     @id @db.Uuid @default(uuid(7))
   legacyId             BigInt?    @unique
-  haulAssignmentId     BigInt
+  haulAssignmentId     String
   haulAssignment       HaulAssignment @relation(fields: [haulAssignmentId], references: [id])
-  routeId              Int?
+  routeId              String?
   route                Route?     @relation(fields: [routeId], references: [id])
-  recordedById         Int?
+  recordedById         String?
   recordedBy           User?      @relation("TripRecordedBy", fields: [recordedById], references: [id])
   operationDate        DateTime   @db.Date                    // denormalized from HaulAssignment; partition key
   status               TripStatus @default(IN_PROGRESS)
@@ -475,11 +475,11 @@ model Trip {
   notes                String?    @db.VarChar(512)
   createdAt            DateTime   @default(now()) @db.Timestamptz(6)
   updatedAt            DateTime   @updatedAt @db.Timestamptz(6)
-  createdById          Int?
+  createdById          String?
   createdBy            User?      @relation("TripCreatedBy", fields: [createdById], references: [id])
-  updatedById          Int?
+  updatedById          String?
   updatedBy            User?      @relation("TripUpdatedBy", fields: [updatedById], references: [id])
-  verifiedById         Int?
+  verifiedById         String?
   verifiedBy           User?      @relation("TripVerifiedBy", fields: [verifiedById], references: [id])
   verifiedAt           DateTime?  @db.Timestamptz(6)                    // When trip was verified (locked)
   // photos attached via polymorphic Photo model (ownerType='trip', ownerId=tripId)
@@ -493,7 +493,7 @@ model Trip {
 
 // ---------- Object Storage & Attachments ----------
 model Photo {
-  id          BigInt   @id @default(autoincrement())
+  id          String   @id @db.Uuid @default(uuid(7))
   objectKey   String   @unique @db.VarChar(512)   // S3-compatible bucket-relative key
   contentType String   @db.VarChar(100)
   sizeBytes   Int
@@ -508,10 +508,10 @@ model Photo {
 
 // ---------- Maintenance ----------
 model MaintenanceRecord {
-  id        BigInt   @id @default(autoincrement())
+  id        String   @id @db.Uuid @default(uuid(7))
   legacyId  BigInt?  @unique
   code      String?  @unique @db.VarChar(30)   // e.g. "PRW-202606-0042" (mono in UI)
-  vehicleId Int
+  vehicleId String
   vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
   type      MaintenanceType @default(SERVICE)  // Servis / Perbaikan
   status    MaintenanceStatus @default(PENDING_APPROVAL)
@@ -523,9 +523,9 @@ model MaintenanceRecord {
   notes     String?  @db.VarChar(512)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @db.Timestamptz(6)
-  createdById Int?
+  createdById String?
   createdBy User?   @relation("MaintenanceRecordCreatedBy", fields: [createdById], references: [id])
-  updatedById Int?
+  updatedById String?
   updatedBy User?   @relation("MaintenanceRecordUpdatedBy", fields: [updatedById], references: [id])
   items     MaintenanceItem[]
   @@index([vehicleId])
@@ -533,9 +533,9 @@ model MaintenanceRecord {
 }
 
 model MaintenanceItem {
-  id        BigInt   @id @default(autoincrement())
+  id        String   @id @db.Uuid @default(uuid(7))
   legacyId  BigInt?  @unique
-  recordId  BigInt
+  recordId  String
   record    MaintenanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
   name      String   @db.VarChar(256)
   qty       Int      @default(0)
@@ -548,12 +548,12 @@ model MaintenanceItem {
 
 // ---------- Vehicle inspection (legacy: transaksi/inspectionskendaraan) ----------
 model VehicleInspection {
-  id           BigInt   @id @default(autoincrement())
+  id           String   @id @db.Uuid @default(uuid(7))
   legacyId     BigInt?  @unique
-  vehicleId    Int
+  vehicleId    String
   vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
   date         DateTime @db.Date
-  inspectorId  Int?
+  inspectorId  String?
   inspector    User?    @relation("VehicleInspectionInspector", fields: [inspectorId], references: [id])
   result       InspectionResult @default(PASS)   // derived from items (any FAIL → FAIL; any ATTENTION → ATTENTION)
   passedCount  Int      @default(0)               // # items OK
@@ -561,7 +561,7 @@ model VehicleInspection {
   notes        String?  @db.VarChar(512)
   createdAt    DateTime @default(now()) @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @db.Timestamptz(6)
-  createdById  Int?
+  createdById  String?
   createdBy    User?    @relation("VehicleInspectionCreatedBy", fields: [createdById], references: [id])
   items        InspectionItem[]
   @@index([vehicleId])
@@ -569,8 +569,8 @@ model VehicleInspection {
 }
 
 model InspectionItem {
-  id           BigInt   @id @default(autoincrement())
-  inspectionId BigInt
+  id           String   @id @db.Uuid @default(uuid(7))
+  inspectionId String
   inspection   VehicleInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
   label        String   @db.VarChar(128)          // checklist item name (e.g. "Rem", "Lampu", "Ban")
   status       InspectionItemStatus @default(OK)  // OK / ATTENTION / FAIL
@@ -582,7 +582,7 @@ model InspectionItem {
 
 // ---------- External / aggregates ----------
 model TpaInboundLog {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @db.Uuid @default(uuid(7))
   legacyId    Int?     @unique
   dateLabel   String?  @db.VarChar(50)
   date        DateTime? @db.Date
@@ -593,7 +593,7 @@ model TpaInboundLog {
   tareWeight  Int?
   netWeight   Int?
   cctvReference String? @db.VarChar(256)           // CCTV reference from weighbridge (Phase 4+)
-  tripId      BigInt?                              // FK to Trip (created by post-weighing endpoint)
+  tripId      String?                              // FK to Trip (created by post-weighing endpoint)
   createdAt   DateTime @default(now()) @db.Timestamptz(6)
   updatedAt   DateTime @updatedAt @db.Timestamptz(6)
   @@index([date])
@@ -602,7 +602,7 @@ model TpaInboundLog {
 }
 
 model DailyTonnage {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @db.Uuid @default(uuid(7))
   legacyId  Int?     @unique
   date      DateTime @unique @db.Date
   amount    BigInt   @default(0)             // kg; sum of netWeight on disposal trips
@@ -611,7 +611,7 @@ model DailyTonnage {
 }
 
 model LegacyNameMap {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @db.Uuid @default(uuid(7))
   si        String?  @db.VarChar(250)
   swat      String?  @db.VarChar(250)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
@@ -620,7 +620,7 @@ model LegacyNameMap {
 
 // ---------- Levy (Phase 3) ----------
 model Levy {
-  id           BigInt   @id @default(autoincrement())
+  id           String   @id @db.Uuid @default(uuid(7))
   legacyId     BigInt?  @unique
   categoryName String   @db.VarChar(100)         // Category label (e.g., "Retribusi Sampah", "Biaya Administratif"); no separate LevyCategory model yet
   date         DateTime @db.Date                 // Date of levy transaction
@@ -628,9 +628,9 @@ model Levy {
   notes        String?  @db.VarChar(256)         // Optional notes
   createdAt    DateTime @default(now()) @db.Timestamptz(6)
   updatedAt    DateTime @updatedAt @db.Timestamptz(6)
-  createdById  Int?
+  createdById  String?
   createdBy    User?    @relation("LevyCreatedBy", fields: [createdById], references: [id])
-  updatedById  Int?
+  updatedById  String?
   updatedBy    User?    @relation("LevyUpdatedBy", fields: [updatedById], references: [id])
   @@index([date])
   @@index([categoryName, date])
@@ -642,7 +642,7 @@ model Levy {
 - **Partition key + operational queries:** `Trip.operationDate`, `Haul.operationDate`, `HaulAssignment.operationDate`
   are partitioned monthly (see [`12-scalability-archiving.md`](./12-scalability-archiving.md) §2) and indexed locally per partition.
 - **Monitoring/reporting queries** are date-ranged → explicitly index `TransactionDay.date`,
-  `Trip.status`, `FuelQuota(vehicleId, validFrom, validTo)`, `TpaInboundLog(date, plateNumber)`,
+  `Trip.status`, `DisposalPermit(vehicleId, validFrom, validTo)`, `TpaInboundLog(date, plateNumber)`,
   `DailyTonnage.date`, `Levy.date`.
 - Foreign keys are all indexed (Prisma auto-indexes relation scalars; add explicit `@@index` on hot paths).
 - **Polymorphic lookups:** `Photo(ownerType, ownerId)` indexed for fast attachment queries.
@@ -661,7 +661,7 @@ model Levy {
   since polymorphic (ownerType, ownerId) cannot have a global unique constraint without breaking trip/item scenarios.
 - Check constraints (via Prisma raw SQL migrations): `grossWeight >= tareWeight` (Trip),
   `fuelApprovedLiters <= fuelRequestedLiters` (Trip), `distanceKm >= 0` (Route),
-  `validTo >= validFrom` (FuelQuota), `originSiteId <> destinationSiteId` (Route).
+  `validTo >= validFrom` (DisposalPermit), `originSiteId <> destinationSiteId` (Route).
 - **Polymorphic integrity:** `Photo.ownerId` validation (entity PK exists for the given ownerType) must be
   enforced via application code in the API validation layer (no trigger/FK possible for polymorphic pattern).
   Valid (ownerType, ownerId) pairs: User/Vehicle/Driver/Site allow 0..1 photo each (enforced
@@ -701,7 +701,7 @@ follow and are **part of this data model**:
    from the owning `TransactionDay.date`). It is the **partition key** and the index target for all
    operational/reporting queries, avoiding joins for pruning. These tables are **RANGE-partitioned
    monthly** by `operationDate` (created via raw-SQL Prisma migrations; `TpaInboundLog` by `date`,
-   `FuelQuota` by `validFrom`). Partition-spanning unique constraints must include the key — e.g.
+   `DisposalPermit` by `validFrom`). Partition-spanning unique constraints must include the key — e.g.
    `Haul` unique becomes `(operationDate, transactionDayId, vehicleId)`.
 
 2. **Images are NOT stored as URL scalars.** Replace all `photo String?` columns and the legacy

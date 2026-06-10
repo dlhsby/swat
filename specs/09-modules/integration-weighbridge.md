@@ -225,8 +225,8 @@ export async function resolveKitir(
   // Find DisposalPermit by code or vehicle plate
   let permit: DisposalPermit | null = null;
   if (code) {
-    // Direct code lookup (indexed on FuelQuota.code)
-    quota = await db.fuelQuota.findFirst({
+    // Direct code lookup (indexed on DisposalPermit.code)
+    permit = await db.disposalPermit.findFirst({
       where: {
         code: code,
         status: 'ACTIVE',
@@ -242,7 +242,7 @@ export async function resolveKitir(
     });
     if (!vehicle) throw new NotFoundError('Kendaraan tidak ditemukan');
 
-    quota = await db.fuelQuota.findFirst({
+    permit = await db.disposalPermit.findFirst({
       where: {
         vehicleId: vehicle.id,
         site: { type: 'TPA' },  // Filter to TPA sites only
@@ -254,31 +254,31 @@ export async function resolveKitir(
     });
   }
 
-  if (!quota) {
+  if (!permit) {
     throw new NotFoundError('Kitir tidak ditemukan atau sudah kadaluarsa');
   }
 
   // Check vehicle is operational
-  if (quota.vehicle.status !== 'GOOD') {
+  if (permit.vehicle.status !== 'GOOD') {
     throw new NotFoundError('Kendaraan tidak dalam kondisi layak operasi');
   }
 
   // Return resolution with vehicle specs
   return {
-    id: quota.id,
-    vehicleId: quota.vehicle.id,
-    plateNumber: quota.vehicle.plateNumber,
-    siteId: quota.site.id,
-    siteName: quota.site.name,
-    status: quota.status,
-    validFrom: quota.validFrom,
-    validTo: quota.validTo,
+    id: permit.id,
+    vehicleId: permit.vehicle.id,
+    plateNumber: permit.vehicle.plateNumber,
+    siteId: permit.site.id,
+    siteName: permit.site.name,
+    status: permit.status,
+    validFrom: permit.validFrom,
+    validTo: permit.validTo,
     vehicle: {
-      brand: quota.vehicle.model.brand,
-      currentTareWeight: quota.vehicle.currentTareWeight,
-      normalTareWeight: quota.vehicle.model.normalTareWeight,
-      maxNetLoad: quota.vehicle.model.maxNetLoad,
-      maxNetVolume: quota.vehicle.model.maxNetVolume,
+      brand: permit.vehicle.model.brand,
+      currentTareWeight: permit.vehicle.currentTareWeight,
+      normalTareWeight: permit.vehicle.model.normalTareWeight,
+      maxNetLoad: permit.vehicle.model.maxNetLoad,
+      maxNetVolume: permit.vehicle.model.maxNetVolume,
     },
   };
 }
@@ -300,7 +300,7 @@ export async function postWeighing(
   notes?: string
 ): Promise<WeighingResult> {
   // 1. Validate kitir exists and is active
-  const quota = await db.fuelQuota.findUnique({
+  const permit = await db.disposalPermit.findUnique({
     where: { id: kitirId },
     include: { vehicle: true, site: true },
   });

@@ -68,9 +68,10 @@ pnpm --filter @swat/backend run migrate:verify
 
 ## Design notes
 
-- **Identity:** legacy integer PKs are preserved as the new PKs _and_ stored as
-  `legacyId`, so intra-batch FK references resolve without a remap table. Reset the
-  Postgres sequences to `max(id)+1` after the load.
+- **Identity:** new PKs are **UUID v7** (`@default(uuid(7))`); the legacy numeric PK
+  is stored in `legacyId` (`@unique`). Each parent table is loaded first, then a
+  `legacyId → new UUID` map is read back (`toLegacyMap`) and the child mappers resolve
+  their FKs through it (`resolveFk`). No sequences to reset — UUID PKs need none.
 - **Routes** are deduped on `(origin, destination, category)`; trip templates that
   referenced a dropped duplicate are remapped to the kept route. `verify` accounts
   for the expected drop so the variance check stays fair.
@@ -88,7 +89,8 @@ tables are empty in the master-data-only snapshot, so it cannot be written or
 verified against real data in this environment. The reusable building blocks are
 already in place and unit-tested — `keysetBatches` + `readWatermark`/`writeWatermark`
 (`lib/pagination.ts`), the `mapTripStatus`/`mapDayStatus` enum maps, and the
-PK-preserve identity strategy. See the `TODO(T-155 …)` block in `migrate-legacy.ts`.
+`legacyId → UUID` FK-resolution helpers (`toLegacyMap`/`resolveFk`). See the
+`TODO(T-155 …)` block in `migrate-legacy.ts`.
 
 **When the live DB is available, implement under a `--include-transactions` flag:**
 

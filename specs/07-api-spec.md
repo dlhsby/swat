@@ -5,7 +5,7 @@
 ### 1.1 Base path & conventions
 
 - **Base path:** `/api/v1`
-- **Resource naming:** kebab-case plural (e.g., `/vehicles`, `/crew-schedules`, `/fuel-quotas`)
+- **Resource naming:** kebab-case plural (e.g., `/vehicles`, `/crew-schedules`, `/disposal-permits`)
 - **HTTP verbs:**
   - `GET /resource` — list
   - `GET /resource/:id` — read one
@@ -417,10 +417,10 @@ Response 200:
 | POST | `/crew-schedules/:scheduleId/trip-templates` | `trip-template:create` | Add leg (route, time, fuel request) |
 | PATCH | `/trip-templates/:id` | `trip-template:update` | Update leg (time, fuel request) |
 | DELETE | `/trip-templates/:id` | `trip-template:delete` | Remove leg |
-| GET | `/fuel-quotas` | `fuel-quota:read` | List quotas (kitir) by vehicle+site+date |
-| POST | `/fuel-quotas` | `fuel-quota:create` | Issue quota (vehicle, site, validFrom, validTo) |
-| PATCH | `/fuel-quotas/:id` | `fuel-quota:update` | Update quota (extend, deactivate) |
-| DELETE | `/fuel-quotas/:id` | `fuel-quota:delete` | Delete quota (if unused) |
+| GET | `/disposal-permits` | `disposal-permit:read` | List permits (kitir) by vehicle+site+date |
+| POST | `/disposal-permits` | `disposal-permit:create` | Issue permit (vehicle, site, validFrom, validTo) |
+| PATCH | `/disposal-permits/:id` | `disposal-permit:update` | Update permit (extend, deactivate) |
+| DELETE | `/disposal-permits/:id` | `disposal-permit:delete` | Delete permit (if unused) |
 
 ### 2.8 Transactions — Daily operations
 
@@ -651,8 +651,8 @@ See [`09-modules/inspection.md`](./09-modules/inspection.md) and
 | PATCH | `/maintenance-records/:id/approve` | `maintenance:approve` | Approve (`PENDING_APPROVAL → APPROVED`) |
 | DELETE | `/maintenance-records/:id` | `maintenance:delete` | Delete maintenance |
 
-Kitir bulk import is `POST /fuel-quotas/bulk-import` (`fuel-quota:create`) — see
-[`09-modules/fuel-quota-kitir.md`](./09-modules/fuel-quota-kitir.md) §4.
+Kitir bulk import is `POST /disposal-permits/bulk-import` (`disposal-permit:create`) — see
+[`09-modules/disposal-permits.md`](./09-modules/disposal-permits.md) §4.
 
 ## 3. Special endpoints (Phase 4 — Weighbridge integration)
 

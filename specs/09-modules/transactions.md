@@ -363,7 +363,7 @@ Response 200
 4. **Odometer monotonicity:** Within a haul, `actualOdometer` non-decreasing across legs; `actualOdometer ≥` vehicle `currentOdometer` at depart; on return, update vehicle `currentOdometer`.
 5. **One haul per vehicle per day:** Unique `(transactionDayId, vehicleId)`.
 6. **One transaction day per date:** `TransactionDay.date` unique.
-7. **Fuel quota validity:** A vehicle operating on a disposal trip must have an active `FuelQuota` matching date (Phase 4 weighbridge integration enforces).
+7. **Disposal permit validity:** A vehicle operating on a disposal trip must have an active `DisposalPermit` matching date (Phase 4 weighbridge integration enforces).
 8. **Odometer >= current:** `departActualOdometer >= vehicle.currentOdometer`; if vehicle was used elsewhere, error.
 9. **Verification lock:** A `VERIFIED` trip is immutable except by supervisor (audit logged).
 10. **Tonnage aggregation:** `DailyTonnage` for a date = Σ `netWeight` of `DONE`/`VERIFIED` `DISPOSAL` trips (Phase 2).

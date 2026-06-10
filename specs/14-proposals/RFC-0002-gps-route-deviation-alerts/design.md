@@ -197,8 +197,9 @@ so CPU load is modest. Verify via load test before going live.
 // High-volume time-series; partitioned monthly by createdAt
 // PARTITION BY RANGE (DATE(createdAt)) per ../../12-scalability-archiving.md §2
 model VehicleGpsPing {
-  id            BigInt      @id @default(autoincrement())
-  vehicleId     Int         // FK to Vehicle
+  id            String      @id @db.Uuid @default(uuid(7))
+  legacyId      BigInt?     @unique
+  vehicleId     String      // FK to Vehicle
   vehicle       Vehicle     @relation(fields: [vehicleId], references: [id])
   latitude      Decimal     @db.Decimal(11,6)                           // WGS84
   longitude     Decimal     @db.Decimal(11,6)                           // WGS84
@@ -213,8 +214,9 @@ model VehicleGpsPing {
 
 // One geometry per route; authored via UI or routing engine
 model RouteGeometry {
-  id            Int         @id @default(autoincrement())
-  routeId       Int         @unique                                      // FK to Route
+  id            String      @id @db.Uuid @default(uuid(7))
+  legacyId      Int?        @unique
+  routeId       String      @unique                                      // FK to Route
   route         Route       @relation(fields: [routeId], references: [id])
   polylineWkt   String                                                   // WKT linestring (ordered waypoints)
   toleranceMeters Int      @default(150)                                 // corridor buffer; tunable per route
@@ -226,7 +228,8 @@ model RouteGeometry {
 
 // Defines a deviation trigger (metric + threshold + schedule)
 model DeviationRule {
-  id            Int         @id @default(autoincrement())
+  id            String      @id @db.Uuid @default(uuid(7))
+  legacyId      Int?        @unique
   name          String      @db.VarChar(100)                            // e.g. "Off-route by 200 m"
   deviationType String      @db.VarChar(40)                             // 'off_corridor' | 'off_sequence' | 'dwell_too_long' | 'late_to_schedule'
   threshold     Int?                                                     // distance (m), time (sec), or NULL
@@ -239,12 +242,13 @@ model DeviationRule {
 
 // One alert per deviation event (possibly grouped/deduplicated)
 model DeviationAlert {
-  id            BigInt      @id @default(autoincrement())
-  vehicleId     Int         // FK to Vehicle
+  id            String      @id @db.Uuid @default(uuid(7))
+  legacyId      BigInt?     @unique
+  vehicleId     String      // FK to Vehicle
   vehicle       Vehicle     @relation(fields: [vehicleId], references: [id])
-  ruleId        Int                                                      // FK to DeviationRule
+  ruleId        String                                                   // FK to DeviationRule
   rule          DeviationRule @relation(fields: [ruleId], references: [id])
-  pingId        BigInt?                                                  // triggering VehicleGpsPing (FK)
+  pingId        String?                                                  // triggering VehicleGpsPing (FK)
   alertType     String      @db.VarChar(40)                             // enum equivalent of deviationType
   severity      String      @default("WARNING")                         // 'INFO' | 'WARNING' | 'CRITICAL'
   latitude      Decimal     @db.Decimal(11,6)                           // ping location
@@ -252,7 +256,7 @@ model DeviationAlert {
   distance      Int?                                                     // to corridor (meters), if off-corridor
   isAcknowledged Boolean    @default(false)
   acknowledgedAt DateTime?  @db.Timestamptz(6)
-  acknowledgedBy Int?                                                    // FK to User (supervisor)
+  acknowledgedBy String?                                                 // FK to User (supervisor)
   resolutionNotes String?   @db.VarChar(512)
   createdAt     DateTime    @default(now()) @db.Timestamptz(6)
   @@index([vehicleId, createdAt])
@@ -261,8 +265,9 @@ model DeviationAlert {
 
 // Telematics device or PWA registration
 model VehicleDevice {
-  id            Int         @id @default(autoincrement())
-  vehicleId     Int         @unique                                      // one device per vehicle (for MVP)
+  id            String      @id @db.Uuid @default(uuid(7))
+  legacyId      Int?        @unique
+  vehicleId     String      @unique                                      // one device per vehicle (for MVP)
   vehicle       Vehicle     @relation(fields: [vehicleId], references: [id])
   deviceType    String      @db.VarChar(40)                             // 'gps-device' | 'pwa'
   deviceId      String      @unique @db.VarChar(100)                    // IMEI, device serial, or UUID

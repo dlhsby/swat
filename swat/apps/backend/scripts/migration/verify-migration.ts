@@ -85,27 +85,27 @@ async function checkFkIntegrity(): Promise<boolean> {
     [
       'vehicle.poolSiteId',
       () =>
-        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "Vehicle" v WHERE v."poolSiteId" NOT IN (SELECT id FROM "Site")`,
+        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "vehicle" v WHERE v."pool_site_id" NOT IN (SELECT id FROM "site")`,
     ],
     [
       'vehicle.modelId',
       () =>
-        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "Vehicle" v WHERE v."modelId" NOT IN (SELECT id FROM "VehicleModel")`,
+        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "vehicle" v WHERE v."model_id" NOT IN (SELECT id FROM "vehicle_model")`,
     ],
     [
       'driver.poolSiteId',
       () =>
-        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "Driver" d WHERE d."poolSiteId" NOT IN (SELECT id FROM "Site")`,
+        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "driver" d WHERE d."pool_site_id" NOT IN (SELECT id FROM "site")`,
     ],
     [
       'route.originSiteId',
       () =>
-        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "Route" r WHERE r."originSiteId" NOT IN (SELECT id FROM "Site")`,
+        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "route" r WHERE r."origin_site_id" NOT IN (SELECT id FROM "site")`,
     ],
     [
       'disposalPermit.vehicleId',
       () =>
-        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "DisposalPermit" q WHERE q."vehicle_id" NOT IN (SELECT id FROM "Vehicle")`,
+        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "disposal_permit" q WHERE q."vehicle_id" NOT IN (SELECT id FROM "vehicle")`,
     ],
   ];
   let ok = true;

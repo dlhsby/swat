@@ -25,7 +25,7 @@ Per [`03-data-model.md`](../03-data-model.md) §4 (Prisma schema), the Levy mode
 
 ```prisma
 model Levy {
-  id           BigInt       @id @default(autoincrement())
+  id           String       @id @db.Uuid @default(uuid(7))
   legacyId     BigInt?      @unique                      // For migration traceability
   categoryName String       @db.VarChar(100)             // Category label (e.g., "Retribusi Sampah", "Biaya Administratif")
   date         DateTime     @db.Date                     // Date of levy transaction
@@ -33,8 +33,8 @@ model Levy {
   notes        String?      @db.VarChar(256)             // Optional notes
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  createdById  Int?                                      // FK to User
-  updatedById  Int?                                      // FK to User
+  createdById  String?                                   // FK to User
+  updatedById  String?                                   // FK to User
   @@index([date])                                        // For reporting queries
   @@index([categoryName, date])                          // For levy by category over time
 }
