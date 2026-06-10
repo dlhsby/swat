@@ -10,20 +10,20 @@ import { CrudListShell } from '@/components/crud/crud-list-shell';
 import { TextField } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
 import { useResourceManager } from '@/hooks/use-resource-manager';
-import { type VehicleApplicationDto, vehicleApplicationsApi } from '@/lib/master-api';
+import { type VehicleTypeDto, vehicleTypesApi } from '@/lib/master-api';
 
 const schema = z.object({
   name: z.string().min(1, 'Nama wajib diisi').max(100, 'Nama maksimal 100 karakter'),
 });
 type Values = z.infer<typeof schema>;
 const defaults: Values = { name: '' };
-const toForm = (r: VehicleApplicationDto): Values => ({ name: r.name });
+const toForm = (r: VehicleTypeDto): Values => ({ name: r.name });
 
-export default function VehicleApplicationsPage(): JSX.Element {
+export default function VehicleTypesPage(): JSX.Element {
   const t = useTranslations('nav');
-  const manager = useResourceManager(vehicleApplicationsApi, (r) => r.id);
+  const manager = useResourceManager(vehicleTypesApi, (r) => r.id);
 
-  const columns = useMemo<ColumnDef<VehicleApplicationDto, unknown>[]>(
+  const columns = useMemo<ColumnDef<VehicleTypeDto, unknown>[]>(
     () => [
       { accessorKey: 'name', header: 'Nama', meta: { label: 'Nama' } },
       {
@@ -35,7 +35,7 @@ export default function VehicleApplicationsPage(): JSX.Element {
         cell: ({ row }) => (
           <div className="text-right">
             <RowActions
-              resource="vehicle-application"
+              resource="vehicle-type"
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -48,21 +48,21 @@ export default function VehicleApplicationsPage(): JSX.Element {
 
   return (
     <CrudListShell
-      title={t('vehicleApplications')}
-      resource="vehicle-application"
+      title={t('vehicleTypes')}
+      resource="vehicle-type"
       manager={manager}
       columns={columns}
-      searchPlaceholder="Cari aplikasi…"
+      searchPlaceholder="Cari tipe kendaraan…"
     >
       <CrudFormDialog
         manager={manager}
         schema={schema}
         defaults={defaults}
         toForm={toForm}
-        title={{ create: 'Tambah Aplikasi', edit: 'Ubah Aplikasi' }}
+        title={{ create: 'Tambah Tipe Kendaraan', edit: 'Ubah Tipe Kendaraan' }}
         className="max-w-[440px]"
       >
-        <TextField name="name" label="Nama Aplikasi" required placeholder="Compactor" />
+        <TextField name="name" label="Nama Tipe Kendaraan" required placeholder="Compactor" />
       </CrudFormDialog>
     </CrudListShell>
   );

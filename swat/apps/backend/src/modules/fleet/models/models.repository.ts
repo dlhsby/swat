@@ -5,14 +5,14 @@ import { toSkipTake, type PageParams } from '../../../common/pagination';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const modelInclude = {
-  application: { select: { id: true, name: true } },
+  vehicleType: { select: { id: true, name: true } },
   fuel: { select: { id: true, name: true } },
 } satisfies Prisma.VehicleModelInclude;
 
 export type VehicleModelWithRefs = Prisma.VehicleModelGetPayload<{ include: typeof modelInclude }>;
 
 export interface ListVehicleModelsFilter extends PageParams {
-  readonly applicationId?: string;
+  readonly vehicleTypeId?: string;
   readonly fuelId?: string;
   readonly search?: string;
 }
@@ -23,7 +23,7 @@ export class VehicleModelsRepository {
 
   private listWhere(filter: ListVehicleModelsFilter): Prisma.VehicleModelWhereInput {
     return {
-      ...(filter.applicationId ? { applicationId: filter.applicationId } : {}),
+      ...(filter.vehicleTypeId ? { vehicleTypeId: filter.vehicleTypeId } : {}),
       ...(filter.fuelId ? { fuelId: filter.fuelId } : {}),
       ...(filter.search ? { brand: { contains: filter.search, mode: 'insensitive' } } : {}),
     };
@@ -51,8 +51,8 @@ export class VehicleModelsRepository {
     return this.prisma.vehicleModel.findUnique({ where: { id }, include: modelInclude });
   }
 
-  applicationExists(id: string): Promise<{ id: string } | null> {
-    return this.prisma.vehicleApplication.findUnique({ where: { id }, select: { id: true } });
+  vehicleTypeExists(id: string): Promise<{ id: string } | null> {
+    return this.prisma.vehicleType.findUnique({ where: { id }, select: { id: true } });
   }
 
   fuelExists(id: string): Promise<{ id: string } | null> {

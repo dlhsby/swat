@@ -7,7 +7,7 @@
  *  3. Admin user (Argon2id hash; no forced reset) + a dev-only `adminreset`
  *     demo account with mustChangePassword=true.
  *  4. Reference/lookup data (specs/01-glossary.md §4): LicenseClass,
- *     FuelCategory, Fuel, VehicleApplication, WasteSource.
+ *     FuelCategory, Fuel, VehicleType, WasteSource.
  *  5. Demo levy/retribusi rows (monthly, by category) for the Retribusi dashboard.
  *  6. Synthetic transactional data (a year of disposal + refuel trips, plus TPA
  *     weighbridge logs) so partition pruning and the Phase-2 monitoring
@@ -71,10 +71,10 @@ const PERMISSION_KEYS: readonly string[] = [
   'vehicle-model:create',
   'vehicle-model:update',
   'vehicle-model:delete',
-  'vehicle-application:read',
-  'vehicle-application:create',
-  'vehicle-application:update',
-  'vehicle-application:delete',
+  'vehicle-type:read',
+  'vehicle-type:create',
+  'vehicle-type:update',
+  'vehicle-type:delete',
   'fuel:read',
   'fuel:create',
   'fuel:update',
@@ -321,7 +321,38 @@ const FUELS: ReadonlyArray<{ name: string; category: string; pricePerLiter: numb
   { name: 'Dexlite', category: 'Non-Subsidi', pricePerLiter: 14500 },
 ];
 
-const VEHICLE_APPLICATIONS = ['Compactor', 'Dump Truck', 'Arm Roll', 'Pick Up', 'Tangki'];
+// All vehicle types loaded verbatim from the legacy `aplikasikendaraan` table
+// (legacyId = APLIKASIKENDARAAN_ID), so the seed matches production master data.
+const VEHICLE_TYPES: ReadonlyArray<{ legacyId: number; name: string }> = [
+  { legacyId: 1, name: 'Compector' },
+  { legacyId: 2, name: 'Compector Modif Tangki' },
+  { legacyId: 3, name: 'Dump Truck' },
+  { legacyId: 4, name: 'Hyd. Cont. / Arm Roll 6M3' },
+  { legacyId: 5, name: 'Hyd. Cont. / Arm Roll 8M3' },
+  { legacyId: 6, name: 'Hyd. Cont. / Arm Roll 14M3' },
+  { legacyId: 7, name: 'Truck Tangki' },
+  { legacyId: 8, name: 'Truck Tangki Air' },
+  { legacyId: 9, name: 'Truck Bak' },
+  { legacyId: 10, name: 'Truck Sky Wolker' },
+  { legacyId: 11, name: 'Pick Up' },
+  { legacyId: 12, name: 'Pick Up Double Cabin' },
+  { legacyId: 13, name: 'Pick Up Sky Wolker ' },
+  { legacyId: 14, name: 'Station Wagon' },
+  { legacyId: 15, name: 'Jeep Taft GT' },
+  { legacyId: 16, name: 'Kendaraan Non-Dinas' },
+  { legacyId: 17, name: 'Roda Tiga' },
+  { legacyId: 18, name: 'Buldozer' },
+  { legacyId: 19, name: 'Eskavator' },
+  { legacyId: 20, name: 'DRUM' },
+  { legacyId: 21, name: 'Mesin Press' },
+  { legacyId: 22, name: 'Loader' },
+  { legacyId: 23, name: 'Mobil Toilet' },
+  { legacyId: 24, name: 'Pick Up (S)' },
+  { legacyId: 25, name: 'Road Swipper' },
+  { legacyId: 26, name: 'Forklift' },
+  { legacyId: 27, name: 'Roda Dua' },
+  { legacyId: 28, name: 'SelfLoader' },
+];
 
 // The six waste sources are distinct categories (legacy `kategorisumbersampah`).
 // The monitoring "Semua / Non-Swasta / Swasta" filter derives from the code
@@ -363,11 +394,12 @@ async function seedReferenceData(): Promise<void> {
     }
   }
 
-  for (const name of VEHICLE_APPLICATIONS) {
-    const existing = await prisma.vehicleApplication.findFirst({ where: { name } });
-    if (!existing) {
-      await prisma.vehicleApplication.create({ data: { name } });
-    }
+  for (const vehicleType of VEHICLE_TYPES) {
+    await prisma.vehicleType.upsert({
+      where: { legacyId: vehicleType.legacyId },
+      update: { name: vehicleType.name },
+      create: { legacyId: vehicleType.legacyId, name: vehicleType.name },
+    });
   }
 
   for (const source of WASTE_SOURCES) {
@@ -443,7 +475,7 @@ async function seedSyntheticData(): Promise<void> {
   const tps = await upsertSiteByName('TPS Demo', SiteType.TPS);
   const tpa = await upsertSiteByName('TPA Demo', SiteType.TPA);
 
-  const application = (await prisma.vehicleApplication.findFirst({
+  const application = (await prisma.vehicleType.findFirst({
     where: { name: 'Dump Truck' },
   }))!;
   const fuel = (await prisma.fuel.findFirst({ where: { name: 'Solar' } }))!;
@@ -453,7 +485,7 @@ async function seedSyntheticData(): Promise<void> {
     (await prisma.vehicleModel.create({
       data: {
         brand: 'Hino Demo',
-        applicationId: application.id,
+        vehicleTypeId: application.id,
         fuelId: fuel.id,
         fuelTankCapacity: 200,
         normalTareWeight: 8000,

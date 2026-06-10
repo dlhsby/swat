@@ -106,10 +106,10 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         permission: 'vehicle-model:read',
       },
       {
-        key: 'vehicleApplications',
-        href: '/vehicle-applications',
+        key: 'vehicleTypes',
+        href: '/vehicle-types',
         icon: Boxes,
-        permission: 'vehicle-application:read',
+        permission: 'vehicle-type:read',
       },
       { key: 'fuels', href: '/fuels', icon: Fuel, permission: 'fuel:read' },
       { key: 'drivers', href: '/drivers', icon: Users, permission: 'driver:read' },

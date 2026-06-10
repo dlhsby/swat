@@ -34,7 +34,7 @@ import type {
   LegacyUser,
   LegacyDailyTonnage,
   LegacyVehicle,
-  LegacyVehicleApplication,
+  LegacyVehicleType,
   LegacyVehicleModel,
   LegacyVehicleWasteSource,
   LegacyWasteSource,
@@ -52,7 +52,7 @@ import {
   mapRoute,
   mapSite,
   mapVehicle,
-  mapVehicleApplication,
+  mapVehicleType,
   mapVehicleModel,
   mapVehicleWasteSource,
   mapWasteSource,
@@ -97,7 +97,7 @@ async function checkIdempotency(forceReset: boolean): Promise<void> {
     await prisma.$executeRawUnsafe(
       `TRUNCATE TABLE "disposal_permit","trip_template","crew_schedule","driver_license","driver",
        "vehicle_waste_source","vehicle","vehicle_model","waste_source","route","site","fuel",
-       "fuel_category","vehicle_application","license_class","daily_tonnage","levy","legacy_name_map"
+       "fuel_category","vehicle_type","license_class","daily_tonnage","levy","legacy_name_map"
        CASCADE`,
     );
   }
@@ -118,13 +118,13 @@ async function migrateMasterData(): Promise<void> {
     // Each table is loaded, then its `legacyId → new UUID` map is read back so the
     // next table's FK mapper can resolve references (PKs are generated UUID v7,
     // never the legacy integer). Order respects FK dependencies.
-    const apps = await query<LegacyVehicleApplication>(conn, 'SELECT * FROM aplikasikendaraan');
-    await prisma.vehicleApplication.createMany({
-      data: apps.map((r) => mapVehicleApplication(r, NOW)),
+    const apps = await query<LegacyVehicleType>(conn, 'SELECT * FROM aplikasikendaraan');
+    await prisma.vehicleType.createMany({
+      data: apps.map((r) => mapVehicleType(r, NOW)),
       skipDuplicates: true,
     });
-    const appMap = toLegacyMap(await prisma.vehicleApplication.findMany(ID_LEGACY));
-    log(`VehicleApplication: ${apps.length}`);
+    const appMap = toLegacyMap(await prisma.vehicleType.findMany(ID_LEGACY));
+    log(`VehicleType: ${apps.length}`);
 
     const fuelCats = await query<LegacyFuelCategory>(conn, 'SELECT * FROM kategoribahanbakar');
     await prisma.fuelCategory.createMany({

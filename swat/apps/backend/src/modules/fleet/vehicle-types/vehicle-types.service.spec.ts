@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
-import { type ApplicationsRepository } from './applications.repository';
-import { ApplicationsService } from './applications.service';
+import { type VehicleTypesRepository } from './vehicle-types.repository';
+import { VehicleTypesService } from './vehicle-types.service';
 
 function buildRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -13,7 +13,7 @@ function buildRow(overrides: Record<string, unknown> = {}): Record<string, unkno
   };
 }
 
-describe('ApplicationsService', () => {
+describe('VehicleTypesService', () => {
   let repo: {
     list: jest.Mock;
     findById: jest.Mock;
@@ -23,7 +23,7 @@ describe('ApplicationsService', () => {
     update: jest.Mock;
     delete: jest.Mock;
   };
-  let service: ApplicationsService;
+  let service: VehicleTypesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -36,7 +36,7 @@ describe('ApplicationsService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
-    service = new ApplicationsService(repo as unknown as ApplicationsRepository);
+    service = new VehicleTypesService(repo as unknown as VehicleTypesRepository);
   });
 
   it('lists with pagination meta', async () => {

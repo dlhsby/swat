@@ -13,15 +13,15 @@ import { useOptions } from '@/hooks/use-options';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import {
   type FuelDto,
-  type VehicleApplicationDto,
+  type VehicleTypeDto,
   type VehicleModelDto,
   fuelsApi,
-  vehicleApplicationsApi,
+  vehicleTypesApi,
   vehicleModelsApi,
 } from '@/lib/master-api';
 
 const schema = z.object({
-  applicationId: z.string().uuid('Aplikasi kendaraan wajib dipilih'),
+  vehicleTypeId: z.string().uuid('Tipe kendaraan wajib dipilih'),
   fuelId: z.string().uuid('Bahan bakar wajib dipilih'),
   brand: z.string().min(1, 'Merek wajib diisi').max(100, 'Merek maksimal 100 karakter'),
   fuelTankCapacity: z.coerce.number().int().min(1, 'Kapasitas tangki harus lebih dari 0'),
@@ -33,7 +33,7 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
-  applicationId: '',
+  vehicleTypeId: '',
   fuelId: '',
   brand: '',
   fuelTankCapacity: 1,
@@ -44,7 +44,7 @@ const defaults: Values = {
   wheelCount: 4,
 };
 const toForm = (r: VehicleModelDto): Values => ({
-  applicationId: r.applicationId,
+  vehicleTypeId: r.vehicleTypeId,
   fuelId: r.fuelId,
   brand: r.brand,
   fuelTankCapacity: r.fuelTankCapacity,
@@ -54,19 +54,23 @@ const toForm = (r: VehicleModelDto): Values => ({
   maxNetVolume: r.maxNetVolume ?? undefined,
   wheelCount: r.wheelCount,
 });
-const appOption = (a: VehicleApplicationDto): SelectOption => ({ value: a.id, label: a.name });
+const appOption = (a: VehicleTypeDto): SelectOption => ({ value: a.id, label: a.name });
 const fuelOption = (f: FuelDto): SelectOption => ({ value: f.id, label: f.name });
 
 export default function VehicleModelsPage(): JSX.Element {
   const t = useTranslations('nav');
   const manager = useResourceManager(vehicleModelsApi, (r) => r.id);
-  const { options: apps } = useOptions(vehicleApplicationsApi.list, appOption);
+  const { options: apps } = useOptions(vehicleTypesApi.list, appOption);
   const { options: fuels } = useOptions(fuelsApi.list, fuelOption);
 
   const columns = useMemo<ColumnDef<VehicleModelDto, unknown>[]>(
     () => [
       { accessorKey: 'brand', header: 'Merek/Model', meta: { label: 'Merek/Model' } },
-      { accessorKey: 'applicationName', header: 'Aplikasi', meta: { label: 'Aplikasi' } },
+      {
+        accessorKey: 'vehicleTypeName',
+        header: 'Tipe Kendaraan',
+        meta: { label: 'Tipe Kendaraan' },
+      },
       { accessorKey: 'fuelName', header: 'Bahan Bakar', meta: { label: 'Bahan Bakar' } },
       {
         accessorKey: 'wheelCount',
@@ -112,11 +116,11 @@ export default function VehicleModelsPage(): JSX.Element {
         <TextField name="brand" label="Merek/Model" required placeholder="Hino Dutro" />
         <div className="grid gap-4 sm:grid-cols-2">
           <SelectField
-            name="applicationId"
-            label="Aplikasi"
+            name="vehicleTypeId"
+            label="Tipe Kendaraan"
             required
             options={apps}
-            placeholder="Pilih aplikasi"
+            placeholder="Pilih tipe kendaraan"
           />
           <SelectField
             name="fuelId"

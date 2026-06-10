@@ -126,18 +126,18 @@ const GROUPS = [
   {
     name: 'Fleet',
     items: [
-      req('List Applications', 'GET', '/vehicle-applications', {
-        capture: 'applicationId',
+      req('List Applications', 'GET', '/vehicle-types', {
+        capture: 'vehicleTypeId',
         captureFrom: 'data[0].id',
       }),
-      req('Create Application', 'POST', '/vehicle-applications', {
+      req('Create Application', 'POST', '/vehicle-types', {
         body: { name: 'Aplikasi Uji' },
-        capture: 'applicationId',
+        capture: 'vehicleTypeId',
       }),
-      req('Update Application', 'PATCH', '/vehicle-applications/{{applicationId}}', {
+      req('Update Application', 'PATCH', '/vehicle-types/{{vehicleTypeId}}', {
         body: { name: 'Aplikasi Uji (edit)' },
       }),
-      req('Delete Application', 'DELETE', '/vehicle-applications/{{applicationId}}'),
+      req('Delete Application', 'DELETE', '/vehicle-types/{{vehicleTypeId}}'),
       req('List Fuel Categories', 'GET', '/fuel-categories', {
         capture: 'fuelCategoryId',
         captureFrom: 'data[0].id',
@@ -158,7 +158,7 @@ const GROUPS = [
       }),
       req('Create Vehicle Model', 'POST', '/vehicle-models', {
         body: {
-          applicationId: '{{applicationId}}',
+          vehicleTypeId: '{{vehicleTypeId}}',
           fuelId: '{{fuelId}}',
           brand: 'Hino Uji',
           fuelTankCapacity: 200,
@@ -379,7 +379,7 @@ const ENV_VARS = [
   'destinationSiteId',
   'routeId',
   'wasteSourceId',
-  'applicationId',
+  'vehicleTypeId',
   'fuelCategoryId',
   'fuelId',
   'modelId',

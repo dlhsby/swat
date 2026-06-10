@@ -119,7 +119,7 @@ describe('mapVehicleModel', () => {
       fuelMap,
     );
     expect(out).toMatchObject({
-      applicationId: 'uuid-app-1',
+      vehicleTypeId: 'uuid-app-1',
       fuelId: 'uuid-fuel-3',
       normalFuelRatio: 1,
       maxNetLoad: null,

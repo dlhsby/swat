@@ -17,8 +17,8 @@ import { VehicleModelsRepository, type VehicleModelWithRefs } from './models.rep
 
 export interface VehicleModelDto {
   readonly id: string;
-  readonly applicationId: string;
-  readonly applicationName: string;
+  readonly vehicleTypeId: string;
+  readonly vehicleTypeName: string;
   readonly fuelId: string;
   readonly fuelName: string;
   readonly brand: string;
@@ -35,8 +35,8 @@ export interface VehicleModelDto {
 function toDto(model: VehicleModelWithRefs): VehicleModelDto {
   return {
     id: model.id,
-    applicationId: model.applicationId,
-    applicationName: model.application.name,
+    vehicleTypeId: model.vehicleTypeId,
+    vehicleTypeName: model.vehicleType.name,
     fuelId: model.fuelId,
     fuelName: model.fuel.name,
     brand: model.brand,
@@ -61,7 +61,7 @@ export class VehicleModelsService {
     const { rows, total } = await this.repo.list({
       page: query.page,
       limit: query.limit,
-      applicationId: query.applicationId,
+      vehicleTypeId: query.vehicleTypeId,
       fuelId: query.fuelId,
       search: query.search,
     });
@@ -77,7 +77,7 @@ export class VehicleModelsService {
   }
 
   async create(dto: CreateVehicleModelDto): Promise<VehicleModelDto> {
-    await this.assertRefsExist(dto.applicationId, dto.fuelId);
+    await this.assertRefsExist(dto.vehicleTypeId, dto.fuelId);
     const model = await this.repo.create({
       brand: dto.brand,
       fuelTankCapacity: dto.fuelTankCapacity,
@@ -86,7 +86,7 @@ export class VehicleModelsService {
       ...(dto.normalFuelRatio !== undefined ? { normalFuelRatio: dto.normalFuelRatio } : {}),
       ...(dto.maxNetLoad !== undefined ? { maxNetLoad: dto.maxNetLoad } : {}),
       ...(dto.maxNetVolume !== undefined ? { maxNetVolume: dto.maxNetVolume } : {}),
-      application: { connect: { id: dto.applicationId } },
+      vehicleType: { connect: { id: dto.vehicleTypeId } },
       fuel: { connect: { id: dto.fuelId } },
     });
     return toDto(model);
@@ -94,8 +94,8 @@ export class VehicleModelsService {
 
   async update(id: string, dto: UpdateVehicleModelDto): Promise<VehicleModelDto> {
     await this.getById(id);
-    if (dto.applicationId !== undefined || dto.fuelId !== undefined) {
-      await this.assertRefsExist(dto.applicationId, dto.fuelId);
+    if (dto.vehicleTypeId !== undefined || dto.fuelId !== undefined) {
+      await this.assertRefsExist(dto.vehicleTypeId, dto.fuelId);
     }
     const model = await this.repo.update(id, {
       ...(dto.brand !== undefined ? { brand: dto.brand } : {}),
@@ -104,8 +104,8 @@ export class VehicleModelsService {
       ...(dto.normalTareWeight !== undefined ? { normalTareWeight: dto.normalTareWeight } : {}),
       ...(dto.maxNetLoad !== undefined ? { maxNetLoad: dto.maxNetLoad } : {}),
       ...(dto.maxNetVolume !== undefined ? { maxNetVolume: dto.maxNetVolume } : {}),
-      ...(dto.applicationId !== undefined
-        ? { application: { connect: { id: dto.applicationId } } }
+      ...(dto.vehicleTypeId !== undefined
+        ? { vehicleType: { connect: { id: dto.vehicleTypeId } } }
         : {}),
       ...(dto.fuelId !== undefined ? { fuel: { connect: { id: dto.fuelId } } } : {}),
     });
@@ -124,10 +124,10 @@ export class VehicleModelsService {
     return { message: 'Model kendaraan telah dihapus.' };
   }
 
-  private async assertRefsExist(applicationId?: string, fuelId?: string): Promise<void> {
-    if (applicationId !== undefined) {
-      const application = await this.repo.applicationExists(applicationId);
-      if (!application) {
+  private async assertRefsExist(vehicleTypeId?: string, fuelId?: string): Promise<void> {
+    if (vehicleTypeId !== undefined) {
+      const vehicleType = await this.repo.vehicleTypeExists(vehicleTypeId);
+      if (!vehicleType) {
         throw new BadRequestException('Aplikasi kendaraan tidak ditemukan.');
       }
     }

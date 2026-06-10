@@ -29,7 +29,7 @@ interface Pair {
 }
 
 const PAIRS: Pair[] = [
-  { legacyTable: 'aplikasikendaraan', count: () => prisma.vehicleApplication.count() },
+  { legacyTable: 'aplikasikendaraan', count: () => prisma.vehicleType.count() },
   { legacyTable: 'bahanbakar', count: () => prisma.fuel.count() },
   { legacyTable: 'kategoribahanbakar', count: () => prisma.fuelCategory.count() },
   { legacyTable: 'sim', count: () => prisma.licenseClass.count() },

@@ -4,7 +4,7 @@
  * directly. Only the columns the migration consumes are typed.
  */
 
-export interface LegacyVehicleApplication {
+export interface LegacyVehicleType {
   APLIKASIKENDARAAN_ID: number;
   APLIKASIKENDARAAN_NAMA: string;
 }

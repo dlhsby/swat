@@ -8,17 +8,17 @@ import {
   CreateApplicationDto,
   ListApplicationsQueryDto,
   UpdateApplicationDto,
-} from './applications.dto';
-import { type ApplicationDto, ApplicationsService } from './applications.service';
+} from './vehicle-types.dto';
+import { type ApplicationDto, VehicleTypesService } from './vehicle-types.service';
 
-@ApiTags('vehicle-applications')
-@Controller('vehicle-applications')
-export class ApplicationsController {
-  constructor(private readonly applications: ApplicationsService) {}
+@ApiTags('vehicle-types')
+@Controller('vehicle-types')
+export class VehicleTypesController {
+  constructor(private readonly applications: VehicleTypesService) {}
 
   @Get()
-  @RequirePermissions('vehicle-application:read')
-  @ApiOperation({ summary: 'List vehicle applications (paginated)' })
+  @RequirePermissions('vehicle-type:read')
+  @ApiOperation({ summary: 'List vehicle types (paginated)' })
   list(
     @Query() query: ListApplicationsQueryDto,
   ): Promise<{ data: ApplicationDto[]; meta: PaginationMeta }> {
@@ -26,29 +26,29 @@ export class ApplicationsController {
   }
 
   @Get(':id')
-  @RequirePermissions('vehicle-application:read')
-  @ApiOperation({ summary: 'Get a vehicle application by id' })
+  @RequirePermissions('vehicle-type:read')
+  @ApiOperation({ summary: 'Get a vehicle type by id' })
   getById(@Param('id') id: string): Promise<ApplicationDto> {
     return this.applications.getById(id);
   }
 
   @Post()
-  @RequirePermissions('vehicle-application:create')
-  @ApiOperation({ summary: 'Create a vehicle application' })
+  @RequirePermissions('vehicle-type:create')
+  @ApiOperation({ summary: 'Create a vehicle type' })
   create(@Body() dto: CreateApplicationDto): Promise<ApplicationDto> {
     return this.applications.create(dto);
   }
 
   @Patch(':id')
-  @RequirePermissions('vehicle-application:update')
-  @ApiOperation({ summary: 'Update a vehicle application' })
+  @RequirePermissions('vehicle-type:update')
+  @ApiOperation({ summary: 'Update a vehicle type' })
   update(@Param('id') id: string, @Body() dto: UpdateApplicationDto): Promise<ApplicationDto> {
     return this.applications.update(id, dto);
   }
 
   @Delete(':id')
-  @RequirePermissions('vehicle-application:delete')
-  @ApiOperation({ summary: 'Delete a vehicle application (blocked while referenced)' })
+  @RequirePermissions('vehicle-type:delete')
+  @ApiOperation({ summary: 'Delete a vehicle type (blocked while referenced)' })
   remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.applications.remove(id);
   }

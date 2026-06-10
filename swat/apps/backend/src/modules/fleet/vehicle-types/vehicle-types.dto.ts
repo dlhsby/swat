@@ -4,7 +4,7 @@ import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 export class CreateApplicationDto {
-  @ApiProperty({ maxLength: 100, description: 'Vehicle application, e.g. "Compactor"' })
+  @ApiProperty({ maxLength: 100, description: 'Vehicle type, e.g. "Compactor"' })
   @IsString()
   @MinLength(1, { message: 'Nama wajib diisi' })
   @MaxLength(100)

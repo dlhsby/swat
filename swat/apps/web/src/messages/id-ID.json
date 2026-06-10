@@ -35,7 +35,7 @@
     "masterData": "Data Master",
     "vehicles": "Kendaraan",
     "vehicleModels": "Model Kendaraan",
-    "vehicleApplications": "Aplikasi Kendaraan",
+    "vehicleTypes": "Tipe Kendaraan",
     "fuels": "Bahan Bakar",
     "drivers": "Pengemudi",
     "sitesRoutes": "Spot & Rute",

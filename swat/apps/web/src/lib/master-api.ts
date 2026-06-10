@@ -8,7 +8,7 @@ export type SiteType = 'POOL' | 'SPBU' | 'TPS' | 'TPA';
 export type RouteCategoryValue = 'DEPART_POOL' | 'REFUEL' | 'PICKUP' | 'DISPOSAL' | 'RETURN_POOL';
 export type DisposalPermitStatus = 'ACTIVE' | 'INACTIVE';
 
-export interface VehicleApplicationDto {
+export interface VehicleTypeDto {
   id: string;
   name: string;
   createdAt: string;
@@ -34,8 +34,8 @@ export interface FuelDto {
 
 export interface VehicleModelDto {
   id: string;
-  applicationId: string;
-  applicationName: string;
+  vehicleTypeId: string;
+  vehicleTypeName: string;
   fuelId: string;
   fuelName: string;
   brand: string;
@@ -178,8 +178,7 @@ export interface DisposalPermitDto {
 
 /* ----------------------------- resources ------------------------------ */
 
-export const vehicleApplicationsApi =
-  makeResourceApi<VehicleApplicationDto>('/vehicle-applications');
+export const vehicleTypesApi = makeResourceApi<VehicleTypeDto>('/vehicle-types');
 export const fuelCategoriesApi = makeResourceApi<FuelCategoryDto>('/fuel-categories');
 export const fuelsApi = makeResourceApi<FuelDto>('/fuels');
 export const vehicleModelsApi = makeResourceApi<VehicleModelDto>('/vehicle-models');

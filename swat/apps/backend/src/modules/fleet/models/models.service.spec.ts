@@ -6,7 +6,7 @@ import { VehicleModelsService } from './models.service';
 function buildModel(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: '00000000-0000-0000-0000-000000000001',
-    applicationId: '00000000-0000-0000-0000-000000000001',
+    vehicleTypeId: '00000000-0000-0000-0000-000000000001',
     fuelId: '00000000-0000-0000-0000-000000000001',
     brand: 'Hino',
     fuelTankCapacity: 200,
@@ -15,7 +15,7 @@ function buildModel(overrides: Record<string, unknown> = {}): Record<string, unk
     maxNetLoad: 0,
     maxNetVolume: 0,
     wheelCount: 6,
-    application: { id: '00000000-0000-0000-0000-000000000001', name: 'Dump Truck' },
+    vehicleType: { id: '00000000-0000-0000-0000-000000000001', name: 'Dump Truck' },
     fuel: { id: '00000000-0000-0000-0000-000000000001', name: 'Solar' },
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -27,7 +27,7 @@ describe('VehicleModelsService', () => {
   let repo: {
     list: jest.Mock;
     findById: jest.Mock;
-    applicationExists: jest.Mock;
+    vehicleTypeExists: jest.Mock;
     fuelExists: jest.Mock;
     countVehicles: jest.Mock;
     create: jest.Mock;
@@ -41,7 +41,7 @@ describe('VehicleModelsService', () => {
     repo = {
       list: jest.fn(),
       findById: jest.fn(),
-      applicationExists: jest
+      vehicleTypeExists: jest
         .fn()
         .mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' }),
       fuelExists: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' }),
@@ -54,7 +54,7 @@ describe('VehicleModelsService', () => {
   });
 
   const dto = {
-    applicationId: '00000000-0000-0000-0000-000000000001',
+    vehicleTypeId: '00000000-0000-0000-0000-000000000001',
     fuelId: '00000000-0000-0000-0000-000000000001',
     brand: 'Hino',
     fuelTankCapacity: 200,
@@ -65,13 +65,13 @@ describe('VehicleModelsService', () => {
   it('lists with application and fuel names joined', async () => {
     repo.list.mockResolvedValue({ rows: [buildModel()], total: 1 });
     const result = await service.list({ page: 1, limit: 20 });
-    expect(result.data[0]).toMatchObject({ applicationName: 'Dump Truck', fuelName: 'Solar' });
+    expect(result.data[0]).toMatchObject({ vehicleTypeName: 'Dump Truck', fuelName: 'Solar' });
   });
 
   it('rejects a missing application or fuel on create', async () => {
-    repo.applicationExists.mockResolvedValueOnce(null);
+    repo.vehicleTypeExists.mockResolvedValueOnce(null);
     await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
-    repo.applicationExists.mockResolvedValue({ id: 1 });
+    repo.vehicleTypeExists.mockResolvedValue({ id: 1 });
     repo.fuelExists.mockResolvedValueOnce(null);
     await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
   });

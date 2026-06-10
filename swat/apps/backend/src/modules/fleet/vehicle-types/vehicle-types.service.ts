@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { type VehicleApplication } from '@prisma/client';
+import { type VehicleType } from '@prisma/client';
 
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
@@ -8,8 +8,8 @@ import {
   type CreateApplicationDto,
   type ListApplicationsQueryDto,
   type UpdateApplicationDto,
-} from './applications.dto';
-import { ApplicationsRepository } from './applications.repository';
+} from './vehicle-types.dto';
+import { VehicleTypesRepository } from './vehicle-types.repository';
 
 export interface ApplicationDto {
   readonly id: string;
@@ -18,7 +18,7 @@ export interface ApplicationDto {
   readonly updatedAt: string;
 }
 
-function toDto(row: VehicleApplication): ApplicationDto {
+function toDto(row: VehicleType): ApplicationDto {
   return {
     id: row.id,
     name: row.name,
@@ -28,8 +28,8 @@ function toDto(row: VehicleApplication): ApplicationDto {
 }
 
 @Injectable()
-export class ApplicationsService {
-  constructor(private readonly repo: ApplicationsRepository) {}
+export class VehicleTypesService {
+  constructor(private readonly repo: VehicleTypesRepository) {}
 
   async list(
     query: ListApplicationsQueryDto,

@@ -66,7 +66,7 @@ import {
   type LegacyRoute,
   type LegacySite,
   type LegacyVehicle,
-  type LegacyVehicleApplication,
+  type LegacyVehicleType,
   type LegacyVehicleModel,
   type LegacyVehicleWasteSource,
   type LegacyWasteSource,
@@ -85,10 +85,7 @@ const audit = (now: Date): { createdAt: Date; updatedAt: Date } => ({
   updatedAt: now,
 });
 
-export function mapVehicleApplication(
-  r: LegacyVehicleApplication,
-  now: Date,
-): Prisma.VehicleApplicationCreateManyInput {
+export function mapVehicleType(r: LegacyVehicleType, now: Date): Prisma.VehicleTypeCreateManyInput {
   return {
     legacyId: r.APLIKASIKENDARAAN_ID,
     name: r.APLIKASIKENDARAAN_NAMA,
@@ -178,7 +175,7 @@ export function mapVehicleModel(
 ): Prisma.VehicleModelCreateManyInput {
   return {
     legacyId: r.KATEGORIKENDARAAN_ID,
-    applicationId: resolveFk(applicationMap, r.APLIKASIKENDARAAN_ID, 'vehicleModel.applicationId'),
+    vehicleTypeId: resolveFk(applicationMap, r.APLIKASIKENDARAAN_ID, 'vehicleModel.vehicleTypeId'),
     fuelId: resolveFk(fuelMap, r.BAHANBAKAR_ID, 'vehicleModel.fuelId'),
     brand: r.KATEGORIKENDARAAN_MERK,
     fuelTankCapacity: clampNonNegative(r.KATEGORIKENDARAAN_KAPASITASBAHANBAKAR),

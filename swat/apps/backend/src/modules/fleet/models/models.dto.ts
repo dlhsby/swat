@@ -7,7 +7,7 @@ import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 export class CreateVehicleModelDto {
   @ApiProperty()
   @IsString({ message: 'Aplikasi kendaraan wajib dipilih' })
-  applicationId!: string;
+  vehicleTypeId!: string;
 
   @ApiProperty()
   @IsString({ message: 'Bahan bakar wajib dipilih' })
@@ -65,7 +65,7 @@ export class ListVehicleModelsQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  applicationId?: string;
+  vehicleTypeId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

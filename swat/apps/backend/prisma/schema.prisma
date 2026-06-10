@@ -220,7 +220,7 @@ model AuditLog {
 // ===========================================================================
 // Fleet
 // ===========================================================================
-model VehicleApplication {
+model VehicleType {
   id        String         @id @default(uuid(7)) @db.Uuid
   legacyId  Int?           @unique @map("legacy_id")
   name      String         @db.VarChar(100)
@@ -228,7 +228,7 @@ model VehicleApplication {
   updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
   models    VehicleModel[]
 
-  @@map("vehicle_application")
+  @@map("vehicle_type")
 }
 
 model FuelCategory {
@@ -259,8 +259,8 @@ model Fuel {
 model VehicleModel {
   id               String             @id @default(uuid(7)) @db.Uuid
   legacyId         Int?               @unique @map("legacy_id")
-  applicationId    String             @map("application_id") @db.Uuid
-  application      VehicleApplication @relation(fields: [applicationId], references: [id])
+  vehicleTypeId    String             @map("vehicle_type_id") @db.Uuid
+  vehicleType      VehicleType @relation(fields: [vehicleTypeId], references: [id])
   fuelId           String             @map("fuel_id") @db.Uuid
   fuel             Fuel               @relation(fields: [fuelId], references: [id])
   brand            String             @db.VarChar(100)

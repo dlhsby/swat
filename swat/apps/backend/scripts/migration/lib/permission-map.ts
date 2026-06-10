@@ -13,12 +13,7 @@ const PERMISSION_MAP: ReadonlyArray<readonly [string, readonly string[]]> = [
   ],
   [
     '/master/aplikasikendaraan',
-    [
-      'vehicle-application:read',
-      'vehicle-application:create',
-      'vehicle-application:update',
-      'vehicle-application:delete',
-    ],
+    ['vehicle-type:read', 'vehicle-type:create', 'vehicle-type:update', 'vehicle-type:delete'],
   ],
   ['/master/bahanbakar', ['fuel:read', 'fuel:create', 'fuel:update', 'fuel:delete']],
   ['/master/pengemudi', ['driver:read', 'driver:create', 'driver:update', 'driver:delete']],
