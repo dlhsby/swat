@@ -3,6 +3,7 @@
 import { type ReactNode } from 'react';
 
 import {
+  Combobox,
   DatePicker,
   FormControl,
   FormDescription,
@@ -12,11 +13,6 @@ import {
   FormMessage,
   Input,
   NumberInput,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Switch,
   Textarea,
   TimePicker,
@@ -136,29 +132,20 @@ export function SelectField({
       render={({ field, fieldState }) => (
         <FormItem>
           <FormLabel required={required}>{label}</FormLabel>
-          <Select
-            // A `0` FK default means "nothing chosen yet" → keep the placeholder.
+          {/* Searchable combobox: long option sets (vehicle type, fuel, pool…)
+              get type-to-search. A `0`/'' FK value means "nothing chosen yet". */}
+          <Combobox
+            options={options.map((o) => ({ value: String(o.value), label: o.label }))}
             value={
               field.value != null && field.value !== '' && field.value !== 0
                 ? String(field.value)
-                : undefined
+                : ''
             }
             onValueChange={(v) => field.onChange(numeric ? Number(v) : v)}
+            placeholder={placeholder ?? '—'}
+            error={Boolean(fieldState.error)}
             disabled={disabled}
-          >
-            <FormControl>
-              <SelectTrigger error={Boolean(fieldState.error)}>
-                <SelectValue placeholder={placeholder ?? '—'} />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {options.map((o) => (
-                <SelectItem key={String(o.value)} value={String(o.value)}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          />
           {description ? <FormDescription>{description}</FormDescription> : null}
           <FormMessage />
         </FormItem>
