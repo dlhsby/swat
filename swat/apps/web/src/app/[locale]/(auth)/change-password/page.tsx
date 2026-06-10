@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useState } from 'react';
 
 import { AuthShell } from '@/components/auth/auth-shell';
-import { Alert, Button, Label, PasswordInput, notify } from '@/components/ui';
+import { Alert, Button, Label, PasswordInput, Spinner, notify } from '@/components/ui';
 import { useRouter } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api-error';
 import { changePassword } from '@/lib/auth-api';
@@ -28,6 +28,19 @@ export default function ChangePasswordPage(): JSX.Element {
       router.replace('/login');
     }
   }, [status, router]);
+
+  // Wait for auth to resolve before rendering the form: until `/auth/me` loads,
+  // `user` is null so `forced` would be false and the current-password field
+  // would briefly show on a forced change. Render a placeholder meanwhile.
+  if (status === 'loading') {
+    return (
+      <AuthShell width={440} title={t('title')} subtitle={t('subtitle')}>
+        <div className="flex justify-center rounded-lg border border-neutral-200 bg-neutral-0 p-10 shadow-base">
+          <Spinner aria-label={t('title')} />
+        </div>
+      </AuthShell>
+    );
+  }
 
   const strength = scorePassword(next);
   const confirmMismatch = confirm.length > 0 && confirm !== next;
