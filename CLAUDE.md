@@ -14,7 +14,9 @@ pnpm + Turborepo · NestJS 10 + Prisma 5 + Postgres 15 · Next 14 + Tailwind 3 +
 Packages: `@swat/{schemas,prisma-client,eslint-config,tsconfig}`; backend = `@swat/backend`.
 Admin seed login: `admin / Password123!` (no forced reset). Dev/CI seed also creates
 `adminreset / Password123!` (`mustChangePassword=true`) to exercise the forced first-login
-change; it is never created in production.
+change, plus one ready-to-use demo user per non-admin role for RBAC testing —
+`administrasi`, `checker`, `operator`, `petugastpa`, `supervisor` (all `/ Password123!`).
+None of these dev/CI accounts are created in production.
 
 ## Frontend conventions (`apps/web`)
 - **Routes use English slugs** under `[locale]` (e.g. `/id-ID/dashboard`, `/vehicles`,
