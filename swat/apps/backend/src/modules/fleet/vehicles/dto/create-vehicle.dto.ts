@@ -16,6 +16,22 @@ import {
 const PLATE_REGEX = /^[A-Z]{1,2} \d{1,4} [A-Z]{1,3}$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * Canonicalise a plate to `AREA NUMBER SUFFIX` (e.g. `L 1234 AB`). Accepts the
+ * spacing/case variations the client allows — `l1234ab`, `L  1234  AB` — and
+ * inserts single spaces so the strict {@link PLATE_REGEX} accepts it. Input that
+ * doesn't decompose into the three groups is left uppercased for the validator
+ * to reject with a clear message.
+ */
+function normalizePlate(value: unknown): unknown {
+  if (typeof value !== 'string') {
+    return value;
+  }
+  const compact = value.trim().toUpperCase().replace(/\s+/g, '');
+  const groups = compact.match(/^([A-Z]{1,2})(\d{1,4})([A-Z]{1,3})$/);
+  return groups ? `${groups[1]} ${groups[2]} ${groups[3]}` : value.trim().toUpperCase();
+}
+
 export class CreateVehicleDto {
   @ApiProperty()
   @IsString({ message: 'Pool wajib dipilih' })
@@ -31,7 +47,7 @@ export class CreateVehicleDto {
   status?: VehicleStatus;
 
   @ApiProperty({ example: 'L 1234 AB', maxLength: 10 })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @Transform(({ value }) => normalizePlate(value))
   @IsString()
   @Matches(PLATE_REGEX, { message: 'Format nomor polisi tidak valid (contoh: L 1234 AB)' })
   plateNumber!: string;
