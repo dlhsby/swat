@@ -24,19 +24,22 @@ describe('RolePermissionsService', () => {
     expect(prisma.rolePermission.findMany).not.toHaveBeenCalled();
   });
 
-  it('queries and caches on a miss', async () => {
+  it('queries the permission KEYS (not ids) and caches on a miss', async () => {
     cache.get.mockResolvedValue(null);
     prisma.rolePermission.findMany.mockResolvedValue([
-      { permissionId: '00000000-0000-0000-0000-0000000000c1' },
-      { permissionId: '00000000-0000-0000-0000-0000000000c2' },
+      { permission: { key: 'user:read' } },
+      { permission: { key: 'vehicle:read' } },
     ]);
 
     const keys = await service.getPermissionKeys('00000000-0000-0000-0000-0000000000b7');
 
-    expect(keys).toEqual([
-      '00000000-0000-0000-0000-0000000000c1',
-      '00000000-0000-0000-0000-0000000000c2',
-    ]);
+    // Must be human-readable keys — the nav filter + permissions guard match on
+    // these, NOT the permission UUIDs (regression: empty sidebar / "akses ditolak").
+    expect(keys).toEqual(['user:read', 'vehicle:read']);
+    expect(prisma.rolePermission.findMany).toHaveBeenCalledWith({
+      where: { roleId: '00000000-0000-0000-0000-0000000000b7' },
+      select: { permission: { select: { key: true } } },
+    });
     expect(cache.set).toHaveBeenCalledWith(
       'rbac:role:00000000-0000-0000-0000-0000000000b7:permissions',
       keys,

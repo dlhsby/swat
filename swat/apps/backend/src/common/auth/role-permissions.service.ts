@@ -27,9 +27,9 @@ export class RolePermissionsService {
 
     const rows = await this.prisma.rolePermission.findMany({
       where: { roleId },
-      select: { permissionId: true },
+      select: { permission: { select: { key: true } } },
     });
-    const keys = rows.map((row) => row.permissionId);
+    const keys = rows.map((row) => row.permission.key);
 
     await this.cache.set(cacheKey(roleId), keys, CACHE_TTL_SECONDS);
     return keys;
