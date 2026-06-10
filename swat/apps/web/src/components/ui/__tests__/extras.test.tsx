@@ -77,13 +77,14 @@ describe('DataTable pagination bar', () => {
 
   it('paginates forward and changes the page size', async () => {
     render(<DataTable columns={columns} data={data} enableColumnToggle={false} />);
-    expect(screen.getByText('Menampilkan 1–25 dari 60')).toBeInTheDocument();
+    // Default page size is 10.
+    expect(screen.getByText('Menampilkan 1–10 dari 60')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Selanjutnya' }));
-    expect(screen.getByText('Menampilkan 26–50 dari 60')).toBeInTheDocument();
+    expect(screen.getByText('Menampilkan 11–20 dari 60')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Sebelumnya' }));
-    expect(screen.getByText('Menampilkan 1–25 dari 60')).toBeInTheDocument();
+    expect(screen.getByText('Menampilkan 1–10 dari 60')).toBeInTheDocument();
 
     // Change rows-per-page to 100 → single page of 60.
     await userEvent.click(

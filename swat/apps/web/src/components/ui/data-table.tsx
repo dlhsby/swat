@@ -12,7 +12,14 @@ import {
   useReactTable,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, ChevronsUpDown, Search, SlidersHorizontal } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronsUpDown,
+  Filter,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 
 import { cn } from '@/lib/cn';
@@ -102,12 +109,17 @@ export function DataTable<TData, TValue>({
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0]);
   const [pageIndex, setPageIndex] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
 
   const debouncedSearch = useDebounced(search, 300);
   useEffect(() => {
     setGlobalFilter(debouncedSearch);
     setPageIndex(0);
   }, [debouncedSearch]);
+  // Reset to page 1 whenever the per-column filters change.
+  useEffect(() => {
+    setPageIndex(0);
+  }, [columnFilters]);
 
   const table = useReactTable({
     data,
@@ -131,7 +143,9 @@ export function DataTable<TData, TValue>({
   const isFiltered = globalFilter.length > 0 || columnFilters.length > 0;
 
   const colCount = table.getVisibleLeafColumns().length || 1;
-  const showToolbar = hasSearch || Boolean(toolbar) || enableColumnToggle || Boolean(actions);
+  const hasFilterableColumns = table.getAllColumns().some((c) => c.getCanFilter());
+  const showToolbar =
+    hasSearch || Boolean(toolbar) || enableColumnToggle || Boolean(actions) || hasFilterableColumns;
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -148,8 +162,19 @@ export function DataTable<TData, TValue>({
             />
           ) : null}
           {toolbar}
-          {enableColumnToggle || actions ? (
+          {enableColumnToggle || actions || hasFilterableColumns ? (
             <div className="ml-auto flex items-center gap-2">
+              {hasFilterableColumns ? (
+                <Button
+                  variant={showFilters ? 'secondary' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowFilters((v) => !v)}
+                  aria-pressed={showFilters}
+                >
+                  <Filter className="h-4 w-4" aria-hidden />
+                  Filter
+                </Button>
+              ) : null}
               {enableColumnToggle ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -184,7 +209,7 @@ export function DataTable<TData, TValue>({
       ) : null}
 
       {/* Desktop table (md+) */}
-      <div className="hidden overflow-hidden rounded-lg border border-neutral-200 md:block">
+      <div className="hidden overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0 shadow-base md:block">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -205,23 +230,47 @@ export function DataTable<TData, TValue>({
                               : undefined
                       }
                     >
-                      {header.isPlaceholder ? null : sortable ? (
-                        <button
-                          type="button"
-                          onClick={header.column.getToggleSortingHandler()}
-                          className="-ml-1 inline-flex items-center gap-1 rounded-sm px-1 hover:text-neutral-900"
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {sorted === 'asc' ? (
-                            <ArrowUp className="h-3.5 w-3.5" aria-hidden />
-                          ) : sorted === 'desc' ? (
-                            <ArrowDown className="h-3.5 w-3.5" aria-hidden />
+                      {header.isPlaceholder ? null : (
+                        <div className="flex flex-col gap-1.5">
+                          {sortable ? (
+                            <button
+                              type="button"
+                              onClick={header.column.getToggleSortingHandler()}
+                              title="Klik untuk mengurutkan · Shift+klik untuk beberapa kolom"
+                              className="-ml-1 inline-flex w-fit items-center gap-1 rounded-sm px-1 hover:text-neutral-900"
+                            >
+                              {flexRender(header.column.columnDef.header, header.getContext())}
+                              {sorted === 'asc' ? (
+                                <ArrowUp className="h-3.5 w-3.5" aria-hidden />
+                              ) : sorted === 'desc' ? (
+                                <ArrowDown className="h-3.5 w-3.5" aria-hidden />
+                              ) : (
+                                <ChevronsUpDown
+                                  className="h-3.5 w-3.5 text-neutral-400"
+                                  aria-hidden
+                                />
+                              )}
+                              {sorted && sorting.length > 1 ? (
+                                <span className="ml-0.5 rounded bg-neutral-200 px-1 text-tiny tabular-nums text-neutral-600">
+                                  {header.column.getSortIndex() + 1}
+                                </span>
+                              ) : null}
+                            </button>
                           ) : (
-                            <ChevronsUpDown className="h-3.5 w-3.5 text-neutral-400" aria-hidden />
+                            flexRender(header.column.columnDef.header, header.getContext())
                           )}
-                        </button>
-                      ) : (
-                        flexRender(header.column.columnDef.header, header.getContext())
+                          {showFilters && header.column.getCanFilter() ? (
+                            <Input
+                              value={(header.column.getFilterValue() as string) ?? ''}
+                              onChange={(e) => header.column.setFilterValue(e.target.value)}
+                              placeholder="Filter…"
+                              aria-label={`Filter ${String(
+                                header.column.columnDef.meta?.label ?? header.column.id,
+                              )}`}
+                              className="h-7 text-tiny font-normal"
+                            />
+                          ) : null}
+                        </div>
                       )}
                     </TableHead>
                   );
@@ -267,8 +316,12 @@ export function DataTable<TData, TValue>({
                 </TableCell>
               </TableRow>
             ) : (
-              pageRows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() ? 'selected' : undefined}>
+              pageRows.map((row, idx) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() ? 'selected' : undefined}
+                  className={cn('hover:bg-neutral-100', idx % 2 === 1 && 'bg-neutral-50/60')}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
