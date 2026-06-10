@@ -23,12 +23,17 @@ export const CommandInput = forwardRef<
   ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(function CommandInput({ className, ...props }, ref) {
   return (
-    <div className="flex items-center gap-2 border-b border-neutral-200 px-3" cmdk-input-wrapper="">
+    <div
+      className="flex items-center gap-2 border-b border-neutral-200 px-3 transition-colors focus-within:border-primary-600"
+      cmdk-input-wrapper=""
+    >
       <Search className="h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
       <CommandPrimitive.Input
         ref={ref}
         className={cn(
-          'h-10 w-full bg-transparent text-body-sm text-neutral-900 outline-none placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
+          // Suppress the global :focus-visible ring (it would overflow the popover);
+          // the wrapper's focus-within bottom-border is the contained indicator instead.
+          'h-10 w-full bg-transparent text-body-sm text-neutral-900 outline-none focus-visible:shadow-none placeholder:text-neutral-400 disabled:cursor-not-allowed disabled:opacity-50',
           className,
         )}
         {...props}

@@ -20,11 +20,12 @@ import {
   Search,
   SlidersHorizontal,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/cn';
 
 import { Button } from './button';
+import { ColumnFilter, type FilterVariant, filterFnForVariant } from './column-filter';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -46,6 +47,9 @@ declare module '@tanstack/react-table' {
     label?: string;
     /** Hidden on first render; user can reveal it via the column-toggle menu. */
     defaultHidden?: boolean;
+    /** Column data type — selects the per-column filter control + filterFn.
+     * Defaults to `text` (contains-search) when omitted. */
+    filterVariant?: FilterVariant;
   }
 }
 
@@ -123,6 +127,18 @@ export function DataTable<TData, TValue>({
   const [pageIndex, setPageIndex] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Assign each filterable column the filterFn matching its declared variant
+  // (number → range, date → date-range), unless the page set one explicitly.
+  const resolvedColumns = useMemo(
+    () =>
+      columns.map((c) => {
+        const variant = c.meta?.filterVariant;
+        if (!variant || variant === 'text' || c.filterFn) return c;
+        return { ...c, filterFn: filterFnForVariant<TData>(variant) };
+      }),
+    [columns],
+  );
+
   const debouncedSearch = useDebounced(search, 300);
   useEffect(() => {
     setGlobalFilter(debouncedSearch);
@@ -135,7 +151,7 @@ export function DataTable<TData, TValue>({
 
   const table = useReactTable({
     data,
-    columns,
+    columns: resolvedColumns,
     state: { sorting, columnFilters, columnVisibility, globalFilter },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -289,14 +305,12 @@ export function DataTable<TData, TValue>({
                             flexRender(header.column.columnDef.header, header.getContext())
                           )}
                           {showFilters && header.column.getCanFilter() ? (
-                            <Input
-                              value={(header.column.getFilterValue() as string) ?? ''}
-                              onChange={(e) => header.column.setFilterValue(e.target.value)}
-                              placeholder="Filter…"
-                              aria-label={`Filter ${String(
+                            <ColumnFilter
+                              column={header.column}
+                              variant={header.column.columnDef.meta?.filterVariant ?? 'text'}
+                              label={String(
                                 header.column.columnDef.meta?.label ?? header.column.id,
-                              )}`}
-                              className="h-7 text-tiny font-normal"
+                              )}
                             />
                           ) : null}
                         </div>

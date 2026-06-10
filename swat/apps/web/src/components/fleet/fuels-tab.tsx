@@ -42,7 +42,7 @@ export function FuelsTab(): JSX.Element {
       {
         accessorKey: 'pricePerLiter',
         header: 'Harga / L',
-        meta: { label: 'Harga / L' },
+        meta: { label: 'Harga / L', filterVariant: 'number' },
         cell: ({ row }) => (
           <span className="tabular-nums">{formatRupiah(row.original.pricePerLiter)}</span>
         ),

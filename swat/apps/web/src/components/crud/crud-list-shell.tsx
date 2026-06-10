@@ -26,9 +26,8 @@ function auditColumns<T>(): ColumnDef<T, unknown>[] {
     {
       id: 'createdAt',
       accessorFn: (row) => (row as { createdAt?: string }).createdAt ?? null,
-      header: 'Dibuat',
-      enableColumnFilter: false,
-      meta: { label: 'Dibuat', defaultHidden: true },
+      header: 'Dibuat pada',
+      meta: { label: 'Dibuat pada', defaultHidden: true, filterVariant: 'date' },
       cell: ({ getValue }) => dateCell(getValue()),
     },
     {
@@ -41,9 +40,8 @@ function auditColumns<T>(): ColumnDef<T, unknown>[] {
     {
       id: 'updatedAt',
       accessorFn: (row) => (row as { updatedAt?: string }).updatedAt ?? null,
-      header: 'Diubah',
-      enableColumnFilter: false,
-      meta: { label: 'Diubah', defaultHidden: true },
+      header: 'Diubah pada',
+      meta: { label: 'Diubah pada', defaultHidden: true, filterVariant: 'date' },
       cell: ({ getValue }) => dateCell(getValue()),
     },
     {

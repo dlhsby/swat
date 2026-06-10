@@ -84,4 +84,24 @@ describe('DataTable', () => {
       within(desktop()).queryByRole('columnheader', { name: /Odometer/ }),
     ).not.toBeInTheDocument();
   });
+
+  it('filters a number column by a min/max range and badges the active count', async () => {
+    const numColumns: ColumnDef<Row>[] = [
+      { accessorKey: 'plate', header: 'Nomor Polisi', meta: { label: 'Nomor Polisi' } },
+      {
+        accessorKey: 'odometer',
+        header: 'Odometer',
+        meta: { label: 'Odometer', filterVariant: 'number' },
+      },
+    ];
+    render(<DataTable columns={numColumns} data={data} />);
+    // Open the per-column filter row, then constrain odometer to ≥ 2000.
+    await userEvent.click(screen.getByRole('button', { name: /Filter/ }));
+    await userEvent.type(screen.getByLabelText('Filter Odometer minimum'), '2000');
+
+    expect(within(desktop()).queryByText('L 1234 AB')).not.toBeInTheDocument();
+    expect(within(desktop()).getByText('L 5678 CD')).toBeInTheDocument();
+    // The Filter button surfaces a "1 active" count badge.
+    expect(screen.getByLabelText('1 filter aktif')).toHaveTextContent('1');
+  });
 });
