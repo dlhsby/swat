@@ -1,7 +1,6 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { z } from 'zod';
 
@@ -31,8 +30,8 @@ const toForm = (r: FuelDto): Values => ({
 });
 const categoryOption = (c: FuelCategoryDto): SelectOption => ({ value: c.id, label: c.name });
 
-export default function FuelsPage(): JSX.Element {
-  const t = useTranslations('nav');
+/** Fuels (Bahan Bakar) — embedded tab of the combined vehicle page. */
+export function FuelsTab(): JSX.Element {
   const manager = useResourceManager(fuelsApi, (r) => r.id);
   const { options: categories } = useOptions(fuelCategoriesApi.list, categoryOption);
 
@@ -70,7 +69,8 @@ export default function FuelsPage(): JSX.Element {
 
   return (
     <CrudListShell
-      title={t('fuels')}
+      embedded
+      title="Bahan Bakar"
       resource="fuel"
       manager={manager}
       columns={columns}

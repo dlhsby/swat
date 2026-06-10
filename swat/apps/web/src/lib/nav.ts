@@ -6,7 +6,6 @@ import {
   CalendarDays,
   ClipboardCheck,
   Database,
-  Fuel,
   FuelIcon,
   Gauge,
   LayoutDashboard,
@@ -101,7 +100,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     sortAlpha: true,
     leaves: [
       { key: 'vehicles', href: '/vehicles', icon: Truck, permission: 'vehicle:read' },
-      { key: 'fuels', href: '/fuels', icon: Fuel, permission: 'fuel:read' },
       { key: 'drivers', href: '/drivers', icon: Users, permission: 'driver:read' },
       { key: 'sitesRoutes', href: '/sites-routes', icon: MapPin, permission: 'site:read' },
       {

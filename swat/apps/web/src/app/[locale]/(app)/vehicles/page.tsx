@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 
+import { FuelsTab } from '@/components/fleet/fuels-tab';
 import { VehicleModelsTab } from '@/components/fleet/vehicle-models-tab';
 import { VehicleTypesTab } from '@/components/fleet/vehicle-types-tab';
 import { VehiclesTab } from '@/components/fleet/vehicles-tab';
@@ -17,12 +18,14 @@ export default function VehiclesPage(): JSX.Element {
   return (
     <>
       <PageHead title={t('vehicles')} />
-      {/* Order Tipe → Model → Kendaraan (broad → specific → unit); open on Kendaraan. */}
+      {/* Order Tipe → Model → Kendaraan (broad → specific → unit), then Bahan
+          Bakar; open on Kendaraan. */}
       <Tabs defaultValue="vehicles">
         <TabsList>
           <TabsTrigger value="types">Tipe Kendaraan</TabsTrigger>
           <TabsTrigger value="models">Model Kendaraan</TabsTrigger>
           <TabsTrigger value="vehicles">Kendaraan</TabsTrigger>
+          <TabsTrigger value="fuels">Bahan Bakar</TabsTrigger>
         </TabsList>
         <TabsContent value="types">
           <VehicleTypesTab />
@@ -32,6 +35,9 @@ export default function VehiclesPage(): JSX.Element {
         </TabsContent>
         <TabsContent value="vehicles">
           <VehiclesTab />
+        </TabsContent>
+        <TabsContent value="fuels">
+          <FuelsTab />
         </TabsContent>
       </Tabs>
     </>

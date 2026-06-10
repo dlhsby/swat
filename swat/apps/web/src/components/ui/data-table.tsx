@@ -178,13 +178,26 @@ export function DataTable<TData, TValue>({
             <div className="ml-auto flex items-center gap-2">
               {hasFilterableColumns ? (
                 <Button
-                  variant={showFilters ? 'secondary' : 'outline'}
+                  variant={showFilters || columnFilters.length > 0 ? 'secondary' : 'outline'}
                   size="sm"
                   onClick={() => setShowFilters((v) => !v)}
                   aria-pressed={showFilters}
+                  title={
+                    columnFilters.length > 0
+                      ? `${columnFilters.length} filter aktif`
+                      : 'Filter per kolom'
+                  }
                 >
                   <Filter className="h-4 w-4" aria-hidden />
                   Filter
+                  {columnFilters.length > 0 ? (
+                    <span
+                      className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-700 px-1 text-tiny font-semibold tabular-nums text-white"
+                      aria-label={`${columnFilters.length} filter aktif`}
+                    >
+                      {columnFilters.length}
+                    </span>
+                  ) : null}
                 </Button>
               ) : null}
               {enableColumnToggle ? (
