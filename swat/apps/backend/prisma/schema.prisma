@@ -285,7 +285,11 @@ model Vehicle {
   modelId            String               @map("model_id") @db.Uuid
   model              VehicleModel         @relation(fields: [modelId], references: [id])
   status             VehicleStatus        @default(GOOD)
-  plateNumber        String               @unique @map("plate_number") @db.VarChar(10)
+  // VarChar(20) (not 10) so the legacy loader can disambiguate the ~1.5% of
+  // historical rows with a blank/placeholder/duplicate plate by suffixing the
+  // legacy id (e.g. `B9552EQ#1048`); `needsPlateReview` flags those for ops.
+  plateNumber        String               @unique @map("plate_number") @db.VarChar(20)
+  needsPlateReview   Boolean              @default(false) @map("needs_plate_review")
   chassisNumber      String               @map("chassis_number") @db.VarChar(100)
   engineNumber       String               @map("engine_number") @db.VarChar(100)
   manufactureYear    Int?                 @map("manufacture_year")

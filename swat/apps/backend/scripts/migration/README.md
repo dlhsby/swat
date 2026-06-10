@@ -8,17 +8,20 @@ filesystem) into the new PostgreSQL schema. Spec: [`specs/04-migration.md`](../.
 > client, the `tsconfig`, and — for the pure transform/mapper/enum/reconcile
 > logic — the backend's Jest runner, so the correctness core is unit-tested in CI.
 
-## What is verified here vs. deferred
+## What is verified
 
-**Docker / a live MySQL / a live PostgreSQL are not available in this dev
-environment.** Following the Phase-0/1 "scaffold-all, defer live infra" posture:
-
-- ✅ **Verified locally:** all pure logic — data-quality fixes, enum maps, row
-  mappers, route dedupe, keyset pagination + watermark, reconciliation tolerance,
-  permission-key derivation, image object-key/content-type helpers — under `lib/*.spec.ts`
-  (run by `pnpm --filter @swat/backend test`); plus `lint` + `typecheck`.
-- ⏳ **Operator's on-prem step (deferred):** the end-to-end run against the live
-  MySQL + PostgreSQL + image filesystem, and the multi-TB transactional history.
+- ✅ **Pure logic** — enum maps, row mappers, FK resolution, route + crew dedupe,
+  keyset pagination + watermark, reconciliation tolerance, permission-key
+  derivation, image helpers — under `lib/*.spec.ts` (`pnpm --filter @swat/backend test`),
+  plus `lint` + `typecheck`.
+- ✅ **End-to-end against a real dump** (`old_swat/db_backup/dkp_swat_2026_05_18_*.sql`
+  restored into the `old_swat/infra` MySQL container): the full
+  master + auth + scheduling + aggregate load runs green and `migrate:verify`
+  passes — 1463 vehicles, 934 sites, 4897 routes, 316 drivers, 67 users, 1396 crew
+  schedules, 2128 trip templates, 364 tonnage rows; FK integrity ✓, all row counts
+  within tolerance (every drop an accounted-for dedupe).
+- ⏳ **Deferred:** the multi-TB **transactional history** stream (T-155) and the
+  **image corpus** (needs the on-prem upload filesystem) — see below.
 
 ## Scripts
 
@@ -44,14 +47,32 @@ S3_ENDPOINT=...  S3_REGION=...  S3_BUCKET=swat-photos  S3_ACCESS_KEY=...  S3_SEC
 MIGRATE_IMAGE_CONCURRENCY=5
 ```
 
+## Dump first — don't migrate from the live DB
+
+Restore a `mysqldump` of prod into a **disposable MySQL container** (the
+`old_swat/infra` stack is exactly this) and point the loader at that, rather than
+connecting to the operational MySQL:
+
+- **Safety** — the bulk load issues large `SELECT`s; a read-once dump never
+  competes with live operations.
+- **Reproducibility** — you migrate from a frozen snapshot, so re-runs and
+  `migrate:verify` reconcile against immutable data; iterate until clean.
+- **Cleansing** — 13y of data has quality issues (see below); you fix them in the
+  staging copy, never in prod.
+
+Live-connect is reserved for the final **`delta-sync`** near cutover (freshest few
+hours, tiny volume).
+
 ## Run order (operator)
 
 ```bash
-# 0. Target schema + canonical roles/permissions/admin must exist first.
+# 0. Target schema + the AUTH bootstrap only — all master/reference data comes
+#    from legacy, so seeding reference rows here would collide on unique business
+#    keys (e.g. waste-source `code`) and silently drop the legacy rows.
 pnpm --filter @swat/backend prisma:deploy
-pnpm --filter @swat/backend prisma:seed
+SEED_AUTH_ONLY=true pnpm --filter @swat/backend prisma:seed
 
-# 1. Profile the live DB (read-only) — drives partition/archive decisions.
+# 1. Profile the (staging) DB (read-only) — drives partition/archive decisions.
 pnpm --filter @swat/backend run migrate:discovery
 
 # 2. Load master + auth + scheduling + aggregates (idempotent; re-run safe).
@@ -65,6 +86,22 @@ pnpm --filter @swat/backend run migrate:images
 # 4. Validate — exits non-zero if any table is >1% off or an FK is orphaned.
 pnpm --filter @swat/backend run migrate:verify
 ```
+
+## Legacy data-quality handling
+
+The loader fails **loud** on unresolved hard FKs (a feature — never a silent bad
+row), and applies these specific, logged cleanses for known 13-year-old issues:
+
+- **Duplicate / blank / placeholder plates** (`''`, `Excavator`, re-used plates):
+  SWAT enforces a unique plate, so the loader suffixes the legacy id
+  (`B9552EQ#1048`, blank → `NOPOL#<id>`) and sets `needsPlateReview=true` — every
+  vehicle survives + stays FK-resolvable; ops reconcile the flagged rows in-app.
+- **Duplicate `(vehicle, driver)` crew schedules:** deduped (keep first), trip
+  templates remapped to the kept schedule — same as the route dedupe.
+- **Duplicate `(vehicle, source)` junction rows / links to a dropped row:** skipped
+  with a counted warning (soft many-to-many).
+
+`migrate:verify` reports each expected drop so the ≤1% variance check stays fair.
 
 ## Design notes
 

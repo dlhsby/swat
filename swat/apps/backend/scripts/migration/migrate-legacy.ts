@@ -181,21 +181,60 @@ async function migrateMasterData(): Promise<void> {
     const modelMap = toLegacyMap(await prisma.vehicleModel.findMany(ID_LEGACY));
 
     const vehicles = await query<LegacyVehicle>(conn, 'SELECT * FROM kendaraan');
-    await prisma.vehicle.createMany({
-      data: vehicles.map((r) => mapVehicle(r, NOW, siteMap, modelMap)),
-      skipDuplicates: true,
+    // SWAT enforces a unique plate, but 13y of legacy data has blank/placeholder
+    // ("Excavator") and genuinely duplicate plates. Disambiguate those by suffixing
+    // the legacy id (`B9552EQ#1048`, blank → `NOPOL#<id>`) and flag them
+    // `needsPlateReview` so EVERY vehicle survives + stays FK-resolvable — a plain
+    // `skipDuplicates` would instead drop them and orphan their hauls/permits.
+    const plateCount = new Map<string, number>();
+    for (const v of vehicles) {
+      const plate = (v.KENDARAAN_NOMORPOLISI ?? '').trim();
+      plateCount.set(plate, (plateCount.get(plate) ?? 0) + 1);
+    }
+    let plateReviewCount = 0;
+    const vehicleData = vehicles.map((v) => {
+      const mapped = mapVehicle(v, NOW, siteMap, modelMap);
+      const plate = (v.KENDARAAN_NOMORPOLISI ?? '').trim();
+      if (plate === '' || (plateCount.get(plate) ?? 0) > 1) {
+        plateReviewCount += 1;
+        return {
+          ...mapped,
+          plateNumber: `${plate || 'NOPOL'}#${v.KENDARAAN_ID}`,
+          needsPlateReview: true,
+        };
+      }
+      return mapped;
     });
+    await prisma.vehicle.createMany({ data: vehicleData, skipDuplicates: true });
     const vehicleMap = toLegacyMap(await prisma.vehicle.findMany(ID_LEGACY));
     log(`Vehicle: ${vehicles.length}`);
+    if (plateReviewCount > 0) {
+      warn(
+        `Vehicle: disambiguated ${plateReviewCount} blank/duplicate plate(s) with a #legacyId suffix (needsPlateReview=true) — reconcile in-app before they appear at the weighbridge.`,
+      );
+    }
 
     const vws = await query<LegacyVehicleWasteSource>(
       conn,
       'SELECT * FROM kategorisumbersampahkendaraan',
     );
+    // Soft many-to-many junction: tolerate a row whose vehicle/source could not be
+    // migrated (e.g. a vehicle dropped on the unique-plate constraint) by skipping
+    // it with a counted warning — never silently. A missing source link is
+    // recoverable; a crash here would abort the whole master load.
+    const vwsResolvable = vws.filter(
+      (r) => vehicleMap.has(r.KENDARAAN_ID) && wasteSourceMap.has(r.KATEGORISUMBERSAMPAH_ID),
+    );
     await prisma.vehicleWasteSource.createMany({
-      data: vws.map((r) => mapVehicleWasteSource(r, vehicleMap, wasteSourceMap)),
+      data: vwsResolvable.map((r) => mapVehicleWasteSource(r, vehicleMap, wasteSourceMap)),
       skipDuplicates: true,
     });
+    const vwsSkipped = vws.length - vwsResolvable.length;
+    if (vwsSkipped > 0) {
+      warn(
+        `VehicleWasteSource: skipped ${vwsSkipped}/${vws.length} link(s) referencing an unmigrated vehicle/source (likely a duplicate-plate vehicle dropped on the unique constraint — see verify-migration count reconciliation).`,
+      );
+    }
 
     const drivers = await query<LegacyDriver>(conn, 'SELECT * FROM pengemudi');
     await prisma.driver.createMany({
@@ -310,22 +349,43 @@ async function migrateScheduling(sysUser: string): Promise<void> {
       conn,
       'SELECT * FROM masterdetailtransaksiangkutsampah',
     );
+    // SWAT models a crew pairing as unique `(vehicleId, driverId)`, but legacy
+    // `masterdetailtransaksiangkutsampah` records the same pair more than once.
+    // Dedupe on the pair (keep first occurrence) and remap dropped schedules to
+    // the kept one so trip templates still resolve — mirrors the route dedupe.
+    const crewKeptByPair = new Map<string, number>();
+    const scheduleRemap = new Map<number, number>();
+    let crewDropped = 0;
     for (const s of schedules) {
-      await prisma.crewSchedule.upsert({
-        where: { legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID },
-        create: {
-          legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID,
-          vehicleId: resolveFk(vehicleMap, s.KENDARAAN_ID, 'crewSchedule.vehicleId'),
-          driverId: resolveFk(driverMap, s.PENGEMUDI_ID, 'crewSchedule.driverId'),
-          departTime:
-            legacyTimeToDate(s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_WAKTUBERANGKATKANDANG) ?? NOW,
-          returnTime:
-            legacyTimeToDate(s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_WAKTUKEMBALIKANDANG) ?? NOW,
-        },
-        update: {},
-      });
+      const pair = `${s.KENDARAAN_ID}:${s.PENGEMUDI_ID}`;
+      const keptLegacyId = crewKeptByPair.get(pair);
+      if (keptLegacyId === undefined) {
+        crewKeptByPair.set(pair, s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID);
+        scheduleRemap.set(
+          s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID,
+          s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID,
+        );
+        await prisma.crewSchedule.upsert({
+          where: { legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID },
+          create: {
+            legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID,
+            vehicleId: resolveFk(vehicleMap, s.KENDARAAN_ID, 'crewSchedule.vehicleId'),
+            driverId: resolveFk(driverMap, s.PENGEMUDI_ID, 'crewSchedule.driverId'),
+            departTime:
+              legacyTimeToDate(s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_WAKTUBERANGKATKANDANG) ?? NOW,
+            returnTime:
+              legacyTimeToDate(s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_WAKTUKEMBALIKANDANG) ?? NOW,
+          },
+          update: {},
+        });
+      } else {
+        scheduleRemap.set(s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID, keptLegacyId);
+        crewDropped += 1;
+      }
     }
-    log(`CrewSchedule: ${schedules.length}`);
+    log(
+      `CrewSchedule: ${crewKeptByPair.size} kept, ${crewDropped} duplicate vehicle+driver dropped`,
+    );
 
     // Build the route-dedupe remap so templates point at the kept route id. Same
     // ORDER BY RUTE_ID as migrateMasterData so "kept" is identical in both passes.
@@ -349,7 +409,10 @@ async function migrateScheduling(sysUser: string): Promise<void> {
     const templates = await query<LegacyTripTemplate>(conn, 'SELECT * FROM mastertrayek');
     let tplCount = 0;
     for (const t of templates) {
-      const crewScheduleId = scheduleByLegacy.get(t.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID);
+      const keptScheduleLegacyId =
+        scheduleRemap.get(t.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID) ??
+        t.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID;
+      const crewScheduleId = scheduleByLegacy.get(keptScheduleLegacyId);
       if (!crewScheduleId) {
         continue;
       }

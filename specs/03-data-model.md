@@ -204,7 +204,8 @@ model Vehicle {
   modelId             String
   model               VehicleModel @relation(fields: [modelId], references: [id])
   status              VehicleStatus @default(GOOD)
-  plateNumber         String   @unique @db.VarChar(10)
+  plateNumber         String   @unique @db.VarChar(20) // (20) leaves room for the legacy loader to disambiguate dup/blank plates → `B9552EQ#<legacyId>`
+  needsPlateReview    Boolean  @default(false)         // legacy row got a synthesized plate; ops must reconcile
   chassisNumber       String   @db.VarChar(100)
   engineNumber        String   @db.VarChar(100)
   manufactureYear     Int?

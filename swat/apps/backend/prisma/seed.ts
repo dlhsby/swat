@@ -696,11 +696,24 @@ async function main(): Promise<void> {
     throw new Error('Administrator role was not created');
   }
   await seedAdminUser(adminRoleId);
-  await seedReferenceData();
 
-  if (process.env.SEED_SYNTHETIC !== 'false') {
-    await seedLevies();
-    await seedSyntheticData();
+  // Legacy-migration target: seed ONLY the auth bootstrap (permissions, roles,
+  // admin). All reference + master + transactional data comes from the legacy DB
+  // via `migrate:legacy`; seeding reference rows here would collide with the
+  // migrated ones on unique business keys (e.g. waste-source `code`) and force
+  // `createMany({skipDuplicates})` to drop the legacy rows.
+  const authOnly = process.env.SEED_AUTH_ONLY === 'true';
+  if (authOnly) {
+    // eslint-disable-next-line no-console
+    console.log(
+      'SEED_AUTH_ONLY: seeded permissions + roles + admin only (master data via migrate:legacy).',
+    );
+  } else {
+    await seedReferenceData();
+    if (process.env.SEED_SYNTHETIC !== 'false') {
+      await seedLevies();
+      await seedSyntheticData();
+    }
   }
 
   // eslint-disable-next-line no-console

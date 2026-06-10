@@ -40,7 +40,6 @@ const PAIRS: Pair[] = [
   { legacyTable: 'kategorisumbersampahkendaraan', count: () => prisma.vehicleWasteSource.count() },
   { legacyTable: 'pengemudi', count: () => prisma.driver.count() },
   { legacyTable: 'kepemilikansim', count: () => prisma.driverLicense.count() },
-  { legacyTable: 'masterdetailtransaksiangkutsampah', count: () => prisma.crewSchedule.count() },
   { legacyTable: 'mastertrayek', count: () => prisma.tripTemplate.count() },
   { legacyTable: 'jatahkitir', count: () => prisma.disposalPermit.count() },
   { legacyTable: 'tonase', count: () => prisma.dailyTonnage.count() },
@@ -60,6 +59,23 @@ async function reconcileCounts(): Promise<ReconcileRow[]> {
     const routeDrop = Number(dupRows[0]?.extra ?? 0);
     rows.push(
       reconcileRow('rute', await countRows(conn, 'rute'), await prisma.route.count(), 1, routeDrop),
+    );
+
+    // Crew schedules are deduped on (vehicle, driver) — compute the expected drop
+    // so the variance check is fair (same treatment as the route dedupe above).
+    const crewDupRows = await query<{ extra: number }>(
+      conn,
+      `SELECT COALESCE(SUM(c - 1), 0) AS extra FROM (SELECT COUNT(*) AS c FROM masterdetailtransaksiangkutsampah GROUP BY KENDARAAN_ID, PENGEMUDI_ID) t`,
+    );
+    const crewDrop = Number(crewDupRows[0]?.extra ?? 0);
+    rows.push(
+      reconcileRow(
+        'masterdetailtransaksiangkutsampah',
+        await countRows(conn, 'masterdetailtransaksiangkutsampah'),
+        await prisma.crewSchedule.count(),
+        1,
+        crewDrop,
+      ),
     );
 
     for (const p of PAIRS) {
