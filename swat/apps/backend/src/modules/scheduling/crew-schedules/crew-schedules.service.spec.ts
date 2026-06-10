@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
+import { type ActorNamesService } from '../../audit/actor-names.service';
+
 import { type CrewSchedulesRepository } from './crew-schedules.repository';
 import { CrewSchedulesService } from './crew-schedules.service';
 
@@ -44,7 +46,13 @@ describe('CrewSchedulesService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
-    service = new CrewSchedulesService(repo as unknown as CrewSchedulesRepository);
+    service = new CrewSchedulesService(
+      repo as unknown as CrewSchedulesRepository,
+      {
+        attach: async (_r: unknown, d: unknown[]) => d,
+        resolve: async () => new Map<string, string>(),
+      } as unknown as ActorNamesService,
+    );
   });
 
   const ID = '00000000-0000-0000-0000-000000000001';

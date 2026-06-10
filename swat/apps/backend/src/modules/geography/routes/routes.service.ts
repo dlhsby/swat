@@ -8,6 +8,7 @@ import { type RouteCategory } from '@prisma/client';
 
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import { type CreateRouteDto } from './dto/create-route.dto';
 import { type ListRoutesQueryDto } from './dto/list-routes.query.dto';
@@ -42,7 +43,10 @@ function toRouteDto(route: RouteWithSites): RouteDto {
 
 @Injectable()
 export class RoutesService {
-  constructor(private readonly repo: RoutesRepository) {}
+  constructor(
+    private readonly repo: RoutesRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(query: ListRoutesQueryDto): Promise<{ data: RouteDto[]; meta: PaginationMeta }> {
     const { rows, total } = await this.repo.list({
@@ -52,7 +56,7 @@ export class RoutesService {
       originSiteId: query.originSiteId,
       destinationSiteId: query.destinationSiteId,
     });
-    return paginated(rows.map(toRouteDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toRouteDto)), total, query);
   }
 
   async getById(id: string): Promise<RouteDto> {

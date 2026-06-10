@@ -7,6 +7,7 @@ import {
 
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import { type CreateFuelDto, type ListFuelsQueryDto, type UpdateFuelDto } from './fuels.dto';
 import { FuelsRepository, type FuelWithCategory } from './fuels.repository';
@@ -35,7 +36,10 @@ function toDto(fuel: FuelWithCategory): FuelDto {
 
 @Injectable()
 export class FuelsService {
-  constructor(private readonly repo: FuelsRepository) {}
+  constructor(
+    private readonly repo: FuelsRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(query: ListFuelsQueryDto): Promise<{ data: FuelDto[]; meta: PaginationMeta }> {
     const { rows, total } = await this.repo.list({
@@ -44,7 +48,7 @@ export class FuelsService {
       fuelCategoryId: query.fuelCategoryId,
       search: query.search,
     });
-    return paginated(rows.map(toDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }
 
   async getById(id: string): Promise<FuelDto> {

@@ -1,6 +1,8 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DisposalPermitStatus } from '@prisma/client';
 
+import { type ActorNamesService } from '../../audit/actor-names.service';
+
 import { type DisposalPermitsRepository } from './disposal-permits.repository';
 import { DisposalPermitsService } from './disposal-permits.service';
 import { BulkImportStrategy } from './dto/bulk-import-disposal-permits.dto';
@@ -62,7 +64,13 @@ describe('DisposalPermitsService', () => {
       upsertByLegacyId: jest.fn().mockResolvedValue(undefined),
       createPlain: jest.fn().mockResolvedValue(undefined),
     };
-    service = new DisposalPermitsService(repo as unknown as DisposalPermitsRepository);
+    service = new DisposalPermitsService(
+      repo as unknown as DisposalPermitsRepository,
+      {
+        attach: async (_r: unknown, d: unknown[]) => d,
+        resolve: async () => new Map<string, string>(),
+      } as unknown as ActorNamesService,
+    );
   });
 
   const dto = {

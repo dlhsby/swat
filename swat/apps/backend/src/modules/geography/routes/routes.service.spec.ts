@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { RouteCategory } from '@prisma/client';
 
+import { type ActorNamesService } from '../../audit/actor-names.service';
+
 import { type RoutesRepository } from './routes.repository';
 import { RoutesService } from './routes.service';
 
@@ -42,7 +44,13 @@ describe('RoutesService', () => {
       update: jest.fn(),
       softDelete: jest.fn(),
     };
-    service = new RoutesService(repo as unknown as RoutesRepository);
+    service = new RoutesService(
+      repo as unknown as RoutesRepository,
+      {
+        attach: async (_r: unknown, d: unknown[]) => d,
+        resolve: async () => new Map<string, string>(),
+      } as unknown as ActorNamesService,
+    );
   });
 
   const dto = {

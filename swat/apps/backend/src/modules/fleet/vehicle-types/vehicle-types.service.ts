@@ -3,6 +3,7 @@ import { type VehicleType } from '@prisma/client';
 
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import {
   type CreateApplicationDto,
@@ -29,7 +30,10 @@ function toDto(row: VehicleType): ApplicationDto {
 
 @Injectable()
 export class VehicleTypesService {
-  constructor(private readonly repo: VehicleTypesRepository) {}
+  constructor(
+    private readonly repo: VehicleTypesRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(
     query: ListApplicationsQueryDto,
@@ -39,7 +43,7 @@ export class VehicleTypesService {
       limit: query.limit,
       search: query.search,
     });
-    return paginated(rows.map(toDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }
 
   async getById(id: string): Promise<ApplicationDto> {

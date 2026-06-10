@@ -3,6 +3,7 @@ import { type Site } from '@prisma/client';
 
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import { type CreateSiteDto } from './dto/create-site.dto';
 import { type ListSitesQueryDto } from './dto/list-sites.query.dto';
@@ -46,7 +47,10 @@ function assertCoordinatePair(latitude?: number | null, longitude?: number | nul
 
 @Injectable()
 export class SitesService {
-  constructor(private readonly repo: SitesRepository) {}
+  constructor(
+    private readonly repo: SitesRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(query: ListSitesQueryDto): Promise<{ data: SiteDto[]; meta: PaginationMeta }> {
     const { rows, total } = await this.repo.list({
@@ -55,7 +59,7 @@ export class SitesService {
       type: query.type,
       search: query.search,
     });
-    return paginated(rows.map(toSiteDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toSiteDto)), total, query);
   }
 
   async getById(id: string): Promise<SiteDto> {

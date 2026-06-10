@@ -4,6 +4,7 @@ import { type DisposalPermitStatus, type Prisma } from '@prisma/client';
 import { formatDateOnly, parseDateOnly } from '../../../common/dates';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import {
   DisposalPermitsRepository,
@@ -53,7 +54,10 @@ function toDto(permit: DisposalPermitWithRefs): DisposalPermitDto {
 
 @Injectable()
 export class DisposalPermitsService {
-  constructor(private readonly repo: DisposalPermitsRepository) {}
+  constructor(
+    private readonly repo: DisposalPermitsRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(
     query: ListDisposalPermitsQueryDto,
@@ -66,7 +70,7 @@ export class DisposalPermitsService {
       status: query.status,
       activeOn: query.activeOn ? parseDateOnly(query.activeOn) : undefined,
     });
-    return paginated(rows.map(toDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }
 
   async getById(id: string): Promise<DisposalPermitDto> {

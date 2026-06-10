@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { VehicleStatus } from '@prisma/client';
 
+import { type ActorNamesService } from '../../audit/actor-names.service';
+
 import { type VehiclesRepository } from './vehicles.repository';
 import { VehiclesService } from './vehicles.service';
 
@@ -53,7 +55,13 @@ describe('VehiclesService', () => {
       update: jest.fn(),
       softDelete: jest.fn(),
     };
-    service = new VehiclesService(repo as unknown as VehiclesRepository);
+    service = new VehiclesService(
+      repo as unknown as VehiclesRepository,
+      {
+        attach: async (_r: unknown, d: unknown[]) => d,
+        resolve: async () => new Map<string, string>(),
+      } as unknown as ActorNamesService,
+    );
   });
 
   const dto = {

@@ -1,5 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
+import { type ActorNamesService } from '../../audit/actor-names.service';
+
 import { type WasteSourcesRepository } from './waste-sources.repository';
 import { WasteSourcesService } from './waste-sources.service';
 
@@ -38,7 +40,13 @@ describe('WasteSourcesService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
-    service = new WasteSourcesService(repo as unknown as WasteSourcesRepository);
+    service = new WasteSourcesService(
+      repo as unknown as WasteSourcesRepository,
+      {
+        attach: async (_r: unknown, d: unknown[]) => d,
+        resolve: async () => new Map<string, string>(),
+      } as unknown as ActorNamesService,
+    );
   });
 
   it('lists with pagination meta', async () => {

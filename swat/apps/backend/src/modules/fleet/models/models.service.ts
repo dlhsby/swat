@@ -7,6 +7,7 @@ import {
 
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import {
   type CreateVehicleModelDto,
@@ -53,7 +54,10 @@ function toDto(model: VehicleModelWithRefs): VehicleModelDto {
 
 @Injectable()
 export class VehicleModelsService {
-  constructor(private readonly repo: VehicleModelsRepository) {}
+  constructor(
+    private readonly repo: VehicleModelsRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(
     query: ListVehicleModelsQueryDto,
@@ -65,7 +69,7 @@ export class VehicleModelsService {
       fuelId: query.fuelId,
       search: query.search,
     });
-    return paginated(rows.map(toDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }
 
   async getById(id: string): Promise<VehicleModelDto> {

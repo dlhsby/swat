@@ -8,6 +8,7 @@ import {
 import { formatTimeOnly, parseTimeOnly } from '../../../common/dates';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import { CrewSchedulesRepository, type CrewScheduleWithRefs } from './crew-schedules.repository';
 import {
@@ -46,7 +47,10 @@ function toDto(schedule: CrewScheduleWithRefs): CrewScheduleDto {
 
 @Injectable()
 export class CrewSchedulesService {
-  constructor(private readonly repo: CrewSchedulesRepository) {}
+  constructor(
+    private readonly repo: CrewSchedulesRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(
     query: ListCrewSchedulesQueryDto,
@@ -57,7 +61,7 @@ export class CrewSchedulesService {
       vehicleId: query.vehicleId,
       driverId: query.driverId,
     });
-    return paginated(rows.map(toDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }
 
   async getById(id: string): Promise<CrewScheduleDto> {

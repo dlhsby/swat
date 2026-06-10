@@ -12,12 +12,15 @@ import { type BreadcrumbItem } from '@/components/ui';
 import { type ResourceManager } from '@/hooks/use-resource-manager';
 import { formatDateDisplay } from '@/lib/format';
 
-/** Hidden-by-default audit timestamp columns appended to every master-data table. */
+/** Hidden-by-default audit columns (timestamps + actor names) appended to every master-data table. */
 function auditColumns<T>(): ColumnDef<T, unknown>[] {
   const dateCell = (value: unknown): JSX.Element => (
     <span className="tabular-nums text-neutral-500">
       {typeof value === 'string' && value ? formatDateDisplay(value) : '—'}
     </span>
+  );
+  const nameCell = (value: unknown): JSX.Element => (
+    <span className="text-neutral-500">{typeof value === 'string' && value ? value : '—'}</span>
   );
   return [
     {
@@ -29,12 +32,26 @@ function auditColumns<T>(): ColumnDef<T, unknown>[] {
       cell: ({ getValue }) => dateCell(getValue()),
     },
     {
+      id: 'createdByName',
+      accessorFn: (row) => (row as { createdByName?: string | null }).createdByName ?? null,
+      header: 'Dibuat oleh',
+      meta: { label: 'Dibuat oleh', defaultHidden: true },
+      cell: ({ getValue }) => nameCell(getValue()),
+    },
+    {
       id: 'updatedAt',
       accessorFn: (row) => (row as { updatedAt?: string }).updatedAt ?? null,
       header: 'Diubah',
       enableColumnFilter: false,
       meta: { label: 'Diubah', defaultHidden: true },
       cell: ({ getValue }) => dateCell(getValue()),
+    },
+    {
+      id: 'updatedByName',
+      accessorFn: (row) => (row as { updatedByName?: string | null }).updatedByName ?? null,
+      header: 'Diubah oleh',
+      meta: { label: 'Diubah oleh', defaultHidden: true },
+      cell: ({ getValue }) => nameCell(getValue()),
     },
   ];
 }

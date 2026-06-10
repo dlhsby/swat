@@ -1,5 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
+import { type ActorNamesService } from '../../audit/actor-names.service';
+
 import { type SitesRepository } from './sites.repository';
 import { SitesService } from './sites.service';
 
@@ -36,7 +38,13 @@ describe('SitesService', () => {
       update: jest.fn(),
       softDelete: jest.fn(),
     };
-    service = new SitesService(repo as unknown as SitesRepository);
+    service = new SitesService(
+      repo as unknown as SitesRepository,
+      {
+        attach: async (_r: unknown, d: unknown[]) => d,
+        resolve: async () => new Map<string, string>(),
+      } as unknown as ActorNamesService,
+    );
   });
 
   it('lists with pagination meta', async () => {

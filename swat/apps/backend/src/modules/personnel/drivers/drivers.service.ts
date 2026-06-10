@@ -9,6 +9,7 @@ import { type EmploymentStatus } from '@prisma/client';
 import { formatDateOnly, parseDateOnly } from '../../../common/dates';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import { DriversRepository, type DriverWithPool } from './drivers.repository';
 import { type CreateDriverDto } from './dto/create-driver.dto';
@@ -64,7 +65,10 @@ function assertAdult(birthDate: Date): void {
 
 @Injectable()
 export class DriversService {
-  constructor(private readonly repo: DriversRepository) {}
+  constructor(
+    private readonly repo: DriversRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(query: ListDriversQueryDto): Promise<{ data: DriverDto[]; meta: PaginationMeta }> {
     const { rows, total } = await this.repo.list({
@@ -74,7 +78,7 @@ export class DriversService {
       employmentStatus: query.employmentStatus,
       search: query.search,
     });
-    return paginated(rows.map(toDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }
 
   async getById(id: string): Promise<DriverDto> {

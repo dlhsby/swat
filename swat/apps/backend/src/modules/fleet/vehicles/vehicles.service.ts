@@ -9,6 +9,7 @@ import { type VehicleStatus } from '@prisma/client';
 import { formatDateOnly, parseDateOnly } from '../../../common/dates';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import { type CreateVehicleDto } from './dto/create-vehicle.dto';
 import { type ListVehiclesQueryDto } from './dto/list-vehicles.query.dto';
@@ -66,7 +67,10 @@ function toDto(vehicle: VehicleWithRefs): VehicleDto {
 
 @Injectable()
 export class VehiclesService {
-  constructor(private readonly repo: VehiclesRepository) {}
+  constructor(
+    private readonly repo: VehiclesRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(query: ListVehiclesQueryDto): Promise<{ data: VehicleDto[]; meta: PaginationMeta }> {
     const { rows, total } = await this.repo.list({
@@ -77,7 +81,7 @@ export class VehiclesService {
       modelId: query.modelId,
       search: query.search,
     });
-    return paginated(rows.map(toDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }
 
   async getById(id: string): Promise<VehicleDto> {

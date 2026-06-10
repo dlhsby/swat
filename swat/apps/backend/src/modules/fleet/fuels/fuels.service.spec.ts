@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
+import { type ActorNamesService } from '../../audit/actor-names.service';
+
 import { type FuelsRepository } from './fuels.repository';
 import { FuelsService } from './fuels.service';
 
@@ -41,7 +43,13 @@ describe('FuelsService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
-    service = new FuelsService(repo as unknown as FuelsRepository);
+    service = new FuelsService(
+      repo as unknown as FuelsRepository,
+      {
+        attach: async (_r: unknown, d: unknown[]) => d,
+        resolve: async () => new Map<string, string>(),
+      } as unknown as ActorNamesService,
+    );
   });
 
   const dto = {

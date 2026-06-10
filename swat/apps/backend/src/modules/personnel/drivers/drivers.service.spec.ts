@@ -1,6 +1,8 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { EmploymentStatus } from '@prisma/client';
 
+import { type ActorNamesService } from '../../audit/actor-names.service';
+
 import { type DriversRepository } from './drivers.repository';
 import { DriversService } from './drivers.service';
 
@@ -47,7 +49,13 @@ describe('DriversService', () => {
       update: jest.fn(),
       softDelete: jest.fn(),
     };
-    service = new DriversService(repo as unknown as DriversRepository);
+    service = new DriversService(
+      repo as unknown as DriversRepository,
+      {
+        attach: async (_r: unknown, d: unknown[]) => d,
+        resolve: async () => new Map<string, string>(),
+      } as unknown as ActorNamesService,
+    );
   });
 
   const dto = {

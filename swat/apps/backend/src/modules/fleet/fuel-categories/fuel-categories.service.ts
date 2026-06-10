@@ -3,6 +3,7 @@ import { type FuelCategory } from '@prisma/client';
 
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { ActorNamesService } from '../../audit/actor-names.service';
 
 import {
   type CreateFuelCategoryDto,
@@ -29,7 +30,10 @@ function toDto(row: FuelCategory): FuelCategoryDto {
 
 @Injectable()
 export class FuelCategoriesService {
-  constructor(private readonly repo: FuelCategoriesRepository) {}
+  constructor(
+    private readonly repo: FuelCategoriesRepository,
+    private readonly actorNames: ActorNamesService,
+  ) {}
 
   async list(
     query: ListFuelCategoriesQueryDto,
@@ -39,7 +43,7 @@ export class FuelCategoriesService {
       limit: query.limit,
       search: query.search,
     });
-    return paginated(rows.map(toDto), total, query);
+    return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }
 
   async getById(id: string): Promise<FuelCategoryDto> {
