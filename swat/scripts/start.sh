@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
 # SWAT — start the local dev stack.
-# Ensures the Docker infrastructure is up, then runs backend (:3000) and
-# web (:3001) together in watch mode. Run ./scripts/setup.sh once first.
+# Ensures the Docker infrastructure is up, then runs backend + web together in
+# watch mode. Ports come from .env.local (BE_PORT / WEB_PORT; default 3000 /
+# 3001). Run ./scripts/setup.sh once first.
 #
 #   ./scripts/start.sh             # infra + both apps (pnpm dev)
 #   ./scripts/start.sh --infra     # only start/ensure the Docker infra
@@ -38,6 +39,16 @@ die() {
 
 [ -f '.env.local' ] || die '.env.local not found. Run ./scripts/setup.sh first.'
 
+# Load local env and export it so BOTH apps inherit it. This matters because
+# `next dev` reads WEB_PORT from the shell (not from .env files), and a real
+# exported env var overrides any app-local .env.local — so root .env.local
+# stays the single source of truth for BE_PORT / WEB_PORT /
+# NEXT_PUBLIC_API_BASE_URL across the monorepo.
+set -a
+# shellcheck source=/dev/null
+. ./.env.local
+set +a
+
 if [ "$START_DOCKER" = 1 ]; then
   command -v docker >/dev/null || die 'Docker not found. Use --no-docker to skip.'
   log 'Ensuring Docker infrastructure is up'
@@ -50,5 +61,5 @@ if [ "$INFRA_ONLY" = 1 ]; then
   exit 0
 fi
 
-log 'Starting apps — backend :3000 · web :3001  (Ctrl-C to stop)'
+log "Starting apps — backend :${BE_PORT:-3000} · web :${WEB_PORT:-3001}  (Ctrl-C to stop)"
 exec pnpm dev
