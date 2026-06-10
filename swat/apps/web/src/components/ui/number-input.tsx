@@ -1,5 +1,5 @@
 import { Minus, Plus } from 'lucide-react';
-import { type ChangeEvent, forwardRef, type ReactNode } from 'react';
+import { type ChangeEvent, type FocusEvent, forwardRef, type ReactNode } from 'react';
 
 import { cn } from '@/lib/cn';
 
@@ -34,6 +34,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     step = 1,
     onValueChange,
     onChange,
+    onFocus,
     ...props
   },
   ref,
@@ -59,6 +60,15 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     }
   };
 
+  // Select a default-0 (or empty) on focus so the first keystroke replaces it
+  // instead of producing "05" — the user shouldn't have to delete the 0.
+  const handleFocus = (event: FocusEvent<HTMLInputElement>): void => {
+    onFocus?.(event);
+    if (event.currentTarget.value === '' || Number(event.currentTarget.value) === 0) {
+      event.currentTarget.select();
+    }
+  };
+
   const field = (
     <Input
       ref={ref}
@@ -70,6 +80,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
       step={step}
       trailing={unit}
       onChange={handleChange}
+      onFocus={handleFocus}
       className={cn('tnum', steppers && 'rounded-none text-center', className)}
       {...props}
     />

@@ -105,6 +105,10 @@ function NavGroupBlock({
   if (visible.length === 0 || !group.id || !group.key) {
     return null;
   }
+  // Optionally order leaves alphabetically by their translated label.
+  const ordered = group.sortAlpha
+    ? [...visible].sort((a, b) => t(a.key).localeCompare(t(b.key), 'id'))
+    : visible;
   const open = expandedGroups.has(group.id);
   const Icon = group.icon;
 
@@ -137,7 +141,7 @@ function NavGroupBlock({
 
       {!collapsed && open ? (
         <div className="mt-0.5 flex flex-col gap-px">
-          {visible.map((leaf) =>
+          {ordered.map((leaf) =>
             leaf.permission ? (
               <ProtectedAction key={leaf.key} permission={leaf.permission}>
                 <NavLink leaf={leaf} onNavigate={onNavigate} />

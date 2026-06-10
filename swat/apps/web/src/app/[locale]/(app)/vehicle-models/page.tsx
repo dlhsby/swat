@@ -114,7 +114,7 @@ export default function VehicleModelsPage(): JSX.Element {
         title={{ create: 'Tambah Model', edit: 'Ubah Model' }}
       >
         <TextField name="brand" label="Merek/Model" required placeholder="Hino Dutro" />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4">
           <SelectField
             name="vehicleTypeId"
             label="Tipe Kendaraan"
@@ -130,11 +130,11 @@ export default function VehicleModelsPage(): JSX.Element {
             placeholder="Pilih bahan bakar"
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4">
           <NumberField name="fuelTankCapacity" label="Kapasitas Tangki" required unit="L" min={1} />
           <NumberField name="wheelCount" label="Jumlah Roda" required min={1} />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4">
           <NumberField
             name="normalTareWeight"
             label="Berat Kosong Normal"
@@ -144,7 +144,7 @@ export default function VehicleModelsPage(): JSX.Element {
           />
           <NumberField name="normalFuelRatio" label="Rasio BBM Normal" required min={1} />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4">
           <NumberField name="maxNetLoad" label="Muatan Bersih Maks" unit="kg" min={0} />
           <NumberField name="maxNetVolume" label="Volume Bersih Maks" unit="m³" min={0} />
         </div>

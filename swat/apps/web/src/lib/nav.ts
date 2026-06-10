@@ -43,6 +43,8 @@ export interface NavGroup {
   readonly key?: string;
   /** Group header icon (shown in the rail + collapsed state); omit for the top-level leaf. */
   readonly icon?: LucideIcon;
+  /** Sort this group's leaves alphabetically by their (translated) label at render. */
+  readonly sortAlpha?: boolean;
   readonly leaves: readonly NavLeaf[];
 }
 
@@ -97,6 +99,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     id: 'grp-master',
     key: 'masterData',
     icon: Database,
+    sortAlpha: true,
     leaves: [
       { key: 'vehicles', href: '/vehicles', icon: Truck, permission: 'vehicle:read' },
       {
