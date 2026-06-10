@@ -2,7 +2,6 @@ import {
   Activity,
   ArrowLeftRight,
   BarChart3,
-  Boxes,
   CalendarClock,
   CalendarDays,
   ClipboardCheck,
@@ -102,18 +101,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     sortAlpha: true,
     leaves: [
       { key: 'vehicles', href: '/vehicles', icon: Truck, permission: 'vehicle:read' },
-      {
-        key: 'vehicleModels',
-        href: '/vehicle-models',
-        icon: Boxes,
-        permission: 'vehicle-model:read',
-      },
-      {
-        key: 'vehicleTypes',
-        href: '/vehicle-types',
-        icon: Boxes,
-        permission: 'vehicle-type:read',
-      },
       { key: 'fuels', href: '/fuels', icon: Fuel, permission: 'fuel:read' },
       { key: 'drivers', href: '/drivers', icon: Users, permission: 'driver:read' },
       { key: 'sitesRoutes', href: '/sites-routes', icon: MapPin, permission: 'site:read' },

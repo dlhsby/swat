@@ -1,7 +1,6 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { z } from 'zod';
 
@@ -19,8 +18,8 @@ type Values = z.infer<typeof schema>;
 const defaults: Values = { name: '' };
 const toForm = (r: VehicleTypeDto): Values => ({ name: r.name });
 
-export default function VehicleTypesPage(): JSX.Element {
-  const t = useTranslations('nav');
+/** Vehicle Types (Tipe Kendaraan) — embedded tab of the combined vehicle page. */
+export function VehicleTypesTab(): JSX.Element {
   const manager = useResourceManager(vehicleTypesApi, (r) => r.id);
 
   const columns = useMemo<ColumnDef<VehicleTypeDto, unknown>[]>(
@@ -48,7 +47,8 @@ export default function VehicleTypesPage(): JSX.Element {
 
   return (
     <CrudListShell
-      title={t('vehicleTypes')}
+      embedded
+      title="Tipe Kendaraan"
       resource="vehicle-type"
       manager={manager}
       columns={columns}

@@ -1,7 +1,6 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { z } from 'zod';
 
@@ -57,8 +56,8 @@ const toForm = (r: VehicleModelDto): Values => ({
 const appOption = (a: VehicleTypeDto): SelectOption => ({ value: a.id, label: a.name });
 const fuelOption = (f: FuelDto): SelectOption => ({ value: f.id, label: f.name });
 
-export default function VehicleModelsPage(): JSX.Element {
-  const t = useTranslations('nav');
+/** Vehicle Models (Model Kendaraan) — embedded tab of the combined vehicle page. */
+export function VehicleModelsTab(): JSX.Element {
   const manager = useResourceManager(vehicleModelsApi, (r) => r.id);
   const { options: apps } = useOptions(vehicleTypesApi.list, appOption);
   const { options: fuels } = useOptions(fuelsApi.list, fuelOption);
@@ -100,7 +99,8 @@ export default function VehicleModelsPage(): JSX.Element {
 
   return (
     <CrudListShell
-      title={t('vehicleModels')}
+      embedded
+      title="Model Kendaraan"
       resource="vehicle-model"
       manager={manager}
       columns={columns}
