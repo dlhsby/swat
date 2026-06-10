@@ -62,9 +62,23 @@ copy_if_missing 'apps/web/.env.local' 'apps/web/.env.example'
 copy_if_missing 'apps/backend/prisma/.env' 'apps/backend/prisma/.env.example'
 copy_if_missing 'infra/docker-compose.env' 'infra/docker-compose.env.example'
 warn 'Review .env.local and set strong SESSION_SECRET / JWT_SECRET for non-local use.'
-echo 'Ports/API URL live in the root .env.local; start.sh exports it so the web'
-echo 'inherits BE_PORT / WEB_PORT / NEXT_PUBLIC_API_BASE_URL — no need to edit'
-echo 'apps/web/.env.local by hand unless you run the web without start.sh.'
+
+# Root .env.local is the single source of truth for ports/URLs. Load it (so the
+# backend steps below use it too) and PROPAGATE the backend URL into the web's
+# env, so the web targets the right backend even when run without start.sh.
+set -a
+# shellcheck source=/dev/null
+. ./.env.local
+set +a
+web_api_url="${NEXT_PUBLIC_API_BASE_URL:-http://localhost:${BE_PORT:-3000}}"
+if grep -q '^NEXT_PUBLIC_API_BASE_URL=' apps/web/.env.local; then
+  tmp="$(mktemp)"
+  sed "s|^NEXT_PUBLIC_API_BASE_URL=.*|NEXT_PUBLIC_API_BASE_URL=${web_api_url}|" \
+    apps/web/.env.local >"$tmp" && mv "$tmp" apps/web/.env.local
+else
+  printf '\nNEXT_PUBLIC_API_BASE_URL=%s\n' "$web_api_url" >>apps/web/.env.local
+fi
+echo "web → backend URL: ${web_api_url}  (derived from root .env.local)"
 
 # --- 2. Install dependencies ------------------------------------------------
 log 'Installing dependencies (pnpm install)'
