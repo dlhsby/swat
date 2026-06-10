@@ -12,8 +12,8 @@ Concise orientation so sessions don't re-explore. Global directives live in `~/.
 ## Stack
 pnpm + Turborepo · NestJS 10 + Prisma 5 + Postgres 15 · Next 14 + Tailwind 3 + next-intl 3.
 Packages: `@swat/{schemas,prisma-client,eslint-config,tsconfig}`; backend = `@swat/backend`.
-Admin seed login: `admin / Password1234!` (no forced reset). Dev/CI seed also creates
-`adminreset / Password1234!` (`mustChangePassword=true`) to exercise the forced first-login
+Admin seed login: `admin / Password123!` (no forced reset). Dev/CI seed also creates
+`adminreset / Password123!` (`mustChangePassword=true`) to exercise the forced first-login
 change; it is never created in production.
 
 ## Frontend conventions (`apps/web`)
@@ -25,6 +25,13 @@ change; it is never created in production.
   English entity name in id-ID UI strings (en-US may keep "Haul" — it's valid English).
 - **Default locale `id-ID`**, enforced with `localeDetection: false` in `src/i18n/routing.ts` so the
   browser `Accept-Language` can't redirect `/` to en-US.
+- **Form error handling (standard):** field-specific errors render **inline under the field**
+  (react-hook-form `FormMessage`, or a `text-tiny text-danger-600` line for lightweight controlled
+  forms like the auth pages); **submit-level success/failure go to a toast** (`notify.success` /
+  `notify.error`). CRUD dialogs already do this — server 422 `err.details` map onto fields via
+  `form.setError`, while the manager toasts the overall result. Don't use an inline `<Alert>` for
+  submit errors; reserve `Alert` for persistent informational notices (e.g. the forced
+  password-change warning).
 - **Design tokens** ship as CSS variables in `src/app/globals.css` (light + `.dark`), ported verbatim
   from `designs/`. `tailwind.config.ts` color ramps reference those vars (`var(--neutral-0)` …) so
   `.dark` flips every `bg-/text-*` utility. Opacity can't be applied to a hex `var()` — overlays use

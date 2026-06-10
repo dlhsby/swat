@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { type FormEvent, useEffect, useState } from 'react';
 
 import { AuthShell } from '@/components/auth/auth-shell';
-import { Alert, Button, Input, Label, PasswordInput } from '@/components/ui';
+import { Button, Input, Label, PasswordInput, notify } from '@/components/ui';
 import { Link, useRouter } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api-error';
 import { login } from '@/lib/auth-api';
@@ -17,8 +17,13 @@ export default function LoginPage(): JSX.Element {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  // Standard error handling: field-specific validation shows inline under the
+  // field; submit-level failures (bad credentials) surface as a toast.
+  const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
   const [submitting, setSubmitting] = useState(false);
+
+  const clearFieldError = (field: 'username' | 'password'): void =>
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
 
   // Already signed in → leave the login screen.
   useEffect(() => {
@@ -29,26 +34,30 @@ export default function LoginPage(): JSX.Element {
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    if (!username.trim() || !password) {
-      setError(t('bothRequired'));
+    // Field-level validation → inline messages (not a toast).
+    const nextErrors: { username?: string; password?: string } = {};
+    if (!username.trim()) nextErrors.username = t('usernameRequired');
+    if (!password) nextErrors.password = t('passwordRequired');
+    setFieldErrors(nextErrors);
+    if (nextErrors.username ?? nextErrors.password) {
       return;
     }
     setSubmitting(true);
-    setError(null);
     try {
       await login(username.trim(), password);
       const me = await refresh();
       router.replace(me?.mustChangePassword ? '/change-password' : '/dashboard');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('invalidCredentials'));
+      // Submit-level failure (ambiguous which field) → toast.
+      notify.error(err instanceof ApiError ? err.message : t('invalidCredentials'));
       setSubmitting(false);
     }
   };
 
   return (
     <AuthShell
-      title="SWAT"
-      subtitle={t('brandSubtitle')}
+      title={t('loginHeading')}
+      subtitle={t('loginHelp')}
       illustration={{ name: 'login', size: 232 }}
       footer={t('copyright')}
     >
@@ -57,15 +66,6 @@ export default function LoginPage(): JSX.Element {
         noValidate
         className="rounded-lg border border-neutral-200 bg-neutral-0 p-6 shadow-base"
       >
-        <h1 className="text-[20px] font-bold text-neutral-900">{t('loginHeading')}</h1>
-        <p className="mb-[18px] mt-1 text-[13px] text-neutral-500">{t('loginHelp')}</p>
-
-        {error ? (
-          <Alert variant="danger" className="mb-4">
-            {error}
-          </Alert>
-        ) : null}
-
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="username" required>
@@ -77,10 +77,16 @@ export default function LoginPage(): JSX.Element {
               autoComplete="username"
               autoFocus
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                clearFieldError('username');
+              }}
               placeholder={t('usernamePlaceholder')}
-              error={Boolean(error)}
+              error={Boolean(fieldErrors.username)}
             />
+            {fieldErrors.username ? (
+              <p className="text-tiny text-danger-600">{fieldErrors.username}</p>
+            ) : null}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password" required>
@@ -91,10 +97,16 @@ export default function LoginPage(): JSX.Element {
               name="password"
               autoComplete="current-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearFieldError('password');
+              }}
               placeholder={t('passwordPlaceholder')}
-              error={Boolean(error)}
+              error={Boolean(fieldErrors.password)}
             />
+            {fieldErrors.password ? (
+              <p className="text-tiny text-danger-600">{fieldErrors.password}</p>
+            ) : null}
           </div>
         </div>
 

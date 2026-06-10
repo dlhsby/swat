@@ -75,11 +75,21 @@
     "forgotPassword": "Lupa kata sandi?",
     "forgotPasswordHelp": "Hubungi administrator untuk mengatur ulang kata sandi Anda.",
     "bothRequired": "Nama pengguna dan kata sandi wajib diisi.",
+    "usernameRequired": "Nama pengguna wajib diisi.",
+    "passwordRequired": "Kata sandi wajib diisi.",
     "invalidCredentials": "Nama pengguna atau kata sandi salah.",
     "brandSubtitle": "Dinas Lingkungan Hidup · Kota Surabaya",
     "loginHeading": "Masuk",
     "loginHelp": "Gunakan akun yang diberikan administrator.",
     "copyright": "© 2026 Dinas Lingkungan Hidup Kota Surabaya"
+  },
+  "authIntro": {
+    "org": "Dinas Lingkungan Hidup · Kota Surabaya",
+    "heading": "Operasional persampahan dalam satu sistem.",
+    "tagline": "Kelola armada, rute, penimbangan, dan retribusi dari satu dasbor terpadu.",
+    "feature1": "Pantau tonase & rekonsiliasi TPA secara real-time",
+    "feature2": "Catat ritase, BBM, dan perawatan kendaraan",
+    "feature3": "Laporan & analitik untuk pengambilan keputusan"
   },
   "forgotPassword": {
     "title": "Lupa Kata Sandi",

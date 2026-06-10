@@ -75,11 +75,21 @@
     "forgotPassword": "Forgot password?",
     "forgotPasswordHelp": "Contact your administrator to reset your password.",
     "bothRequired": "Username and password are required.",
+    "usernameRequired": "Username is required.",
+    "passwordRequired": "Password is required.",
     "invalidCredentials": "Incorrect username or password.",
     "brandSubtitle": "Department of Environment · City of Surabaya",
     "loginHeading": "Sign in",
     "loginHelp": "Use the account provided by your administrator.",
     "copyright": "© 2026 Department of Environment, City of Surabaya"
+  },
+  "authIntro": {
+    "org": "Department of Environment · City of Surabaya",
+    "heading": "Waste operations in one system.",
+    "tagline": "Manage fleet, routes, weighing, and levies from a single unified dashboard.",
+    "feature1": "Track tonnage & TPA reconciliation in real time",
+    "feature2": "Record trips, fuel, and vehicle maintenance",
+    "feature3": "Reports & analytics for better decisions"
   },
   "forgotPassword": {
     "title": "Forgot Password",

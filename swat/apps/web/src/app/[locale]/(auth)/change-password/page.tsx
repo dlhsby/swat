@@ -20,7 +20,6 @@ export default function ChangePasswordPage(): JSX.Element {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -59,7 +58,6 @@ export default function ChangePasswordPage(): JSX.Element {
       return;
     }
     setSubmitting(true);
-    setError(null);
     try {
       await changePassword({
         newPassword: next,
@@ -70,7 +68,8 @@ export default function ChangePasswordPage(): JSX.Element {
       await refresh();
       router.replace('/dashboard');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('tooWeak'));
+      // Submit-level failure → toast (field-level checks are inline above).
+      notify.error(err instanceof ApiError ? err.message : t('tooWeak'));
       setSubmitting(false);
     }
   };
@@ -98,12 +97,6 @@ export default function ChangePasswordPage(): JSX.Element {
         noValidate
         className="rounded-lg border border-neutral-200 bg-neutral-0 p-6 shadow-base"
       >
-        {error ? (
-          <Alert variant="danger" className="mb-4">
-            {error}
-          </Alert>
-        ) : null}
-
         <div className="space-y-4">
           {forced ? null : (
             <div className="space-y-1.5">
