@@ -11,7 +11,9 @@
  *  5. Demo levy/retribusi rows (monthly, by category) for the Retribusi dashboard.
  *  6. Synthetic transactional data (a year of disposal + refuel trips, plus TPA
  *     weighbridge logs) so partition pruning and the Phase-2 monitoring
- *     dashboards (tonnage by source, BBM variance, TPA reconciliation) have data.
+ *     dashboards (tonnage by source, BBM variance, TPA reconciliation) have data;
+ *     plus one demo driver-license, crew-schedule, trip-template and two kitir
+ *     (DisposalPermit) so the Phase-1 CRUD pages aren't empty.
  *     Items 5–6 are gated by SEED_SYNTHETIC (default true).
  *
  * Idempotent: every write is an upsert or guarded create; re-running is safe and
@@ -552,6 +554,89 @@ async function seedSyntheticData(): Promise<void> {
         distanceKm: 5,
       },
     }));
+
+  // --- Demo scheduling + permit rows so the Phase-1 CRUD pages (driver license,
+  // crew schedule, trip template, Jatah Kitir) have data in dev, not empty lists.
+  const admin = await prisma.user.findUnique({
+    where: { username: 'admin' },
+    select: { id: true },
+  });
+  const truckLicense = (await prisma.licenseClass.findFirst({ where: { name: 'BII Umum' } }))!;
+  if (!(await prisma.driverLicense.findFirst({ where: { driverId: driver.id } }))) {
+    await prisma.driverLicense.create({
+      data: {
+        driverId: driver.id,
+        licenseClassId: truckLicense.id,
+        licenseNumber: 'SIMDEMO00001',
+        expiry: dateOnly(2027, 11, 31),
+      },
+    });
+  }
+
+  const timeOfDay = (h: number, m: number): Date => new Date(Date.UTC(1970, 0, 1, h, m));
+  const crewSchedule =
+    (await prisma.crewSchedule.findFirst({
+      where: { vehicleId: vehicle.id, driverId: driver.id },
+    })) ??
+    (await prisma.crewSchedule.create({
+      data: {
+        vehicleId: vehicle.id,
+        driverId: driver.id,
+        departTime: timeOfDay(5, 0),
+        returnTime: timeOfDay(14, 0),
+      },
+    }));
+
+  if (
+    !(await prisma.tripTemplate.findFirst({
+      where: { crewScheduleId: crewSchedule.id, routeId: disposalRoute.id },
+    }))
+  ) {
+    await prisma.tripTemplate.create({
+      data: {
+        crewScheduleId: crewSchedule.id,
+        routeId: disposalRoute.id,
+        targetTime: timeOfDay(6, 0),
+        fuelRequestedLiters: 50,
+      },
+    });
+  }
+
+  // Two kitir: an ACTIVE permit for vehicle 1 and an INACTIVE (expired) one for
+  // vehicle 2, so the Jatah Kitir list exercises both status pills.
+  const demoPermits = [
+    {
+      code: 'KITIR-DEMO-01',
+      vehicleId: vehicle.id,
+      status: 'ACTIVE' as const,
+      from: dateOnly(2026, 0, 1),
+      to: dateOnly(2026, 11, 31),
+    },
+    {
+      code: 'KITIR-DEMO-02',
+      vehicleId: vehicle2.id,
+      status: 'INACTIVE' as const,
+      from: dateOnly(2025, 0, 1),
+      to: dateOnly(2025, 11, 31),
+    },
+  ];
+  for (const permit of demoPermits) {
+    if (await prisma.disposalPermit.findFirst({ where: { code: permit.code } })) {
+      continue;
+    }
+    await prisma.disposalPermit.create({
+      data: {
+        code: permit.code,
+        vehicleId: permit.vehicleId,
+        siteId: tpa.id,
+        status: permit.status,
+        issuedAt: permit.from,
+        validFrom: permit.from,
+        validTo: permit.to,
+        createdById: admin?.id ?? null,
+      },
+    });
+  }
 
   // One year of operational days ending 2026-06-08 (the project "today").
   const totalDays = 365;

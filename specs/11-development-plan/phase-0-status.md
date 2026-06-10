@@ -60,7 +60,7 @@ pending live infra not on the critical path).
 |------|-------|--------|-------|
 | T-012 | Docker Compose setup | ✅ | `docker-compose.yml` (postgres15/adminer/redis7/minio/nginx) + `infra/{docker-compose.env,nginx.conf,Dockerfile.backend,Dockerfile.web}`. Postgres+Redis verified healthy live. |
 | T-013 | Prisma init & schema | ✅ | Full model+enum set from [`../03-data-model.md`](../03-data-model.md); `prisma validate` passes. Partitioned models carry `legacyId` as a plain index (composite PK includes `operationDate`). |
-| T-014 | First migration, seed, partitioning | ⚠️ | Prisma can't model partitions → 3 ordered migrations: `init` (891 lines) → `partition_transactions` (drop+recreate 4 tables `PARTITION BY RANGE(operationDate)`, monthly children 2013→2026 + defaults) → `rollups`. **Use `prisma migrate deploy`, never `migrate dev`.** Seed: admin (Argon2id, `mustChangePassword`), 92 permissions, 6 roles. |
+| T-014 | First migration, seed, partitioning | ⚠️ | Prisma can't model partitions → 3 ordered migrations: `init` (891 lines) → `partition_transactions` (drop+recreate 4 tables `PARTITION BY RANGE(operationDate)`, monthly children 2013→2026 + defaults) → `rollups`. **Use `prisma migrate deploy`, never `migrate dev`.** Seed: admin (Argon2id, `mustChangePassword`), 96 permissions, 6 roles. |
 
 ### Epic 0.4 — Frontend bootstrap (Next.js)
 | Task | Title | Status | Notes |

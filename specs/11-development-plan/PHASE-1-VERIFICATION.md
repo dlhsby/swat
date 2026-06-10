@@ -19,8 +19,10 @@ tagged **[API]** (curl/Postman/psql), **[WEB]** (browser), or **[OPS]** (operato
   **Expected:** all services become healthy (`docker compose ps` → postgres/redis/minio/backend/web healthy, nginx up).
 - [ ] **P3. Migrations applied.** Backend runs `prisma migrate deploy` on boot (never `migrate dev`).
   Verify the audit table exists: `docker compose exec postgres psql -U swat -d swat -c '\dt "AuditLog"'` → one row.
-- [ ] **P4. Seed admin (once).** Run the seed command in the backend container.
-  **Expected:** `admin` user present, `mustChangePassword=true`, 94 permissions, 6 roles.
+- [ ] **P4. Seed (once).** Run the seed command in the backend container.
+  **Expected:** `admin` present (`mustChangePassword=false`) + dev-only `adminreset` (`mustChangePassword=true`), **96 permissions**, 6 roles.
+  - **Dev** (`pnpm db:seed`, `SEED_SYNTHETIC` default): also seeds reference data + a year of disposal/refuel trips, TPA logs, levies, and one each of driver-license / crew-schedule / trip-template + two kitir — so every Phase-1 master/scheduling CRUD list and every Phase-2 dashboard has data.
+  - **Prod / real-data cutover:** seed `SEED_AUTH_ONLY=true` (permissions/roles/admin only), then load master data via `migrate:legacy` (see `scripts/migration/README.md`). Do **not** seed synthetic/reference data into a migration target.
 
 ---
 

@@ -77,14 +77,14 @@ the layer that holds the rules.
 
 | Task | Title | Status | Notes |
 |------|-------|--------|-------|
-| T-101 | User & role models (schema verification) | ✅ | Schema/migrations already applied in Phase 0; verification-only. Seed: admin (Argon2id), 94 permissions, 6 roles. |
+| T-101 | User & role models (schema verification) | ✅ | Schema/migrations already applied in Phase 0; verification-only. Seed: admin (Argon2id), 96 permissions, 6 roles. |
 | T-102 | `POST /auth/login` | ✅ | Argon2id verify; generic "Kredensial tidak valid"; rate-limit **5/IP/15 min → 429** (`LoginThrottleService`, Redis-backed); writes `AuthAuditLog`. |
 | T-103 | `POST /auth/logout` | ✅ | Destroys session, clears `swat.sid` cookie; audit-logged. |
 | T-104 | `GET /auth/me` | ✅ | Returns user + role + flattened permission keys + `mustChangePassword`. |
 | T-105 | Permission guard & `@RequirePermissions` / `@CurrentUser` | ✅ | Global `AuthGuard` then `PermissionsGuard` (APP_GUARD). Wildcard match `*:*`, `resource:*`, exact. Role→permission keys cached in Redis (300s TTL) via `RolePermissionsService`. |
 | T-106 | User CRUD | ✅ | `modules/users`; Argon2id on create; admin force-reset (`POST /auth/force-reset/:id`) + forced change-password; `PATCH /auth/change-password` clears flag. |
 | T-107 | Role CRUD | ✅ | `modules/roles`; M2M permission upsert; cache invalidation on permission change; delete-blocked-when-assigned → 409. `GET /permissions` read endpoint. |
-| T-108 | Permission seeding | ✅ | 94 permission keys (M4 added `fuel:approve` + `trip:override`), 6 roles seeded (verified Phase 0). |
+| T-108 | Permission seeding | ✅ | 96 permission keys (incl. `fuel:approve`, `trip:override`, archive perms), 6 roles seeded (verified Phase 0). |
 
 **Session infra:** `express-session` + `connect-redis@9` on a dedicated DI-managed **node-redis**
 client (`SessionRedis`, quit on shutdown — distinct from the cache layer's ioredis). Cookie `swat.sid`:
