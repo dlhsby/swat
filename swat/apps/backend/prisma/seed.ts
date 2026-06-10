@@ -4,7 +4,8 @@
  * Populates:
  *  1. Permission catalog (specs/06-auth-rbac.md §2.2).
  *  2. Roles + role→permission grants (specs/06-auth-rbac.md §2.3).
- *  3. Admin user (Argon2id hash, mustChangePassword=true).
+ *  3. Admin user (Argon2id hash; no forced reset) + a dev-only `adminreset`
+ *     demo account with mustChangePassword=true.
  *  4. Reference/lookup data (specs/01-glossary.md §4): LicenseClass,
  *     FuelCategory, Fuel, VehicleApplication, WasteSource.
  *  5. Demo levy/retribusi rows (monthly, by category) for the Retribusi dashboard.
@@ -266,22 +267,40 @@ async function seedRoles(permissionIdByKey: Map<string, number>): Promise<Map<st
 
 async function seedAdminUser(adminRoleId: number): Promise<void> {
   const passwordHash = await hash(ADMIN_DEFAULT_PASSWORD, ARGON2_OPTIONS);
-  // Outside production, re-seeding restores the documented bootstrap credential
-  // (admin / Password1234!, mustChangePassword=true) even if it was changed —
-  // keeps local/CI runs repeatable. In production we never clobber a real admin.
-  const resetInNonProd =
-    process.env.NODE_ENV === 'production' ? {} : { passwordHash, mustChangePassword: true };
+  const isProd = process.env.NODE_ENV === 'production';
+
+  // Primary admin — ready to use, no forced reset. Outside production, re-seeding
+  // restores the documented bootstrap credential (admin / Password1234!) even if
+  // it was changed, keeping local/CI runs repeatable; in production we never
+  // clobber a real admin.
   await prisma.user.upsert({
     where: { username: 'admin' },
-    update: resetInNonProd,
+    update: isProd ? {} : { passwordHash, mustChangePassword: false },
     create: {
       username: 'admin',
       name: 'Administrator',
       passwordHash,
       roleId: adminRoleId,
-      mustChangePassword: true,
+      mustChangePassword: false,
     },
   });
+
+  // Dev/CI-only demo account for exercising the forced first-login password
+  // change (adminreset / Password1234!, mustChangePassword=true). Never created
+  // in production so it can't become a stray privileged account.
+  if (!isProd) {
+    await prisma.user.upsert({
+      where: { username: 'adminreset' },
+      update: { passwordHash, mustChangePassword: true },
+      create: {
+        username: 'adminreset',
+        name: 'Administrator (Reset Demo)',
+        passwordHash,
+        roleId: adminRoleId,
+        mustChangePassword: true,
+      },
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -684,6 +703,10 @@ async function main(): Promise<void> {
 
   // eslint-disable-next-line no-console
   console.log('Seed complete. Admin login: admin / ' + ADMIN_DEFAULT_PASSWORD);
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.log('Forced-reset demo: adminreset / ' + ADMIN_DEFAULT_PASSWORD);
+  }
 }
 
 main()

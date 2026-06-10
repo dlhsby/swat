@@ -82,7 +82,7 @@ Enforce at the `/api/v1/auth/login` endpoint: return 429 (Too Many Requests) if 
 - Minimum 12 characters (prevent cracking via brute force).
 - Must include: uppercase letter (A–Z), lowercase letter (a–z), digit (0–9), symbol (!@#$%^&*).
 - Reject common/dictionary words (e.g., 'password123').
-- No reuse of last 5 passwords (stored as salted hashes for comparison, not plaintext).
+- Must differ from the immediately previous password (the new password is checked against the current hash; full history is intentionally not retained).
 
 ```typescript
 // Enforce on create/update

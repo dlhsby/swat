@@ -12,7 +12,9 @@ Concise orientation so sessions don't re-explore. Global directives live in `~/.
 ## Stack
 pnpm + Turborepo · NestJS 10 + Prisma 5 + Postgres 15 · Next 14 + Tailwind 3 + next-intl 3.
 Packages: `@swat/{schemas,prisma-client,eslint-config,tsconfig}`; backend = `@swat/backend`.
-Admin seed login: `admin / Password1234!`.
+Admin seed login: `admin / Password1234!` (no forced reset). Dev/CI seed also creates
+`adminreset / Password1234!` (`mustChangePassword=true`) to exercise the forced first-login
+change; it is never created in production.
 
 ## Frontend conventions (`apps/web`)
 - **Routes use English slugs** under `[locale]` (e.g. `/id-ID/dashboard`, `/vehicles`,

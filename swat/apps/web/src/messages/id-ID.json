@@ -81,6 +81,17 @@
     "loginHelp": "Gunakan akun yang diberikan administrator.",
     "copyright": "© 2026 Dinas Lingkungan Hidup Kota Surabaya"
   },
+  "forgotPassword": {
+    "title": "Lupa Kata Sandi",
+    "subtitle": "Pengaturan ulang dilakukan oleh administrator",
+    "body": "Demi keamanan, kata sandi tidak dapat diatur ulang sendiri. Hubungi administrator sistem melalui salah satu kanal berikut untuk meminta pengaturan ulang.",
+    "whatsapp": "WhatsApp",
+    "email": "Email",
+    "emailSubject": "Permintaan reset kata sandi SWAT",
+    "phone": "Telepon",
+    "backToLogin": "Kembali ke halaman masuk",
+    "noChannels": "Hubungi administrator sistem Anda untuk mengatur ulang kata sandi."
+  },
   "changePassword": {
     "title": "Ubah Kata Sandi",
     "subtitle": "Perbarui kata sandi akun Anda",
@@ -113,9 +124,6 @@
     "name": "Nama Lengkap",
     "username": "Nama Pengguna",
     "role": "Peran",
-    "photo": "Foto Profil",
-    "photoHint": "Seret berkas ke sini atau klik untuk mengunggah (PNG/JPG).",
-    "photoComingSoon": "Unggah foto akan tersedia pada pembaruan berikutnya.",
     "securityCard": "Keamanan",
     "securityBody": "Perbarui kata sandi Anda secara berkala.",
     "changePassword": "Ubah Kata Sandi",

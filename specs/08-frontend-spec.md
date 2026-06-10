@@ -238,7 +238,11 @@ phase. This is the parity contract.
 - **Submit:** POST `/api/auth/login`, set httpOnly session cookie
 - **On success:** redirect to `/dashboard` (or referrer)
 - **On error:** show inline error "Username atau password salah"
+- **Forgot password:** the link goes to `/forgot-password` (no self-service recovery).
 - **MFA / second factor:** deferred (Phase 2)
+
+### Forgot Password (`/forgot-password`)
+Information-only page — SWAT has no self-service reset. Lists the admin contact channels (WhatsApp / Email / Phone) as deep links (`wa.me` / `mailto:` / `tel:`), configured via `NEXT_PUBLIC_SUPPORT_*` env (`lib/support-contact.ts`); a blank channel is hidden. Plus a "back to sign in" link.
 
 ### Change Password (forced on first login)
 - **Route:** `/change-password` (automatic redirect if `mustChangePassword = true`)
@@ -248,7 +252,7 @@ phase. This is the parity contract.
 - **Escape hatch:** the forced screen offers Sign-out (back to `/login`) so a stale/forced session is never trapped
 
 ### Profile page (`/profile`)
-- **Display:** user name, username, role, photo
+- **Display:** user name, username, role. Avatar is an initials chip (`UserAvatar`) whose background + ring colour are derived deterministically from the role (`lib/avatar-tone.ts`) — no photo upload.
 - **Actions:** change password (always allowed, links to `/change-password`), logout
 - **Edit:** PATCH `/api/users/me` (authenticated endpoint)
 

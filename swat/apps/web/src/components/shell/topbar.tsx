@@ -8,8 +8,6 @@ import { BrandMark } from '@/components/brand/BrandMark';
 import { useSidebar } from '@/components/shell/sidebar-context';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import {
-  Avatar,
-  AvatarFallback,
   ConfirmDialog,
   DropdownMenu,
   DropdownMenuContent,
@@ -18,8 +16,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui';
+import { UserAvatar } from '@/components/user-avatar';
 import { useRouter } from '@/i18n/navigation';
-import { initialsOf } from '@/lib/format';
 import { useAuth } from '@/providers/auth-provider';
 
 /** Topbar (hi-fi spec §App Shell) — brand lockup, theme toggle, notifications, user menu. */
@@ -81,9 +79,11 @@ export function Topbar(): JSX.Element {
             aria-label={t('userMenu')}
             className="flex items-center gap-[11px] rounded-[11px] py-[5px] pl-[5px] pr-2.5 transition-colors hover:bg-neutral-100"
           >
-            <Avatar className="h-[38px] w-[38px] text-[14px]">
-              <AvatarFallback>{initialsOf(user?.name ?? '?')}</AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              name={user?.name ?? '?'}
+              role={user?.roleName}
+              className="h-[38px] w-[38px] text-[14px]"
+            />
             <span className="hidden text-left leading-[1.25] md:block">
               <span className="block text-[14px] font-semibold text-neutral-900">{user?.name}</span>
               <span className="block text-[12px] text-neutral-500">{user?.roleName}</span>

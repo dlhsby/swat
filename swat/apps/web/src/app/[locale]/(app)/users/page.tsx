@@ -14,8 +14,6 @@ import { RowActions } from '@/components/crud/row-actions';
 import { PageHead } from '@/components/shell/page-head';
 import {
   Alert,
-  Avatar,
-  AvatarFallback,
   Badge,
   Button,
   ConfirmDialog,
@@ -31,10 +29,10 @@ import {
   StatusPill,
   notify,
 } from '@/components/ui';
+import { UserAvatar } from '@/components/user-avatar';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { ApiError } from '@/lib/api-error';
 import { forceResetPassword } from '@/lib/auth-api';
-import { initialsOf } from '@/lib/format';
 import { rolesApi } from '@/lib/roles-api';
 import { type CreatedUserDto, type UserDto, usersApi } from '@/lib/users-api';
 
@@ -136,9 +134,11 @@ export default function UsersPage(): JSX.Element {
         meta: { label: 'Nama' },
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <Avatar className="h-7 w-7">
-              <AvatarFallback className="text-tiny">{initialsOf(row.original.name)}</AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              name={row.original.name}
+              role={row.original.roleName}
+              className="h-7 w-7 text-tiny"
+            />
             <span className="font-medium">{row.original.name}</span>
           </div>
         ),

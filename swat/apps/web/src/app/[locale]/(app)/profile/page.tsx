@@ -5,8 +5,6 @@ import { useState } from 'react';
 
 import { PageHead } from '@/components/shell/page-head';
 import {
-  Avatar,
-  AvatarFallback,
   Badge,
   Button,
   Card,
@@ -15,8 +13,8 @@ import {
   CardTitle,
   ConfirmDialog,
 } from '@/components/ui';
+import { UserAvatar } from '@/components/user-avatar';
 import { useRouter } from '@/i18n/navigation';
-import { initialsOf } from '@/lib/format';
 import { useAuth } from '@/providers/auth-provider';
 
 export default function ProfilePage(): JSX.Element {
@@ -43,9 +41,11 @@ export default function ProfilePage(): JSX.Element {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="text-h3">{initialsOf(user?.name ?? '?')}</AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                name={user?.name ?? '?'}
+                role={user?.roleName}
+                className="h-16 w-16 text-h3"
+              />
               <div className="min-w-0">
                 <p className="truncate text-h3 font-semibold text-neutral-900">{user?.name}</p>
                 <p className="font-mono text-body-sm text-neutral-500">@{user?.username}</p>
@@ -69,11 +69,6 @@ export default function ProfilePage(): JSX.Element {
                 <dd className="mt-0.5 text-body text-neutral-900">{user?.roleName}</dd>
               </div>
             </dl>
-
-            <div className="border-t border-neutral-200 pt-5">
-              <p className="text-label text-neutral-500">{t('photo')}</p>
-              <p className="mt-1 text-body-sm text-neutral-400">{t('photoComingSoon')}</p>
-            </div>
           </CardContent>
         </Card>
 

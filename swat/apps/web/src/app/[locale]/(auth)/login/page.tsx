@@ -5,7 +5,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 
 import { AuthShell } from '@/components/auth/auth-shell';
 import { Alert, Button, Input, Label, PasswordInput } from '@/components/ui';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api-error';
 import { login } from '@/lib/auth-api';
 import { useAuth } from '@/providers/auth-provider';
@@ -103,13 +103,13 @@ export default function LoginPage(): JSX.Element {
         </Button>
 
         <p className="mt-3.5 text-center text-[12.5px]">
-          <button
-            type="button"
+          <Link
+            href="/forgot-password"
             className="text-primary-700 hover:underline"
             title={t('forgotPasswordHelp')}
           >
             {t('forgotPassword')}
-          </button>
+          </Link>
         </p>
       </form>
     </AuthShell>

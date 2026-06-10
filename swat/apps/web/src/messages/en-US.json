@@ -81,6 +81,17 @@
     "loginHelp": "Use the account provided by your administrator.",
     "copyright": "© 2026 Department of Environment, City of Surabaya"
   },
+  "forgotPassword": {
+    "title": "Forgot Password",
+    "subtitle": "Password resets are handled by an administrator",
+    "body": "For security, passwords can't be reset by yourself. Contact a system administrator through one of the channels below to request a reset.",
+    "whatsapp": "WhatsApp",
+    "email": "Email",
+    "emailSubject": "SWAT password reset request",
+    "phone": "Phone",
+    "backToLogin": "Back to sign in",
+    "noChannels": "Contact your system administrator to reset your password."
+  },
   "changePassword": {
     "title": "Change Password",
     "subtitle": "Update your account password",
@@ -113,9 +124,6 @@
     "name": "Full Name",
     "username": "Username",
     "role": "Role",
-    "photo": "Profile Photo",
-    "photoHint": "Drag a file here or click to upload (PNG/JPG).",
-    "photoComingSoon": "Photo upload will be available in a future update.",
     "securityCard": "Security",
     "securityBody": "Update your password regularly.",
     "changePassword": "Change Password",
