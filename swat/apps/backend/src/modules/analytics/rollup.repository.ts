@@ -32,16 +32,16 @@ export class RollupRepository {
   /** Σ net weight + distinct hauls of realized (DONE/VERIFIED) DISPOSAL trips on `date`. */
   async aggregateDailyTonnage(date: Date): Promise<{ amount: bigint; haulCount: number }> {
     const [row] = await this.prisma.$queryRaw<Array<{ amount: bigint; haulCount: bigint }>>`
-      SELECT COALESCE(SUM(t."netWeight"), 0)::bigint   AS "amount",
-             COUNT(DISTINCT ha."haulId")::bigint        AS "haulCount"
-      FROM "Trip" t
-      JOIN "Route" r            ON r."id" = t."routeId"
-      JOIN "HaulAssignment" ha  ON ha."operationDate" = t."operationDate"
-                               AND ha."id" = t."haulAssignmentId"
-      WHERE t."operationDate" = ${date}::date
+      SELECT COALESCE(SUM(t."net_weight"), 0)::bigint   AS "amount",
+             COUNT(DISTINCT ha."haul_id")::bigint        AS "haulCount"
+      FROM "trip" t
+      JOIN "route" r            ON r."id" = t."route_id"
+      JOIN "haul_assignment" ha  ON ha."operation_date" = t."operation_date"
+                               AND ha."id" = t."haul_assignment_id"
+      WHERE t."operation_date" = ${date}::date
         AND t."status" IN ('DONE', 'VERIFIED')
         AND r."category" = 'DISPOSAL'
-        AND t."netWeight" > 0
+        AND t."net_weight" > 0
     `;
     return { amount: row?.amount ?? 0n, haulCount: Number(row?.haulCount ?? 0n) };
   }
@@ -62,30 +62,31 @@ export class RollupRepository {
     const rows = await this.prisma.$queryRaw<
       Array<{ wasteSourceId: string; totalNetWeight: bigint; haulCount: bigint }>
     >`
-      SELECT vws."wasteSourceId"                       AS "wasteSourceId",
-             COALESCE(SUM(t."netWeight"), 0)::bigint   AS "totalNetWeight",
-             COUNT(DISTINCT ha."haulId")::bigint        AS "haulCount"
-      FROM "Trip" t
-      JOIN "Route" r              ON r."id" = t."routeId"
-      JOIN "HaulAssignment" ha    ON ha."operationDate" = t."operationDate"
-                                 AND ha."id" = t."haulAssignmentId"
-      JOIN "Haul" h               ON h."operationDate" = ha."operationDate"
-                                 AND h."id" = ha."haulId"
+      SELECT vws."wasteSourceId"                        AS "wasteSourceId",
+             COALESCE(SUM(t."net_weight"), 0)::bigint   AS "totalNetWeight",
+             COUNT(DISTINCT ha."haul_id")::bigint        AS "haulCount"
+      FROM "trip" t
+      JOIN "route" r              ON r."id" = t."route_id"
+      JOIN "haul_assignment" ha    ON ha."operation_date" = t."operation_date"
+                                 AND ha."id" = t."haul_assignment_id"
+      JOIN "haul" h               ON h."operation_date" = ha."operation_date"
+                                 AND h."id" = ha."haul_id"
       -- Legacy-parity heuristic (see the class doc's KNOWN LIMITATION): pick one
       -- source per vehicle (MIN) so a multi-source vehicle can't multiply its net
       -- weight across its sources. Conservation holds, but a multi-source vehicle
       -- is mis-attributed to its lowest-id source — exact attribution needs a
       -- per-trip source. Improve later.
       JOIN (
-        SELECT "vehicleId", MIN("wasteSourceId") AS "wasteSourceId"
-        FROM "VehicleWasteSource"
-        GROUP BY "vehicleId"
-      ) vws ON vws."vehicleId" = h."vehicleId"
-      WHERE t."operationDate" >= ${from}::date
-        AND t."operationDate" <  ${to}::date
+        -- uuid has no MIN aggregate in Postgres → pick deterministically via text.
+        SELECT "vehicle_id", MIN("waste_source_id"::text)::uuid AS "wasteSourceId"
+        FROM "vehicle_waste_source"
+        GROUP BY "vehicle_id"
+      ) vws ON vws."vehicle_id" = h."vehicle_id"
+      WHERE t."operation_date" >= ${from}::date
+        AND t."operation_date" <  ${to}::date
         AND t."status" IN ('DONE', 'VERIFIED')
         AND r."category" = 'DISPOSAL'
-        AND t."netWeight" > 0
+        AND t."net_weight" > 0
       GROUP BY vws."wasteSourceId"
     `;
     return rows.map((row) => ({
@@ -103,19 +104,19 @@ export class RollupRepository {
     const rows = await this.prisma.$queryRaw<
       Array<{ siteId: string; totalNetWeight: bigint; haulCount: bigint }>
     >`
-      SELECT r."originSiteId"                          AS "siteId",
-             COALESCE(SUM(t."netWeight"), 0)::bigint   AS "totalNetWeight",
-             COUNT(DISTINCT ha."haulId")::bigint        AS "haulCount"
-      FROM "Trip" t
-      JOIN "Route" r            ON r."id" = t."routeId"
-      JOIN "HaulAssignment" ha  ON ha."operationDate" = t."operationDate"
-                               AND ha."id" = t."haulAssignmentId"
-      WHERE t."operationDate" >= ${from}::date
-        AND t."operationDate" <  ${to}::date
+      SELECT r."origin_site_id"                        AS "siteId",
+             COALESCE(SUM(t."net_weight"), 0)::bigint   AS "totalNetWeight",
+             COUNT(DISTINCT ha."haul_id")::bigint        AS "haulCount"
+      FROM "trip" t
+      JOIN "route" r            ON r."id" = t."route_id"
+      JOIN "haul_assignment" ha  ON ha."operation_date" = t."operation_date"
+                               AND ha."id" = t."haul_assignment_id"
+      WHERE t."operation_date" >= ${from}::date
+        AND t."operation_date" <  ${to}::date
         AND t."status" IN ('DONE', 'VERIFIED')
         AND r."category" = 'DISPOSAL'
-        AND t."netWeight" > 0
-      GROUP BY r."originSiteId"
+        AND t."net_weight" > 0
+      GROUP BY r."origin_site_id"
     `;
     return rows.map((row) => ({
       siteId: row.siteId,
@@ -130,14 +131,14 @@ export class RollupRepository {
     to: Date,
   ): Promise<Array<{ routeId: string; tripCount: number }>> {
     const rows = await this.prisma.$queryRaw<Array<{ routeId: string; tripCount: bigint }>>`
-      SELECT t."routeId"          AS "routeId",
+      SELECT t."route_id"         AS "routeId",
              COUNT(*)::bigint     AS "tripCount"
-      FROM "Trip" t
-      WHERE t."operationDate" >= ${from}::date
-        AND t."operationDate" <  ${to}::date
+      FROM "trip" t
+      WHERE t."operation_date" >= ${from}::date
+        AND t."operation_date" <  ${to}::date
         AND t."status" IN ('DONE', 'VERIFIED')
-        AND t."routeId" IS NOT NULL
-      GROUP BY t."routeId"
+        AND t."route_id" IS NOT NULL
+      GROUP BY t."route_id"
     `;
     return rows.map((row) => ({ routeId: row.routeId, tripCount: Number(row.tripCount) }));
   }
@@ -151,19 +152,19 @@ export class RollupRepository {
     return this.prisma.$queryRaw<
       Array<{ vehicleId: string; fuelApprovedLiters: string; fuelRequestedLiters: string }>
     >`
-      SELECT h."vehicleId"                                    AS "vehicleId",
-             COALESCE(SUM(t."fuelApprovedLiters"), 0)::text   AS "fuelApprovedLiters",
-             COALESCE(SUM(t."fuelRequestedLiters"), 0)::text  AS "fuelRequestedLiters"
-      FROM "Trip" t
-      JOIN "Route" r            ON r."id" = t."routeId"
-      JOIN "HaulAssignment" ha  ON ha."operationDate" = t."operationDate"
-                               AND ha."id" = t."haulAssignmentId"
-      JOIN "Haul" h             ON h."operationDate" = ha."operationDate"
-                               AND h."id" = ha."haulId"
-      WHERE t."operationDate" = ${date}::date
+      SELECT h."vehicle_id"                                   AS "vehicleId",
+             COALESCE(SUM(t."fuel_approved_liters"), 0)::text AS "fuelApprovedLiters",
+             COALESCE(SUM(t."fuel_requested_liters"), 0)::text AS "fuelRequestedLiters"
+      FROM "trip" t
+      JOIN "route" r            ON r."id" = t."route_id"
+      JOIN "haul_assignment" ha  ON ha."operation_date" = t."operation_date"
+                               AND ha."id" = t."haul_assignment_id"
+      JOIN "haul" h             ON h."operation_date" = ha."operation_date"
+                               AND h."id" = ha."haul_id"
+      WHERE t."operation_date" = ${date}::date
         AND r."category" = 'REFUEL'
         AND t."status" IN ('DONE', 'VERIFIED')
-      GROUP BY h."vehicleId"
+      GROUP BY h."vehicle_id"
     `;
   }
 

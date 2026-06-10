@@ -99,6 +99,12 @@ else
   pnpm --filter @swat/backend run prisma:seed
 fi
 
+# --- 6. Backfill monitoring rollups -----------------------------------------
+# The seed creates trips/hauls; the monitoring dashboards (volume/fuel/routes)
+# read pre-aggregated rollup tables, populated here. Idempotent; no-ops if empty.
+log 'Backfilling monitoring rollups'
+pnpm --filter @swat/backend run rollup:backfill
+
 log 'Setup complete ✓'
 cat <<'EOF'
 

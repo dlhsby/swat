@@ -51,7 +51,7 @@ export class ArchivingRepository {
       FROM pg_inherits
       JOIN pg_class parent ON parent.oid = pg_inherits.inhparent
       JOIN pg_class child  ON child.oid  = pg_inherits.inhrelid
-      WHERE parent.relname IN ('Trip', 'Haul', 'HaulAssignment', 'TpaInboundLog')
+      WHERE parent.relname IN ('trip', 'haul', 'haul_assignment', 'tpa_inbound_log')
         AND child.relname ~ '_y[0-9]{4}m[0-9]{2}$'
     `;
     return rows
@@ -68,11 +68,11 @@ export class ArchivingRepository {
     const monthStart = new Date(`${period}-01T00:00:00.000Z`);
     const rows = await this.prisma.$queryRaw<Array<{ rollups: bigint; trips: bigint }>>`
       SELECT
-        (SELECT COUNT(*) FROM "MonthlyTonnageBySource" WHERE "month" = ${monthStart}::date)::bigint
-          + (SELECT COUNT(*) FROM "MonthlyRouteActivity" WHERE "month" = ${monthStart}::date)::bigint AS "rollups",
-        (SELECT COUNT(*) FROM "Trip"
-           WHERE "operationDate" >= ${monthStart}::date
-             AND "operationDate" < (${monthStart}::date + INTERVAL '1 month'))::bigint AS "trips"
+        (SELECT COUNT(*) FROM "monthly_tonnage_by_source" WHERE "month" = ${monthStart}::date)::bigint
+          + (SELECT COUNT(*) FROM "monthly_route_activity" WHERE "month" = ${monthStart}::date)::bigint AS "rollups",
+        (SELECT COUNT(*) FROM "trip"
+           WHERE "operation_date" >= ${monthStart}::date
+             AND "operation_date" < (${monthStart}::date + INTERVAL '1 month'))::bigint AS "trips"
     `;
     const result = rows[0];
     return (result?.rollups ?? 0n) > 0n || (result?.trips ?? 0n) === 0n;

@@ -35,8 +35,8 @@ export class MonitoringRepository {
     const rows = await this.prisma.$queryRaw<
       Array<{ date: Date; amount: bigint; haulCount: number }>
     >`
-      SELECT "date", "amount", "haulCount"
-      FROM "DailyTonnage"
+      SELECT "date", "amount", "haul_count"
+      FROM "daily_tonnage"
       WHERE "date" >= ${from}::date AND "date" <= ${to}::date
       ORDER BY "date" ASC
     `;
@@ -50,8 +50,8 @@ export class MonitoringRepository {
   /** Σ TpaInboundLog net weight per date within `[from, to]` (weighbridge truth). */
   async tpaInboundByDate(from: Date, to: Date): Promise<TpaInboundRecord[]> {
     const rows = await this.prisma.$queryRaw<Array<{ date: Date; tpaInboundKg: bigint }>>`
-      SELECT "date", COALESCE(SUM("netWeight"), 0)::bigint AS "tpaInboundKg"
-      FROM "TpaInboundLog"
+      SELECT "date", COALESCE(SUM("net_weight"), 0)::bigint AS "tpaInboundKg"
+      FROM "tpa_inbound_log"
       WHERE "date" >= ${from}::date AND "date" <= ${to}::date
       GROUP BY "date"
     `;
@@ -66,8 +66,8 @@ export class MonitoringRepository {
     const rows = await this.prisma.$queryRaw<Array<{ month: Date; total: bigint; hauls: bigint }>>`
       SELECT date_trunc('month', "date")::date AS "month",
              COALESCE(SUM("amount"), 0)::bigint AS "total",
-             COALESCE(SUM("haulCount"), 0)::bigint AS "hauls"
-      FROM "DailyTonnage"
+             COALESCE(SUM("haul_count"), 0)::bigint AS "hauls"
+      FROM "daily_tonnage"
       WHERE "date" >= ${from}::date AND "date" <= ${to}::date
       GROUP BY date_trunc('month', "date")
       ORDER BY "month" ASC
@@ -112,10 +112,10 @@ export class MonitoringRepository {
       SELECT ws."id"                              AS "wasteSourceId",
              ws."code"                            AS "code",
              ws."name"                            AS "name",
-             COALESCE(SUM(m."totalNetWeight"), 0)::bigint AS "total",
-             COALESCE(SUM(m."haulCount"), 0)::bigint      AS "hauls"
-      FROM "MonthlyTonnageBySource" m
-      JOIN "WasteSource" ws ON ws."id" = m."wasteSourceId"
+             COALESCE(SUM(m."total_net_weight"), 0)::bigint AS "total",
+             COALESCE(SUM(m."haul_count"), 0)::bigint      AS "hauls"
+      FROM "monthly_tonnage_by_source" m
+      JOIN "waste_source" ws ON ws."id" = m."waste_source_id"
       WHERE m."month" >= ${monthFrom}::date AND m."month" <= ${monthTo}::date
         ${groupClause}
       GROUP BY ws."id", ws."code", ws."name"
@@ -143,10 +143,10 @@ export class MonitoringRepository {
       SELECT s."id"                               AS "siteId",
              s."name"                             AS "name",
              s."type"::text                       AS "type",
-             COALESCE(SUM(m."totalNetWeight"), 0)::bigint AS "total",
-             COALESCE(SUM(m."haulCount"), 0)::bigint      AS "hauls"
-      FROM "MonthlyTonnageBySite" m
-      JOIN "Site" s ON s."id" = m."siteId"
+             COALESCE(SUM(m."total_net_weight"), 0)::bigint AS "total",
+             COALESCE(SUM(m."haul_count"), 0)::bigint      AS "hauls"
+      FROM "monthly_tonnage_by_site" m
+      JOIN "site" s ON s."id" = m."site_id"
       WHERE m."month" >= ${monthFrom}::date AND m."month" <= ${monthTo}::date
       GROUP BY s."id", s."name", s."type"
       ORDER BY "total" DESC
@@ -173,19 +173,19 @@ export class MonitoringRepository {
       fuelRequestedLiters: number;
     }>
   > {
-    const vehicleClause = vehicleId ? Prisma.sql`AND f."vehicleId" = ${vehicleId}` : Prisma.empty;
+    const vehicleClause = vehicleId ? Prisma.sql`AND f."vehicle_id" = ${vehicleId}` : Prisma.empty;
     const rows = await this.prisma.$queryRaw<
       Array<{ vehicleId: string; plateNumber: string; approved: number; requested: number }>
     >`
       SELECT v."id"                                      AS "vehicleId",
-             v."plateNumber"                             AS "plateNumber",
-             COALESCE(SUM(f."fuelApprovedLiters"), 0)::float8  AS "approved",
-             COALESCE(SUM(f."fuelRequestedLiters"), 0)::float8 AS "requested"
-      FROM "DailyFuelByVehicle" f
-      JOIN "Vehicle" v ON v."id" = f."vehicleId"
+             v."plate_number"                            AS "plateNumber",
+             COALESCE(SUM(f."fuel_approved_liters"), 0)::float8  AS "approved",
+             COALESCE(SUM(f."fuel_requested_liters"), 0)::float8 AS "requested"
+      FROM "daily_fuel_by_vehicle" f
+      JOIN "vehicle" v ON v."id" = f."vehicle_id"
       WHERE f."date" >= ${from}::date AND f."date" <= ${to}::date
         ${vehicleClause}
-      GROUP BY v."id", v."plateNumber"
+      GROUP BY v."id", v."plate_number"
       ORDER BY "approved" DESC
     `;
     return rows.map((row) => ({
@@ -213,12 +213,12 @@ export class MonitoringRepository {
     >`
       SELECT fu."id"                                     AS "fuelId",
              fu."name"                                   AS "fuelName",
-             COALESCE(SUM(f."fuelApprovedLiters"), 0)::float8  AS "approved",
-             COALESCE(SUM(f."fuelRequestedLiters"), 0)::float8 AS "requested"
-      FROM "DailyFuelByVehicle" f
-      JOIN "Vehicle" v       ON v."id" = f."vehicleId"
-      JOIN "VehicleModel" vm ON vm."id" = v."modelId"
-      JOIN "Fuel" fu         ON fu."id" = vm."fuelId"
+             COALESCE(SUM(f."fuel_approved_liters"), 0)::float8  AS "approved",
+             COALESCE(SUM(f."fuel_requested_liters"), 0)::float8 AS "requested"
+      FROM "daily_fuel_by_vehicle" f
+      JOIN "vehicle" v       ON v."id" = f."vehicle_id"
+      JOIN "vehicle_model" vm ON vm."id" = v."model_id"
+      JOIN "fuel" fu         ON fu."id" = vm."fuel_id"
       WHERE f."date" >= ${from}::date AND f."date" <= ${to}::date
       GROUP BY fu."id", fu."name"
       ORDER BY "approved" DESC
@@ -259,15 +259,15 @@ export class MonitoringRepository {
              r."category"::text              AS "category",
              origin."name"                   AS "originSiteName",
              dest."name"                     AS "destinationSiteName",
-             r."distanceKm"                  AS "distanceKm",
-             COALESCE(SUM(m."tripCount"), 0)::bigint AS "trips"
-      FROM "MonthlyRouteActivity" m
-      JOIN "Route" r      ON r."id" = m."routeId"
-      JOIN "Site" origin  ON origin."id" = r."originSiteId"
-      JOIN "Site" dest    ON dest."id" = r."destinationSiteId"
+             r."distance_km"                 AS "distanceKm",
+             COALESCE(SUM(m."trip_count"), 0)::bigint AS "trips"
+      FROM "monthly_route_activity" m
+      JOIN "route" r      ON r."id" = m."route_id"
+      JOIN "site" origin  ON origin."id" = r."origin_site_id"
+      JOIN "site" dest    ON dest."id" = r."destination_site_id"
       WHERE m."month" >= ${monthFrom}::date AND m."month" <= ${monthTo}::date
-      GROUP BY r."id", r."category", origin."name", dest."name", r."distanceKm"
-      HAVING SUM(m."tripCount") > 0
+      GROUP BY r."id", r."category", origin."name", dest."name", r."distance_km"
+      HAVING SUM(m."trip_count") > 0
       ORDER BY "trips" DESC
     `;
     return rows.map((row) => ({
@@ -289,13 +289,13 @@ export class MonitoringRepository {
    */
   async countOperatingVehicles(from: Date, to: Date): Promise<number> {
     const [row] = await this.prisma.$queryRaw<Array<{ count: bigint }>>`
-      SELECT COUNT(DISTINCT h."vehicleId")::bigint AS "count"
-      FROM "Trip" t
-      JOIN "HaulAssignment" ha ON ha."operationDate" = t."operationDate"
-                              AND ha."id" = t."haulAssignmentId"
-      JOIN "Haul" h            ON h."operationDate" = ha."operationDate"
-                              AND h."id" = ha."haulId"
-      WHERE t."operationDate" >= ${from}::date AND t."operationDate" <= ${to}::date
+      SELECT COUNT(DISTINCT h."vehicle_id")::bigint AS "count"
+      FROM "trip" t
+      JOIN "haul_assignment" ha ON ha."operation_date" = t."operation_date"
+                              AND ha."id" = t."haul_assignment_id"
+      JOIN "haul" h            ON h."operation_date" = ha."operation_date"
+                              AND h."id" = ha."haul_id"
+      WHERE t."operation_date" >= ${from}::date AND t."operation_date" <= ${to}::date
         AND t."status" IN ('DONE', 'VERIFIED')
     `;
     return Number(row?.count ?? 0n);
@@ -309,12 +309,12 @@ export class MonitoringRepository {
     const rows = await this.prisma.$queryRaw<
       Array<{ categoryName: string; total: bigint; count: bigint }>
     >`
-      SELECT "categoryName"                  AS "categoryName",
+      SELECT "category_name"                 AS "categoryName",
              COALESCE(SUM("amount"), 0)::bigint AS "total",
              COUNT(*)::bigint                AS "count"
-      FROM "Levy"
+      FROM "levy"
       WHERE "date" >= ${from}::date AND "date" <= ${to}::date
-      GROUP BY "categoryName"
+      GROUP BY "category_name"
       ORDER BY "total" DESC
     `;
     return rows.map((row) => ({

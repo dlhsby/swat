@@ -28,7 +28,7 @@ async function resolveRange(
   toArg: string | undefined,
 ): Promise<{ from: Date; to: Date } | null> {
   const [bounds] = await prisma.$queryRaw<Array<{ min: Date | null; max: Date | null }>>`
-    SELECT MIN("operationDate") AS min, MAX("operationDate") AS max FROM "Trip"
+    SELECT MIN("operation_date") AS min, MAX("operation_date") AS max FROM "trip"
   `;
   const from = fromArg ? parseDateOnly(fromArg) : (bounds?.min ?? null);
   const to = toArg ? parseDateOnly(toArg) : (bounds?.max ?? null);
