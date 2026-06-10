@@ -19,7 +19,7 @@ describe('RolePermissionsService', () => {
 
   it('returns cached keys without querying the database', async () => {
     cache.get.mockResolvedValue(['user:read']);
-    const keys = await service.getPermissionKeys(7);
+    const keys = await service.getPermissionKeys('00000000-0000-0000-0000-0000000000b7');
     expect(keys).toEqual(['user:read']);
     expect(prisma.rolePermission.findMany).not.toHaveBeenCalled();
   });
@@ -27,18 +27,27 @@ describe('RolePermissionsService', () => {
   it('queries and caches on a miss', async () => {
     cache.get.mockResolvedValue(null);
     prisma.rolePermission.findMany.mockResolvedValue([
-      { permission: { key: 'user:read' } },
-      { permission: { key: 'role:read' } },
+      { permissionId: '00000000-0000-0000-0000-0000000000c1' },
+      { permissionId: '00000000-0000-0000-0000-0000000000c2' },
     ]);
 
-    const keys = await service.getPermissionKeys(7);
+    const keys = await service.getPermissionKeys('00000000-0000-0000-0000-0000000000b7');
 
-    expect(keys).toEqual(['user:read', 'role:read']);
-    expect(cache.set).toHaveBeenCalledWith('rbac:role:7:permissions', keys, 300);
+    expect(keys).toEqual([
+      '00000000-0000-0000-0000-0000000000c1',
+      '00000000-0000-0000-0000-0000000000c2',
+    ]);
+    expect(cache.set).toHaveBeenCalledWith(
+      'rbac:role:00000000-0000-0000-0000-0000000000b7:permissions',
+      keys,
+      300,
+    );
   });
 
   it('invalidates the cached set', async () => {
-    await service.invalidate(7);
-    expect(cache.del).toHaveBeenCalledWith('rbac:role:7:permissions');
+    await service.invalidate('00000000-0000-0000-0000-0000000000b7');
+    expect(cache.del).toHaveBeenCalledWith(
+      'rbac:role:00000000-0000-0000-0000-0000000000b7:permissions',
+    );
   });
 });

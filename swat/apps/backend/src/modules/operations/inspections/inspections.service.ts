@@ -21,11 +21,11 @@ export interface InspectionItemView {
 
 export interface InspectionDto {
   readonly id: string;
-  readonly vehicleId: number;
+  readonly vehicleId: string;
   readonly vehiclePlate: string;
   readonly vehicleBrand: string;
   readonly date: string;
-  readonly inspectorId: number | null;
+  readonly inspectorId: string | null;
   readonly inspectorName: string | null;
   readonly result: InspectionResult;
   readonly passedCount: number;
@@ -73,7 +73,7 @@ function resolveItems(items: InspectionItemDto[] | undefined): InspectionItemDto
 
 function toDto(inspection: InspectionWithRefs): InspectionDto {
   return {
-    id: inspection.id.toString(),
+    id: inspection.id,
     vehicleId: inspection.vehicleId,
     vehiclePlate: inspection.vehicle.plateNumber,
     vehicleBrand: inspection.vehicle.model.brand,
@@ -85,7 +85,7 @@ function toDto(inspection: InspectionWithRefs): InspectionDto {
     totalCount: inspection.totalCount,
     notes: inspection.notes,
     items: inspection.items.map((item) => ({
-      id: item.id.toString(),
+      id: item.id,
       label: item.label,
       status: item.status,
       notes: item.notes,
@@ -113,14 +113,14 @@ export class InspectionsService {
   }
 
   async getById(id: string): Promise<InspectionDto> {
-    const inspection = await this.repo.findById(this.toBigInt(id));
+    const inspection = await this.repo.findById(id);
     if (!inspection) {
       throw new NotFoundException('Pemeriksaan tidak ditemukan.');
     }
     return toDto(inspection);
   }
 
-  async create(dto: CreateInspectionDto, userId: number): Promise<InspectionDto> {
+  async create(dto: CreateInspectionDto, userId: string): Promise<InspectionDto> {
     const vehicle = await this.repo.vehicleExists(dto.vehicleId);
     if (!vehicle) {
       throw new BadRequestException('Kendaraan tidak ditemukan.');
@@ -143,7 +143,7 @@ export class InspectionsService {
   }
 
   async update(id: string, dto: UpdateInspectionDto): Promise<InspectionDto> {
-    const existing = await this.repo.findById(this.toBigInt(id));
+    const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Pemeriksaan tidak ditemukan.');
     }
@@ -164,24 +164,16 @@ export class InspectionsService {
       data.items = { deleteMany: {}, create: items.map(toItemCreate) };
     }
 
-    const inspection = await this.repo.update(this.toBigInt(id), data);
+    const inspection = await this.repo.update(id, data);
     return toDto(inspection);
   }
 
   async remove(id: string): Promise<void> {
-    const existing = await this.repo.findById(this.toBigInt(id));
+    const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Pemeriksaan tidak ditemukan.');
     }
-    await this.repo.delete(this.toBigInt(id));
-  }
-
-  private toBigInt(id: string): bigint {
-    try {
-      return BigInt(id);
-    } catch {
-      throw new BadRequestException('ID pemeriksaan tidak valid.');
-    }
+    await this.repo.delete(id);
   }
 }
 

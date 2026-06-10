@@ -13,8 +13,8 @@ export type VehicleWithRefs = Prisma.VehicleGetPayload<{ include: typeof vehicle
 
 export interface ListVehiclesFilter extends PageParams {
   readonly status?: VehicleStatus;
-  readonly poolSiteId?: number;
-  readonly modelId?: number;
+  readonly poolSiteId?: string;
+  readonly modelId?: string;
   readonly search?: string;
 }
 
@@ -48,7 +48,7 @@ export class VehiclesRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<VehicleWithRefs | null> {
+  findById(id: string): Promise<VehicleWithRefs | null> {
     return this.prisma.vehicle.findFirst({
       where: { id, deletedAt: null },
       include: vehicleInclude,
@@ -56,15 +56,15 @@ export class VehiclesRepository {
   }
 
   /** Plate uniqueness spans all rows (including soft-deleted) per the DB constraint. */
-  findByPlate(plateNumber: string): Promise<{ id: number } | null> {
+  findByPlate(plateNumber: string): Promise<{ id: string } | null> {
     return this.prisma.vehicle.findUnique({ where: { plateNumber }, select: { id: true } });
   }
 
-  modelExists(id: number): Promise<{ id: number } | null> {
+  modelExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.vehicleModel.findUnique({ where: { id }, select: { id: true } });
   }
 
-  siteExists(id: number): Promise<{ id: number } | null> {
+  siteExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.site.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
@@ -72,11 +72,11 @@ export class VehiclesRepository {
     return this.prisma.vehicle.create({ data, include: vehicleInclude });
   }
 
-  update(id: number, data: Prisma.VehicleUpdateInput): Promise<VehicleWithRefs> {
+  update(id: string, data: Prisma.VehicleUpdateInput): Promise<VehicleWithRefs> {
     return this.prisma.vehicle.update({ where: { id }, data, include: vehicleInclude });
   }
 
-  softDelete(id: number): Promise<{ id: number }> {
+  softDelete(id: string): Promise<{ id: string }> {
     return this.prisma.vehicle.update({
       where: { id },
       data: { deletedAt: new Date() },

@@ -2,10 +2,10 @@ import { apiClient } from './api-client';
 
 /** The authenticated user as returned by `GET /auth/me`. */
 export interface CurrentUser {
-  readonly userId: number;
+  readonly userId: string;
   readonly username: string;
   readonly name: string;
-  readonly roleId: number;
+  readonly roleId: string;
   readonly roleName: string;
   /** Flattened permission keys, e.g. `["trip:verify", "user:manage"]`. */
   readonly permissions: readonly string[];
@@ -14,10 +14,10 @@ export interface CurrentUser {
 
 /** The subset returned by `POST /auth/login` (no permission list yet). */
 export interface LoginResult {
-  readonly userId: number;
+  readonly userId: string;
   readonly username: string;
   readonly name: string;
-  readonly roleId: number;
+  readonly roleId: string;
   readonly roleName: string;
   readonly mustChangePassword: boolean;
 }
@@ -46,7 +46,7 @@ export function changePassword(input: ChangePasswordInput): Promise<{ message: s
 }
 
 export function forceResetPassword(
-  userId: number,
-): Promise<{ userId: number; username: string; temporaryPassword: string }> {
+  userId: string,
+): Promise<{ userId: string; username: string; temporaryPassword: string }> {
   return apiClient.post(`/auth/force-reset/${userId}`);
 }

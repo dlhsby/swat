@@ -149,8 +149,8 @@ function SitesTab(): JSX.Element {
 const routeSchema = z
   .object({
     category: z.enum(['DEPART_POOL', 'REFUEL', 'PICKUP', 'DISPOSAL', 'RETURN_POOL']),
-    originSiteId: z.coerce.number().int().min(1, 'Lokasi asal wajib dipilih'),
-    destinationSiteId: z.coerce.number().int().min(1, 'Lokasi tujuan wajib dipilih'),
+    originSiteId: z.string().uuid('Lokasi asal wajib dipilih'),
+    destinationSiteId: z.string().uuid('Lokasi tujuan wajib dipilih'),
     distanceKm: z.coerce.number().int().min(0, 'Jarak tidak boleh negatif'),
   })
   .refine((d) => d.originSiteId !== d.destinationSiteId, {
@@ -160,8 +160,8 @@ const routeSchema = z
 type RouteValues = z.infer<typeof routeSchema>;
 const routeDefaults: RouteValues = {
   category: 'PICKUP',
-  originSiteId: 0,
-  destinationSiteId: 0,
+  originSiteId: '',
+  destinationSiteId: '',
   distanceKm: 0,
 };
 const routeToForm = (r: RouteDto): RouteValues => ({
@@ -249,7 +249,6 @@ function RoutesTab(): JSX.Element {
             name="originSiteId"
             label="Asal"
             required
-            numeric
             options={sites}
             placeholder="Pilih lokasi"
           />
@@ -257,7 +256,6 @@ function RoutesTab(): JSX.Element {
             name="destinationSiteId"
             label="Tujuan"
             required
-            numeric
             options={sites}
             placeholder="Pilih lokasi"
           />

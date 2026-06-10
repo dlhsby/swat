@@ -15,11 +15,11 @@ import { type UpdateRouteDto } from './dto/update-route.dto';
 import { RoutesRepository, type RouteWithSites } from './routes.repository';
 
 export interface RouteDto {
-  readonly id: number;
+  readonly id: string;
   readonly category: RouteCategory;
-  readonly originSiteId: number;
+  readonly originSiteId: string;
   readonly originSiteName: string;
-  readonly destinationSiteId: number;
+  readonly destinationSiteId: string;
   readonly destinationSiteName: string;
   readonly distanceKm: number;
   readonly createdAt: string;
@@ -55,7 +55,7 @@ export class RoutesService {
     return paginated(rows.map(toRouteDto), total, query);
   }
 
-  async getById(id: number): Promise<RouteDto> {
+  async getById(id: string): Promise<RouteDto> {
     const route = await this.repo.findById(id);
     if (!route) {
       throw new NotFoundException('Rute tidak ditemukan.');
@@ -86,7 +86,7 @@ export class RoutesService {
     return toRouteDto(route);
   }
 
-  async update(id: number, dto: UpdateRouteDto): Promise<RouteDto> {
+  async update(id: string, dto: UpdateRouteDto): Promise<RouteDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Rute tidak ditemukan.');
@@ -120,7 +120,7 @@ export class RoutesService {
     return toRouteDto(route);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Rute tidak ditemukan.');
@@ -129,7 +129,7 @@ export class RoutesService {
     return { message: 'Rute telah dihapus.' };
   }
 
-  private async assertSitesExist(originSiteId: number, destinationSiteId: number): Promise<void> {
+  private async assertSitesExist(originSiteId: string, destinationSiteId: string): Promise<void> {
     const [origin, destination] = await Promise.all([
       this.repo.siteExists(originSiteId),
       this.repo.siteExists(destinationSiteId),

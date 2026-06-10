@@ -27,8 +27,8 @@ import {
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const schema = z
   .object({
-    vehicleId: z.coerce.number().int().min(1, 'Kendaraan wajib dipilih'),
-    driverId: z.coerce.number().int().min(1, 'Pengemudi wajib dipilih'),
+    vehicleId: z.string().uuid('Kendaraan wajib dipilih'),
+    driverId: z.string().uuid('Pengemudi wajib dipilih'),
     departTime: z.string().regex(TIME_RE, 'Waktu harus berformat HH:mm'),
     returnTime: z.string().regex(TIME_RE, 'Waktu harus berformat HH:mm'),
   })
@@ -37,7 +37,7 @@ const schema = z
     path: ['returnTime'],
   });
 type Values = z.infer<typeof schema>;
-const defaults: Values = { vehicleId: 0, driverId: 0, departTime: '', returnTime: '' };
+const defaults: Values = { vehicleId: '', driverId: '', departTime: '', returnTime: '' };
 const toForm = (r: CrewScheduleDto): Values => ({
   vehicleId: r.vehicleId,
   driverId: r.driverId,
@@ -132,7 +132,6 @@ export default function CrewSchedulesPage(): JSX.Element {
             name="vehicleId"
             label="Kendaraan"
             required
-            numeric
             options={vehicles}
             placeholder="Pilih kendaraan"
           />
@@ -140,7 +139,6 @@ export default function CrewSchedulesPage(): JSX.Element {
             name="driverId"
             label="Pengemudi"
             required
-            numeric
             options={drivers}
             placeholder="Pilih pengemudi"
           />

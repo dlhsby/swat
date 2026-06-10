@@ -31,10 +31,10 @@ const ctx: AuthContext = { ip: '127.0.0.1', userAgent: 'jest' };
 
 function buildUser(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
+    id: '00000000-0000-0000-0000-0000000000a1',
     username: 'admin',
     name: 'Administrator',
-    roleId: 7,
+    roleId: '00000000-0000-0000-0000-0000000000a7',
     passwordHash: '$argon2id$hash',
     mustChangePassword: true,
     deletedAt: null,
@@ -79,9 +79,9 @@ describe('AuthService', () => {
       const result = await service.login({ username: 'admin', password: 'good' }, ctx);
 
       expect(result.user).toEqual({
-        id: 1,
+        id: '00000000-0000-0000-0000-0000000000a1',
         username: 'admin',
-        roleId: 7,
+        roleId: '00000000-0000-0000-0000-0000000000a7',
         mustChangePassword: true,
       });
       expect(result.roleName).toBe('Administrator');
@@ -116,7 +116,10 @@ describe('AuthService', () => {
       expect(throttle.registerFailure).toHaveBeenCalled();
       expect(prisma.authAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ action: AuthAction.FAILED_LOGIN, userId: 1 }),
+          data: expect.objectContaining({
+            action: AuthAction.FAILED_LOGIN,
+            userId: '00000000-0000-0000-0000-0000000000a1',
+          }),
         }),
       );
     });
@@ -146,10 +149,10 @@ describe('AuthService', () => {
       prisma.user.findFirst.mockResolvedValue(buildUser());
       rolePermissions.getPermissionKeys.mockResolvedValue(['user:read', 'role:read']);
 
-      const me = await service.getMe(1);
+      const me = await service.getMe('00000000-0000-0000-0000-0000000000a1');
 
       expect(me).toMatchObject({
-        userId: 1,
+        userId: '00000000-0000-0000-0000-0000000000a1',
         username: 'admin',
         roleName: 'Administrator',
         permissions: ['user:read', 'role:read'],
@@ -158,7 +161,9 @@ describe('AuthService', () => {
 
     it('throws when the user no longer exists', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
-      await expect(service.getMe(99)).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(service.getMe('00000000-0000-0000-0000-0000000000a99')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -171,15 +176,19 @@ describe('AuthService', () => {
 
     it('rejects when confirmation does not match', async () => {
       await expect(
-        service.changePassword(1, { ...dto, confirmPassword: 'different' }, ctx),
+        service.changePassword(
+          '00000000-0000-0000-0000-0000000000a1',
+          { ...dto, confirmPassword: 'different' },
+          ctx,
+        ),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws when the user is missing', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
-      await expect(service.changePassword(1, dto, ctx)).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(
+        service.changePassword('00000000-0000-0000-0000-0000000000a1', dto, ctx),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     describe('voluntary change (mustChangePassword = false)', () => {
@@ -189,7 +198,11 @@ describe('AuthService', () => {
 
       it('rejects a missing current password', async () => {
         await expect(
-          service.changePassword(1, { ...dto, currentPassword: '' }, ctx),
+          service.changePassword(
+            '00000000-0000-0000-0000-0000000000a1',
+            { ...dto, currentPassword: '' },
+            ctx,
+          ),
         ).rejects.toBeInstanceOf(BadRequestException);
         expect(prisma.user.update).not.toHaveBeenCalled();
       });
@@ -197,7 +210,7 @@ describe('AuthService', () => {
       it('rejects when the new password equals the current one', async () => {
         await expect(
           service.changePassword(
-            1,
+            '00000000-0000-0000-0000-0000000000a1',
             {
               currentPassword: 'Same!2026abc',
               newPassword: 'Same!2026abc',
@@ -210,9 +223,9 @@ describe('AuthService', () => {
 
       it('rejects a wrong current password', async () => {
         verify.mockResolvedValue(false);
-        await expect(service.changePassword(1, dto, ctx)).rejects.toBeInstanceOf(
-          BadRequestException,
-        );
+        await expect(
+          service.changePassword('00000000-0000-0000-0000-0000000000a1', dto, ctx),
+        ).rejects.toBeInstanceOf(BadRequestException);
         expect(prisma.user.update).not.toHaveBeenCalled();
       });
 
@@ -221,10 +234,10 @@ describe('AuthService', () => {
         hashFn.mockResolvedValue('$argon2id$new');
         prisma.user.update.mockResolvedValue(buildUser());
 
-        await service.changePassword(1, dto, ctx);
+        await service.changePassword('00000000-0000-0000-0000-0000000000a1', dto, ctx);
 
         expect(prisma.user.update).toHaveBeenCalledWith({
-          where: { id: 1 },
+          where: { id: '00000000-0000-0000-0000-0000000000a1' },
           data: { passwordHash: '$argon2id$new', mustChangePassword: false },
         });
         expect(prisma.authAuditLog.create).toHaveBeenCalledWith(
@@ -247,10 +260,10 @@ describe('AuthService', () => {
         hashFn.mockResolvedValue('$argon2id$forced');
         prisma.user.update.mockResolvedValue(buildUser());
 
-        await service.changePassword(1, forcedDto, ctx);
+        await service.changePassword('00000000-0000-0000-0000-0000000000a1', forcedDto, ctx);
 
         expect(prisma.user.update).toHaveBeenCalledWith({
-          where: { id: 1 },
+          where: { id: '00000000-0000-0000-0000-0000000000a1' },
           data: { passwordHash: '$argon2id$forced', mustChangePassword: false },
         });
         // Only the reuse guard runs — no current-password verification.
@@ -260,28 +273,39 @@ describe('AuthService', () => {
 
       it('rejects reusing the previous password', async () => {
         verify.mockResolvedValue(true); // new matches the stored hash
-        await expect(service.changePassword(1, forcedDto, ctx)).rejects.toBeInstanceOf(
-          BadRequestException,
-        );
+        await expect(
+          service.changePassword('00000000-0000-0000-0000-0000000000a1', forcedDto, ctx),
+        ).rejects.toBeInstanceOf(BadRequestException);
         expect(prisma.user.update).not.toHaveBeenCalled();
       });
     });
   });
 
   describe('forceReset', () => {
-    const actor: SessionUser = { id: 2, username: 'boss', roleId: 7, mustChangePassword: false };
+    const actor: SessionUser = {
+      id: '00000000-0000-0000-0000-0000000000a2',
+      username: 'boss',
+      roleId: '00000000-0000-0000-0000-0000000000a7',
+      mustChangePassword: false,
+    };
 
     it('issues a temporary password and forces a change', async () => {
-      prisma.user.findFirst.mockResolvedValue(buildUser({ id: 5, username: 'opr' }));
+      prisma.user.findFirst.mockResolvedValue(
+        buildUser({ id: '00000000-0000-0000-0000-0000000000a5', username: 'opr' }),
+      );
       genTemp.mockReturnValue('Aa1!temporaryxx');
       hashFn.mockResolvedValue('$argon2id$temp');
       prisma.user.update.mockResolvedValue({});
 
-      const result = await service.forceReset(5, actor, ctx);
+      const result = await service.forceReset('00000000-0000-0000-0000-0000000000a5', actor, ctx);
 
-      expect(result).toEqual({ userId: 5, username: 'opr', temporaryPassword: 'Aa1!temporaryxx' });
+      expect(result).toEqual({
+        userId: '00000000-0000-0000-0000-0000000000a5',
+        username: 'opr',
+        temporaryPassword: 'Aa1!temporaryxx',
+      });
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 5 },
+        where: { id: '00000000-0000-0000-0000-0000000000a5' },
         data: { passwordHash: '$argon2id$temp', mustChangePassword: true },
       });
       expect(prisma.authAuditLog.create).toHaveBeenCalledWith(
@@ -293,13 +317,20 @@ describe('AuthService', () => {
 
     it('throws when the target user is missing', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
-      await expect(service.forceReset(5, actor, ctx)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.forceReset('00000000-0000-0000-0000-0000000000a5', actor, ctx),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
   describe('logout', () => {
     it('writes a logout audit entry', async () => {
-      const user: SessionUser = { id: 1, username: 'admin', roleId: 7, mustChangePassword: false };
+      const user: SessionUser = {
+        id: '00000000-0000-0000-0000-0000000000a1',
+        username: 'admin',
+        roleId: '00000000-0000-0000-0000-0000000000a7',
+        mustChangePassword: false,
+      };
       await service.logout(user, ctx);
       expect(prisma.authAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ action: AuthAction.LOGOUT }) }),

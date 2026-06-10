@@ -13,8 +13,8 @@ export type RouteWithSites = Prisma.RouteGetPayload<{ include: typeof routeInclu
 
 export interface ListRoutesFilter extends PageParams {
   readonly category?: RouteCategory;
-  readonly originSiteId?: number;
-  readonly destinationSiteId?: number;
+  readonly originSiteId?: string;
+  readonly destinationSiteId?: string;
 }
 
 @Injectable()
@@ -46,17 +46,17 @@ export class RoutesRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<RouteWithSites | null> {
+  findById(id: string): Promise<RouteWithSites | null> {
     return this.prisma.route.findFirst({ where: { id, deletedAt: null }, include: routeInclude });
   }
 
   /** Active duplicate of the unique (origin, destination, category) triple. */
   findDuplicate(
-    originSiteId: number,
-    destinationSiteId: number,
+    originSiteId: string,
+    destinationSiteId: string,
     category: RouteCategory,
-    excludeId?: number,
-  ): Promise<{ id: number } | null> {
+    excludeId?: string,
+  ): Promise<{ id: string } | null> {
     return this.prisma.route.findFirst({
       where: {
         originSiteId,
@@ -69,7 +69,7 @@ export class RoutesRepository {
     });
   }
 
-  siteExists(id: number): Promise<{ id: number } | null> {
+  siteExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.site.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
@@ -77,11 +77,11 @@ export class RoutesRepository {
     return this.prisma.route.create({ data, include: routeInclude });
   }
 
-  update(id: number, data: Prisma.RouteUpdateInput): Promise<RouteWithSites> {
+  update(id: string, data: Prisma.RouteUpdateInput): Promise<RouteWithSites> {
     return this.prisma.route.update({ where: { id }, data, include: routeInclude });
   }
 
-  softDelete(id: number): Promise<{ id: number }> {
+  softDelete(id: string): Promise<{ id: string }> {
     return this.prisma.route.update({
       where: { id },
       data: { deletedAt: new Date() },

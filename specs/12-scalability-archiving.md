@@ -49,7 +49,7 @@ archival. PostgreSQL declarative partitioning + `pg_partman` for automated rollo
 | `HaulAssignment` | `operationDate` (denormalized from `Haul`) | monthly | follows Trip |
 | `Haul` | `operationDate` (denormalized from `TransactionDay`) | monthly | follows Trip |
 | `TpaInboundLog` | `date` | monthly | weighbridge history |
-| `FuelQuota` | `validFrom` | yearly | lower volume, range lookups |
+| `DisposalPermit` | `validFrom` | yearly | lower volume, range lookups (was `FuelQuota`) |
 
 > **Schema note:** per [`03-data-model.md`](./03-data-model.md) §8, `Haul`, `HaulAssignment`, and `Trip` each have a denormalized,
 > non-null `operationDate DATE` (copied from the owning `TransactionDay.date`) as the **partition key**.

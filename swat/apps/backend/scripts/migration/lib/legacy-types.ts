@@ -137,7 +137,7 @@ export interface LegacyTripTemplate {
   MASTERTRAYEK_JUMLAHISIBBMDIAJUKAN: number | null;
 }
 
-export interface LegacyFuelQuota {
+export interface LegacyDisposalPermit {
   JATAHKITIR_ID: number;
   STATUSJATAHKITIR_ID: number;
   SPOT_ID: number;

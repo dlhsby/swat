@@ -38,7 +38,7 @@ function leg(target: string | null, actual: string | null): string {
 }
 
 export default function HaulBoardPage({ params }: { params: { id: string } }): JSX.Element {
-  const dayId = Number(params.id);
+  const dayId = params.id;
   const [day, setDay] = useState<TransactionDayDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);

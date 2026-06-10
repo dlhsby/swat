@@ -5,9 +5,9 @@ import { VehicleModelsService } from './models.service';
 
 function buildModel(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
-    applicationId: 1,
-    fuelId: 1,
+    id: '00000000-0000-0000-0000-000000000001',
+    applicationId: '00000000-0000-0000-0000-000000000001',
+    fuelId: '00000000-0000-0000-0000-000000000001',
     brand: 'Hino',
     fuelTankCapacity: 200,
     normalFuelRatio: 1,
@@ -15,8 +15,8 @@ function buildModel(overrides: Record<string, unknown> = {}): Record<string, unk
     maxNetLoad: 0,
     maxNetVolume: 0,
     wheelCount: 6,
-    application: { id: 1, name: 'Dump Truck' },
-    fuel: { id: 1, name: 'Solar' },
+    application: { id: '00000000-0000-0000-0000-000000000001', name: 'Dump Truck' },
+    fuel: { id: '00000000-0000-0000-0000-000000000001', name: 'Solar' },
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     ...overrides,
@@ -41,8 +41,10 @@ describe('VehicleModelsService', () => {
     repo = {
       list: jest.fn(),
       findById: jest.fn(),
-      applicationExists: jest.fn().mockResolvedValue({ id: 1 }),
-      fuelExists: jest.fn().mockResolvedValue({ id: 1 }),
+      applicationExists: jest
+        .fn()
+        .mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' }),
+      fuelExists: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' }),
       countVehicles: jest.fn().mockResolvedValue(0),
       create: jest.fn(),
       update: jest.fn(),
@@ -52,8 +54,8 @@ describe('VehicleModelsService', () => {
   });
 
   const dto = {
-    applicationId: 1,
-    fuelId: 1,
+    applicationId: '00000000-0000-0000-0000-000000000001',
+    fuelId: '00000000-0000-0000-0000-000000000001',
     brand: 'Hino',
     fuelTankCapacity: 200,
     normalTareWeight: 8000,
@@ -81,10 +83,14 @@ describe('VehicleModelsService', () => {
 
   it('404s on get/update and updates an existing model', async () => {
     repo.findById.mockResolvedValueOnce(null);
-    await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('00000000-0000-0000-0000-000000000009')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
     repo.findById.mockResolvedValue(buildModel());
     repo.update.mockResolvedValue(buildModel({ brand: 'Mitsubishi' }));
-    await expect(service.update(1, { brand: 'Mitsubishi' })).resolves.toMatchObject({
+    await expect(
+      service.update('00000000-0000-0000-0000-000000000001', { brand: 'Mitsubishi' }),
+    ).resolves.toMatchObject({
       brand: 'Mitsubishi',
     });
   });
@@ -92,9 +98,13 @@ describe('VehicleModelsService', () => {
   it('blocks deletion while referenced by vehicles, else deletes', async () => {
     repo.findById.mockResolvedValue(buildModel());
     repo.countVehicles.mockResolvedValueOnce(1);
-    await expect(service.remove(1)).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.remove('00000000-0000-0000-0000-000000000001')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
     repo.countVehicles.mockResolvedValueOnce(0);
-    repo.delete.mockResolvedValue({ id: 1 });
-    await expect(service.remove(1)).resolves.toEqual({ message: 'Model kendaraan telah dihapus.' });
+    repo.delete.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' });
+    await expect(service.remove('00000000-0000-0000-0000-000000000001')).resolves.toEqual({
+      message: 'Model kendaraan telah dihapus.',
+    });
   });
 });

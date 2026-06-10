@@ -88,7 +88,7 @@ export function InspectionDialog({
   onOpenChange,
   onSaved,
 }: InspectionDialogProps): JSX.Element {
-  const [vehicleId, setVehicleId] = useState<number | null>(null);
+  const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<ItemState[]>(defaultItems());
@@ -162,8 +162,8 @@ export function InspectionDialog({
             <div className="space-y-1.5">
               <Label required>Kendaraan</Label>
               <Select
-                value={vehicleId !== null ? String(vehicleId) : undefined}
-                onValueChange={(v) => setVehicleId(Number(v))}
+                value={vehicleId ?? undefined}
+                onValueChange={(v) => setVehicleId(v)}
                 disabled={editing !== null}
               >
                 <SelectTrigger>

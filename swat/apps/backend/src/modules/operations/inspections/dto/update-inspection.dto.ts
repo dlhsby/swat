@@ -3,12 +3,10 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
-  IsInt,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
-  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -23,12 +21,10 @@ export class UpdateInspectionDto {
   @Matches(DATE_REGEX, { message: 'Tanggal harus berformat YYYY-MM-DD' })
   date?: string;
 
-  @ApiPropertyOptional({ minimum: 1, description: 'Inspector (user id)' })
+  @ApiPropertyOptional({ description: 'Inspector (user id)' })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  inspectorId?: number;
+  @IsString()
+  inspectorId?: string;
 
   @ApiPropertyOptional({ maxLength: 512 })
   @IsOptional()

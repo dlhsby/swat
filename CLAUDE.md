@@ -53,10 +53,16 @@ From inner `swat/`:
 - Scope one package: `pnpm --filter @swat/backend run <script>`
 
 ## Gotchas
+- **Schema foundations:** All tables and columns use snake_case via Prisma `@@map`/`@map`; model names are
+  PascalCase, field names are camelCase. All primary keys are **UUID v7** (`String @id @db.Uuid @default(uuid(7))`).
+  `legacyId` (Int/BigInt, indexed, unique) is the numeric bridge for legacy data migration.
+- **Renamed entity:** `FuelQuota` → `DisposalPermit` (it is a TPA dumping permit, NOT fuel; buyer/payment deferred).
+  Enum: `FuelQuotaStatus` → `DisposalPermitStatus`. Permissions: `fuel-quota:*` → `disposal-permit:*`.
+  Routes: `/scheduling/fuel-quotas` → `/scheduling/disposal-permits`. UI label stays "Jatah Kitir".
 - **Partitioned tables** (`Trip`, `Haul`, `HaulAssignment`, `TpaInboundLog`) are converted to native
-  monthly RANGE partitions by a raw-SQL migration (`*_partition_transactions`). PKs are
-  `(operationDate, id)`; `legacyId` is a plain index. These are **migration-managed** — use
-  `prisma migrate deploy`, **never `migrate dev`**, or Prisma reports drift.
+  monthly RANGE partitions by a raw-SQL migration (`*_partition_transactions`). PKs are UUIDs (strings);
+  `legacyId` is a plain index. These are **migration-managed** — use `prisma migrate deploy`,
+  **never `migrate dev`**, or Prisma reports drift.
 - **Docker is NOT available** in this WSL distro. Phase 0 = "scaffold-all, defer live infra":
   code/lint/typecheck/build/test/prisma-validate verified locally; `docker compose`,
   `migrate deploy`, `db seed`, partition-pruning, MinIO/Redis live checks are the user's to run

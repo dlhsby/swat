@@ -11,7 +11,7 @@ const driverInclude = {
 export type DriverWithPool = Prisma.DriverGetPayload<{ include: typeof driverInclude }>;
 
 export interface ListDriversFilter extends PageParams {
-  readonly poolSiteId?: number;
+  readonly poolSiteId?: string;
   readonly employmentStatus?: EmploymentStatus;
   readonly search?: string;
 }
@@ -52,18 +52,18 @@ export class DriversRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<DriverWithPool | null> {
+  findById(id: string): Promise<DriverWithPool | null> {
     return this.prisma.driver.findFirst({ where: { id, deletedAt: null }, include: driverInclude });
   }
 
-  findByIdCard(idCardNumber: string): Promise<{ id: number } | null> {
+  findByIdCard(idCardNumber: string): Promise<{ id: string } | null> {
     return this.prisma.driver.findFirst({
       where: { idCardNumber, deletedAt: null },
       select: { id: true },
     });
   }
 
-  siteExists(id: number): Promise<{ id: number } | null> {
+  siteExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.site.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
@@ -71,11 +71,11 @@ export class DriversRepository {
     return this.prisma.driver.create({ data, include: driverInclude });
   }
 
-  update(id: number, data: Prisma.DriverUpdateInput): Promise<DriverWithPool> {
+  update(id: string, data: Prisma.DriverUpdateInput): Promise<DriverWithPool> {
     return this.prisma.driver.update({ where: { id }, data, include: driverInclude });
   }
 
-  softDelete(id: number): Promise<{ id: number }> {
+  softDelete(id: string): Promise<{ id: string }> {
     return this.prisma.driver.update({
       where: { id },
       data: { deletedAt: new Date() },

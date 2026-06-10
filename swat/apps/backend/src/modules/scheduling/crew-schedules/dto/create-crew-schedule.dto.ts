@@ -1,23 +1,20 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Matches, Min } from 'class-validator';
+import { IsOptional, IsString, IsUUID, Matches } from 'class-validator';
 
 import { PaginationQueryDto } from '../../../../common/dto/pagination-query.dto';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export class CreateCrewScheduleDto {
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Kendaraan wajib dipilih' })
-  @Min(1, { message: 'Kendaraan wajib dipilih' })
-  vehicleId!: number;
+  @ApiProperty({ format: 'uuid' })
+  @IsString()
+  @IsUUID()
+  vehicleId!: string;
 
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Pengemudi wajib dipilih' })
-  @Min(1, { message: 'Pengemudi wajib dipilih' })
-  driverId!: number;
+  @ApiProperty({ format: 'uuid' })
+  @IsString()
+  @IsUUID()
+  driverId!: string;
 
   @ApiProperty({ example: '05:00', description: 'Departure time (HH:mm)' })
   @IsString()
@@ -33,17 +30,15 @@ export class CreateCrewScheduleDto {
 export class UpdateCrewScheduleDto extends PartialType(CreateCrewScheduleDto) {}
 
 export class ListCrewSchedulesQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ minimum: 1 })
+  @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  vehicleId?: number;
+  @IsString()
+  @IsUUID()
+  vehicleId?: string;
 
-  @ApiPropertyOptional({ minimum: 1 })
+  @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  driverId?: number;
+  @IsString()
+  @IsUUID()
+  driverId?: string;
 }

@@ -12,8 +12,8 @@ const modelInclude = {
 export type VehicleModelWithRefs = Prisma.VehicleModelGetPayload<{ include: typeof modelInclude }>;
 
 export interface ListVehicleModelsFilter extends PageParams {
-  readonly applicationId?: number;
-  readonly fuelId?: number;
+  readonly applicationId?: string;
+  readonly fuelId?: string;
   readonly search?: string;
 }
 
@@ -47,19 +47,19 @@ export class VehicleModelsRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<VehicleModelWithRefs | null> {
+  findById(id: string): Promise<VehicleModelWithRefs | null> {
     return this.prisma.vehicleModel.findUnique({ where: { id }, include: modelInclude });
   }
 
-  applicationExists(id: number): Promise<{ id: number } | null> {
+  applicationExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.vehicleApplication.findUnique({ where: { id }, select: { id: true } });
   }
 
-  fuelExists(id: number): Promise<{ id: number } | null> {
+  fuelExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.fuel.findUnique({ where: { id }, select: { id: true } });
   }
 
-  countVehicles(id: number): Promise<number> {
+  countVehicles(id: string): Promise<number> {
     return this.prisma.vehicle.count({ where: { modelId: id, deletedAt: null } });
   }
 
@@ -67,11 +67,11 @@ export class VehicleModelsRepository {
     return this.prisma.vehicleModel.create({ data, include: modelInclude });
   }
 
-  update(id: number, data: Prisma.VehicleModelUpdateInput): Promise<VehicleModelWithRefs> {
+  update(id: string, data: Prisma.VehicleModelUpdateInput): Promise<VehicleModelWithRefs> {
     return this.prisma.vehicleModel.update({ where: { id }, data, include: modelInclude });
   }
 
-  delete(id: number): Promise<{ id: number }> {
+  delete(id: string): Promise<{ id: string }> {
     return this.prisma.vehicleModel.delete({ where: { id }, select: { id: true } });
   }
 }

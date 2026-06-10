@@ -19,11 +19,9 @@ import { MaintenanceItemDto } from './maintenance-item.dto';
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateMaintenanceDto {
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Kendaraan wajib dipilih' })
-  @Min(1, { message: 'Kendaraan wajib dipilih' })
-  vehicleId!: number;
+  @ApiProperty()
+  @IsString()
+  vehicleId!: string;
 
   @ApiProperty({ enum: MaintenanceType, default: MaintenanceType.SERVICE })
   @IsEnum(MaintenanceType)

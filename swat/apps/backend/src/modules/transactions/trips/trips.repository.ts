@@ -45,15 +45,15 @@ export type TripFull = Prisma.TripGetPayload<{ include: typeof fullInclude }>;
 export class TripsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findForRecording(id: bigint): Promise<TripForRecording | null> {
+  findForRecording(id: string): Promise<TripForRecording | null> {
     return this.prisma.trip.findUnique({ where: { id }, include: recordingInclude });
   }
 
-  findFull(id: bigint): Promise<TripFull | null> {
+  findFull(id: string): Promise<TripFull | null> {
     return this.prisma.trip.findUnique({ where: { id }, include: fullInclude });
   }
 
-  update(id: bigint, data: Prisma.TripUpdateInput): Promise<TripWithRefs> {
+  update(id: string, data: Prisma.TripUpdateInput): Promise<TripWithRefs> {
     return this.prisma.trip.update({ where: { id }, data, include: tripInclude });
   }
 }

@@ -15,10 +15,10 @@ export interface LoginResult {
 
 /** Full identity returned by `GET /auth/me`. */
 export interface MeResult {
-  readonly userId: number;
+  readonly userId: string;
   readonly username: string;
   readonly name: string;
-  readonly roleId: number;
+  readonly roleId: string;
   readonly roleName: string;
   readonly permissions: string[];
   readonly mustChangePassword: boolean;
@@ -26,7 +26,7 @@ export interface MeResult {
 
 /** Admin force-reset result; the temporary password is handed out of band. */
 export interface ForceResetResult {
-  readonly userId: number;
+  readonly userId: string;
   readonly username: string;
   readonly temporaryPassword: string;
 }

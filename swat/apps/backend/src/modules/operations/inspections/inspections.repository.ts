@@ -15,7 +15,7 @@ export type InspectionWithRefs = Prisma.VehicleInspectionGetPayload<{
 }>;
 
 export interface ListInspectionsFilter extends PageParams {
-  readonly vehicleId?: number;
+  readonly vehicleId?: string;
   readonly result?: InspectionResult;
   readonly date?: Date;
 }
@@ -50,11 +50,11 @@ export class InspectionsRepository {
     return { rows, total };
   }
 
-  findById(id: bigint): Promise<InspectionWithRefs | null> {
+  findById(id: string): Promise<InspectionWithRefs | null> {
     return this.prisma.vehicleInspection.findUnique({ where: { id }, include: inspectionInclude });
   }
 
-  vehicleExists(id: number): Promise<{ id: number } | null> {
+  vehicleExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.vehicle.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
@@ -62,7 +62,7 @@ export class InspectionsRepository {
     return this.prisma.vehicleInspection.create({ data, include: inspectionInclude });
   }
 
-  update(id: bigint, data: Prisma.VehicleInspectionUpdateInput): Promise<InspectionWithRefs> {
+  update(id: string, data: Prisma.VehicleInspectionUpdateInput): Promise<InspectionWithRefs> {
     return this.prisma.vehicleInspection.update({
       where: { id },
       data,
@@ -70,7 +70,7 @@ export class InspectionsRepository {
     });
   }
 
-  async delete(id: bigint): Promise<void> {
+  async delete(id: string): Promise<void> {
     await this.prisma.vehicleInspection.delete({ where: { id } });
   }
 }

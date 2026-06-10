@@ -1,28 +1,25 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FuelQuotaStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
+import { DisposalPermitStatus } from '@prisma/client';
+import { IsEnum, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-export class CreateFuelQuotaDto {
+export class CreateDisposalPermitDto {
   @ApiPropertyOptional({ maxLength: 50, description: 'Kitir code (auto/blank if omitted)' })
   @IsOptional()
   @IsString()
   @MaxLength(50)
   code?: string;
 
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Kendaraan wajib dipilih' })
-  @Min(1, { message: 'Kendaraan wajib dipilih' })
-  vehicleId!: number;
+  @ApiProperty({ format: 'uuid' })
+  @IsString()
+  @IsUUID()
+  vehicleId!: string;
 
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Lokasi wajib dipilih' })
-  @Min(1, { message: 'Lokasi wajib dipilih' })
-  siteId!: number;
+  @ApiProperty({ format: 'uuid' })
+  @IsString()
+  @IsUUID()
+  siteId!: string;
 
   @ApiProperty({ example: '2026-06-01', description: 'Issued date (YYYY-MM-DD)' })
   @IsString()
@@ -39,8 +36,8 @@ export class CreateFuelQuotaDto {
   @Matches(DATE_REGEX, { message: 'Tanggal harus berformat YYYY-MM-DD' })
   validTo!: string;
 
-  @ApiPropertyOptional({ enum: FuelQuotaStatus, default: FuelQuotaStatus.ACTIVE })
+  @ApiPropertyOptional({ enum: DisposalPermitStatus, default: DisposalPermitStatus.ACTIVE })
   @IsOptional()
-  @IsEnum(FuelQuotaStatus)
-  status?: FuelQuotaStatus;
+  @IsEnum(DisposalPermitStatus)
+  status?: DisposalPermitStatus;
 }

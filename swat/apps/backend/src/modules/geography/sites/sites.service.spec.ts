@@ -5,7 +5,7 @@ import { SitesService } from './sites.service';
 
 function buildSite(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
+    id: '550e8400-e29b-41d4-a716-446655440001',
     type: 'POOL',
     name: 'Pool Pusat',
     address: 'Surabaya',
@@ -48,8 +48,8 @@ describe('SitesService', () => {
 
   it('returns a single site', async () => {
     repo.findById.mockResolvedValue(buildSite({ latitude: -7.25, longitude: 112.75 }));
-    await expect(service.getById(1)).resolves.toMatchObject({
-      id: 1,
+    await expect(service.getById('550e8400-e29b-41d4-a716-446655440001')).resolves.toMatchObject({
+      id: '550e8400-e29b-41d4-a716-446655440001',
       latitude: -7.25,
       longitude: 112.75,
     });
@@ -57,7 +57,9 @@ describe('SitesService', () => {
 
   it('404s an unknown site', async () => {
     repo.findById.mockResolvedValue(null);
-    await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('550e8400-e29b-41d4-a716-446655440099')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   describe('create', () => {
@@ -92,15 +94,17 @@ describe('SitesService', () => {
   describe('update', () => {
     it('rejects when the resulting pair would be partial', async () => {
       repo.findById.mockResolvedValue(buildSite({ latitude: null, longitude: null }));
-      await expect(service.update(1, { latitude: -7.2 })).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', { latitude: -7.2 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('updates name', async () => {
       repo.findById.mockResolvedValue(buildSite());
       repo.update.mockResolvedValue(buildSite({ name: 'Renamed' }));
-      await expect(service.update(1, { name: 'Renamed' })).resolves.toMatchObject({
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', { name: 'Renamed' }),
+      ).resolves.toMatchObject({
         name: 'Renamed',
       });
     });
@@ -109,6 +113,8 @@ describe('SitesService', () => {
   it('soft-deletes', async () => {
     repo.findById.mockResolvedValue(buildSite());
     repo.softDelete.mockResolvedValue(buildSite());
-    await expect(service.remove(1)).resolves.toEqual({ message: 'Lokasi telah dihapus.' });
+    await expect(service.remove('550e8400-e29b-41d4-a716-446655440001')).resolves.toEqual({
+      message: 'Lokasi telah dihapus.',
+    });
   });
 });

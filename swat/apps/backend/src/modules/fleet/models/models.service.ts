@@ -16,10 +16,10 @@ import {
 import { VehicleModelsRepository, type VehicleModelWithRefs } from './models.repository';
 
 export interface VehicleModelDto {
-  readonly id: number;
-  readonly applicationId: number;
+  readonly id: string;
+  readonly applicationId: string;
   readonly applicationName: string;
-  readonly fuelId: number;
+  readonly fuelId: string;
   readonly fuelName: string;
   readonly brand: string;
   readonly fuelTankCapacity: number;
@@ -68,7 +68,7 @@ export class VehicleModelsService {
     return paginated(rows.map(toDto), total, query);
   }
 
-  async getById(id: number): Promise<VehicleModelDto> {
+  async getById(id: string): Promise<VehicleModelDto> {
     const model = await this.repo.findById(id);
     if (!model) {
       throw new NotFoundException('Model kendaraan tidak ditemukan.');
@@ -92,7 +92,7 @@ export class VehicleModelsService {
     return toDto(model);
   }
 
-  async update(id: number, dto: UpdateVehicleModelDto): Promise<VehicleModelDto> {
+  async update(id: string, dto: UpdateVehicleModelDto): Promise<VehicleModelDto> {
     await this.getById(id);
     if (dto.applicationId !== undefined || dto.fuelId !== undefined) {
       await this.assertRefsExist(dto.applicationId, dto.fuelId);
@@ -112,7 +112,7 @@ export class VehicleModelsService {
     return toDto(model);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     await this.getById(id);
     const vehicles = await this.repo.countVehicles(id);
     if (vehicles > 0) {
@@ -124,7 +124,7 @@ export class VehicleModelsService {
     return { message: 'Model kendaraan telah dihapus.' };
   }
 
-  private async assertRefsExist(applicationId?: number, fuelId?: number): Promise<void> {
+  private async assertRefsExist(applicationId?: string, fuelId?: string): Promise<void> {
     if (applicationId !== undefined) {
       const application = await this.repo.applicationExists(applicationId);
       if (!application) {

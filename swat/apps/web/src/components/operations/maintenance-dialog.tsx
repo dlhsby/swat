@@ -66,7 +66,7 @@ export function MaintenanceDialog({
   onOpenChange,
   onSaved,
 }: MaintenanceDialogProps): JSX.Element {
-  const [vehicleId, setVehicleId] = useState<number | null>(null);
+  const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [type, setType] = useState<MaintenanceTypeValue>('SERVICE');
   const [date, setDate] = useState('');
   const [odometer, setOdometer] = useState<number | ''>('');
@@ -157,8 +157,8 @@ export function MaintenanceDialog({
             <div className="space-y-1.5">
               <Label required>Kendaraan</Label>
               <Select
-                value={vehicleId !== null ? String(vehicleId) : undefined}
-                onValueChange={(v) => setVehicleId(Number(v))}
+                value={vehicleId ?? undefined}
+                onValueChange={(v) => setVehicleId(v)}
                 disabled={readOnly || editing !== null}
               >
                 <SelectTrigger>

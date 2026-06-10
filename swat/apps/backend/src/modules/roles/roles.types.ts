@@ -1,13 +1,13 @@
 export interface PermissionDto {
-  readonly id: number;
+  readonly id: string;
   readonly key: string;
   readonly description: string;
 }
 
 export interface RoleDto {
-  readonly id: number;
+  readonly id: string;
   readonly name: string;
-  readonly permissionIds: number[];
+  readonly permissionIds: string[];
   readonly userCount: number;
   readonly createdAt: string;
   readonly updatedAt: string;

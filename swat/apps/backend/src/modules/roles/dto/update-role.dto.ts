@@ -2,11 +2,10 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayUnique,
   IsArray,
-  IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
-  Min,
   MinLength,
 } from 'class-validator';
 
@@ -18,11 +17,10 @@ export class UpdateRoleDto {
   @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional({ type: [Number], description: 'Replacement set of permission ids' })
+  @ApiPropertyOptional({ type: [String], description: 'Replacement set of permission ids' })
   @IsOptional()
   @IsArray()
   @ArrayUnique()
-  @IsInt({ each: true, message: 'Izin tidak valid' })
-  @Min(1, { each: true })
-  permissionIds?: number[];
+  @IsUUID(undefined, { each: true, message: 'Izin tidak valid' })
+  permissionIds?: string[];
 }

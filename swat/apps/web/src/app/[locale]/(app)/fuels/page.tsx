@@ -15,7 +15,7 @@ import { formatRupiah } from '@/lib/format';
 import { type FuelCategoryDto, type FuelDto, fuelCategoriesApi, fuelsApi } from '@/lib/master-api';
 
 const schema = z.object({
-  fuelCategoryId: z.coerce.number().int().min(1, 'Kategori bahan bakar wajib dipilih'),
+  fuelCategoryId: z.string().uuid('Kategori bahan bakar wajib dipilih'),
   name: z.string().min(1, 'Nama wajib diisi').max(100, 'Nama maksimal 100 karakter'),
   pricePerLiter: z.coerce
     .number()
@@ -23,7 +23,7 @@ const schema = z.object({
     .min(0, 'Harga tidak boleh negatif'),
 });
 type Values = z.infer<typeof schema>;
-const defaults: Values = { fuelCategoryId: 0, name: '', pricePerLiter: 0 };
+const defaults: Values = { fuelCategoryId: '', name: '', pricePerLiter: 0 };
 const toForm = (r: FuelDto): Values => ({
   fuelCategoryId: r.fuelCategoryId,
   name: r.name,
@@ -89,7 +89,6 @@ export default function FuelsPage(): JSX.Element {
           name="fuelCategoryId"
           label="Kategori"
           required
-          numeric
           options={categories}
           placeholder="Pilih kategori"
         />

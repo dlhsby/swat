@@ -20,7 +20,7 @@ export type TripWithRefs = Prisma.TripGetPayload<{ include: typeof tripInclude }
 export interface TripDto {
   readonly id: string;
   readonly haulAssignmentId: string;
-  readonly routeId: number | null;
+  readonly routeId: string | null;
   readonly routeCategory: string | null;
   readonly routeLabel: string | null;
   readonly name: string;
@@ -36,9 +36,9 @@ export interface TripDto {
   readonly wasteVolume: number | null;
   readonly fuelRequestedLiters: number | null;
   readonly fuelApprovedLiters: number | null;
-  readonly recordedById: number | null;
+  readonly recordedById: string | null;
   readonly recordedByName: string | null;
-  readonly verifiedById: number | null;
+  readonly verifiedById: string | null;
   readonly verifiedByName: string | null;
   readonly verifiedAt: string | null;
   readonly realizationEntryAt: string | null;
@@ -51,8 +51,8 @@ const decimalToNumber = (value: Prisma.Decimal | null): number | null =>
 
 export function toTripDto(trip: TripWithRefs): TripDto {
   return {
-    id: trip.id.toString(),
-    haulAssignmentId: trip.haulAssignmentId.toString(),
+    id: trip.id,
+    haulAssignmentId: trip.haulAssignmentId,
     routeId: trip.routeId,
     routeCategory: trip.route?.category ?? null,
     routeLabel: trip.route

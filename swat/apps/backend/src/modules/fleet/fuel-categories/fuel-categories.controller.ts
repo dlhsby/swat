@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -38,7 +28,7 @@ export class FuelCategoriesController {
   @Get(':id')
   @RequirePermissions('fuel-category:read')
   @ApiOperation({ summary: 'Get a fuel category by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<FuelCategoryDto> {
+  getById(@Param('id') id: string): Promise<FuelCategoryDto> {
     return this.fuelCategories.getById(id);
   }
 
@@ -52,17 +42,14 @@ export class FuelCategoriesController {
   @Patch(':id')
   @RequirePermissions('fuel-category:update')
   @ApiOperation({ summary: 'Update a fuel category' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateFuelCategoryDto,
-  ): Promise<FuelCategoryDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateFuelCategoryDto): Promise<FuelCategoryDto> {
     return this.fuelCategories.update(id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('fuel-category:delete')
   @ApiOperation({ summary: 'Delete a fuel category (blocked while referenced)' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.fuelCategories.remove(id);
   }
 }

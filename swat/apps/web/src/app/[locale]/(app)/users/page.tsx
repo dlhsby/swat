@@ -39,7 +39,7 @@ import { type CreatedUserDto, type UserDto, usersApi } from '@/lib/users-api';
 const schema = z.object({
   name: z.string().min(1, 'Nama wajib diisi').max(100),
   username: z.string().min(3, 'Nama pengguna minimal 3 karakter').max(100),
-  roleId: z.coerce.number().int().min(1, 'Peran wajib dipilih'),
+  roleId: z.string().uuid('Peran wajib dipilih'),
 });
 type Values = z.infer<typeof schema>;
 
@@ -63,7 +63,7 @@ export default function UsersPage(): JSX.Element {
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', username: '', roleId: 0 },
+    defaultValues: { name: '', username: '', roleId: '' },
   });
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function UsersPage(): JSX.Element {
       form.reset(
         editing
           ? { name: editing.name, username: editing.username, roleId: editing.roleId }
-          : { name: '', username: '', roleId: 0 },
+          : { name: '', username: '', roleId: '' },
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -247,7 +247,6 @@ export default function UsersPage(): JSX.Element {
                 name="roleId"
                 label="Peran"
                 required
-                numeric
                 options={roleOptions}
                 placeholder="Pilih peran"
               />

@@ -1,28 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { type FuelQuotaStatus, type Prisma } from '@prisma/client';
+import { type DisposalPermitStatus, type Prisma } from '@prisma/client';
 
 import { toSkipTake, type PageParams } from '../../../common/pagination';
 import { PrismaService } from '../../prisma/prisma.service';
 
-const quotaInclude = {
+const permitInclude = {
   vehicle: { select: { id: true, plateNumber: true } },
   site: { select: { id: true, name: true } },
-} satisfies Prisma.FuelQuotaInclude;
+} satisfies Prisma.DisposalPermitInclude;
 
-export type FuelQuotaWithRefs = Prisma.FuelQuotaGetPayload<{ include: typeof quotaInclude }>;
+export type DisposalPermitWithRefs = Prisma.DisposalPermitGetPayload<{
+  include: typeof permitInclude;
+}>;
 
-export interface ListFuelQuotasFilter extends PageParams {
-  readonly vehicleId?: number;
-  readonly siteId?: number;
-  readonly status?: FuelQuotaStatus;
+export interface ListDisposalPermitsFilter extends PageParams {
+  readonly vehicleId?: string;
+  readonly siteId?: string;
+  readonly status?: DisposalPermitStatus;
   readonly activeOn?: Date;
 }
 
 @Injectable()
-export class FuelQuotasRepository {
+export class DisposalPermitsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private listWhere(filter: ListFuelQuotasFilter): Prisma.FuelQuotaWhereInput {
+  private listWhere(filter: ListDisposalPermitsFilter): Prisma.DisposalPermitWhereInput {
     return {
       ...(filter.vehicleId ? { vehicleId: filter.vehicleId } : {}),
       ...(filter.siteId ? { siteId: filter.siteId } : {}),
@@ -33,39 +35,41 @@ export class FuelQuotasRepository {
     };
   }
 
-  async list(filter: ListFuelQuotasFilter): Promise<{ rows: FuelQuotaWithRefs[]; total: number }> {
+  async list(
+    filter: ListDisposalPermitsFilter,
+  ): Promise<{ rows: DisposalPermitWithRefs[]; total: number }> {
     const where = this.listWhere(filter);
     const { skip, take } = toSkipTake(filter);
     const [rows, total] = await this.prisma.$transaction([
-      this.prisma.fuelQuota.findMany({
+      this.prisma.disposalPermit.findMany({
         where,
-        include: quotaInclude,
+        include: permitInclude,
         orderBy: { id: 'desc' },
         skip,
         take,
       }),
-      this.prisma.fuelQuota.count({ where }),
+      this.prisma.disposalPermit.count({ where }),
     ]);
     return { rows, total };
   }
 
-  findById(id: bigint): Promise<FuelQuotaWithRefs | null> {
-    return this.prisma.fuelQuota.findUnique({ where: { id }, include: quotaInclude });
+  findById(id: string): Promise<DisposalPermitWithRefs | null> {
+    return this.prisma.disposalPermit.findUnique({ where: { id }, include: permitInclude });
   }
 
-  vehicleExists(id: number): Promise<{ id: number } | null> {
+  vehicleExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.vehicle.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
-  siteExists(id: number): Promise<{ id: number } | null> {
+  siteExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.site.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
-  create(data: Prisma.FuelQuotaCreateInput): Promise<FuelQuotaWithRefs> {
-    return this.prisma.fuelQuota.create({ data, include: quotaInclude });
+  create(data: Prisma.DisposalPermitCreateInput): Promise<DisposalPermitWithRefs> {
+    return this.prisma.disposalPermit.create({ data, include: permitInclude });
   }
 
-  async allVehicleIds(): Promise<Set<number>> {
+  async allVehicleIds(): Promise<Set<string>> {
     const rows = await this.prisma.vehicle.findMany({
       where: { deletedAt: null },
       select: { id: true },
@@ -73,7 +77,7 @@ export class FuelQuotasRepository {
     return new Set(rows.map((r) => r.id));
   }
 
-  async allSiteIds(): Promise<Set<number>> {
+  async allSiteIds(): Promise<Set<string>> {
     const rows = await this.prisma.site.findMany({
       where: { deletedAt: null },
       select: { id: true },
@@ -85,7 +89,7 @@ export class FuelQuotasRepository {
     if (legacyIds.length === 0) {
       return new Set();
     }
-    const rows = await this.prisma.fuelQuota.findMany({
+    const rows = await this.prisma.disposalPermit.findMany({
       where: { legacyId: { in: legacyIds } },
       select: { legacyId: true },
     });
@@ -95,21 +99,21 @@ export class FuelQuotasRepository {
   /** Idempotent by legacyId — used by the bulk importer. */
   async upsertByLegacyId(
     legacyId: number,
-    create: Prisma.FuelQuotaCreateInput,
-    update: Prisma.FuelQuotaUpdateInput,
+    create: Prisma.DisposalPermitCreateInput,
+    update: Prisma.DisposalPermitUpdateInput,
   ): Promise<void> {
-    await this.prisma.fuelQuota.upsert({
+    await this.prisma.disposalPermit.upsert({
       where: { legacyId },
       create: { ...create, legacyId },
       update,
     });
   }
 
-  async createPlain(data: Prisma.FuelQuotaCreateInput): Promise<void> {
-    await this.prisma.fuelQuota.create({ data });
+  async createPlain(data: Prisma.DisposalPermitCreateInput): Promise<void> {
+    await this.prisma.disposalPermit.create({ data });
   }
 
-  update(id: bigint, data: Prisma.FuelQuotaUpdateInput): Promise<FuelQuotaWithRefs> {
-    return this.prisma.fuelQuota.update({ where: { id }, data, include: quotaInclude });
+  update(id: string, data: Prisma.DisposalPermitUpdateInput): Promise<DisposalPermitWithRefs> {
+    return this.prisma.disposalPermit.update({ where: { id }, data, include: permitInclude });
   }
 }

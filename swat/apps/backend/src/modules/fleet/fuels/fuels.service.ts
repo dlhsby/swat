@@ -12,8 +12,8 @@ import { type CreateFuelDto, type ListFuelsQueryDto, type UpdateFuelDto } from '
 import { FuelsRepository, type FuelWithCategory } from './fuels.repository';
 
 export interface FuelDto {
-  readonly id: number;
-  readonly fuelCategoryId: number;
+  readonly id: string;
+  readonly fuelCategoryId: string;
   readonly fuelCategoryName: string;
   readonly name: string;
   readonly pricePerLiter: number;
@@ -47,7 +47,7 @@ export class FuelsService {
     return paginated(rows.map(toDto), total, query);
   }
 
-  async getById(id: number): Promise<FuelDto> {
+  async getById(id: string): Promise<FuelDto> {
     const fuel = await this.repo.findById(id);
     if (!fuel) {
       throw new NotFoundException('Bahan bakar tidak ditemukan.');
@@ -66,7 +66,7 @@ export class FuelsService {
     return toDto(fuel);
   }
 
-  async update(id: number, dto: UpdateFuelDto): Promise<FuelDto> {
+  async update(id: string, dto: UpdateFuelDto): Promise<FuelDto> {
     const current = await this.getById(id);
     if (dto.fuelCategoryId !== undefined) {
       await this.assertCategoryExists(dto.fuelCategoryId);
@@ -88,7 +88,7 @@ export class FuelsService {
     return toDto(fuel);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     await this.getById(id);
     const models = await this.repo.countModels(id);
     if (models > 0) {
@@ -98,7 +98,7 @@ export class FuelsService {
     return { message: 'Bahan bakar telah dihapus.' };
   }
 
-  private async assertCategoryExists(id: number): Promise<void> {
+  private async assertCategoryExists(id: string): Promise<void> {
     const category = await this.repo.categoryExists(id);
     if (!category) {
       throw new BadRequestException('Kategori bahan bakar tidak ditemukan.');
@@ -106,9 +106,9 @@ export class FuelsService {
   }
 
   private async assertNameAvailable(
-    fuelCategoryId: number,
+    fuelCategoryId: string,
     name: string,
-    exceptId?: number,
+    exceptId?: string,
   ): Promise<void> {
     const existing = await this.repo.findByNameInCategory(fuelCategoryId, name);
     if (existing && existing.id !== exceptId) {

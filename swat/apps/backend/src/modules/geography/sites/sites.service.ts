@@ -10,7 +10,7 @@ import { type UpdateSiteDto } from './dto/update-site.dto';
 import { SitesRepository } from './sites.repository';
 
 export interface SiteDto {
-  readonly id: number;
+  readonly id: string;
   readonly type: Site['type'];
   readonly name: string;
   readonly address: string;
@@ -58,7 +58,7 @@ export class SitesService {
     return paginated(rows.map(toSiteDto), total, query);
   }
 
-  async getById(id: number): Promise<SiteDto> {
+  async getById(id: string): Promise<SiteDto> {
     const site = await this.repo.findById(id);
     if (!site) {
       throw new NotFoundException('Lokasi tidak ditemukan.');
@@ -78,7 +78,7 @@ export class SitesService {
     return toSiteDto(site);
   }
 
-  async update(id: number, dto: UpdateSiteDto): Promise<SiteDto> {
+  async update(id: string, dto: UpdateSiteDto): Promise<SiteDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Lokasi tidak ditemukan.');
@@ -107,7 +107,7 @@ export class SitesService {
     return toSiteDto(site);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Lokasi tidak ditemukan.');

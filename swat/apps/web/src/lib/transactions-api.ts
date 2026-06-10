@@ -28,7 +28,7 @@ export function getTransactionDayByDate(date: string): Promise<TransactionDayDto
   return apiClient.get<TransactionDayDto>(`/transaction-days?date=${encodeURIComponent(date)}`);
 }
 
-export function getTransactionDayById(id: number): Promise<TransactionDayDto> {
+export function getTransactionDayById(id: string): Promise<TransactionDayDto> {
   return apiClient.get<TransactionDayDto>(`/transaction-days/${id}`);
 }
 
@@ -36,7 +36,7 @@ export function initializeToday(): Promise<DailyInitResult> {
   return apiClient.post<DailyInitResult>('/transaction-days/initialize-today');
 }
 
-export function updateDayStatus(id: number, status: DayStatus): Promise<TransactionDayDto> {
+export function updateDayStatus(id: string, status: DayStatus): Promise<TransactionDayDto> {
   return apiClient.patch<TransactionDayDto>(`/transaction-days/${id}`, { status });
 }
 

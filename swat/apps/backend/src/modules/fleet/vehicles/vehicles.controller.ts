@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -36,7 +26,7 @@ export class VehiclesController {
   @Get(':id')
   @RequirePermissions('vehicle:read')
   @ApiOperation({ summary: 'Get a vehicle by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<VehicleDto> {
+  getById(@Param('id') id: string): Promise<VehicleDto> {
     return this.vehicles.getById(id);
   }
 
@@ -50,17 +40,14 @@ export class VehiclesController {
   @Patch(':id')
   @RequirePermissions('vehicle:update')
   @ApiOperation({ summary: 'Update a vehicle (odometer is monotonic)' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateVehicleDto,
-  ): Promise<VehicleDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateVehicleDto): Promise<VehicleDto> {
     return this.vehicles.update(id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('vehicle:delete')
   @ApiOperation({ summary: 'Soft-delete a vehicle' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.vehicles.remove(id);
   }
 }

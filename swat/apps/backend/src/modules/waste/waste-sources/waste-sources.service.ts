@@ -10,7 +10,7 @@ import { type UpdateWasteSourceDto } from './dto/update-waste-source.dto';
 import { WasteSourcesRepository } from './waste-sources.repository';
 
 export interface WasteSourceDto {
-  readonly id: number;
+  readonly id: string;
   readonly code: string;
   readonly name: string;
   readonly notes: string | null;
@@ -44,7 +44,7 @@ export class WasteSourcesService {
     return paginated(rows.map(toDto), total, query);
   }
 
-  async getById(id: number): Promise<WasteSourceDto> {
+  async getById(id: string): Promise<WasteSourceDto> {
     const source = await this.repo.findById(id);
     if (!source) {
       throw new NotFoundException('Sumber sampah tidak ditemukan.');
@@ -65,7 +65,7 @@ export class WasteSourcesService {
     return toDto(source);
   }
 
-  async update(id: number, dto: UpdateWasteSourceDto): Promise<WasteSourceDto> {
+  async update(id: string, dto: UpdateWasteSourceDto): Promise<WasteSourceDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Sumber sampah tidak ditemukan.');
@@ -84,7 +84,7 @@ export class WasteSourcesService {
     return toDto(source);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Sumber sampah tidak ditemukan.');

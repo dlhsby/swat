@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -34,7 +24,7 @@ export class SitesController {
   @Get(':id')
   @RequirePermissions('site:read')
   @ApiOperation({ summary: 'Get a site by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<SiteDto> {
+  getById(@Param('id') id: string): Promise<SiteDto> {
     return this.sites.getById(id);
   }
 
@@ -48,14 +38,14 @@ export class SitesController {
   @Patch(':id')
   @RequirePermissions('site:update')
   @ApiOperation({ summary: 'Update a site' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateSiteDto): Promise<SiteDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateSiteDto): Promise<SiteDto> {
     return this.sites.update(id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('site:delete')
   @ApiOperation({ summary: 'Soft-delete a site' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.sites.remove(id);
   }
 }

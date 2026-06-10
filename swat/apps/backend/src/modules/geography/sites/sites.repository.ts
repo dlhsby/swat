@@ -38,7 +38,7 @@ export class SitesRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<Site | null> {
+  findById(id: string): Promise<Site | null> {
     return this.prisma.site.findFirst({ where: { id, deletedAt: null } });
   }
 
@@ -46,11 +46,11 @@ export class SitesRepository {
     return this.prisma.site.create({ data });
   }
 
-  update(id: number, data: Prisma.SiteUpdateInput): Promise<Site> {
+  update(id: string, data: Prisma.SiteUpdateInput): Promise<Site> {
     return this.prisma.site.update({ where: { id }, data });
   }
 
-  softDelete(id: number): Promise<Site> {
+  softDelete(id: string): Promise<Site> {
     return this.prisma.site.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 }

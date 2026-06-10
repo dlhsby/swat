@@ -7,16 +7,16 @@ import { TransactionDaysService } from './transaction-days.service';
 
 function buildDay(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
+    id: 'day-1',
     date: new Date('2026-06-08T00:00:00Z'),
     status: 'IN_PROGRESS',
     createdAt: new Date('2026-06-08T03:00:00Z'),
     updatedAt: new Date('2026-06-08T03:00:00Z'),
     hauls: [
       {
-        id: 100n,
-        vehicleId: 7,
-        vehicle: { id: 7, plateNumber: 'L 1 AB' },
+        id: 'haul-100',
+        vehicleId: 'vehicle-7',
+        vehicle: { id: 'vehicle-7', plateNumber: 'L 1 AB' },
         status: 'IN_PROGRESS',
         operationDate: new Date('2026-06-08T00:00:00Z'),
         assignments: [],
@@ -50,21 +50,21 @@ describe('TransactionDaysService', () => {
     );
   });
 
-  it('returns the full tree by id with BigInt ids serialized to strings', async () => {
+  it('returns the full tree by id with ids as strings', async () => {
     repo.findById.mockResolvedValue(buildDay());
-    const result = await service.getById(1);
+    const result = await service.getById('day-1');
     expect(result.date).toBe('2026-06-08');
-    expect(result.hauls[0]).toMatchObject({ id: '100', vehiclePlate: 'L 1 AB' });
+    expect(result.hauls[0]).toMatchObject({ id: 'haul-100', vehiclePlate: 'L 1 AB' });
   });
 
   it('404s an unknown id', async () => {
     repo.findById.mockResolvedValue(null);
-    await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('day-9')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('looks a day up by date', async () => {
     repo.findByDate.mockResolvedValue(buildDay());
-    await expect(service.getByDate('2026-06-08')).resolves.toMatchObject({ id: 1 });
+    await expect(service.getByDate('2026-06-08')).resolves.toMatchObject({ id: 'day-1' });
     expect(repo.findByDate).toHaveBeenCalledWith(new Date('2026-06-08T00:00:00.000Z'));
   });
 
@@ -77,7 +77,9 @@ describe('TransactionDaysService', () => {
     it('blocks marking DONE while hauls are still open', async () => {
       repo.findById.mockResolvedValue(buildDay());
       repo.countOpenHauls.mockResolvedValue(2);
-      await expect(service.updateStatus(1, 'DONE')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.updateStatus('day-1', 'DONE')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
       expect(repo.updateStatus).not.toHaveBeenCalled();
     });
 
@@ -85,17 +87,17 @@ describe('TransactionDaysService', () => {
       repo.findById.mockResolvedValue(buildDay());
       repo.countOpenHauls.mockResolvedValue(0);
       repo.updateStatus.mockResolvedValue(buildDay({ status: 'DONE' }));
-      const result = await service.updateStatus(1, 'DONE');
+      const result = await service.updateStatus('day-1', 'DONE');
       expect(result.status).toBe('DONE');
-      expect(repo.updateStatus).toHaveBeenCalledWith(1, 'DONE');
+      expect(repo.updateStatus).toHaveBeenCalledWith('day-1', 'DONE');
     });
 
     it('reopens (IN_PROGRESS) without the open-haul guard', async () => {
       repo.findById.mockResolvedValue(buildDay({ status: 'DONE' }));
       repo.updateStatus.mockResolvedValue(buildDay({ status: 'IN_PROGRESS' }));
-      await service.updateStatus(1, 'IN_PROGRESS');
+      await service.updateStatus('day-1', 'IN_PROGRESS');
       expect(repo.countOpenHauls).not.toHaveBeenCalled();
-      expect(repo.updateStatus).toHaveBeenCalledWith(1, 'IN_PROGRESS');
+      expect(repo.updateStatus).toHaveBeenCalledWith('day-1', 'IN_PROGRESS');
     });
   });
 

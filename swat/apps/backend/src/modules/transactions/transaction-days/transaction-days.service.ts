@@ -15,7 +15,7 @@ import {
 
 export interface HaulDto {
   readonly id: string;
-  readonly vehicleId: number;
+  readonly vehicleId: string;
   readonly vehiclePlate: string;
   readonly status: string;
   readonly operationDate: string;
@@ -23,7 +23,7 @@ export interface HaulDto {
 }
 
 export interface TransactionDayDto {
-  readonly id: number;
+  readonly id: string;
   readonly date: string;
   readonly status: string;
   readonly hauls: HaulDto[];
@@ -37,7 +37,7 @@ function toDto(day: TransactionDayWithTree): TransactionDayDto {
     date: day.date.toISOString().slice(0, 10),
     status: day.status,
     hauls: day.hauls.map((haul) => ({
-      id: haul.id.toString(),
+      id: haul.id,
       vehicleId: haul.vehicleId,
       vehiclePlate: haul.vehicle.plateNumber,
       status: haul.status,
@@ -56,7 +56,7 @@ export class TransactionDaysService {
     private readonly dailyInit: DailyInitService,
   ) {}
 
-  async getById(id: number): Promise<TransactionDayDto> {
+  async getById(id: string): Promise<TransactionDayDto> {
     const day = await this.repo.findById(id);
     if (!day) {
       throw new NotFoundException('Hari transaksi tidak ditemukan.');
@@ -72,7 +72,7 @@ export class TransactionDaysService {
     return toDto(day);
   }
 
-  async updateStatus(id: number, status: DayStatus): Promise<TransactionDayDto> {
+  async updateStatus(id: string, status: DayStatus): Promise<TransactionDayDto> {
     await this.getById(id);
     if (status === 'DONE') {
       const open = await this.repo.countOpenHauls(id);

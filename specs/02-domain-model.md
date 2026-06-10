@@ -47,7 +47,7 @@ TransactionDay (1) ──< Haul (1) ──< HaulAssignment (1) ──< Trip
 |--------|---------|----------------|---------------|
 | **CrewSchedule** | Standing vehicle+driver pairing with depart/return times | `departTime`, `returnTime` (time-of-day) | belongs to `Vehicle`, `Driver`; has many `TripTemplate` |
 | **TripTemplate** | A planned leg in the standing schedule | `targetTime` (time-of-day), `fuelRequestedLiters` | belongs to `CrewSchedule`, `Route` |
-| **FuelQuota** (*kitir*) | Authorization that a vehicle may operate against a site over a date range; the `code` field is matched at the TPA weighbridge during weighing | `code`, `issuedAt`, `validFrom`, `validTo`, `status`, `createdById`/`updatedById` | belongs to `Vehicle`, `Site` |
+| **DisposalPermit** (*kitir*) | TPA dumping permit: authorization that a vehicle may operate against a site over a date range; the `code` field is a QR scanned at the TPA weighbridge | `code`, `issuedAt`, `validFrom`, `validTo`, `status`, `createdById`/`updatedById` | belongs to `Vehicle`, `Site` |
 
 **Daily auto-initiation** (legacy `autoinisiasi.bat` → `transaksi/autoinisiasi.php`, a cron):
 at the start of each operational day, the system creates a `TransactionDay` and seeds `Haul` +
@@ -141,7 +141,7 @@ IN_PROGRESS (Belum Selesai) ──> DONE (Selesai)
 - A `Haul`/`HaulAssignment` is `DONE` when its trips are complete; a `TransactionDay` is `DONE`
   when all its hauls are done. (Verification of trips is independent.)
 
-### FuelQuotaStatus
+### DisposalPermitStatus
 ```
 ACTIVE (Berlaku) ──> INACTIVE (Tidak Berlaku)   // also implicitly expired when validTo < today
 ```
@@ -165,9 +165,9 @@ PENDING_APPROVAL (Belum Disetujui) ──> APPROVED (Disetujui)
 5. **One haul per vehicle per day:** unique (`operationDate`, `transactionDayId`, `vehicleId`)
    (the `operationDate` is denormalized from `TransactionDay.date` for partitioning).
 6. **One transaction day per date:** `TransactionDay.date` is unique.
-7. **Fuel quota validity:** a vehicle operating against a TPA/site must have a `FuelQuota` whose
-   `validFrom ≤ date ≤ validTo` and `status = ACTIVE`. This quota's identifier is the **kitir** the
-   weighbridge matches.
+7. **Disposal permit validity:** a vehicle operating against a TPA/site must have a `DisposalPermit` whose
+   `validFrom ≤ date ≤ validTo` and `status = ACTIVE`. This permit's identifier is the **kitir** the
+   weighbridge QR scans.
 8. **Route endpoints distinct:** `Route.originSiteId ≠ destinationSiteId`.
 9. **Driver license validity:** warn when a driver assigned has no non-expired `DriverLicense`.
 10. **Verification lock:** a `VERIFIED` trip is immutable except by an authorized supervisor (audit

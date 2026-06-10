@@ -17,10 +17,10 @@ import {
 } from './dto/create-crew-schedule.dto';
 
 export interface CrewScheduleDto {
-  readonly id: number;
-  readonly vehicleId: number;
+  readonly id: string;
+  readonly vehicleId: string;
   readonly vehiclePlate: string;
-  readonly driverId: number;
+  readonly driverId: string;
   readonly driverName: string;
   readonly departTime: string;
   readonly returnTime: string;
@@ -60,7 +60,7 @@ export class CrewSchedulesService {
     return paginated(rows.map(toDto), total, query);
   }
 
-  async getById(id: number): Promise<CrewScheduleDto> {
+  async getById(id: string): Promise<CrewScheduleDto> {
     const schedule = await this.repo.findById(id);
     if (!schedule) {
       throw new NotFoundException('Jadwal kru tidak ditemukan.');
@@ -85,7 +85,7 @@ export class CrewSchedulesService {
     return toDto(schedule);
   }
 
-  async update(id: number, dto: UpdateCrewScheduleDto): Promise<CrewScheduleDto> {
+  async update(id: string, dto: UpdateCrewScheduleDto): Promise<CrewScheduleDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Jadwal kru tidak ditemukan.');
@@ -114,7 +114,7 @@ export class CrewSchedulesService {
     return toDto(schedule);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     await this.getById(id);
     await this.repo.delete(id);
     return { message: 'Jadwal kru telah dihapus.' };
@@ -126,7 +126,7 @@ export class CrewSchedulesService {
     }
   }
 
-  private async assertRefsExist(vehicleId: number, driverId: number): Promise<void> {
+  private async assertRefsExist(vehicleId: string, driverId: string): Promise<void> {
     const [vehicle, driver] = await Promise.all([
       this.repo.vehicleExists(vehicleId),
       this.repo.driverExists(driverId),

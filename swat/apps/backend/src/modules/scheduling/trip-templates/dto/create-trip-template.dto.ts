@@ -1,15 +1,14 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsString, Matches, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsUUID, Matches, Min } from 'class-validator';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export class CreateTripTemplateDto {
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Rute wajib dipilih' })
-  @Min(1, { message: 'Rute wajib dipilih' })
-  routeId!: number;
+  @ApiProperty({ format: 'uuid' })
+  @IsString()
+  @IsUUID()
+  routeId!: string;
 
   @ApiProperty({ example: '06:30', description: 'Target time (HH:mm)' })
   @IsString()

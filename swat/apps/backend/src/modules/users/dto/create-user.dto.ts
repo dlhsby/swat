@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty({ minLength: 3, maxLength: 100 })
@@ -15,9 +14,7 @@ export class CreateUserDto {
   @MaxLength(100)
   name!: string;
 
-  @ApiProperty({ description: 'Role id', minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Peran wajib dipilih' })
-  @Min(1, { message: 'Peran wajib dipilih' })
-  roleId!: number;
+  @ApiProperty({ description: 'Role id (UUID)' })
+  @IsUUID(undefined, { message: 'Peran wajib dipilih' })
+  roleId!: string;
 }

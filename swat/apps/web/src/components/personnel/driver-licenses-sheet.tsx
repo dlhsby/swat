@@ -101,7 +101,7 @@ export function DriverLicensesSheet({
     setSaving(true);
     try {
       await createDriverLicense(driverId, {
-        licenseClassId: Number(classId),
+        licenseClassId: classId,
         licenseNumber: number,
         expiry,
       });

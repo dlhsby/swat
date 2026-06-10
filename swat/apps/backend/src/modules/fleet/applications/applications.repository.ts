@@ -28,18 +28,18 @@ export class ApplicationsRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<VehicleApplication | null> {
+  findById(id: string): Promise<VehicleApplication | null> {
     return this.prisma.vehicleApplication.findUnique({ where: { id } });
   }
 
-  findByName(name: string): Promise<{ id: number } | null> {
+  findByName(name: string): Promise<{ id: string } | null> {
     return this.prisma.vehicleApplication.findFirst({
       where: { name: { equals: name, mode: 'insensitive' } },
       select: { id: true },
     });
   }
 
-  countModels(id: number): Promise<number> {
+  countModels(id: string): Promise<number> {
     return this.prisma.vehicleModel.count({ where: { applicationId: id } });
   }
 
@@ -47,11 +47,11 @@ export class ApplicationsRepository {
     return this.prisma.vehicleApplication.create({ data });
   }
 
-  update(id: number, data: Prisma.VehicleApplicationUpdateInput): Promise<VehicleApplication> {
+  update(id: string, data: Prisma.VehicleApplicationUpdateInput): Promise<VehicleApplication> {
     return this.prisma.vehicleApplication.update({ where: { id }, data });
   }
 
-  delete(id: number): Promise<{ id: number }> {
+  delete(id: string): Promise<{ id: string }> {
     return this.prisma.vehicleApplication.delete({ where: { id }, select: { id: true } });
   }
 }

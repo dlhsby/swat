@@ -244,7 +244,7 @@ Examples:
 **Scheduling:**
 - `crew-schedule:read`, `crew-schedule:create`, `crew-schedule:update`, `crew-schedule:delete`
 - `trip-template:read`, `trip-template:create`, `trip-template:update`, `trip-template:delete`
-- `fuel-quota:read`, `fuel-quota:create`, `fuel-quota:update`, `fuel-quota:delete`
+- `disposal-permit:read`, `disposal-permit:create`, `disposal-permit:update`, `disposal-permit:delete`
 
 **Transactions:**
 - `transaction-day:read`, `transaction-day:manage` (initiate/complete day)
@@ -285,7 +285,7 @@ Examples:
 | Administrasi Data | DataAdmin | `*:read`, `*:create`, `*:update`; `trip:*`; `transaction-day:manage` | Full CRUD for master data & transactions |
 | Checker | Checker | `vehicle:read`, `driver:read`, `trip:read`, `trip:verify` | Verify trips post-entry |
 | Operator Pool | PoolOperator | `vehicle:read`, `driver:read`, `crew-schedule:read`, `trip:read`, `trip:update` | Record trip actuals at pool |
-| Petugas SPBU | FuelStationOperator | `fuel-quota:read`, `trip:record-fuel` | Record fuel fills |
+| Petugas SPBU | FuelStationOperator | `disposal-permit:read`, `trip:record-fuel` | Record fuel fills |
 | Petugas TPS | TpsOperator | `site:read`, `route:read`, `trip:record-pickup` | Record pickups at TPS |
 | Petugas TPA | TpaOperator | `site:read`, `trip:record-disposal` | Record weighing at TPA |
 | Kepala Dinas | DirectorDinas | `*:read`, `report:export`, `transaction-day:read` | View-only + exports |

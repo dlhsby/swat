@@ -47,8 +47,8 @@ const schema = z.object({
       /^[A-Za-z]{1,2}\s?\d{1,4}\s?[A-Za-z]{1,3}$/,
       'Format nomor polisi tidak valid (contoh: L 1234 AB)',
     ),
-  modelId: z.coerce.number().int().min(1, 'Model wajib dipilih'),
-  poolSiteId: z.coerce.number().int().min(1, 'Pool wajib dipilih'),
+  modelId: z.string().uuid('Model wajib dipilih'),
+  poolSiteId: z.string().uuid('Pool wajib dipilih'),
   status: z.enum(['GOOD', 'MINOR_DAMAGE', 'MAJOR_DAMAGE', 'LOST']),
   manufactureYear: z.coerce.number().int().min(1900, 'Tahun tidak valid').max(2100).optional(),
   chassisNumber: z.string().min(1, 'Nomor rangka wajib diisi').max(100),
@@ -63,8 +63,8 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
   plateNumber: '',
-  modelId: 0,
-  poolSiteId: 0,
+  modelId: '',
+  poolSiteId: '',
   status: 'GOOD',
   manufactureYear: undefined,
   chassisNumber: '',
@@ -186,7 +186,6 @@ export default function VehiclesPage(): JSX.Element {
             name="modelId"
             label="Merek/Model"
             required
-            numeric
             options={models}
             placeholder="Pilih model"
           />
@@ -194,7 +193,6 @@ export default function VehiclesPage(): JSX.Element {
             name="poolSiteId"
             label="Pool"
             required
-            numeric
             options={pools}
             placeholder="Pilih pool"
           />

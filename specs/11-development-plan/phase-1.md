@@ -533,30 +533,30 @@ Deliver a production-ready operational system with complete RBAC, all master-dat
   - [ ] GET /crew-schedules/:id/trip-templates → 200, list.
   - [ ] Tests ≥85%; lint/typecheck clean.
 
-#### T-122. FuelQuota (kitir) CRUD (TDD)
+#### T-122. DisposalPermit (kitir) CRUD (TDD)
 - **Size:** M · **Coverage:** ≥85%
 - **Depends on:** T-112, T-117
 - **Files:**
-  - `apps/backend/src/modules/scheduling/fuel-quotas/fuel-quotas.controller.ts` (create)
-  - `apps/backend/src/modules/scheduling/fuel-quotas/fuel-quotas.service.ts` (create)
-  - `apps/backend/src/modules/scheduling/fuel-quotas/fuel-quotas.repository.ts` (create)
-  - `apps/backend/src/modules/scheduling/fuel-quotas/dto/create-fuel-quota.dto.ts` (create)
-  - `packages/schemas/src/fuel-quota.schema.ts` (create)
-  - `apps/backend/test/fuel-quotas.e2e-spec.ts` (create)
+  - `apps/backend/src/modules/scheduling/disposal-permits/disposal-permits.controller.ts` (create)
+  - `apps/backend/src/modules/scheduling/disposal-permits/disposal-permits.service.ts` (create)
+  - `apps/backend/src/modules/scheduling/disposal-permits/disposal-permits.repository.ts` (create)
+  - `apps/backend/src/modules/scheduling/disposal-permits/dto/create-disposal-permit.dto.ts` (create)
+  - `packages/schemas/src/disposal-permit.schema.ts` (create)
+  - `apps/backend/test/disposal-permits.e2e-spec.ts` (create)
 - **Steps:**
   1. **Test (RED):**
-     - POST /fuel-quotas { vehicleId, siteId, issuedAt, validFrom, validTo }.
+     - POST /disposal-permits { vehicleId, siteId, issuedAt, validFrom, validTo }.
      - Validators: vehicle + site exist, validFrom ≤ validTo, issuedAt ≤ validTo.
-     - Response includes `id` (the **kitir code** TPA matches against).
-     - GET /fuel-quotas (filter by vehicle, site, date, status).
-     - PATCH /fuel-quotas/:id { status, validTo } (extend or revoke).
+     - Response includes `id` (UUID v7; the **kitir QR code** scanned at TPA).
+     - GET /disposal-permits (filter by vehicle, site, date, status).
+     - PATCH /disposal-permits/:id { status, validTo } (extend or revoke).
   2. **Implement (GREEN):** Service validates FKs + date constraints.
-  3. **Note:** id is `BigInt` (for matching against large ID range from legacy).
+  3. **Note:** Foundational schema uses UUID v7 PKs + `legacyId` numeric bridge. All IDs are strings (UUIDs).
 - **Acceptance criteria:**
-  - [ ] POST /fuel-quotas → 201, quota created, id returned (BigInt).
+  - [ ] POST /disposal-permits → 201, permit created, id returned (UUID string).
   - [ ] validFrom > validTo → 400.
-  - [ ] GET /fuel-quotas?vehicleId=5&status=ACTIVE → 200, filtered.
-  - [ ] PATCH /fuel-quotas/:id { status: INACTIVE } → 200.
+  - [ ] GET /disposal-permits?vehicleId=uuid&status=ACTIVE → 200, filtered.
+  - [ ] PATCH /disposal-permits/:id { status: INACTIVE } → 200.
   - [ ] Tests ≥85%; lint/typecheck clean.
 
 ---
@@ -1762,7 +1762,7 @@ All legacy data (2013–present) migrated into partitioned PostgreSQL, reconcile
 | T-119 | 1.5 | WasteSource CRUD | S |
 | T-120 | 1.6 | CrewSchedule CRUD (TDD) | M |
 | T-121 | 1.6 | TripTemplate CRUD (TDD) | M |
-| T-122 | 1.6 | FuelQuota (kitir) CRUD (TDD) | M |
+| T-122 | 1.6 | DisposalPermit (kitir) CRUD (TDD) | M |
 | T-123 | 1.7 | TransactionDay auto-init job (TDD) | M |
 | T-124 | 1.7 | TransactionDay CRUD endpoints | S |
 | T-125 | 1.8 | Record depart (HaulAssignment depart) | M |

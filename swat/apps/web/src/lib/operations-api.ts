@@ -18,11 +18,11 @@ export interface InspectionItemView {
 
 export interface InspectionDto {
   id: string;
-  vehicleId: number;
+  vehicleId: string;
   vehiclePlate: string;
   vehicleBrand: string;
   date: string;
-  inspectorId: number | null;
+  inspectorId: string | null;
   inspectorName: string | null;
   result: InspectionResultValue;
   passedCount: number;
@@ -44,7 +44,7 @@ export interface MaintenanceItemView {
 export interface MaintenanceDto {
   id: string;
   code: string | null;
-  vehicleId: number;
+  vehicleId: string;
   vehiclePlate: string;
   vehicleBrand: string;
   type: MaintenanceTypeValue;
@@ -64,9 +64,9 @@ export interface RefuelDto {
   id: string;
   operationDate: string;
   status: TripStatusValue;
-  vehicleId: number;
+  vehicleId: string;
   vehiclePlate: string;
-  fuelId: number | null;
+  fuelId: string | null;
   fuelName: string | null;
   pricePerLiter: number | null;
   requestedLiters: number | null;
@@ -85,11 +85,11 @@ export interface BulkImportResult {
   errors: ReadonlyArray<{ row: number; reason: string }>;
 }
 
-export interface BulkFuelQuotaRow {
+export interface BulkDisposalPermitRow {
   legacyId?: number;
   code?: string;
-  vehicleId: number;
-  siteId: number;
+  vehicleId: string;
+  siteId: string;
   validFrom: string;
   validTo: string;
   status?: 'ACTIVE' | 'INACTIVE';
@@ -108,9 +108,9 @@ export function listRefuels(query = '?limit=100'): Promise<RefuelDto[]> {
   return apiClient.get<RefuelDto[]>(`/refuels${query}`);
 }
 
-export function bulkImportFuelQuotas(body: {
+export function bulkImportDisposalPermits(body: {
   strategy: 'UPSERT' | 'SKIP';
-  rows: BulkFuelQuotaRow[];
+  rows: BulkDisposalPermitRow[];
 }): Promise<BulkImportResult> {
-  return apiClient.post<BulkImportResult>('/fuel-quotas/bulk-import', body);
+  return apiClient.post<BulkImportResult>('/disposal-permits/bulk-import', body);
 }

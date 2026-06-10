@@ -22,7 +22,7 @@ export interface MonthlyTonnageRow {
 }
 
 export interface TonnageBySourceRow {
-  readonly wasteSourceId: number;
+  readonly wasteSourceId: string;
   readonly code: string;
   readonly name: string;
   readonly totalTonnageKg: number;
@@ -30,7 +30,7 @@ export interface TonnageBySourceRow {
 }
 
 export interface TonnageBySiteRow {
-  readonly siteId: number;
+  readonly siteId: string;
   readonly name: string;
   readonly type: string;
   readonly totalTonnageKg: number;
@@ -38,7 +38,7 @@ export interface TonnageBySiteRow {
 }
 
 export interface FuelConsumptionRow {
-  readonly vehicleId: number;
+  readonly vehicleId: string;
   readonly plateNumber: string;
   readonly fuelApprovedLiters: number;
   readonly fuelRequestedLiters: number;
@@ -47,14 +47,14 @@ export interface FuelConsumptionRow {
 }
 
 export interface FuelByTypeRow {
-  readonly fuelId: number;
+  readonly fuelId: string;
   readonly fuelName: string;
   readonly totalApprovedLiters: number;
   readonly totalRequestedLiters: number;
 }
 
 export interface RouteActivityRow {
-  readonly routeId: number;
+  readonly routeId: string;
   readonly category: string;
   readonly originSiteName: string;
   readonly destinationSiteName: string;
@@ -67,7 +67,7 @@ export interface TripSummaryRow {
   readonly operationDate: string;
   readonly name: string;
   readonly status: string;
-  readonly routeId: number | null;
+  readonly routeId: string | null;
   readonly netWeightKg: number | null;
   readonly plateNumber: string;
 }

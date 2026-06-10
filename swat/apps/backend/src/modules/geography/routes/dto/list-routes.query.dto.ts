@@ -1,7 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { RouteCategory } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { IsEnum, IsString, IsOptional } from 'class-validator';
 
 import { PaginationQueryDto } from '../../../../common/dto/pagination-query.dto';
 
@@ -11,17 +10,13 @@ export class ListRoutesQueryDto extends PaginationQueryDto {
   @IsEnum(RouteCategory)
   category?: RouteCategory;
 
-  @ApiPropertyOptional({ minimum: 1 })
+  @ApiPropertyOptional()
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  originSiteId?: number;
+  @IsString()
+  originSiteId?: string;
 
-  @ApiPropertyOptional({ minimum: 1 })
+  @ApiPropertyOptional()
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  destinationSiteId?: number;
+  @IsString()
+  destinationSiteId?: string;
 }

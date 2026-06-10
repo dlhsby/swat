@@ -1,7 +1,7 @@
 import {
   mapDayStatus,
   mapEmploymentStatus,
-  mapFuelQuotaStatus,
+  mapDisposalPermitStatus,
   mapMaintenanceStatus,
   mapRouteCategory,
   mapSiteType,
@@ -27,9 +27,9 @@ describe('legacy enum mappers', () => {
   it('maps employment status', () => {
     expect(mapEmploymentStatus(2)).toBe('PNS');
   });
-  it('maps fuel-quota + maintenance status', () => {
-    expect(mapFuelQuotaStatus(1)).toBe('ACTIVE');
-    expect(mapFuelQuotaStatus(2)).toBe('INACTIVE');
+  it('maps disposal-permit + maintenance status', () => {
+    expect(mapDisposalPermitStatus(1)).toBe('ACTIVE');
+    expect(mapDisposalPermitStatus(2)).toBe('INACTIVE');
     expect(mapMaintenanceStatus(2)).toBe('APPROVED');
   });
   it('maps day vs trip status (trip has VERIFIED)', () => {

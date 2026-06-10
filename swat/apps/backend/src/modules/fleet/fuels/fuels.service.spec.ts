@@ -5,11 +5,11 @@ import { FuelsService } from './fuels.service';
 
 function buildFuel(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
-    fuelCategoryId: 1,
+    id: '00000000-0000-0000-0000-000000000001',
+    fuelCategoryId: '00000000-0000-0000-0000-000000000001',
     name: 'Solar',
     pricePerLiter: 6800,
-    fuelCategory: { id: 1, name: 'Bersubsidi' },
+    fuelCategory: { id: '00000000-0000-0000-0000-000000000001', name: 'Bersubsidi' },
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     ...overrides,
@@ -34,7 +34,7 @@ describe('FuelsService', () => {
     repo = {
       list: jest.fn(),
       findById: jest.fn(),
-      categoryExists: jest.fn().mockResolvedValue({ id: 1 }),
+      categoryExists: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' }),
       countModels: jest.fn().mockResolvedValue(0),
       findByNameInCategory: jest.fn().mockResolvedValue(null),
       create: jest.fn(),
@@ -44,7 +44,11 @@ describe('FuelsService', () => {
     service = new FuelsService(repo as unknown as FuelsRepository);
   });
 
-  const dto = { fuelCategoryId: 1, name: 'Solar', pricePerLiter: 6800 };
+  const dto = {
+    fuelCategoryId: '00000000-0000-0000-0000-000000000001',
+    name: 'Solar',
+    pricePerLiter: 6800,
+  };
 
   it('lists with the category name joined', async () => {
     repo.list.mockResolvedValue({ rows: [buildFuel()], total: 1 });
@@ -63,16 +67,20 @@ describe('FuelsService', () => {
   });
 
   it('rejects a duplicate name within the same category', async () => {
-    repo.findByNameInCategory.mockResolvedValue({ id: 2 });
+    repo.findByNameInCategory.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000002' });
     await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('404s on get and updates price', async () => {
     repo.findById.mockResolvedValueOnce(null);
-    await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('00000000-0000-0000-0000-000000000009')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
     repo.findById.mockResolvedValue(buildFuel());
     repo.update.mockResolvedValue(buildFuel({ pricePerLiter: 7000 }));
-    await expect(service.update(1, { pricePerLiter: 7000 })).resolves.toMatchObject({
+    await expect(
+      service.update('00000000-0000-0000-0000-000000000001', { pricePerLiter: 7000 }),
+    ).resolves.toMatchObject({
       pricePerLiter: 7000,
     });
   });
@@ -80,17 +88,23 @@ describe('FuelsService', () => {
   it('rejects a missing category on update', async () => {
     repo.findById.mockResolvedValue(buildFuel());
     repo.categoryExists.mockResolvedValue(null);
-    await expect(service.update(1, { fuelCategoryId: 99 })).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.update('00000000-0000-0000-0000-000000000001', {
+        fuelCategoryId: '00000000-0000-0000-0000-000000000099',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('blocks deletion while referenced by models, else deletes', async () => {
     repo.findById.mockResolvedValue(buildFuel());
     repo.countModels.mockResolvedValueOnce(2);
-    await expect(service.remove(1)).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.remove('00000000-0000-0000-0000-000000000001')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
     repo.countModels.mockResolvedValueOnce(0);
-    repo.delete.mockResolvedValue({ id: 1 });
-    await expect(service.remove(1)).resolves.toEqual({ message: 'Bahan bakar telah dihapus.' });
+    repo.delete.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' });
+    await expect(service.remove('00000000-0000-0000-0000-000000000001')).resolves.toEqual({
+      message: 'Bahan bakar telah dihapus.',
+    });
   });
 });

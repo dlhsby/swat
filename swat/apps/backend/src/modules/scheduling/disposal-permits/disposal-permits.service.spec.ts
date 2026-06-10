@@ -1,29 +1,29 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { FuelQuotaStatus } from '@prisma/client';
+import { DisposalPermitStatus } from '@prisma/client';
 
-import { BulkImportStrategy } from './dto/bulk-import-fuel-quotas.dto';
-import { type FuelQuotasRepository } from './fuel-quotas.repository';
-import { FuelQuotasService } from './fuel-quotas.service';
+import { type DisposalPermitsRepository } from './disposal-permits.repository';
+import { DisposalPermitsService } from './disposal-permits.service';
+import { BulkImportStrategy } from './dto/bulk-import-disposal-permits.dto';
 
-function buildQuota(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function buildPermit(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 42n,
+    id: '00000000-0000-0000-0000-000000000042',
     code: 'KT-202606-0042',
-    vehicleId: 1,
-    siteId: 2,
-    status: FuelQuotaStatus.ACTIVE,
+    vehicleId: '00000000-0000-0000-0000-000000000001',
+    siteId: '00000000-0000-0000-0000-000000000002',
+    status: DisposalPermitStatus.ACTIVE,
     issuedAt: new Date('2026-06-01T00:00:00Z'),
     validFrom: new Date('2026-06-01T00:00:00Z'),
     validTo: new Date('2026-06-30T00:00:00Z'),
-    vehicle: { id: 1, plateNumber: 'L 1 AB' },
-    site: { id: 2, name: 'SPBU' },
+    vehicle: { id: '00000000-0000-0000-0000-000000000001', plateNumber: 'L 1 AB' },
+    site: { id: '00000000-0000-0000-0000-000000000002', name: 'SPBU' },
     createdAt: new Date('2026-06-01T00:00:00Z'),
     updatedAt: new Date('2026-06-01T00:00:00Z'),
     ...overrides,
   };
 }
 
-describe('FuelQuotasService', () => {
+describe('DisposalPermitsService', () => {
   let repo: {
     list: jest.Mock;
     findById: jest.Mock;
@@ -37,79 +37,95 @@ describe('FuelQuotasService', () => {
     upsertByLegacyId: jest.Mock;
     createPlain: jest.Mock;
   };
-  let service: FuelQuotasService;
+  let service: DisposalPermitsService;
 
   beforeEach(() => {
     jest.clearAllMocks();
     repo = {
       list: jest.fn(),
       findById: jest.fn(),
-      vehicleExists: jest.fn().mockResolvedValue({ id: 1 }),
-      siteExists: jest.fn().mockResolvedValue({ id: 2 }),
+      vehicleExists: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' }),
+      siteExists: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000002' }),
       create: jest.fn(),
       update: jest.fn(),
-      allVehicleIds: jest.fn().mockResolvedValue(new Set([1, 2])),
-      allSiteIds: jest.fn().mockResolvedValue(new Set([2, 3])),
+      allVehicleIds: jest
+        .fn()
+        .mockResolvedValue(
+          new Set(['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002']),
+        ),
+      allSiteIds: jest
+        .fn()
+        .mockResolvedValue(
+          new Set(['00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003']),
+        ),
       existingLegacyIds: jest.fn().mockResolvedValue(new Set()),
       upsertByLegacyId: jest.fn().mockResolvedValue(undefined),
       createPlain: jest.fn().mockResolvedValue(undefined),
     };
-    service = new FuelQuotasService(repo as unknown as FuelQuotasRepository);
+    service = new DisposalPermitsService(repo as unknown as DisposalPermitsRepository);
   });
 
   const dto = {
-    vehicleId: 1,
-    siteId: 2,
+    vehicleId: '00000000-0000-0000-0000-000000000001',
+    siteId: '00000000-0000-0000-0000-000000000002',
     issuedAt: '2026-06-01',
     validFrom: '2026-06-01',
     validTo: '2026-06-30',
   };
 
   it('rejects validFrom after validTo', async () => {
-    await expect(service.create({ ...dto, validFrom: '2026-07-01' }, 1)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.create({ ...dto, validFrom: '2026-07-01' }, '00000000-0000-0000-0000-000000000007'),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects issuedAt after validTo', async () => {
-    await expect(service.create({ ...dto, issuedAt: '2026-07-15' }, 1)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    await expect(
+      service.create({ ...dto, issuedAt: '2026-07-15' }, '00000000-0000-0000-0000-000000000007'),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects a missing vehicle', async () => {
     repo.vehicleExists.mockResolvedValue(null);
-    await expect(service.create(dto, 1)).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.create(dto, '00000000-0000-0000-0000-000000000007'),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('creates a quota and serializes the BigInt id to a string', async () => {
-    repo.create.mockResolvedValue(buildQuota());
-    const result = await service.create(dto, 7);
-    expect(result.id).toBe('42');
+  it('creates a permit and returns the id as a string', async () => {
+    repo.create.mockResolvedValue(buildPermit());
+    const result = await service.create(dto, '00000000-0000-0000-0000-000000000007');
+    expect(result.id).toBe('00000000-0000-0000-0000-000000000042');
     expect(result.validTo).toBe('2026-06-30');
   });
 
-  it('404s an unknown quota', async () => {
+  it('404s an unknown permit', async () => {
     repo.findById.mockResolvedValue(null);
-    await expect(service.getById('99')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('00000000-0000-0000-0000-000000000099')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
-  it('rejects an invalid id string', async () => {
-    await expect(service.getById('not-a-number')).rejects.toBeInstanceOf(BadRequestException);
+  it('revokes a permit via status update', async () => {
+    repo.findById.mockResolvedValue(buildPermit());
+    repo.update.mockResolvedValue(buildPermit({ status: DisposalPermitStatus.INACTIVE }));
+    const result = await service.update(
+      '00000000-0000-0000-0000-000000000042',
+      { status: DisposalPermitStatus.INACTIVE },
+      '00000000-0000-0000-0000-000000000007',
+    );
+    expect(result.status).toBe(DisposalPermitStatus.INACTIVE);
   });
 
-  it('revokes a quota via status update', async () => {
-    repo.findById.mockResolvedValue(buildQuota());
-    repo.update.mockResolvedValue(buildQuota({ status: FuelQuotaStatus.INACTIVE }));
-    const result = await service.update('42', { status: FuelQuotaStatus.INACTIVE }, 7);
-    expect(result.status).toBe(FuelQuotaStatus.INACTIVE);
-  });
-
-  it('lists quotas with refs and pagination meta', async () => {
-    repo.list.mockResolvedValue({ rows: [buildQuota()], total: 1 });
+  it('lists permits with refs and pagination meta', async () => {
+    repo.list.mockResolvedValue({ rows: [buildPermit()], total: 1 });
     const result = await service.list({ page: 1, limit: 20 });
     expect(result.meta).toEqual({ total: 1, page: 1, limit: 20 });
-    expect(result.data[0]).toMatchObject({ id: '42', vehiclePlate: 'L 1 AB', siteName: 'SPBU' });
+    expect(result.data[0]).toMatchObject({
+      id: '00000000-0000-0000-0000-000000000042',
+      vehiclePlate: 'L 1 AB',
+      siteName: 'SPBU',
+    });
   });
 
   it('passes the activeOn date filter through to the repository', async () => {
@@ -118,38 +134,49 @@ describe('FuelQuotasService', () => {
     expect(repo.list).toHaveBeenCalledWith(expect.objectContaining({ activeOn: expect.any(Date) }));
   });
 
-  it('returns a single quota', async () => {
-    repo.findById.mockResolvedValue(buildQuota());
-    await expect(service.getById('42')).resolves.toMatchObject({
-      id: '42',
+  it('returns a single permit', async () => {
+    repo.findById.mockResolvedValue(buildPermit());
+    await expect(service.getById('00000000-0000-0000-0000-000000000042')).resolves.toMatchObject({
+      id: '00000000-0000-0000-0000-000000000042',
       code: 'KT-202606-0042',
     });
   });
 
-  it('404s update of an unknown quota', async () => {
+  it('404s update of an unknown permit', async () => {
     repo.findById.mockResolvedValue(null);
     await expect(
-      service.update('99', { status: FuelQuotaStatus.INACTIVE }, 7),
+      service.update(
+        '00000000-0000-0000-0000-000000000099',
+        { status: DisposalPermitStatus.INACTIVE },
+        '00000000-0000-0000-0000-000000000007',
+      ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('rejects extending validTo before validFrom', async () => {
-    repo.findById.mockResolvedValue(buildQuota());
-    await expect(service.update('42', { validTo: '2026-05-01' }, 7)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    repo.findById.mockResolvedValue(buildPermit());
+    await expect(
+      service.update(
+        '00000000-0000-0000-0000-000000000042',
+        { validTo: '2026-05-01' },
+        '00000000-0000-0000-0000-000000000007',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   describe('bulkImport', () => {
     const row = {
-      vehicleId: 1,
-      siteId: 2,
+      vehicleId: '00000000-0000-0000-0000-000000000001',
+      siteId: '00000000-0000-0000-0000-000000000002',
       validFrom: '2026-01-01',
       validTo: '2026-12-31',
     };
 
     it('creates new rows without a legacyId', async () => {
-      const result = await service.bulkImport({ rows: [row] }, 7);
+      const result = await service.bulkImport(
+        { rows: [row] },
+        '00000000-0000-0000-0000-000000000007',
+      );
       expect(result).toMatchObject({ total: 1, imported: 1, updated: 0, errorCount: 0 });
       expect(repo.createPlain).toHaveBeenCalledTimes(1);
     });
@@ -158,11 +185,11 @@ describe('FuelQuotasService', () => {
       const result = await service.bulkImport(
         {
           rows: [
-            { ...row, vehicleId: 99 },
-            { ...row, siteId: 88 },
+            { ...row, vehicleId: '00000000-0000-0000-0000-000000000099' },
+            { ...row, siteId: '00000000-0000-0000-0000-000000000088' },
           ],
         },
-        7,
+        '00000000-0000-0000-0000-000000000007',
       );
       expect(result.imported).toBe(0);
       expect(result.errors).toEqual([
@@ -174,7 +201,7 @@ describe('FuelQuotasService', () => {
     it('rejects validFrom after validTo', async () => {
       const result = await service.bulkImport(
         { rows: [{ ...row, validFrom: '2026-12-31', validTo: '2026-01-01' }] },
-        7,
+        '00000000-0000-0000-0000-000000000007',
       );
       expect(result.errorCount).toBe(1);
       expect(result.errors[0]?.reason).toContain('Berlaku dari');
@@ -184,7 +211,7 @@ describe('FuelQuotasService', () => {
       repo.existingLegacyIds.mockResolvedValue(new Set([500]));
       const result = await service.bulkImport(
         { strategy: BulkImportStrategy.SKIP, rows: [{ ...row, legacyId: 500 }] },
-        7,
+        '00000000-0000-0000-0000-000000000007',
       );
       expect(result).toMatchObject({ skipped: 1, updated: 0, imported: 0 });
       expect(repo.upsertByLegacyId).not.toHaveBeenCalled();
@@ -194,7 +221,7 @@ describe('FuelQuotasService', () => {
       repo.existingLegacyIds.mockResolvedValue(new Set([500]));
       const result = await service.bulkImport(
         { strategy: BulkImportStrategy.UPSERT, rows: [{ ...row, legacyId: 500 }] },
-        7,
+        '00000000-0000-0000-0000-000000000007',
       );
       expect(result).toMatchObject({ updated: 1, imported: 0, skipped: 0 });
       expect(repo.upsertByLegacyId).toHaveBeenCalledWith(
@@ -213,7 +240,7 @@ describe('FuelQuotasService', () => {
             { ...row, legacyId: 900 },
           ],
         },
-        7,
+        '00000000-0000-0000-0000-000000000007',
       );
       // First row creates (imported); the second sees it as existing → upsert.
       expect(result).toMatchObject({ imported: 1, updated: 1, errorCount: 0 });
@@ -230,7 +257,7 @@ describe('FuelQuotasService', () => {
             { ...row, legacyId: 901 },
           ],
         },
-        7,
+        '00000000-0000-0000-0000-000000000007',
       );
       expect(result).toMatchObject({ imported: 1, skipped: 1, errorCount: 0 });
     });

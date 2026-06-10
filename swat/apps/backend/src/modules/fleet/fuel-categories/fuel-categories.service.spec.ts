@@ -5,7 +5,7 @@ import { FuelCategoriesService } from './fuel-categories.service';
 
 function buildRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
+    id: '00000000-0000-0000-0000-000000000001',
     name: 'Bersubsidi',
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -51,29 +51,37 @@ describe('FuelCategoriesService', () => {
   });
 
   it('rejects a duplicate category name', async () => {
-    repo.findByName.mockResolvedValue({ id: 9 });
+    repo.findByName.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000009' });
     await expect(service.create({ name: 'Bersubsidi' })).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('404s unknown on get and update', async () => {
     repo.findById.mockResolvedValue(null);
-    await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
-    await expect(service.update(9, { name: 'x' })).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('00000000-0000-0000-0000-000000000009')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    await expect(
+      service.update('00000000-0000-0000-0000-000000000009', { name: 'x' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('updates an existing row', async () => {
     repo.findById.mockResolvedValue(buildRow());
     repo.update.mockResolvedValue(buildRow({ name: 'Edited' }));
-    await expect(service.update(1, { name: 'Edited' })).resolves.toMatchObject({ name: 'Edited' });
+    await expect(
+      service.update('00000000-0000-0000-0000-000000000001', { name: 'Edited' }),
+    ).resolves.toMatchObject({ name: 'Edited' });
   });
 
   it('blocks deletion while referenced by fuels, else deletes', async () => {
     repo.findById.mockResolvedValue(buildRow());
     repo.countFuels.mockResolvedValueOnce(3);
-    await expect(service.remove(1)).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.remove('00000000-0000-0000-0000-000000000001')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
     repo.countFuels.mockResolvedValueOnce(0);
-    repo.delete.mockResolvedValue({ id: 1 });
-    await expect(service.remove(1)).resolves.toEqual({
+    repo.delete.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' });
+    await expect(service.remove('00000000-0000-0000-0000-000000000001')).resolves.toEqual({
       message: 'Kategori bahan bakar telah dihapus.',
     });
   });

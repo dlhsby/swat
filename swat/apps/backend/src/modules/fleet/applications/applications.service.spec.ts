@@ -5,7 +5,7 @@ import { ApplicationsService } from './applications.service';
 
 function buildRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
+    id: '00000000-0000-0000-0000-000000000001',
     name: 'Compactor',
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -52,39 +52,49 @@ describe('ApplicationsService', () => {
   });
 
   it('rejects a duplicate name on create', async () => {
-    repo.findByName.mockResolvedValue({ id: 2 });
+    repo.findByName.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000002' });
     await expect(service.create({ name: 'Compactor' })).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('allows renaming to the same row but blocks colliding with another', async () => {
     repo.findById.mockResolvedValue(buildRow());
-    repo.findByName.mockResolvedValue({ id: 2 });
-    await expect(service.update(1, { name: 'Taken' })).rejects.toBeInstanceOf(ConflictException);
+    repo.findByName.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000002' });
+    await expect(
+      service.update('00000000-0000-0000-0000-000000000001', { name: 'Taken' }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('404s an unknown row on get/update', async () => {
     repo.findById.mockResolvedValue(null);
-    await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
-    await expect(service.update(9, { name: 'x' })).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('00000000-0000-0000-0000-000000000009')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    await expect(
+      service.update('00000000-0000-0000-0000-000000000009', { name: 'x' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('updates an existing row', async () => {
     repo.findById.mockResolvedValue(buildRow());
     repo.update.mockResolvedValue(buildRow({ name: 'Edited' }));
-    await expect(service.update(1, { name: 'Edited' })).resolves.toMatchObject({ name: 'Edited' });
+    await expect(
+      service.update('00000000-0000-0000-0000-000000000001', { name: 'Edited' }),
+    ).resolves.toMatchObject({ name: 'Edited' });
   });
 
   it('blocks deletion while referenced by models', async () => {
     repo.findById.mockResolvedValue(buildRow());
     repo.countModels.mockResolvedValue(2);
-    await expect(service.remove(1)).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.remove('00000000-0000-0000-0000-000000000001')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
     expect(repo.delete).not.toHaveBeenCalled();
   });
 
   it('deletes an unreferenced row', async () => {
     repo.findById.mockResolvedValue(buildRow());
-    repo.delete.mockResolvedValue({ id: 1 });
-    await expect(service.remove(1)).resolves.toEqual({
+    repo.delete.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' });
+    await expect(service.remove('00000000-0000-0000-0000-000000000001')).resolves.toEqual({
       message: 'Aplikasi kendaraan telah dihapus.',
     });
   });

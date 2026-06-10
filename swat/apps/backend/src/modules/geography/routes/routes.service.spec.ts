@@ -6,13 +6,13 @@ import { RoutesService } from './routes.service';
 
 function buildRoute(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
+    id: '550e8400-e29b-41d4-a716-446655440001',
     category: RouteCategory.DISPOSAL,
-    originSiteId: 1,
-    destinationSiteId: 2,
+    originSiteId: '550e8400-e29b-41d4-a716-446655440002',
+    destinationSiteId: '550e8400-e29b-41d4-a716-446655440003',
     distanceKm: 25,
-    originSite: { id: 1, name: 'TPS', type: 'TPS' },
-    destinationSite: { id: 2, name: 'TPA', type: 'TPA' },
+    originSite: { id: '550e8400-e29b-41d4-a716-446655440002', name: 'TPS', type: 'TPS' },
+    destinationSite: { id: '550e8400-e29b-41d4-a716-446655440003', name: 'TPA', type: 'TPA' },
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     ...overrides,
@@ -47,8 +47,8 @@ describe('RoutesService', () => {
 
   const dto = {
     category: RouteCategory.DISPOSAL,
-    originSiteId: 1,
-    destinationSiteId: 2,
+    originSiteId: '550e8400-e29b-41d4-a716-446655440002',
+    destinationSiteId: '550e8400-e29b-41d4-a716-446655440003',
     distanceKm: 25,
   };
 
@@ -61,16 +61,21 @@ describe('RoutesService', () => {
 
   it('returns a single route or 404', async () => {
     repo.findById.mockResolvedValueOnce(buildRoute());
-    await expect(service.getById(1)).resolves.toMatchObject({ id: 1, distanceKm: 25 });
+    await expect(service.getById('550e8400-e29b-41d4-a716-446655440001')).resolves.toMatchObject({
+      id: '550e8400-e29b-41d4-a716-446655440001',
+      distanceKm: 25,
+    });
     repo.findById.mockResolvedValueOnce(null);
-    await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('550e8400-e29b-41d4-a716-446655440099')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   describe('create', () => {
     it('rejects identical origin and destination', async () => {
-      await expect(service.create({ ...dto, destinationSiteId: 1 })).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.create({ ...dto, destinationSiteId: '550e8400-e29b-41d4-a716-446655440002' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('rejects a missing site', async () => {
@@ -79,7 +84,7 @@ describe('RoutesService', () => {
     });
 
     it('rejects a duplicate triple', async () => {
-      repo.findDuplicate.mockResolvedValue({ id: 9 });
+      repo.findDuplicate.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440099' });
       await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
     });
 
@@ -95,26 +100,34 @@ describe('RoutesService', () => {
   describe('update', () => {
     it('404s an unknown route', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.update(9, { distanceKm: 30 })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440099', { distanceKm: 30 }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('rejects an update that makes origin == destination', async () => {
       repo.findById.mockResolvedValue(buildRoute());
-      await expect(service.update(1, { destinationSiteId: 1 })).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', {
+          destinationSiteId: '550e8400-e29b-41d4-a716-446655440002',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('blocks an update that collides with another route', async () => {
       repo.findById.mockResolvedValue(buildRoute());
-      repo.findDuplicate.mockResolvedValue({ id: 2 });
-      await expect(service.update(1, { distanceKm: 30 })).rejects.toBeInstanceOf(ConflictException);
+      repo.findDuplicate.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440010' });
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', { distanceKm: 30 }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('updates the distance', async () => {
       repo.findById.mockResolvedValue(buildRoute());
       repo.update.mockResolvedValue(buildRoute({ distanceKm: 30 }));
-      await expect(service.update(1, { distanceKm: 30 })).resolves.toMatchObject({
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', { distanceKm: 30 }),
+      ).resolves.toMatchObject({
         distanceKm: 30,
       });
     });
@@ -123,13 +136,17 @@ describe('RoutesService', () => {
   describe('remove', () => {
     it('404s an unknown route', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.remove(9)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.remove('550e8400-e29b-41d4-a716-446655440099')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('soft-deletes a route', async () => {
       repo.findById.mockResolvedValue(buildRoute());
-      repo.softDelete.mockResolvedValue({ id: 1 });
-      await expect(service.remove(1)).resolves.toEqual({ message: 'Rute telah dihapus.' });
+      repo.softDelete.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440001' });
+      await expect(service.remove('550e8400-e29b-41d4-a716-446655440001')).resolves.toEqual({
+        message: 'Rute telah dihapus.',
+      });
     });
   });
 });

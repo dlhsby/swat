@@ -90,7 +90,7 @@ export function VehicleWasteSourcesSheet({
     }
     setSaving(true);
     try {
-      await addVehicleWasteSource(vehicleId, Number(pick));
+      await addVehicleWasteSource(vehicleId, pick);
       notify.success('Sumber sampah dihubungkan.');
       setPick('');
       await reload();

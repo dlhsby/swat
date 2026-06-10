@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -30,7 +30,7 @@ export class TransactionDaysController {
   @Get(':id')
   @RequirePermissions('transaction-day:read')
   @ApiOperation({ summary: 'Get a transaction day by id, with its full tree' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<TransactionDayDto> {
+  getById(@Param('id') id: string): Promise<TransactionDayDto> {
     return this.transactionDays.getById(id);
   }
 
@@ -38,7 +38,7 @@ export class TransactionDaysController {
   @RequirePermissions('transaction-day:manage')
   @ApiOperation({ summary: 'Update a transaction day status (mark DONE when hauls complete)' })
   updateStatus(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateTransactionDayDto,
   ): Promise<TransactionDayDto> {
     return this.transactionDays.updateStatus(id, dto.status);

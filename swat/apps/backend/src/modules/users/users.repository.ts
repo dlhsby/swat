@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export type UserWithRole = User & { role: Role };
 
 export interface ListUsersFilter extends PageParams {
-  readonly roleId?: number;
+  readonly roleId?: string;
   readonly search?: string;
 }
 
@@ -47,7 +47,7 @@ export class UsersRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<UserWithRole | null> {
+  findById(id: string): Promise<UserWithRole | null> {
     return this.prisma.user.findFirst({ where: { id, deletedAt: null }, include: { role: true } });
   }
 
@@ -59,7 +59,7 @@ export class UsersRepository {
   create(data: {
     username: string;
     name: string;
-    roleId: number;
+    roleId: string;
     passwordHash: string;
   }): Promise<UserWithRole> {
     return this.prisma.user.create({
@@ -68,15 +68,15 @@ export class UsersRepository {
     });
   }
 
-  update(id: number, data: Prisma.UserUpdateInput): Promise<UserWithRole> {
+  update(id: string, data: Prisma.UserUpdateInput): Promise<UserWithRole> {
     return this.prisma.user.update({ where: { id }, data, include: { role: true } });
   }
 
-  softDelete(id: number): Promise<User> {
+  softDelete(id: string): Promise<User> {
     return this.prisma.user.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
-  roleExists(roleId: number): Promise<Role | null> {
+  roleExists(roleId: string): Promise<Role | null> {
     return this.prisma.role.findUnique({ where: { id: roleId } });
   }
 }

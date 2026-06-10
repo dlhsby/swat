@@ -28,7 +28,7 @@ export const PILL_VARIANT_CLASSES: Readonly<Record<PillVariant, { badge: string;
 export type PillDomain =
   | 'trip'
   | 'day'
-  | 'fuelQuota'
+  | 'disposalPermit'
   | 'vehicle'
   | 'maintenance'
   | 'maintenanceType'
@@ -51,7 +51,7 @@ const STATUS_PILLS: Readonly<Record<PillDomain, DomainMap>> = {
     IN_PROGRESS: { label: 'Belum Selesai', variant: 'amber' },
     DONE: { label: 'Selesai', variant: 'blue' },
   },
-  fuelQuota: {
+  disposalPermit: {
     ACTIVE: { label: 'Berlaku', variant: 'green' },
     INACTIVE: { label: 'Tidak Berlaku', variant: 'slate' },
   },

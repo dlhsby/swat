@@ -46,7 +46,7 @@ export class UsersService {
     return paginated(rows.map(toUserDto), total, query);
   }
 
-  async getById(id: number): Promise<UserDto> {
+  async getById(id: string): Promise<UserDto> {
     const user = await this.repo.findById(id);
     if (!user) {
       throw new NotFoundException('Pengguna tidak ditemukan.');
@@ -82,7 +82,7 @@ export class UsersService {
     return { ...toUserDto(user), temporaryPassword };
   }
 
-  async update(id: number, dto: UpdateUserDto, actor: AuditActor): Promise<UserDto> {
+  async update(id: string, dto: UpdateUserDto, actor: AuditActor): Promise<UserDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Pengguna tidak ditemukan.');
@@ -96,7 +96,7 @@ export class UsersService {
 
     const updated = await this.repo.update(id, {
       ...(dto.name !== undefined ? { name: dto.name } : {}),
-      ...(dto.roleId !== undefined ? { role: { connect: { id: dto.roleId } } } : {}),
+      ...(dto.roleId !== undefined ? { roleId: dto.roleId } : {}),
     });
     await this.audit.record({
       actor,
@@ -107,7 +107,7 @@ export class UsersService {
     return toUserDto(updated);
   }
 
-  async remove(id: number, actor: AuditActor): Promise<{ message: string }> {
+  async remove(id: string, actor: AuditActor): Promise<{ message: string }> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Pengguna tidak ditemukan.');

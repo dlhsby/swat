@@ -26,18 +26,18 @@ export class FuelCategoriesRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<FuelCategory | null> {
+  findById(id: string): Promise<FuelCategory | null> {
     return this.prisma.fuelCategory.findUnique({ where: { id } });
   }
 
-  findByName(name: string): Promise<{ id: number } | null> {
+  findByName(name: string): Promise<{ id: string } | null> {
     return this.prisma.fuelCategory.findFirst({
       where: { name: { equals: name, mode: 'insensitive' } },
       select: { id: true },
     });
   }
 
-  countFuels(id: number): Promise<number> {
+  countFuels(id: string): Promise<number> {
     return this.prisma.fuel.count({ where: { fuelCategoryId: id } });
   }
 
@@ -45,11 +45,11 @@ export class FuelCategoriesRepository {
     return this.prisma.fuelCategory.create({ data });
   }
 
-  update(id: number, data: Prisma.FuelCategoryUpdateInput): Promise<FuelCategory> {
+  update(id: string, data: Prisma.FuelCategoryUpdateInput): Promise<FuelCategory> {
     return this.prisma.fuelCategory.update({ where: { id }, data });
   }
 
-  delete(id: number): Promise<{ id: number }> {
+  delete(id: string): Promise<{ id: string }> {
     return this.prisma.fuelCategory.delete({ where: { id }, select: { id: true } });
   }
 }

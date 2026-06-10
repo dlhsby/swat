@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -38,7 +28,7 @@ export class CrewSchedulesController {
   @Get(':id')
   @RequirePermissions('crew-schedule:read')
   @ApiOperation({ summary: 'Get a crew schedule by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<CrewScheduleDto> {
+  getById(@Param('id') id: string): Promise<CrewScheduleDto> {
     return this.crewSchedules.getById(id);
   }
 
@@ -52,17 +42,14 @@ export class CrewSchedulesController {
   @Patch(':id')
   @RequirePermissions('crew-schedule:update')
   @ApiOperation({ summary: 'Update a crew schedule' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateCrewScheduleDto,
-  ): Promise<CrewScheduleDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateCrewScheduleDto): Promise<CrewScheduleDto> {
     return this.crewSchedules.update(id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('crew-schedule:delete')
   @ApiOperation({ summary: 'Delete a crew schedule' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.crewSchedules.remove(id);
   }
 }

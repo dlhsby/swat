@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../../common/decorators/require-permissions.decorator';
@@ -13,8 +13,8 @@ export class DriverLicensesController {
 
   @Get()
   @RequirePermissions('license:read')
-  @ApiOperation({ summary: 'List a driver’s licenses' })
-  list(@Param('driverId', ParseIntPipe) driverId: number): Promise<DriverLicenseDto[]> {
+  @ApiOperation({ summary: 'List a driver licenses' })
+  list(@Param('driverId') driverId: string): Promise<DriverLicenseDto[]> {
     return this.licenses.list(driverId);
   }
 
@@ -22,7 +22,7 @@ export class DriverLicensesController {
   @RequirePermissions('license:create')
   @ApiOperation({ summary: 'Add a license to a driver' })
   create(
-    @Param('driverId', ParseIntPipe) driverId: number,
+    @Param('driverId') driverId: string,
     @Body() dto: CreateDriverLicenseDto,
   ): Promise<DriverLicenseDto> {
     return this.licenses.create(driverId, dto);
@@ -32,8 +32,8 @@ export class DriverLicensesController {
   @RequirePermissions('license:update')
   @ApiOperation({ summary: 'Update a driver license' })
   update(
-    @Param('driverId', ParseIntPipe) driverId: number,
-    @Param('licenseId', ParseIntPipe) licenseId: number,
+    @Param('driverId') driverId: string,
+    @Param('licenseId') licenseId: string,
     @Body() dto: UpdateDriverLicenseDto,
   ): Promise<DriverLicenseDto> {
     return this.licenses.update(driverId, licenseId, dto);
@@ -43,8 +43,8 @@ export class DriverLicensesController {
   @RequirePermissions('license:delete')
   @ApiOperation({ summary: 'Delete a driver license' })
   remove(
-    @Param('driverId', ParseIntPipe) driverId: number,
-    @Param('licenseId', ParseIntPipe) licenseId: number,
+    @Param('driverId') driverId: string,
+    @Param('licenseId') licenseId: string,
   ): Promise<{ message: string }> {
     return this.licenses.remove(driverId, licenseId);
   }

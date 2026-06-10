@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { type SessionUser } from '../../../common/auth/session.types';
-import { parseBigIntId } from '../../../common/parse-bigint';
 import { type TripDto, toTripDto } from '../trips/trip.mapper';
 
 import { type RecordDepartDto } from './dto/record-depart.dto';
@@ -17,9 +16,7 @@ export class HaulAssignmentsService {
   constructor(private readonly repo: HaulAssignmentsRepository) {}
 
   private async load(idParam: string): Promise<HaulAssignmentForRecording> {
-    const assignment = await this.repo.findForRecording(
-      parseBigIntId(idParam, 'ID penugasan tidak valid.'),
-    );
+    const assignment = await this.repo.findForRecording(idParam);
     if (!assignment) {
       throw new NotFoundException('Penugasan haul tidak ditemukan.');
     }

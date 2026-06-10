@@ -58,9 +58,9 @@ export class RollupRepository {
   async aggregateMonthlyTonnageBySource(
     from: Date,
     to: Date,
-  ): Promise<Array<{ wasteSourceId: number; totalNetWeight: bigint; haulCount: number }>> {
+  ): Promise<Array<{ wasteSourceId: string; totalNetWeight: bigint; haulCount: number }>> {
     const rows = await this.prisma.$queryRaw<
-      Array<{ wasteSourceId: number; totalNetWeight: bigint; haulCount: bigint }>
+      Array<{ wasteSourceId: string; totalNetWeight: bigint; haulCount: bigint }>
     >`
       SELECT vws."wasteSourceId"                       AS "wasteSourceId",
              COALESCE(SUM(t."netWeight"), 0)::bigint   AS "totalNetWeight",
@@ -99,9 +99,9 @@ export class RollupRepository {
   async aggregateMonthlyTonnageBySite(
     from: Date,
     to: Date,
-  ): Promise<Array<{ siteId: number; totalNetWeight: bigint; haulCount: number }>> {
+  ): Promise<Array<{ siteId: string; totalNetWeight: bigint; haulCount: number }>> {
     const rows = await this.prisma.$queryRaw<
-      Array<{ siteId: number; totalNetWeight: bigint; haulCount: bigint }>
+      Array<{ siteId: string; totalNetWeight: bigint; haulCount: bigint }>
     >`
       SELECT r."originSiteId"                          AS "siteId",
              COALESCE(SUM(t."netWeight"), 0)::bigint   AS "totalNetWeight",
@@ -128,8 +128,8 @@ export class RollupRepository {
   async aggregateMonthlyRouteActivity(
     from: Date,
     to: Date,
-  ): Promise<Array<{ routeId: number; tripCount: number }>> {
-    const rows = await this.prisma.$queryRaw<Array<{ routeId: number; tripCount: bigint }>>`
+  ): Promise<Array<{ routeId: string; tripCount: number }>> {
+    const rows = await this.prisma.$queryRaw<Array<{ routeId: string; tripCount: bigint }>>`
       SELECT t."routeId"          AS "routeId",
              COUNT(*)::bigint     AS "tripCount"
       FROM "Trip" t
@@ -146,10 +146,10 @@ export class RollupRepository {
   async aggregateDailyFuel(
     date: Date,
   ): Promise<
-    Array<{ vehicleId: number; fuelApprovedLiters: string; fuelRequestedLiters: string }>
+    Array<{ vehicleId: string; fuelApprovedLiters: string; fuelRequestedLiters: string }>
   > {
     return this.prisma.$queryRaw<
-      Array<{ vehicleId: number; fuelApprovedLiters: string; fuelRequestedLiters: string }>
+      Array<{ vehicleId: string; fuelApprovedLiters: string; fuelRequestedLiters: string }>
     >`
       SELECT h."vehicleId"                                    AS "vehicleId",
              COALESCE(SUM(t."fuelApprovedLiters"), 0)::text   AS "fuelApprovedLiters",
@@ -174,7 +174,7 @@ export class RollupRepository {
    */
   async replaceMonthlyTonnageBySource(
     month: Date,
-    rows: ReadonlyArray<{ wasteSourceId: number; totalNetWeight: bigint; haulCount: number }>,
+    rows: ReadonlyArray<{ wasteSourceId: string; totalNetWeight: bigint; haulCount: number }>,
   ): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.monthlyTonnageBySource.deleteMany({ where: { month } }),
@@ -186,7 +186,7 @@ export class RollupRepository {
 
   async replaceMonthlyTonnageBySite(
     month: Date,
-    rows: ReadonlyArray<{ siteId: number; totalNetWeight: bigint; haulCount: number }>,
+    rows: ReadonlyArray<{ siteId: string; totalNetWeight: bigint; haulCount: number }>,
   ): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.monthlyTonnageBySite.deleteMany({ where: { month } }),
@@ -198,7 +198,7 @@ export class RollupRepository {
 
   async replaceMonthlyRouteActivity(
     month: Date,
-    rows: ReadonlyArray<{ routeId: number; tripCount: number }>,
+    rows: ReadonlyArray<{ routeId: string; tripCount: number }>,
   ): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.monthlyRouteActivity.deleteMany({ where: { month } }),
@@ -211,7 +211,7 @@ export class RollupRepository {
   async replaceDailyFuel(
     date: Date,
     rows: ReadonlyArray<{
-      vehicleId: number;
+      vehicleId: string;
       fuelApprovedLiters: string;
       fuelRequestedLiters: string;
     }>,

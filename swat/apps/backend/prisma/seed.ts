@@ -113,10 +113,10 @@ const PERMISSION_KEYS: readonly string[] = [
   'trip-template:create',
   'trip-template:update',
   'trip-template:delete',
-  'fuel-quota:read',
-  'fuel-quota:create',
-  'fuel-quota:update',
-  'fuel-quota:delete',
+  'disposal-permit:read',
+  'disposal-permit:create',
+  'disposal-permit:update',
+  'disposal-permit:delete',
   // Transactions
   'transaction-day:read',
   'transaction-day:manage',
@@ -229,8 +229,8 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
   },
 ];
 
-async function seedPermissions(): Promise<Map<string, number>> {
-  const idByKey = new Map<string, number>();
+async function seedPermissions(): Promise<Map<string, string>> {
+  const idByKey = new Map<string, string>();
   for (const key of PERMISSION_KEYS) {
     const permission = await prisma.permission.upsert({
       where: { key },
@@ -242,8 +242,8 @@ async function seedPermissions(): Promise<Map<string, number>> {
   return idByKey;
 }
 
-async function seedRoles(permissionIdByKey: Map<string, number>): Promise<Map<string, number>> {
-  const idByName = new Map<string, number>();
+async function seedRoles(permissionIdByKey: Map<string, string>): Promise<Map<string, string>> {
+  const idByName = new Map<string, string>();
   for (const role of ROLES) {
     const record = await prisma.role.upsert({
       where: { name: role.name },
@@ -257,7 +257,7 @@ async function seedRoles(permissionIdByKey: Map<string, number>): Promise<Map<st
     await prisma.rolePermission.createMany({
       data: keys
         .map((key) => permissionIdByKey.get(key))
-        .filter((id): id is number => id !== undefined)
+        .filter((id): id is string => id !== undefined)
         .map((permissionId) => ({ roleId: record.id, permissionId })),
       skipDuplicates: true,
     });
@@ -265,7 +265,7 @@ async function seedRoles(permissionIdByKey: Map<string, number>): Promise<Map<st
   return idByName;
 }
 
-async function seedAdminUser(adminRoleId: number): Promise<void> {
+async function seedAdminUser(adminRoleId: string): Promise<void> {
   const passwordHash = await hash(ADMIN_DEFAULT_PASSWORD, ARGON2_OPTIONS);
   const isProd = process.env.NODE_ENV === 'production';
 
@@ -341,7 +341,7 @@ async function seedReferenceData(): Promise<void> {
     }
   }
 
-  const categoryIdByName = new Map<string, number>();
+  const categoryIdByName = new Map<string, string>();
   for (const name of FUEL_CATEGORIES) {
     const existing = await prisma.fuelCategory.findFirst({ where: { name } });
     const record = existing ?? (await prisma.fuelCategory.create({ data: { name } }));
@@ -456,6 +456,7 @@ async function seedSyntheticData(): Promise<void> {
         fuelTankCapacity: 200,
         normalTareWeight: 8000,
         wheelCount: 6,
+        normalFuelRatio: 1,
       },
     }));
 
@@ -674,7 +675,7 @@ async function seedSyntheticData(): Promise<void> {
   }
 }
 
-async function upsertSiteByName(name: string, type: SiteType): Promise<{ id: number }> {
+async function upsertSiteByName(name: string, type: SiteType): Promise<{ id: string }> {
   const existing = await prisma.site.findFirst({ where: { name } });
   if (existing) {
     return existing;

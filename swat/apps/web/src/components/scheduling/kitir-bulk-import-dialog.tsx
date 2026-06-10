@@ -25,9 +25,9 @@ import { ApiError } from '@/lib/api-error';
 import { parseCsv, toCsv } from '@/lib/csv';
 import { type SiteDto, type VehicleDto } from '@/lib/master-api';
 import {
-  type BulkFuelQuotaRow,
+  type BulkDisposalPermitRow,
   type BulkImportResult,
-  bulkImportFuelQuotas,
+  bulkImportDisposalPermits,
 } from '@/lib/operations-api';
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -48,17 +48,17 @@ interface ParseError {
 /** Resolve a CSV row to a bulk-import row, accepting id or plate/name columns. */
 function mapRow(
   raw: Record<string, string>,
-  plateToId: Map<string, number>,
-  nameToId: Map<string, number>,
-): { row?: BulkFuelQuotaRow; error?: string } {
+  plateToId: Map<string, string>,
+  nameToId: Map<string, string>,
+): { row?: BulkDisposalPermitRow; error?: string } {
   const vehicleId = raw.vehicleId
-    ? Number(raw.vehicleId)
+    ? raw.vehicleId
     : plateToId.get((raw.plateNumber ?? '').toUpperCase());
-  const siteId = raw.siteId ? Number(raw.siteId) : nameToId.get((raw.siteName ?? '').toLowerCase());
-  if (!vehicleId || Number.isNaN(vehicleId)) {
+  const siteId = raw.siteId ? raw.siteId : nameToId.get((raw.siteName ?? '').toLowerCase());
+  if (!vehicleId) {
     return { error: 'Kendaraan tidak dikenali (vehicleId/plateNumber).' };
   }
-  if (!siteId || Number.isNaN(siteId)) {
+  if (!siteId) {
     return { error: 'Lokasi tidak dikenali (siteId/siteName).' };
   }
   if (!DATE_REGEX.test(raw.validFrom ?? '') || !DATE_REGEX.test(raw.validTo ?? '')) {
@@ -86,7 +86,7 @@ export function KitirBulkImportDialog({
   onOpenChange,
   onImported,
 }: KitirBulkImportDialogProps): JSX.Element {
-  const [rows, setRows] = useState<BulkFuelQuotaRow[]>([]);
+  const [rows, setRows] = useState<BulkDisposalPermitRow[]>([]);
   const [parseErrors, setParseErrors] = useState<ParseError[]>([]);
   const [fileName, setFileName] = useState('');
   const [strategy, setStrategy] = useState<'UPSERT' | 'SKIP'>('UPSERT');
@@ -109,7 +109,7 @@ export function KitirBulkImportDialog({
     const nameToId = new Map(sites.map((s) => [s.name.toLowerCase(), s.id]));
     try {
       const { rows: rawRows } = parseCsv(await file.text());
-      const ok: BulkFuelQuotaRow[] = [];
+      const ok: BulkDisposalPermitRow[] = [];
       const errs: ParseError[] = [];
       rawRows.forEach((raw, i) => {
         const { row, error } = mapRow(raw, plateToId, nameToId);
@@ -130,7 +130,7 @@ export function KitirBulkImportDialog({
     if (rows.length === 0) return;
     setImporting(true);
     try {
-      const res = await bulkImportFuelQuotas({ strategy, rows });
+      const res = await bulkImportDisposalPermits({ strategy, rows });
       setResult(res);
       notify.success(`Impor selesai: ${res.imported} baru, ${res.updated} diperbarui.`);
       onImported();

@@ -7,7 +7,7 @@ function trip(overrides: Partial<TripDto>): TripDto {
   return {
     id: '1',
     haulAssignmentId: '1',
-    routeId: 1,
+    routeId: '00000000-0000-0000-0000-000000000001',
     routeCategory: 'PICKUP',
     routeLabel: null,
     name: 'Trip',
@@ -37,25 +37,25 @@ function trip(overrides: Partial<TripDto>): TripDto {
 
 function day(trips: TripDto[], haulStatus = 'IN_PROGRESS'): TransactionDayDto {
   return {
-    id: 1,
+    id: '00000000-0000-0000-0000-000000000001',
     date: '2026-06-08',
     status: 'IN_PROGRESS',
     createdAt: '',
     updatedAt: '',
     hauls: [
       {
-        id: '1',
-        vehicleId: 7,
+        id: '00000000-0000-0000-0000-000000000001',
+        vehicleId: '00000000-0000-0000-0000-000000000007',
         vehiclePlate: 'L 1 AB',
         status: haulStatus,
         operationDate: '2026-06-08',
         assignments: [
           {
-            id: '1',
-            haulId: '1',
-            driverId: 3,
+            id: '00000000-0000-0000-0000-000000000001',
+            haulId: '00000000-0000-0000-0000-000000000001',
+            driverId: '00000000-0000-0000-0000-000000000003',
             driverName: 'Budi',
-            crewScheduleId: 1,
+            crewScheduleId: '00000000-0000-0000-0000-000000000001',
             status: 'IN_PROGRESS',
             operationDate: '2026-06-08',
             departTargetOdometer: 0,

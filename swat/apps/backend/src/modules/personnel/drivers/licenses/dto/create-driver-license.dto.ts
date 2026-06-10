@@ -1,15 +1,12 @@
 import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsString, Matches, MaxLength, Min, MinLength } from 'class-validator';
+import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateDriverLicenseDto {
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Golongan SIM wajib dipilih' })
-  @Min(1, { message: 'Golongan SIM wajib dipilih' })
-  licenseClassId!: number;
+  @ApiProperty()
+  @IsString({ message: 'Golongan SIM wajib dipilih' })
+  licenseClassId!: string;
 
   @ApiProperty({ maxLength: 12 })
   @IsString()

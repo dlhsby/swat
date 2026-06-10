@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -34,7 +24,7 @@ export class DriversController {
   @Get(':id')
   @RequirePermissions('driver:read')
   @ApiOperation({ summary: 'Get a driver by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<DriverDto> {
+  getById(@Param('id') id: string): Promise<DriverDto> {
     return this.drivers.getById(id);
   }
 
@@ -48,14 +38,14 @@ export class DriversController {
   @Patch(':id')
   @RequirePermissions('driver:update')
   @ApiOperation({ summary: 'Update a driver' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateDriverDto): Promise<DriverDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateDriverDto): Promise<DriverDto> {
     return this.drivers.update(id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('driver:delete')
   @ApiOperation({ summary: 'Soft-delete a driver' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.drivers.remove(id);
   }
 }

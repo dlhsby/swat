@@ -86,7 +86,7 @@ export class MonitoringRepository {
     group: SourceGroupFilter,
   ): Promise<
     Array<{
-      wasteSourceId: number;
+      wasteSourceId: string;
       code: string;
       name: string;
       totalTonnageKg: number;
@@ -102,7 +102,7 @@ export class MonitoringRepository {
           : Prisma.empty;
     const rows = await this.prisma.$queryRaw<
       Array<{
-        wasteSourceId: number;
+        wasteSourceId: string;
         code: string;
         name: string;
         total: bigint;
@@ -135,10 +135,10 @@ export class MonitoringRepository {
     monthFrom: Date,
     monthTo: Date,
   ): Promise<
-    Array<{ siteId: number; name: string; type: string; totalTonnageKg: number; haulCount: number }>
+    Array<{ siteId: string; name: string; type: string; totalTonnageKg: number; haulCount: number }>
   > {
     const rows = await this.prisma.$queryRaw<
-      Array<{ siteId: number; name: string; type: string; total: bigint; hauls: bigint }>
+      Array<{ siteId: string; name: string; type: string; total: bigint; hauls: bigint }>
     >`
       SELECT s."id"                               AS "siteId",
              s."name"                             AS "name",
@@ -164,10 +164,10 @@ export class MonitoringRepository {
   async fuelConsumption(
     from: Date,
     to: Date,
-    vehicleId: number | undefined,
+    vehicleId: string | undefined,
   ): Promise<
     Array<{
-      vehicleId: number;
+      vehicleId: string;
       plateNumber: string;
       fuelApprovedLiters: number;
       fuelRequestedLiters: number;
@@ -175,7 +175,7 @@ export class MonitoringRepository {
   > {
     const vehicleClause = vehicleId ? Prisma.sql`AND f."vehicleId" = ${vehicleId}` : Prisma.empty;
     const rows = await this.prisma.$queryRaw<
-      Array<{ vehicleId: number; plateNumber: string; approved: number; requested: number }>
+      Array<{ vehicleId: string; plateNumber: string; approved: number; requested: number }>
     >`
       SELECT v."id"                                      AS "vehicleId",
              v."plateNumber"                             AS "plateNumber",
@@ -202,14 +202,14 @@ export class MonitoringRepository {
     to: Date,
   ): Promise<
     Array<{
-      fuelId: number;
+      fuelId: string;
       fuelName: string;
       totalApprovedLiters: number;
       totalRequestedLiters: number;
     }>
   > {
     const rows = await this.prisma.$queryRaw<
-      Array<{ fuelId: number; fuelName: string; approved: number; requested: number }>
+      Array<{ fuelId: string; fuelName: string; approved: number; requested: number }>
     >`
       SELECT fu."id"                                     AS "fuelId",
              fu."name"                                   AS "fuelName",
@@ -237,7 +237,7 @@ export class MonitoringRepository {
     monthTo: Date,
   ): Promise<
     Array<{
-      routeId: number;
+      routeId: string;
       category: string;
       originSiteName: string;
       destinationSiteName: string;
@@ -247,7 +247,7 @@ export class MonitoringRepository {
   > {
     const rows = await this.prisma.$queryRaw<
       Array<{
-        routeId: number;
+        routeId: string;
         category: string;
         originSiteName: string;
         destinationSiteName: string;
@@ -329,7 +329,7 @@ export class MonitoringRepository {
     from: Date;
     to: Date;
     status: TripStatus | undefined;
-    routeId: number | undefined;
+    routeId: string | undefined;
     page: number;
     limit: number;
   }): Promise<{ rows: TripSummaryRow[]; total: number }> {
@@ -359,7 +359,7 @@ export class MonitoringRepository {
       this.prisma.trip.count({ where }),
     ]);
     const rows = records.map((trip) => ({
-      id: trip.id.toString(),
+      id: trip.id,
       operationDate: trip.operationDate.toISOString().slice(0, 10),
       name: trip.name,
       status: trip.status,

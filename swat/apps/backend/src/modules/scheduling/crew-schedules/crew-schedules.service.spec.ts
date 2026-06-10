@@ -47,7 +47,11 @@ describe('CrewSchedulesService', () => {
     service = new CrewSchedulesService(repo as unknown as CrewSchedulesRepository);
   });
 
-  const dto = { vehicleId: 1, driverId: 2, departTime: '05:00', returnTime: '14:00' };
+  const ID = '00000000-0000-0000-0000-000000000001';
+  const ID9 = '00000000-0000-0000-0000-000000000009';
+  const VID = '00000000-0000-0000-0000-0000000000a1';
+  const DID = '00000000-0000-0000-0000-0000000000a2';
+  const dto = { vehicleId: VID, driverId: DID, departTime: '05:00', returnTime: '14:00' };
 
   it('lists schedules with time columns mapped to HH:mm and template count', async () => {
     repo.list.mockResolvedValue({ rows: [buildSchedule()], total: 1 });
@@ -62,7 +66,7 @@ describe('CrewSchedulesService', () => {
 
   it('returns a single schedule', async () => {
     repo.findById.mockResolvedValue(buildSchedule());
-    await expect(service.getById(1)).resolves.toMatchObject({ id: 1 });
+    await expect(service.getById(ID)).resolves.toMatchObject({ id: 1 });
   });
 
   describe('create', () => {
@@ -94,14 +98,14 @@ describe('CrewSchedulesService', () => {
   describe('update', () => {
     it('404s an unknown schedule', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.update(9, { returnTime: '15:00' })).rejects.toBeInstanceOf(
+      await expect(service.update(ID9, { returnTime: '15:00' })).rejects.toBeInstanceOf(
         NotFoundException,
       );
     });
 
     it('rejects an update that inverts the time order', async () => {
       repo.findById.mockResolvedValue(buildSchedule());
-      await expect(service.update(1, { departTime: '20:00' })).rejects.toBeInstanceOf(
+      await expect(service.update(ID, { departTime: '20:00' })).rejects.toBeInstanceOf(
         BadRequestException,
       );
     });
@@ -109,7 +113,9 @@ describe('CrewSchedulesService', () => {
     it('rejects an update that collides with another pairing', async () => {
       repo.findById.mockResolvedValue(buildSchedule());
       repo.findByVehicleAndDriver.mockResolvedValue({ id: 2 });
-      await expect(service.update(1, { vehicleId: 5 })).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        service.update(ID, { vehicleId: '00000000-0000-0000-0000-000000000005' }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('updates the return time', async () => {
@@ -117,7 +123,7 @@ describe('CrewSchedulesService', () => {
       repo.update.mockResolvedValue(
         buildSchedule({ returnTime: new Date('1970-01-01T15:00:00Z') }),
       );
-      await expect(service.update(1, { returnTime: '15:00' })).resolves.toMatchObject({
+      await expect(service.update(ID, { returnTime: '15:00' })).resolves.toMatchObject({
         returnTime: '15:00',
       });
     });
@@ -126,13 +132,13 @@ describe('CrewSchedulesService', () => {
   describe('remove', () => {
     it('404s an unknown schedule', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.remove(9)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.remove(ID9)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('deletes a schedule', async () => {
       repo.findById.mockResolvedValue(buildSchedule());
       repo.delete.mockResolvedValue({ id: 1 });
-      await expect(service.remove(1)).resolves.toEqual({ message: 'Jadwal kru telah dihapus.' });
+      await expect(service.remove(ID)).resolves.toEqual({ message: 'Jadwal kru telah dihapus.' });
     });
   });
 });

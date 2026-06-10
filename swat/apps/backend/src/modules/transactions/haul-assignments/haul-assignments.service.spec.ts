@@ -5,15 +5,20 @@ import { type SessionUser } from '../../../common/auth/session.types';
 import { type HaulAssignmentsRepository } from './haul-assignments.repository';
 import { HaulAssignmentsService } from './haul-assignments.service';
 
-const USER: SessionUser = { id: 9, username: 'op', roleId: 4, mustChangePassword: false };
+const USER: SessionUser = {
+  id: 'user-9',
+  username: 'op',
+  roleId: 'role-4',
+  mustChangePassword: false,
+};
 
 function buildAssignment(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1000n,
-    haulId: 100n,
-    driverId: 3,
-    driver: { id: 3, name: 'Budi' },
-    crewScheduleId: 1,
+    id: 'assignment-1000',
+    haulId: 'haul-100',
+    driverId: 'driver-3',
+    driver: { id: 'driver-3', name: 'Budi' },
+    crewScheduleId: 'schedule-1',
     status: 'IN_PROGRESS',
     operationDate: new Date('2026-06-08T00:00:00Z'),
     departTargetOdometer: 12000,
@@ -28,11 +33,11 @@ function buildAssignment(overrides: Record<string, unknown> = {}): Record<string
     updatedAt: new Date('2026-06-08T03:00:00Z'),
     trips: [],
     haul: {
-      id: 100n,
+      id: 'haul-100',
       status: 'IN_PROGRESS',
-      vehicleId: 7,
-      vehicle: { id: 7, currentOdometer: 12000 },
-      assignments: [{ id: 1000n, status: 'IN_PROGRESS' }],
+      vehicleId: 'vehicle-7',
+      vehicle: { id: 'vehicle-7', currentOdometer: 12000 },
+      assignments: [{ id: 'assignment-1000', status: 'IN_PROGRESS' }],
     },
     ...overrides,
   };
@@ -69,14 +74,15 @@ describe('HaulAssignmentsService', () => {
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('400s a bad bigint id', async () => {
+    it('404s an unknown id', async () => {
+      repo.findForRecording.mockResolvedValue(null);
       await expect(
         service.recordDepart(
-          'abc',
+          'unknown-id',
           { actualOdometer: 1, actualTime: '2026-06-08T05:30:00Z' },
           USER,
         ),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('rejects an odometer below the vehicle current odometer', async () => {
@@ -109,7 +115,7 @@ describe('HaulAssignmentsService', () => {
         USER,
       );
       expect(repo.recordDepart).toHaveBeenCalledWith(
-        1000n,
+        'assignment-1000',
         expect.objectContaining({
           departActualOdometer: 12010,
           departActualTime: new Date('2026-06-08T05:30:00.000Z'),
@@ -168,9 +174,9 @@ describe('HaulAssignmentsService', () => {
       );
       expect(repo.recordReturn).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: 1000n,
-          haulId: 100n,
-          vehicleId: 7,
+          id: 'assignment-1000',
+          haulId: 'haul-100',
+          vehicleId: 'vehicle-7',
           odometer: 12100,
           closeHaul: true,
         }),
@@ -192,13 +198,13 @@ describe('HaulAssignmentsService', () => {
       repo.findForRecording.mockResolvedValue(
         departed({
           haul: {
-            id: 100n,
+            id: 'haul-100',
             status: 'IN_PROGRESS',
-            vehicleId: 7,
-            vehicle: { id: 7, currentOdometer: 12010 },
+            vehicleId: 'vehicle-7',
+            vehicle: { id: 'vehicle-7', currentOdometer: 12010 },
             assignments: [
-              { id: 1000n, status: 'IN_PROGRESS' },
-              { id: 1001n, status: 'IN_PROGRESS' },
+              { id: 'assignment-1000', status: 'IN_PROGRESS' },
+              { id: 'assignment-1001', status: 'IN_PROGRESS' },
             ],
           },
         }),
@@ -217,11 +223,11 @@ describe('HaulAssignmentsService', () => {
       repo.findForRecording.mockResolvedValue(buildAssignment());
       repo.listTrips.mockResolvedValue([
         {
-          id: 10000n,
-          haulAssignmentId: 1000n,
-          routeId: 4,
+          id: 'trip-10000',
+          haulAssignmentId: 'assignment-1000',
+          routeId: 'route-4',
           route: {
-            id: 4,
+            id: 'route-4',
             category: 'DISPOSAL',
             originSite: { name: 'TPS A' },
             destinationSite: { name: 'TPA B' },
@@ -251,8 +257,8 @@ describe('HaulAssignmentsService', () => {
       ]);
       const trips = await service.listTrips('1000');
       expect(trips).toHaveLength(1);
-      expect(trips[0]).toMatchObject({ id: '10000', routeCategory: 'DISPOSAL' });
-      expect(repo.listTrips).toHaveBeenCalledWith(1000n);
+      expect(trips[0]).toMatchObject({ id: 'trip-10000', routeCategory: 'DISPOSAL' });
+      expect(repo.listTrips).toHaveBeenCalledWith('assignment-1000');
     });
   });
 });

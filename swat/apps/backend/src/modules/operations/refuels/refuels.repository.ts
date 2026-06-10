@@ -30,8 +30,8 @@ const refuelInclude = {
 export type RefuelTrip = Prisma.TripGetPayload<{ include: typeof refuelInclude }>;
 
 export interface ListRefuelsFilter extends PageParams {
-  readonly vehicleId?: number;
-  readonly fuelId?: number;
+  readonly vehicleId?: string;
+  readonly fuelId?: string;
   readonly status?: TripStatus;
   readonly date?: Date;
 }

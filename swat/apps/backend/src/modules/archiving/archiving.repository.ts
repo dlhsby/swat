@@ -78,7 +78,7 @@ export class ArchivingRepository {
     return (result?.rollups ?? 0n) > 0n || (result?.trips ?? 0n) === 0n;
   }
 
-  findCatalog(tableName: string, period: string): Promise<{ id: number } | null> {
+  findCatalog(tableName: string, period: string): Promise<{ id: string } | null> {
     return this.prisma.archiveCatalog.findFirst({
       where: { tableName, period },
       select: { id: true },
@@ -87,7 +87,7 @@ export class ArchivingRepository {
 
   listCatalog(): Promise<
     Array<{
-      id: number;
+      id: string;
       tableName: string;
       period: string;
       archiveType: string;
@@ -115,7 +115,7 @@ export class ArchivingRepository {
   getCatalog(
     tableName: string,
     period: string,
-  ): Promise<{ id: number; checksum: string | null; reattachedAt: Date | null } | null> {
+  ): Promise<{ id: string; checksum: string | null; reattachedAt: Date | null } | null> {
     return this.prisma.archiveCatalog.findFirst({
       where: { tableName, period },
       select: { id: true, checksum: true, reattachedAt: true },
@@ -163,7 +163,7 @@ export class ArchivingRepository {
     rowCount: number;
     sizeBytes: number;
     checksum: string;
-    createdById: number | null;
+    createdById: string | null;
   }): Promise<void> {
     await this.prisma.archiveCatalog.create({
       data: {
@@ -219,7 +219,7 @@ export class ArchivingRepository {
     return { rowCount: Number(countRows[0]?.count ?? 0n), checksumVerified };
   }
 
-  async markReattached(id: number): Promise<void> {
+  async markReattached(id: string): Promise<void> {
     await this.prisma.archiveCatalog.update({
       where: { id },
       data: { reattachedAt: new Date() },

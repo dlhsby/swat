@@ -12,7 +12,7 @@ import {
 import { ApplicationsRepository } from './applications.repository';
 
 export interface ApplicationDto {
-  readonly id: number;
+  readonly id: string;
   readonly name: string;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -42,7 +42,7 @@ export class ApplicationsService {
     return paginated(rows.map(toDto), total, query);
   }
 
-  async getById(id: number): Promise<ApplicationDto> {
+  async getById(id: string): Promise<ApplicationDto> {
     const row = await this.repo.findById(id);
     if (!row) {
       throw new NotFoundException('Aplikasi kendaraan tidak ditemukan.');
@@ -55,7 +55,7 @@ export class ApplicationsService {
     return toDto(await this.repo.create({ name: dto.name }));
   }
 
-  async update(id: number, dto: UpdateApplicationDto): Promise<ApplicationDto> {
+  async update(id: string, dto: UpdateApplicationDto): Promise<ApplicationDto> {
     await this.getById(id);
     if (dto.name !== undefined) {
       await this.assertNameAvailable(dto.name, id);
@@ -65,14 +65,14 @@ export class ApplicationsService {
     );
   }
 
-  private async assertNameAvailable(name: string, exceptId?: number): Promise<void> {
+  private async assertNameAvailable(name: string, exceptId?: string): Promise<void> {
     const existing = await this.repo.findByName(name);
     if (existing && existing.id !== exceptId) {
       throw new ConflictException('Nama aplikasi kendaraan sudah digunakan.');
     }
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     await this.getById(id);
     const models = await this.repo.countModels(id);
     if (models > 0) {

@@ -5,7 +5,7 @@ import { RequirePermissions } from '../../../common/decorators/require-permissio
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface LicenseClassDto {
-  readonly id: number;
+  readonly id: string;
   readonly name: string;
 }
 

@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 /** The actor behind a mutation — id may be absent for system-initiated writes. */
 export interface AuditActor {
-  readonly id?: number | null;
+  readonly id?: string | null;
   readonly username: string;
 }
 

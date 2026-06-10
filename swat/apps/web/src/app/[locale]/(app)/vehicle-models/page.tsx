@@ -21,8 +21,8 @@ import {
 } from '@/lib/master-api';
 
 const schema = z.object({
-  applicationId: z.coerce.number().int().min(1, 'Aplikasi kendaraan wajib dipilih'),
-  fuelId: z.coerce.number().int().min(1, 'Bahan bakar wajib dipilih'),
+  applicationId: z.string().uuid('Aplikasi kendaraan wajib dipilih'),
+  fuelId: z.string().uuid('Bahan bakar wajib dipilih'),
   brand: z.string().min(1, 'Merek wajib diisi').max(100, 'Merek maksimal 100 karakter'),
   fuelTankCapacity: z.coerce.number().int().min(1, 'Kapasitas tangki harus lebih dari 0'),
   normalFuelRatio: z.coerce.number().min(1, 'Rasio minimal 1'),
@@ -33,8 +33,8 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
-  applicationId: 0,
-  fuelId: 0,
+  applicationId: '',
+  fuelId: '',
   brand: '',
   fuelTankCapacity: 1,
   normalFuelRatio: 1,
@@ -115,7 +115,6 @@ export default function VehicleModelsPage(): JSX.Element {
             name="applicationId"
             label="Aplikasi"
             required
-            numeric
             options={apps}
             placeholder="Pilih aplikasi"
           />
@@ -123,7 +122,6 @@ export default function VehicleModelsPage(): JSX.Element {
             name="fuelId"
             label="Bahan Bakar"
             required
-            numeric
             options={fuels}
             placeholder="Pilih bahan bakar"
           />

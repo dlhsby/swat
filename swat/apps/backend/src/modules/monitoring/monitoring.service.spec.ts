@@ -121,7 +121,12 @@ describe('MonitoringService', () => {
   describe('fuelConsumption', () => {
     it('appends the variance + flag to each vehicle row', async () => {
       repo.fuelConsumption.mockResolvedValue([
-        { vehicleId: 1, plateNumber: 'L 1 AB', fuelApprovedLiters: 80, fuelRequestedLiters: 100 },
+        {
+          vehicleId: '00000000-0000-0000-0000-0000000000v1',
+          plateNumber: 'L 1 AB',
+          fuelApprovedLiters: 80,
+          fuelRequestedLiters: 100,
+        },
       ]);
 
       const [row] = await service.fuelConsumption(RANGE);
@@ -167,12 +172,22 @@ describe('MonitoringService', () => {
         { date: parseDateOnly('2026-06-02'), totalTonnageKg: 6000, haulCount: 5 },
       ]);
       repo.fuelConsumption.mockResolvedValue([
-        { vehicleId: 1, plateNumber: 'L 1 AB', fuelApprovedLiters: 80, fuelRequestedLiters: 100 },
-        { vehicleId: 2, plateNumber: 'L 2 CD', fuelApprovedLiters: 50, fuelRequestedLiters: 50 },
+        {
+          vehicleId: '00000000-0000-0000-0000-0000000000v1',
+          plateNumber: 'L 1 AB',
+          fuelApprovedLiters: 80,
+          fuelRequestedLiters: 100,
+        },
+        {
+          vehicleId: '00000000-0000-0000-0000-0000000000v2',
+          plateNumber: 'L 2 CD',
+          fuelApprovedLiters: 50,
+          fuelRequestedLiters: 50,
+        },
       ]);
       repo.routesActive.mockResolvedValue([
         {
-          routeId: 3,
+          routeId: '00000000-0000-0000-0000-0000000000r3',
           category: 'DISPOSAL',
           originSiteName: 'TPS',
           destinationSiteName: 'TPA',

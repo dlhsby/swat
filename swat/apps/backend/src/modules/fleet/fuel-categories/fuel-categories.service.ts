@@ -12,7 +12,7 @@ import {
 import { FuelCategoriesRepository } from './fuel-categories.repository';
 
 export interface FuelCategoryDto {
-  readonly id: number;
+  readonly id: string;
   readonly name: string;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -42,7 +42,7 @@ export class FuelCategoriesService {
     return paginated(rows.map(toDto), total, query);
   }
 
-  async getById(id: number): Promise<FuelCategoryDto> {
+  async getById(id: string): Promise<FuelCategoryDto> {
     const row = await this.repo.findById(id);
     if (!row) {
       throw new NotFoundException('Kategori bahan bakar tidak ditemukan.');
@@ -55,7 +55,7 @@ export class FuelCategoriesService {
     return toDto(await this.repo.create({ name: dto.name }));
   }
 
-  async update(id: number, dto: UpdateFuelCategoryDto): Promise<FuelCategoryDto> {
+  async update(id: string, dto: UpdateFuelCategoryDto): Promise<FuelCategoryDto> {
     await this.getById(id);
     if (dto.name !== undefined) {
       await this.assertNameAvailable(dto.name, id);
@@ -65,14 +65,14 @@ export class FuelCategoriesService {
     );
   }
 
-  private async assertNameAvailable(name: string, exceptId?: number): Promise<void> {
+  private async assertNameAvailable(name: string, exceptId?: string): Promise<void> {
     const existing = await this.repo.findByName(name);
     if (existing && existing.id !== exceptId) {
       throw new ConflictException('Nama kategori bahan bakar sudah digunakan.');
     }
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     await this.getById(id);
     const fuels = await this.repo.countFuels(id);
     if (fuels > 0) {

@@ -1,19 +1,19 @@
-# 09.02 — Fuel Quota ("Kitir") Module
+# 09.02 — Disposal Permit ("Kitir") Module
 
 ## Overview
 
-The FuelQuota (Jatah Kitir) is an **authorization record** that permits a specific vehicle to operate against a specific disposal site (typically TPA) within a date range. In the legacy system, the kitir **code** is the identifier matched at the TPA weighbridge desktop app; in the new system, it remains the authoritative credential.
+The DisposalPermit (Jatah Kitir) is a **TPA dumping permit** that authorizes a specific vehicle to operate against a specific disposal site (typically TPA) within a date range. The kitir **code** is a QR scanned at the TPA weighbridge desktop app; it is the authoritative credential for waste authorization.
 
 **Key concepts:**
-- **Purpose:** Auditable fuel/route quota authorization (hence "jatah" = allocation).
+- **Purpose:** Dumping authorization permit (hence "jatah" = allocation) — NOT a fuel quota. Buyer/payment models are deferred.
 - **Scope:** Vehicle ↔ Site binding with temporal validity (`validFrom` ≤ `validTo`).
 - **Status:** `ACTIVE` or `INACTIVE`; implicit expiry when `validTo < today()`.
-- **Weighbridge integration:** Phase 4 — the TPA desktop app resolves quotas by code or vehicle plate number.
-- **Volume & lifecycle:** Legacy system has ~3.3M historical quota rows; new system supports bulk issuance, with indexing on hot-path lookups.
+- **Weighbridge integration:** Phase 4 — the TPA desktop app resolves permits by QR code or vehicle plate number.
+- **Volume & lifecycle:** Legacy system has ~3.3M historical permit rows; new system supports bulk issuance, with indexing on hot-path lookups.
 
-> **Phase:** Kitir **issuance CRUD + bulk import ("Impor Massal")** is **Phase 1** (it lives under
-> *Penjadwalan* in the hi-fi IA and must exist before the weighbridge can consume kitir). The
-> **weighbridge resolution API** that *consumes* kitir is **Phase 4** (`integration-weighbridge.md`).
+> **Phase:** Permit **issuance CRUD + bulk import ("Impor Massal")** is **Phase 1** (it lives under
+> *Penjadwalan* in the hi-fi IA and must exist before the weighbridge can consume permits). The
+> **weighbridge resolution API** that *consumes* permits is **Phase 4** (`integration-weighbridge.md`).
 > This supersedes any earlier "bulk import = Phase 2" note below — bulk import ships in Phase 1.
 > Design: `13-design/03-hifi-spec.md` screen "Jatah Kitir"; wireframe in `02-wireframes.md`.
 
@@ -21,23 +21,23 @@ The FuelQuota (Jatah Kitir) is an **authorization record** that permits a specif
 
 ## 1. Entities
 
-### 1.1 FuelQuota
+### 1.1 DisposalPermit
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `id` | BigInt | PK | High-volume table; autoincrement |
+| `id` | String (UUID v7) | PK | Primary key (UUID v7) |
 | `legacyId` | Int? | — | For traceability during migration |
-| `code` | String(50)? | — | Kitir code (e.g. `KT-202606-0042`); indexed for weighbridge lookup; may be auto-generated, manually assigned, or null |
-| `vehicleId` | Int | FK | Vehicle (Kendaraan) |
-| `siteId` | Int | FK | Site (Lokasi) — typically TPA |
-| `status` | FuelQuotaStatus | ✓ | `ACTIVE` or `INACTIVE` |
+| `code` | String(50)? | — | Kitir QR code (e.g. `KT-202606-0042`); indexed for weighbridge lookup; scanned at TPA |
+| `vehicleId` | String (UUID) | FK | Vehicle (Kendaraan) |
+| `siteId` | String (UUID) | FK | Site (Lokasi) — typically TPA |
+| `status` | DisposalPermitStatus | ✓ | `ACTIVE` or `INACTIVE` |
 | `issuedAt` | Timestamptz | ✓ | Timestamp of creation (audit) |
 | `validFrom` | Date | ✓ | Start date (inclusive) |
 | `validTo` | Date | ✓ | End date (inclusive) |
 | `createdAt` | Timestamptz | — | Standard audit column |
 | `updatedAt` | Timestamptz | — | Standard audit column |
-| `createdById` | Int? | FK | User who issued the quota |
-| `updatedById` | Int? | FK | User who last updated the quota |
+| `createdById` | String (UUID)? | FK | User who issued the permit |
+| `updatedById` | String (UUID)? | FK | User who last updated the permit |
 
 **Indexes (critical for performance):**
 - `@@index([code])` — fast weighbridge lookup by code.
@@ -51,10 +51,10 @@ The FuelQuota (Jatah Kitir) is an **authorization record** that permits a specif
 - `code` indexed (not unique) to allow null values and multiple quotas per period.
 - Overlaps allowed by design (e.g., multiple quotas per site if vehicle rotated), but **business rule enforces single active per vehicle+site pair** (service-layer validation; see below).
 
-### 1.2 Enumeration: FuelQuotaStatus
+### 1.2 Enumeration: DisposalPermitStatus
 
 ```prisma
-enum FuelQuotaStatus {
+enum DisposalPermitStatus {
   ACTIVE      // Berlaku
   INACTIVE    // Tidak Berlaku
 }
@@ -64,43 +64,43 @@ enum FuelQuotaStatus {
 
 ## 2. User Stories
 
-1. **As an Administrator, I want to issue a fuel quota to a vehicle** so that it is authorized to operate.
-   - Given a vehicle, site, and date range, when I create a quota and set it ACTIVE, then the vehicle may use that route on those dates.
-   - The quota code is auto-generated or manually assigned (legacy format: `KT-YYYYMM-NNN`).
+1. **As an Administrator, I want to issue a disposal permit to a vehicle** so that it is authorized to dump waste.
+   - Given a vehicle, site, and date range, when I create a permit and set it ACTIVE, then the vehicle may dump at that site on those dates.
+   - The permit code is auto-generated or manually assigned (legacy format: `KT-YYYYMM-NNN`), and the QR is scanned at the weighbridge.
 
-2. **As an Administrator, I want to bulk-import quotas from legacy data** so that historical authorizations are preserved.
-   - Given a CSV or Excel file with 3.3M rows (legacy), when I upload and trigger import, then FuelQuota records are upserted with `legacyId` mapping.
+2. **As an Administrator, I want to bulk-import permits from legacy data** so that historical authorizations are preserved.
+   - Given a CSV or Excel file with 3.3M rows (legacy), when I upload and trigger import, then DisposalPermit records are upserted with `legacyId` mapping.
    - Performance: import completes in < 60s for 100k rows; database handles indexes gracefully.
 
-3. **As an Administrator, I want to deactivate an expired quota** so that stale authorizations do not cause confusion.
-   - Given an active quota with `validTo < today()`, when I manually set `status = INACTIVE`, then the weighbridge rejects it.
+3. **As an Administrator, I want to deactivate an expired permit** so that stale authorizations do not cause confusion.
+   - Given an active permit with `validTo < today()`, when I manually set `status = INACTIVE`, then the weighbridge rejects it.
 
-4. **As the System, I want to implicitly expire quotas** so that expired quotas are treated as invalid without manual intervention.
-   - Whenever a quota is queried for operation, if `validTo < today()` and `status = ACTIVE`, treat it as expired (warn or auto-mark INACTIVE).
+4. **As the System, I want to implicitly expire permits** so that expired permits are treated as invalid without manual intervention.
+   - Whenever a permit is queried for operation, if `validTo < today()` and `status = ACTIVE`, treat it as expired (warn or auto-mark INACTIVE).
 
-5. **As a Weighbridge Operator, I want to look up a quota** so that I can verify the vehicle is authorized before accepting waste.
-   - (Phase 4) Given a vehicle plate number or kitir code and today's date, the desktop app queries the server API and receives the quota details (vehicle, site, validity).
+5. **As a Weighbridge Operator, I want to look up a permit** so that I can verify the vehicle is authorized before accepting waste.
+   - (Phase 4) Given a vehicle plate number or kitir QR code and today's date, the desktop app queries the server API and receives the permit details (vehicle, site, validity).
 
 ---
 
 ## 3. Screens (Next.js)
 
-### 3.1 Fuel Quotas List
-**Path:** `/scheduling/fuel-quotas`
+### 3.1 Disposal Permits List
+**Path:** `/scheduling/disposal-permits`
 
 **Features:**
 - Table: Vehicle (plate), Site, Status (Active/Inactive), Valid from, Valid to, Issued at, Actions (Edit, Deactivate, Delete).
 - Filter: Vehicle, Site, Status, Date range (valid on date).
 - Search: Vehicle plate, site name.
-- Button: + Issue new quota, Bulk import.
+- Button: + Issue new permit, Bulk import.
 
 **State & permissions:**
-- `fuel-quota:read` — view list.
-- `fuel-quota:create` — show "+ Issue" and "Bulk import" buttons.
-- `fuel-quota:update` — show Edit and Deactivate.
+- `disposal-permit:read` — view list.
+- `disposal-permit:create` — show "+ Issue" and "Bulk import" buttons.
+- `disposal-permit:update` — show Edit and Deactivate.
 
-### 3.2 Issue Fuel Quota
-**Path:** `/scheduling/fuel-quotas/new`
+### 3.2 Issue Disposal Permit
+**Path:** `/scheduling/disposal-permits/new`
 
 **Form:**
 1. Vehicle (dropdown; search by plate, filtered by status=GOOD).
@@ -113,22 +113,22 @@ enum FuelQuotaStatus {
 **Validation:**
 - All fields required.
 - `validTo >= validFrom`.
-- Warn if vehicle already has active quota for same site (allow override or block).
+- Warn if vehicle already has active permit for same site (allow override or block).
 
 **Post-creation:**
 - Display auto-generated code (e.g., `KT-202606-0042`) or copy-to-clipboard if manually assigned.
 - Option to issue another or return to list.
 
-### 3.3 Edit Fuel Quota
-**Path:** `/scheduling/fuel-quotas/:id`
+### 3.3 Edit Disposal Permit
+**Path:** `/scheduling/disposal-permits/:id`
 
 **Form:**
 - All fields as in issue form.
 - Typically only editable fields: `validTo` (extend), `status` (deactivate).
 - History: show audit trail (created by, updated by, timestamps).
 
-### 3.4 Bulk Import Quotas
-**Path:** `/scheduling/fuel-quotas/bulk-import`
+### 3.4 Bulk Import Permits
+**Path:** `/scheduling/disposal-permits/bulk-import`
 
 **Form:**
 1. File upload (CSV/Excel).
@@ -156,18 +156,18 @@ enum FuelQuotaStatus {
 
 See [`07-api-spec.md`](../07-api-spec.md) **§2.7**:
 
-- `GET /fuel-quotas` — List (paginated, filterable by vehicleId, siteId, status, validFrom/validTo range).
-- `GET /fuel-quotas/:id` — Get detail.
-- `POST /fuel-quotas` — Create (vehicleId, siteId, validFrom, validTo, status).
-- `PATCH /fuel-quotas/:id` — Update (extend dates, deactivate).
-- `POST /fuel-quotas/bulk-import` — Import from CSV/Excel (Phase 2).
+- `GET /disposal-permits` — List (paginated, filterable by vehicleId, siteId, status, validFrom/validTo range).
+- `GET /disposal-permits/:id` — Get detail.
+- `POST /disposal-permits` — Create (vehicleId, siteId, validFrom, validTo, status).
+- `PATCH /disposal-permits/:id` — Update (extend dates, deactivate).
+- `POST /disposal-permits/bulk-import` — Import from CSV/Excel (Phase 1).
 
 **Example:**
 ```json
-POST /fuel-quotas
+POST /disposal-permits
 {
-  "vehicleId": 42,
-  "siteId": 3,
+  "vehicleId": "uuid-value",
+  "siteId": "uuid-value",
   "validFrom": "2026-01-01",
   "validTo": "2026-12-31",
   "status": "ACTIVE"
@@ -177,9 +177,9 @@ Response 201
 {
   "success": true,
   "data": {
-    "id": 5001,
-    "vehicleId": 42,
-    "siteId": 3,
+    "id": "uuid-value",
+    "vehicleId": "uuid-value",
+    "siteId": "uuid-value",
     "status": "ACTIVE",
     "validFrom": "2026-01-01",
     "validTo": "2026-12-31",
@@ -189,14 +189,14 @@ Response 201
 ```
 
 ```json
-GET /fuel-quotas?vehicleId=42&validOn=2026-06-05
+GET /disposal-permits?vehicleId=uuid-value&validOn=2026-06-05
 {
   "success": true,
   "data": [
     {
-      "id": 5001,
-      "vehicleId": 42,
-      "siteId": 3,
+      "id": "uuid-value",
+      "vehicleId": "uuid-value",
+      "siteId": "uuid-value",
       "siteName": "TPA Benowo",
       "status": "ACTIVE",
       "validFrom": "2026-01-01",
@@ -224,10 +224,10 @@ Response 200 (if valid)
 {
   "success": true,
   "data": {
-    "id": 5001,
-    "vehicleId": 42,
+    "id": "uuid-value",
+    "vehicleId": "uuid-value",
     "plateNumber": "L-1234-AB",
-    "siteId": 3,
+    "siteId": "uuid-value",
     "siteName": "TPA Benowo",
     "status": "ACTIVE",
     "validFrom": "2026-01-01",
@@ -251,13 +251,13 @@ Response 404 (if invalid, expired, or inactive)
 
 ## 5. Business Rules
 
-1. **Validity window:** `validFrom ≤ date ≤ validTo` (both inclusive). Expired quotas (`validTo < today()`) are treated as invalid for operational purposes.
-2. **Active status required:** A quota must have `status = ACTIVE` **and** not expired to authorize operation.
-3. **One active per vehicle+site pair:** No overlapping active quotas for the same (vehicle, site) pair on the same date. Enforced at service layer (pre-check before insert); optional DB unique constraint for audit.
-4. **Implicit expiry:** System queries check `validTo >= today()` and treat expired quotas as invalid even if `status = ACTIVE`. Weighbridge API rejects expired quotas (404 NOT_FOUND).
-5. **Vehicle must be operational:** Vehicle must have `status = GOOD` to be authorized. Weighbridge API checks this when resolving quota.
+1. **Validity window:** `validFrom ≤ date ≤ validTo` (both inclusive). Expired permits (`validTo < today()`) are treated as invalid for operational purposes.
+2. **Active status required:** A permit must have `status = ACTIVE` **and** not expired to authorize operation.
+3. **One active per vehicle+site pair:** No overlapping active permits for the same (vehicle, site) pair on the same date. Enforced at service layer (pre-check before insert); optional DB unique constraint for audit.
+4. **Implicit expiry:** System queries check `validTo >= today()` and treat expired permits as invalid even if `status = ACTIVE`. Weighbridge API rejects expired permits (404 NOT_FOUND).
+5. **Vehicle must be operational:** Vehicle must have `status = GOOD` to be authorized. Weighbridge API checks this when resolving permit.
 6. **Audit trail:** `issuedAt` captures creation timestamp. `createdAt`/`updatedAt` and `createdById`/`updatedById` for standard audit trail.
-7. **Kitir code format:** `code` field stores the kitir identifier (e.g. `KT-202606-0042` in legacy format `KT-YYYYMM-NNNNN`, or custom). Must be indexed for fast weighbridge lookup via `@@index([code])`. Code may be auto-generated by the system or manually assigned; uniqueness per period is enforced by business logic (not a DB unique constraint, to allow null/missing codes).
+7. **Kitir QR code format:** `code` field stores the kitir QR identifier (e.g. `KT-202606-0042` in legacy format `KT-YYYYMM-NNNNN`, or custom) scanned at the TPA weighbridge. Must be indexed for fast weighbridge lookup via `@@index([code])`. Code may be auto-generated by the system or manually assigned; uniqueness per period is enforced by business logic (not a DB unique constraint, to allow null/missing codes).
 
 ---
 
@@ -268,55 +268,55 @@ ACTIVE ──(deactivate/expire)──> INACTIVE
       ──(update validTo)──> ACTIVE (extended)
 ```
 
-- `ACTIVE`: vehicle may operate on the site within the date range.
-- `INACTIVE`: vehicle may not operate; quotas are revoked or expired.
-- Implicit expiry: after `validTo`, quota is treated as inactive without explicit update.
+- `ACTIVE`: vehicle may dump at the site within the date range.
+- `INACTIVE`: vehicle may not operate; permits are revoked or expired.
+- Implicit expiry: after `validTo`, permit is treated as inactive without explicit update.
 
 ---
 
 ## 7. Permissions
 
 From [`06-auth-rbac.md`](../06-auth-rbac.md):
-- `fuel-quota:read` — view quotas.
-- `fuel-quota:create` — issue new quota.
-- `fuel-quota:update` — deactivate, extend dates.
+- `disposal-permit:read` — view permits.
+- `disposal-permit:create` — issue new permit.
+- `disposal-permit:update` — deactivate, extend dates.
 
 **Typical role permissions:**
-- **Administrator:** `fuel-quota:*` (full access).
-- **DataAdmin:** `fuel-quota:*` (full access).
-- **FuelStationOperator:** `fuel-quota:read` (view only).
-- **TpaOperator:** `fuel-quota:read` (view only; weighbridge server has separate API key auth).
+- **Administrator:** `disposal-permit:*` (full access).
+- **DataAdmin:** `disposal-permit:*` (full access).
+- **FuelStationOperator:** `disposal-permit:read` (view only).
+- **TpaOperator:** `disposal-permit:read` (view only; weighbridge server has separate API key auth).
 
 ---
 
 ## 8. Acceptance Criteria
 
-- [x] User can create a fuel quota with vehicle, site, date range, status.
+- [x] User can create a disposal permit with vehicle, site, date range, status.
 - [x] API validates `validTo >= validFrom`.
-- [x] API rejects duplicate active quotas for same (vehicle, site) pair (warn/block).
-- [x] User can deactivate or extend a quota.
+- [x] API rejects duplicate active permits for same (vehicle, site) pair (warn/block).
+- [x] User can deactivate or extend a permit.
 - [x] Bulk import handles CSV with 100k+ rows in < 60s.
 - [x] Queries with indexes (vehicle+date range) return within 50ms.
-- [x] Expired quotas (validTo < today()) are treated as invalid.
-- [x] (Phase 4) Weighbridge API resolves quota by code or plate; returns vehicle tare weight.
+- [x] Expired permits (validTo < today()) are treated as invalid.
+- [x] (Phase 4) Weighbridge API resolves permit by QR code or plate; returns vehicle tare weight.
 
 ---
 
 ## 9. Test Cases
 
 ### Unit Tests
-1. **Quota creation:** Valid inputs create record; `validTo < validFrom` rejected.
-2. **Status transitions:** Can deactivate active quota; cannot activate invalid quota.
-3. **Expiry logic:** Quota with `validTo = yesterday` returns as expired.
-4. **Duplicate detection:** Creating second active quota for same vehicle+site raises error.
+1. **Permit creation:** Valid inputs create record; `validTo < validFrom` rejected.
+2. **Status transitions:** Can deactivate active permit; cannot activate invalid permit.
+3. **Expiry logic:** Permit with `validTo = yesterday` returns as expired.
+4. **Duplicate detection:** Creating second active permit for same vehicle+site raises error.
 
 ### Integration Tests
 1. **Bulk import:** Upload CSV with 10k rows; verify all upserted with correct fields.
 2. **Query performance:** Query for vehicle on a date with 1M rows in index; return < 50ms.
-3. **Weighbridge resolution:** Resolve quota by code and plate; returns tare weight; expired returns 404.
+3. **Weighbridge resolution:** Resolve permit by QR code and plate; returns tare weight; expired returns 404.
 
 ### E2E Tests (Playwright)
-1. **Issue and verify quota:** Navigate to new quota form, fill fields, save. Verify quota appears in list with correct dates.
+1. **Issue and verify permit:** Navigate to new permit form, fill fields, save. Verify permit appears in list with correct dates.
 2. **Deactivate quota:** Open quota detail, deactivate, save. Verify status shows INACTIVE.
 3. **Bulk import flow:** Upload CSV file, preview, import. Verify progress and success summary.
 

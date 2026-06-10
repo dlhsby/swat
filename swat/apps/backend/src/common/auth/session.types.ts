@@ -7,9 +7,9 @@ import 'express-session';
  * re-issuing every active session.
  */
 export interface SessionUser {
-  readonly id: number;
+  readonly id: string;
   readonly username: string;
-  readonly roleId: number;
+  readonly roleId: string;
   readonly mustChangePassword: boolean;
 }
 

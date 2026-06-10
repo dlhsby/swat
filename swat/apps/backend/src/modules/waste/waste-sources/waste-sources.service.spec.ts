@@ -5,7 +5,7 @@ import { WasteSourcesService } from './waste-sources.service';
 
 function buildSource(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
+    id: '550e8400-e29b-41d4-a716-446655440001',
     code: 'PS',
     name: 'Pasar',
     notes: null,
@@ -50,14 +50,18 @@ describe('WasteSourcesService', () => {
 
   it('returns a single source or 404', async () => {
     repo.findById.mockResolvedValueOnce(buildSource());
-    await expect(service.getById(1)).resolves.toMatchObject({ code: 'PS' });
+    await expect(service.getById('550e8400-e29b-41d4-a716-446655440001')).resolves.toMatchObject({
+      code: 'PS',
+    });
     repo.findById.mockResolvedValueOnce(null);
-    await expect(service.getById(9)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('550e8400-e29b-41d4-a716-446655440099')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   describe('create', () => {
     it('rejects a duplicate code', async () => {
-      repo.findByCode.mockResolvedValue({ id: 9 });
+      repo.findByCode.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440099' });
       await expect(service.create({ code: 'PS', name: 'Pasar' })).rejects.toBeInstanceOf(
         ConflictException,
       );
@@ -74,19 +78,25 @@ describe('WasteSourcesService', () => {
   describe('update', () => {
     it('404s an unknown source', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.update(9, { name: 'x' })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440099', { name: 'x' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('rejects changing to an existing code', async () => {
       repo.findById.mockResolvedValue(buildSource({ code: 'PS' }));
-      repo.findByCode.mockResolvedValue({ id: 9 });
-      await expect(service.update(1, { code: 'PU' })).rejects.toBeInstanceOf(ConflictException);
+      repo.findByCode.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440099' });
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', { code: 'PU' }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('updates the name', async () => {
       repo.findById.mockResolvedValue(buildSource());
       repo.update.mockResolvedValue(buildSource({ name: 'Pasar Induk' }));
-      await expect(service.update(1, { name: 'Pasar Induk' })).resolves.toMatchObject({
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', { name: 'Pasar Induk' }),
+      ).resolves.toMatchObject({
         name: 'Pasar Induk',
       });
     });
@@ -96,19 +106,25 @@ describe('WasteSourcesService', () => {
     it('blocks deletion while referenced by vehicles', async () => {
       repo.findById.mockResolvedValue(buildSource());
       repo.countVehicleLinks.mockResolvedValue(3);
-      await expect(service.remove(1)).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.remove('550e8400-e29b-41d4-a716-446655440001')).rejects.toBeInstanceOf(
+        ConflictException,
+      );
       expect(repo.delete).not.toHaveBeenCalled();
     });
 
     it('deletes an unreferenced source', async () => {
       repo.findById.mockResolvedValue(buildSource());
-      repo.delete.mockResolvedValue({ id: 1 });
-      await expect(service.remove(1)).resolves.toEqual({ message: 'Sumber sampah telah dihapus.' });
+      repo.delete.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440001' });
+      await expect(service.remove('550e8400-e29b-41d4-a716-446655440001')).resolves.toEqual({
+        message: 'Sumber sampah telah dihapus.',
+      });
     });
 
     it('404s an unknown source', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.remove(9)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.remove('550e8400-e29b-41d4-a716-446655440099')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
   });
 });

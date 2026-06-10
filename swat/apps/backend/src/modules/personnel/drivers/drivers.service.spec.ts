@@ -6,10 +6,10 @@ import { DriversService } from './drivers.service';
 
 function buildDriver(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
+    id: '550e8400-e29b-41d4-a716-446655440001',
     name: 'Budi',
     idCardNumber: '3500000000000001',
-    poolSiteId: 1,
+    poolSiteId: '550e8400-e29b-41d4-a716-446655440002',
     employmentStatus: EmploymentStatus.SATGAS,
     originAddress: 'Surabaya',
     currentAddress: 'Surabaya',
@@ -17,7 +17,7 @@ function buildDriver(overrides: Record<string, unknown> = {}): Record<string, un
     contact: '0800',
     safetyTraining: 'BELUM',
     notes: null,
-    poolSite: { id: 1, name: 'Pool' },
+    poolSite: { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Pool' },
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     ...overrides,
@@ -42,7 +42,7 @@ describe('DriversService', () => {
       list: jest.fn(),
       findById: jest.fn(),
       findByIdCard: jest.fn().mockResolvedValue(null),
-      siteExists: jest.fn().mockResolvedValue({ id: 1 }),
+      siteExists: jest.fn().mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440002' }),
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
@@ -51,7 +51,7 @@ describe('DriversService', () => {
   });
 
   const dto = {
-    poolSiteId: 1,
+    poolSiteId: '550e8400-e29b-41d4-a716-446655440002',
     employmentStatus: EmploymentStatus.SATGAS,
     name: 'Budi',
     idCardNumber: '3500000000000001',
@@ -70,7 +70,9 @@ describe('DriversService', () => {
 
   it('returns a single driver', async () => {
     repo.findById.mockResolvedValue(buildDriver());
-    await expect(service.getById(1)).resolves.toMatchObject({ id: 1 });
+    await expect(service.getById('550e8400-e29b-41d4-a716-446655440001')).resolves.toMatchObject({
+      id: '550e8400-e29b-41d4-a716-446655440001',
+    });
   });
 
   describe('create', () => {
@@ -86,7 +88,7 @@ describe('DriversService', () => {
     });
 
     it('rejects a duplicate KTP', async () => {
-      repo.findByIdCard.mockResolvedValue({ id: 9 });
+      repo.findByIdCard.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440099' });
       await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
     });
 
@@ -110,36 +112,44 @@ describe('DriversService', () => {
   describe('update', () => {
     it('404s an unknown driver', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.update(9, { contact: 'x' })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440099', { contact: 'x' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('rejects a missing pool site on update', async () => {
       repo.findById.mockResolvedValue(buildDriver());
       repo.siteExists.mockResolvedValue(null);
-      await expect(service.update(1, { poolSiteId: 99 })).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', {
+          poolSiteId: '550e8400-e29b-41d4-a716-446655440099',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('rejects an under-18 birthDate on update', async () => {
       repo.findById.mockResolvedValue(buildDriver());
-      await expect(service.update(1, { birthDate: '2020-01-01' })).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', { birthDate: '2020-01-01' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('rejects a duplicate KTP on update', async () => {
       repo.findById.mockResolvedValue(buildDriver());
-      repo.findByIdCard.mockResolvedValue({ id: 9 });
-      await expect(service.update(1, { idCardNumber: '3500000000000002' })).rejects.toBeInstanceOf(
-        ConflictException,
-      );
+      repo.findByIdCard.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440099' });
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', {
+          idCardNumber: '3500000000000002',
+        }),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('updates a driver', async () => {
       repo.findById.mockResolvedValue(buildDriver());
       repo.update.mockResolvedValue(buildDriver({ currentAddress: 'Sidoarjo' }));
-      await expect(service.update(1, { currentAddress: 'Sidoarjo' })).resolves.toMatchObject({
+      await expect(
+        service.update('550e8400-e29b-41d4-a716-446655440001', { currentAddress: 'Sidoarjo' }),
+      ).resolves.toMatchObject({
         currentAddress: 'Sidoarjo',
       });
     });
@@ -147,8 +157,8 @@ describe('DriversService', () => {
     it('updates every field at once', async () => {
       repo.findById.mockResolvedValue(buildDriver());
       repo.update.mockResolvedValue(buildDriver());
-      await service.update(1, {
-        poolSiteId: 2,
+      await service.update('550e8400-e29b-41d4-a716-446655440001', {
+        poolSiteId: '550e8400-e29b-41d4-a716-446655440010',
         employmentStatus: EmploymentStatus.PNS,
         name: 'Budi Baru',
         idCardNumber: '3500000000000002',
@@ -160,11 +170,11 @@ describe('DriversService', () => {
         notes: 'catatan',
       });
       expect(repo.update).toHaveBeenCalledWith(
-        1,
+        '550e8400-e29b-41d4-a716-446655440001',
         expect.objectContaining({
           name: 'Budi Baru',
           employmentStatus: EmploymentStatus.PNS,
-          poolSite: { connect: { id: 2 } },
+          poolSite: { connect: { id: '550e8400-e29b-41d4-a716-446655440010' } },
         }),
       );
     });
@@ -173,13 +183,17 @@ describe('DriversService', () => {
   describe('remove', () => {
     it('404s an unknown driver', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.remove(9)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.remove('550e8400-e29b-41d4-a716-446655440099')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('soft-deletes a driver', async () => {
       repo.findById.mockResolvedValue(buildDriver());
-      repo.softDelete.mockResolvedValue({ id: 1 });
-      await expect(service.remove(1)).resolves.toEqual({ message: 'Pengemudi telah dihapus.' });
+      repo.softDelete.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440001' });
+      await expect(service.remove('550e8400-e29b-41d4-a716-446655440001')).resolves.toEqual({
+        message: 'Pengemudi telah dihapus.',
+      });
     });
   });
 });

@@ -14,9 +14,9 @@ export type HaulAssignmentWithRefs = Prisma.HaulAssignmentGetPayload<{
 export interface HaulAssignmentDto {
   readonly id: string;
   readonly haulId: string;
-  readonly driverId: number;
+  readonly driverId: string;
   readonly driverName: string;
-  readonly crewScheduleId: number | null;
+  readonly crewScheduleId: string | null;
   readonly status: string;
   readonly operationDate: string;
   readonly departTargetOdometer: number;
@@ -34,8 +34,8 @@ export interface HaulAssignmentDto {
 
 export function toHaulAssignmentDto(assignment: HaulAssignmentWithRefs): HaulAssignmentDto {
   return {
-    id: assignment.id.toString(),
-    haulId: assignment.haulId.toString(),
+    id: assignment.id,
+    haulId: assignment.haulId,
     driverId: assignment.driverId,
     driverName: assignment.driver.name,
     crewScheduleId: assignment.crewScheduleId,

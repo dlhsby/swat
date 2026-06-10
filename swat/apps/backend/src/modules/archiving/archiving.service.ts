@@ -109,7 +109,7 @@ export class ArchivingService {
   /** Catalog listing for the admin view (BigInt counts coerced to numbers). */
   async listArchives(): Promise<
     Array<{
-      id: number;
+      id: string;
       tableName: string;
       period: string;
       archiveType: string;

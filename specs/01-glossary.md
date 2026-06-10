@@ -28,7 +28,7 @@ this table, this table wins.
 | Tonase | Tonnage (weight of waste) | tonnage | Tonase |
 | Sumber sampah | Waste source category | `WasteSource` | Sumber Sampah |
 | Bahan bakar (BBM) | Fuel | `Fuel` | Bahan Bakar |
-| Jatah kitir / Kitir | Fuel quota voucher issued to a vehicle for a date range; the code is matched at the weighbridge during weighing | `FuelQuota` | Jatah Kitir |
+| Jatah kitir / Kitir | TPA dumping permit (QR scanned at weighbridge) issued to a vehicle for a date range | `DisposalPermit` | Jatah Kitir |
 | Retribusi | Waste-collection fee / levy | `Levy` | Retribusi |
 | Riwayat perawatan / Perawatan | Maintenance history (servicing & repairs) | `MaintenanceRecord` / `MaintenanceItem` | Perawatan |
 | Pemeriksaan kendaraan | Vehicle inspection (checklist) | `VehicleInspection` / `InspectionItem` | Pemeriksaan Kendaraan |
@@ -122,7 +122,7 @@ Legacy numeric IDs are mapped to enum values so old row data can be migrated. Th
 | 1 | `IN_PROGRESS` | Belum Selesai |
 | 2 | `DONE` | Selesai |
 
-### FuelQuotaStatus (`statusjatahkitir`)
+### DisposalPermitStatus (`statusdisposalPermit`)
 | Legacy ID | Enum value | UI label |
 |-----------|-----------|----------|
 | 1 | `ACTIVE` | Berlaku |

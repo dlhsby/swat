@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -36,7 +26,7 @@ export class WasteSourcesController {
   @Get(':id')
   @RequirePermissions('waste-source:read')
   @ApiOperation({ summary: 'Get a waste source by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<WasteSourceDto> {
+  getById(@Param('id') id: string): Promise<WasteSourceDto> {
     return this.wasteSources.getById(id);
   }
 
@@ -50,17 +40,14 @@ export class WasteSourcesController {
   @Patch(':id')
   @RequirePermissions('waste-source:update')
   @ApiOperation({ summary: 'Update a waste source' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateWasteSourceDto,
-  ): Promise<WasteSourceDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateWasteSourceDto): Promise<WasteSourceDto> {
     return this.wasteSources.update(id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('waste-source:delete')
   @ApiOperation({ summary: 'Delete a waste source (blocked while referenced)' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.wasteSources.remove(id);
   }
 }

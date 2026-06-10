@@ -1,25 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { EmploymentStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
-import {
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-  Min,
-  MinLength,
-} from 'class-validator';
+import { IsEnum, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateDriverDto {
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Pool wajib dipilih' })
-  @Min(1, { message: 'Pool wajib dipilih' })
-  poolSiteId!: number;
+  @ApiProperty()
+  @IsString({ message: 'Pool wajib dipilih' })
+  poolSiteId!: string;
 
   @ApiProperty({ enum: EmploymentStatus })
   @IsEnum(EmploymentStatus, { message: 'Status kepegawaian tidak valid' })

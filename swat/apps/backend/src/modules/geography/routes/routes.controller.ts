@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -34,7 +24,7 @@ export class RoutesController {
   @Get(':id')
   @RequirePermissions('route:read')
   @ApiOperation({ summary: 'Get a route by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<RouteDto> {
+  getById(@Param('id') id: string): Promise<RouteDto> {
     return this.routes.getById(id);
   }
 
@@ -48,14 +38,14 @@ export class RoutesController {
   @Patch(':id')
   @RequirePermissions('route:update')
   @ApiOperation({ summary: 'Update a route' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateRouteDto): Promise<RouteDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateRouteDto): Promise<RouteDto> {
     return this.routes.update(id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('route:delete')
   @ApiOperation({ summary: 'Soft-delete a route' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.routes.remove(id);
   }
 }

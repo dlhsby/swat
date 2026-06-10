@@ -6,7 +6,7 @@
 import {
   type DayStatus,
   type EmploymentStatus,
-  type FuelQuotaStatus,
+  type DisposalPermitStatus,
   type MaintenanceStatus,
   type RouteCategory,
   type SiteType,
@@ -33,7 +33,7 @@ const EMPLOYMENT_STATUS: Record<number, EmploymentStatus> = {
   2: 'PNS',
   3: 'HONORER',
 };
-const FUEL_QUOTA_STATUS: Record<number, FuelQuotaStatus> = { 1: 'ACTIVE', 2: 'INACTIVE' };
+const DISPOSAL_PERMIT_STATUS: Record<number, DisposalPermitStatus> = { 1: 'ACTIVE', 2: 'INACTIVE' };
 const MAINTENANCE_STATUS: Record<number, MaintenanceStatus> = {
   1: 'PENDING_APPROVAL',
   2: 'APPROVED',
@@ -57,8 +57,8 @@ export const mapVehicleStatus = (id: number | null): VehicleStatus =>
   lookup(VEHICLE_STATUS, id, 'GOOD');
 export const mapEmploymentStatus = (id: number | null): EmploymentStatus =>
   lookup(EMPLOYMENT_STATUS, id, 'HONORER');
-export const mapFuelQuotaStatus = (id: number | null): FuelQuotaStatus =>
-  lookup(FUEL_QUOTA_STATUS, id, 'ACTIVE');
+export const mapDisposalPermitStatus = (id: number | null): DisposalPermitStatus =>
+  lookup(DISPOSAL_PERMIT_STATUS, id, 'ACTIVE');
 export const mapMaintenanceStatus = (id: number | null): MaintenanceStatus =>
   lookup(MAINTENANCE_STATUS, id, 'PENDING_APPROVAL');
 export const mapDayStatus = (id: number | null): DayStatus => lookup(DAY_STATUS, id, 'IN_PROGRESS');

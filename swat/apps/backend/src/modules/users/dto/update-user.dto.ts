@@ -1,6 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ maxLength: 100 })
@@ -10,10 +9,8 @@ export class UpdateUserDto {
   @MaxLength(100)
   name?: string;
 
-  @ApiPropertyOptional({ description: 'Role id', minimum: 1 })
+  @ApiPropertyOptional({ description: 'Role id (UUID)' })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'Peran tidak valid' })
-  @Min(1, { message: 'Peran tidak valid' })
-  roleId?: number;
+  @IsUUID(undefined, { message: 'Peran tidak valid' })
+  roleId?: string;
 }

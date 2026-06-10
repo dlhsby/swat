@@ -9,7 +9,6 @@ import { type Prisma } from '@prisma/client';
 import { hasPermission } from '../../../common/auth/permission-matcher';
 import { RolePermissionsService } from '../../../common/auth/role-permissions.service';
 import { type SessionUser } from '../../../common/auth/session.types';
-import { parseBigIntId } from '../../../common/parse-bigint';
 import { RollupService } from '../../analytics/rollup.service';
 import { AuditService } from '../../audit/audit.service';
 
@@ -29,14 +28,14 @@ const CATEGORY_PERMISSION: Readonly<Record<string, string>> = {
 export interface TripDetailDto extends TripDto {
   readonly haulAssignment: {
     readonly id: string;
-    readonly driverId: number;
+    readonly driverId: string;
     readonly driverName: string;
     readonly haul: {
       readonly id: string;
-      readonly vehicleId: number;
+      readonly vehicleId: string;
       readonly vehiclePlate: string;
       readonly transactionDay: {
-        readonly id: number;
+        readonly id: string;
         readonly date: string;
         readonly status: string;
       };
@@ -50,11 +49,11 @@ function toDetailDto(trip: TripFull): TripDetailDto {
   return {
     ...toTripDto(trip),
     haulAssignment: {
-      id: haulAssignment.id.toString(),
+      id: haulAssignment.id,
       driverId: haulAssignment.driverId,
       driverName: haulAssignment.driver.name,
       haul: {
-        id: haul.id.toString(),
+        id: haul.id,
         vehicleId: haul.vehicleId,
         vehiclePlate: haul.vehicle.plateNumber,
         transactionDay: {
@@ -77,7 +76,7 @@ export class TripsService {
   ) {}
 
   async getById(idParam: string): Promise<TripDetailDto> {
-    const trip = await this.repo.findFull(parseBigIntId(idParam, 'ID trip tidak valid.'));
+    const trip = await this.repo.findFull(idParam);
     if (!trip) {
       throw new NotFoundException('Trip tidak ditemukan.');
     }
@@ -85,7 +84,7 @@ export class TripsService {
   }
 
   async record(idParam: string, dto: RecordTripDto, user: SessionUser): Promise<TripDto> {
-    const trip = await this.repo.findForRecording(parseBigIntId(idParam, 'ID trip tidak valid.'));
+    const trip = await this.repo.findForRecording(idParam);
     if (!trip) {
       throw new NotFoundException('Trip tidak ditemukan.');
     }
@@ -144,7 +143,7 @@ export class TripsService {
   }
 
   async verify(idParam: string, user: SessionUser): Promise<TripDto> {
-    const id = parseBigIntId(idParam, 'ID trip tidak valid.');
+    const id = idParam;
     const trip = await this.repo.findForRecording(id);
     if (!trip) {
       throw new NotFoundException('Trip tidak ditemukan.');

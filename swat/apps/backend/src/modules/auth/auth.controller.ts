@@ -6,7 +6,6 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
   Req,
@@ -47,10 +46,10 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Req() req: Request,
   ): Promise<{
-    userId: number;
+    userId: string;
     username: string;
     name: string;
-    roleId: number;
+    roleId: string;
     roleName: string;
     mustChangePassword: boolean;
   }> {
@@ -110,7 +109,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Admin: issue a temporary password and force a reset' })
   forceReset(
     @CurrentUser() actor: SessionUser,
-    @Param('userId', ParseIntPipe) userId: number,
+    @Param('userId') userId: string,
     @Req() req: Request,
   ): Promise<ForceResetResult> {
     if (userId === actor.id) {

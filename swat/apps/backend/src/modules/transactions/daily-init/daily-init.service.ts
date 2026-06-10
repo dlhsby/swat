@@ -9,7 +9,7 @@ export interface DailyInitResult {
   /** False when the day already existed (idempotent skip). */
   readonly created: boolean;
   readonly date: string;
-  readonly transactionDayId: number;
+  readonly transactionDayId: string;
   readonly hauls: number;
   readonly assignments: number;
   readonly trips: number;
@@ -164,10 +164,10 @@ export class DailyInitService {
   /** Group schedules by vehicle so each vehicle gets a single haul per day. */
   private groupByVehicle(
     schedules: ScheduleForInit[],
-  ): Map<number, { vehicleId: number; currentOdometer: number; schedules: ScheduleForInit[] }> {
+  ): Map<string, { vehicleId: string; currentOdometer: number; schedules: ScheduleForInit[] }> {
     const groups = new Map<
-      number,
-      { vehicleId: number; currentOdometer: number; schedules: ScheduleForInit[] }
+      string,
+      { vehicleId: string; currentOdometer: number; schedules: ScheduleForInit[] }
     >();
     for (const schedule of schedules) {
       const existing = groups.get(schedule.vehicleId);

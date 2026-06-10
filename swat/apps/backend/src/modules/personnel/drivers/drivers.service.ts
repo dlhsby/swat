@@ -18,10 +18,10 @@ import { type UpdateDriverDto } from './dto/update-driver.dto';
 const MIN_AGE_YEARS = 18;
 
 export interface DriverDto {
-  readonly id: number;
+  readonly id: string;
   readonly name: string;
   readonly idCardNumber: string;
-  readonly poolSiteId: number;
+  readonly poolSiteId: string;
   readonly poolSiteName: string;
   readonly employmentStatus: EmploymentStatus;
   readonly originAddress: string;
@@ -77,7 +77,7 @@ export class DriversService {
     return paginated(rows.map(toDto), total, query);
   }
 
-  async getById(id: number): Promise<DriverDto> {
+  async getById(id: string): Promise<DriverDto> {
     const driver = await this.repo.findById(id);
     if (!driver) {
       throw new NotFoundException('Pengemudi tidak ditemukan.');
@@ -110,7 +110,7 @@ export class DriversService {
     return toDto(driver);
   }
 
-  async update(id: number, dto: UpdateDriverDto): Promise<DriverDto> {
+  async update(id: string, dto: UpdateDriverDto): Promise<DriverDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Pengemudi tidak ditemukan.');
@@ -143,13 +143,13 @@ export class DriversService {
     return toDto(driver);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     await this.getById(id);
     await this.repo.softDelete(id);
     return { message: 'Pengemudi telah dihapus.' };
   }
 
-  private async assertSiteExists(poolSiteId: number): Promise<void> {
+  private async assertSiteExists(poolSiteId: string): Promise<void> {
     const site = await this.repo.siteExists(poolSiteId);
     if (!site) {
       throw new BadRequestException('Pool tidak ditemukan.');

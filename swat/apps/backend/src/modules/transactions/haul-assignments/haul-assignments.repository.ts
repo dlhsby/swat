@@ -27,13 +27,13 @@ export type HaulAssignmentForRecording = Prisma.HaulAssignmentGetPayload<{
 export class HaulAssignmentsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findForRecording(id: bigint): Promise<HaulAssignmentForRecording | null> {
+  findForRecording(id: string): Promise<HaulAssignmentForRecording | null> {
     return this.prisma.haulAssignment.findUnique({ where: { id }, include: recordingInclude });
   }
 
   /** Record departure; no cascade. */
   recordDepart(
-    id: bigint,
+    id: string,
     data: Prisma.HaulAssignmentUpdateInput,
   ): Promise<HaulAssignmentWithRefs> {
     return this.prisma.haulAssignment.update({
@@ -48,9 +48,9 @@ export class HaulAssignmentsRepository {
    * assignment, and close the parent haul when every assignment is done.
    */
   async recordReturn(params: {
-    id: bigint;
-    haulId: bigint;
-    vehicleId: number;
+    id: string;
+    haulId: string;
+    vehicleId: string;
     odometer: number;
     data: Prisma.HaulAssignmentUpdateInput;
     closeHaul: boolean;
@@ -79,7 +79,7 @@ export class HaulAssignmentsRepository {
     return assignment;
   }
 
-  listTrips(haulAssignmentId: bigint): Promise<TripWithRefs[]> {
+  listTrips(haulAssignmentId: string): Promise<TripWithRefs[]> {
     return this.prisma.trip.findMany({
       where: { haulAssignmentId },
       include: tripInclude,

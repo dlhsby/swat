@@ -5,11 +5,9 @@ import { IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-va
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
 export class CreateFuelDto {
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Kategori bahan bakar wajib dipilih' })
-  @Min(1, { message: 'Kategori bahan bakar wajib dipilih' })
-  fuelCategoryId!: number;
+  @ApiProperty()
+  @IsString({ message: 'Kategori bahan bakar wajib dipilih' })
+  fuelCategoryId!: string;
 
   @ApiProperty({ maxLength: 100 })
   @IsString()
@@ -27,12 +25,10 @@ export class CreateFuelDto {
 export class UpdateFuelDto extends PartialType(CreateFuelDto) {}
 
 export class ListFuelsQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ minimum: 1 })
+  @ApiPropertyOptional()
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  fuelCategoryId?: number;
+  @IsString()
+  fuelCategoryId?: string;
 
   @ApiPropertyOptional({ description: 'Search by name' })
   @IsOptional()

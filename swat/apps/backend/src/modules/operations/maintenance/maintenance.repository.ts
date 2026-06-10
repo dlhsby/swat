@@ -14,7 +14,7 @@ export type MaintenanceWithRefs = Prisma.MaintenanceRecordGetPayload<{
 }>;
 
 export interface ListMaintenanceFilter extends PageParams {
-  readonly vehicleId?: number;
+  readonly vehicleId?: string;
   readonly type?: MaintenanceType;
   readonly status?: MaintenanceStatus;
   readonly from?: Date;
@@ -61,11 +61,11 @@ export class MaintenanceRepository {
     return { rows, total };
   }
 
-  findById(id: bigint): Promise<MaintenanceWithRefs | null> {
+  findById(id: string): Promise<MaintenanceWithRefs | null> {
     return this.prisma.maintenanceRecord.findUnique({ where: { id }, include: recordInclude });
   }
 
-  vehicleExists(id: number): Promise<{ id: number } | null> {
+  vehicleExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.vehicle.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
@@ -87,11 +87,11 @@ export class MaintenanceRepository {
     return this.prisma.maintenanceRecord.create({ data, include: recordInclude });
   }
 
-  update(id: bigint, data: Prisma.MaintenanceRecordUpdateInput): Promise<MaintenanceWithRefs> {
+  update(id: string, data: Prisma.MaintenanceRecordUpdateInput): Promise<MaintenanceWithRefs> {
     return this.prisma.maintenanceRecord.update({ where: { id }, data, include: recordInclude });
   }
 
-  async delete(id: bigint): Promise<void> {
+  async delete(id: string): Promise<void> {
     await this.prisma.maintenanceRecord.delete({ where: { id } });
   }
 }

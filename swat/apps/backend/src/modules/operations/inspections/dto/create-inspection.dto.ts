@@ -3,12 +3,10 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
-  IsInt,
   IsOptional,
   IsString,
   Matches,
   MaxLength,
-  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -17,23 +15,19 @@ import { InspectionItemDto } from './inspection-item.dto';
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateInspectionDto {
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Kendaraan wajib dipilih' })
-  @Min(1, { message: 'Kendaraan wajib dipilih' })
-  vehicleId!: number;
+  @ApiProperty()
+  @IsString()
+  vehicleId!: string;
 
   @ApiProperty({ example: '2026-06-08', description: 'Inspection date (YYYY-MM-DD)' })
   @IsString()
   @Matches(DATE_REGEX, { message: 'Tanggal harus berformat YYYY-MM-DD' })
   date!: string;
 
-  @ApiPropertyOptional({ minimum: 1, description: 'Inspector (user id)' })
+  @ApiPropertyOptional({ description: 'Inspector (user id)' })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  inspectorId?: number;
+  @IsString()
+  inspectorId?: string;
 
   @ApiPropertyOptional({ maxLength: 512 })
   @IsOptional()

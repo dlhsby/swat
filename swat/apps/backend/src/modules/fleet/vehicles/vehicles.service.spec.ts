@@ -6,11 +6,11 @@ import { VehiclesService } from './vehicles.service';
 
 function buildVehicle(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 1,
+    id: '00000000-0000-0000-0000-000000000001',
     plateNumber: 'L 1234 AB',
     status: VehicleStatus.GOOD,
-    poolSiteId: 1,
-    modelId: 1,
+    poolSiteId: '00000000-0000-0000-0000-000000000001',
+    modelId: '00000000-0000-0000-0000-000000000001',
     chassisNumber: 'C1',
     engineNumber: 'E1',
     manufactureYear: 2020,
@@ -20,8 +20,8 @@ function buildVehicle(overrides: Record<string, unknown> = {}): Record<string, u
     registrationExpiry: new Date('2027-01-01T00:00:00Z'),
     taxExpiry: new Date('2027-01-01T00:00:00Z'),
     notes: null,
-    model: { id: 1, brand: 'Hino' },
-    poolSite: { id: 1, name: 'Pool' },
+    model: { id: '00000000-0000-0000-0000-000000000001', brand: 'Hino' },
+    poolSite: { id: '00000000-0000-0000-0000-000000000001', name: 'Pool' },
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     ...overrides,
@@ -47,8 +47,8 @@ describe('VehiclesService', () => {
       list: jest.fn(),
       findById: jest.fn(),
       findByPlate: jest.fn(),
-      modelExists: jest.fn().mockResolvedValue({ id: 1 }),
-      siteExists: jest.fn().mockResolvedValue({ id: 1 }),
+      modelExists: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' }),
+      siteExists: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' }),
       create: jest.fn(),
       update: jest.fn(),
       softDelete: jest.fn(),
@@ -57,8 +57,8 @@ describe('VehiclesService', () => {
   });
 
   const dto = {
-    poolSiteId: 1,
-    modelId: 1,
+    poolSiteId: '00000000-0000-0000-0000-000000000001',
+    modelId: '00000000-0000-0000-0000-000000000001',
     plateNumber: 'L 1234 AB',
     chassisNumber: 'C1',
     engineNumber: 'E1',
@@ -74,7 +74,7 @@ describe('VehiclesService', () => {
   });
 
   it('rejects a duplicate plate', async () => {
-    repo.findByPlate.mockResolvedValue({ id: 9 });
+    repo.findByPlate.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000009' });
     await expect(service.create(dto as never)).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -115,29 +115,33 @@ describe('VehiclesService', () => {
   describe('update', () => {
     it('rejects rolling the odometer backwards', async () => {
       repo.findById.mockResolvedValue(buildVehicle({ currentOdometer: 100000 }));
-      await expect(service.update(1, { currentOdometer: 99999 })).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.update('00000000-0000-0000-0000-000000000001', { currentOdometer: 99999 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('allows a forward odometer reading', async () => {
       repo.findById.mockResolvedValue(buildVehicle({ currentOdometer: 100000 }));
       repo.update.mockResolvedValue(buildVehicle({ currentOdometer: 100500 }));
-      await expect(service.update(1, { currentOdometer: 100500 })).resolves.toMatchObject({
+      await expect(
+        service.update('00000000-0000-0000-0000-000000000001', { currentOdometer: 100500 }),
+      ).resolves.toMatchObject({
         currentOdometer: 100500,
       });
     });
 
     it('404s an unknown vehicle', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.update(1, { notes: 'x' })).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.update('00000000-0000-0000-0000-000000000001', { notes: 'x' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('updates every field at once', async () => {
       repo.findById.mockResolvedValue(buildVehicle({ currentOdometer: 100000 }));
       repo.findByPlate.mockResolvedValue(null);
       repo.update.mockResolvedValue(buildVehicle());
-      await service.update(1, {
+      await service.update('00000000-0000-0000-0000-000000000001', {
         plateNumber: 'L 4321 ZZ',
         status: VehicleStatus.MAJOR_DAMAGE,
         chassisNumber: 'C2',
@@ -149,16 +153,16 @@ describe('VehiclesService', () => {
         registrationExpiry: '2028-01-01',
         taxExpiry: '2028-01-01',
         notes: 'baru',
-        modelId: 2,
-        poolSiteId: 2,
+        modelId: '00000000-0000-0000-0000-000000000002',
+        poolSiteId: '00000000-0000-0000-0000-000000000002',
       });
       expect(repo.update).toHaveBeenCalledWith(
-        1,
+        '00000000-0000-0000-0000-000000000001',
         expect.objectContaining({
           plateNumber: 'L 4321 ZZ',
           status: VehicleStatus.MAJOR_DAMAGE,
-          model: { connect: { id: 2 } },
-          poolSite: { connect: { id: 2 } },
+          model: { connect: { id: '00000000-0000-0000-0000-000000000002' } },
+          poolSite: { connect: { id: '00000000-0000-0000-0000-000000000002' } },
         }),
       );
     });
@@ -166,7 +170,9 @@ describe('VehiclesService', () => {
 
   it('soft-deletes a vehicle', async () => {
     repo.findById.mockResolvedValue(buildVehicle());
-    repo.softDelete.mockResolvedValue({ id: 1 });
-    await expect(service.remove(1)).resolves.toEqual({ message: 'Kendaraan telah dihapus.' });
+    repo.softDelete.mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' });
+    await expect(service.remove('00000000-0000-0000-0000-000000000001')).resolves.toEqual({
+      message: 'Kendaraan telah dihapus.',
+    });
   });
 });

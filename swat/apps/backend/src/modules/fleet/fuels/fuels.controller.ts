@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -32,7 +22,7 @@ export class FuelsController {
   @Get(':id')
   @RequirePermissions('fuel:read')
   @ApiOperation({ summary: 'Get a fuel by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<FuelDto> {
+  getById(@Param('id') id: string): Promise<FuelDto> {
     return this.fuels.getById(id);
   }
 
@@ -46,14 +36,14 @@ export class FuelsController {
   @Patch(':id')
   @RequirePermissions('fuel:update')
   @ApiOperation({ summary: 'Update a fuel (incl. price per liter)' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateFuelDto): Promise<FuelDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateFuelDto): Promise<FuelDto> {
     return this.fuels.update(id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('fuel:delete')
   @ApiOperation({ summary: 'Delete a fuel (blocked while referenced)' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.fuels.remove(id);
   }
 }

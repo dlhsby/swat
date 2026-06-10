@@ -11,7 +11,7 @@ export type RouteCategory = 'PICKUP' | 'DISPOSAL' | 'REFUEL' | 'DEPART_POOL' | '
 export interface TripDto {
   id: string;
   haulAssignmentId: string;
-  routeId: number | null;
+  routeId: string | null;
   routeCategory: RouteCategory | null;
   routeLabel: string | null;
   name: string;
@@ -27,9 +27,9 @@ export interface TripDto {
   wasteVolume: number | null;
   fuelRequestedLiters: number | null;
   fuelApprovedLiters: number | null;
-  recordedById: number | null;
+  recordedById: string | null;
   recordedByName: string | null;
-  verifiedById: number | null;
+  verifiedById: string | null;
   verifiedByName: string | null;
   verifiedAt: string | null;
   realizationEntryAt: string | null;
@@ -40,9 +40,9 @@ export interface TripDto {
 export interface HaulAssignmentDto {
   id: string;
   haulId: string;
-  driverId: number;
+  driverId: string;
   driverName: string;
-  crewScheduleId: number | null;
+  crewScheduleId: string | null;
   status: string;
   operationDate: string;
   departTargetOdometer: number;
@@ -60,7 +60,7 @@ export interface HaulAssignmentDto {
 
 export interface HaulDto {
   id: string;
-  vehicleId: number;
+  vehicleId: string;
   vehiclePlate: string;
   status: string;
   operationDate: string;
@@ -68,7 +68,7 @@ export interface HaulDto {
 }
 
 export interface TransactionDayDto {
-  id: number;
+  id: string;
   date: string;
   status: DayStatus;
   hauls: HaulDto[];
@@ -79,13 +79,13 @@ export interface TransactionDayDto {
 export interface TripDetailDto extends TripDto {
   haulAssignment: {
     id: string;
-    driverId: number;
+    driverId: string;
     driverName: string;
     haul: {
       id: string;
-      vehicleId: number;
+      vehicleId: string;
       vehiclePlate: string;
-      transactionDay: { id: number; date: string; status: DayStatus };
+      transactionDay: { id: string; date: string; status: DayStatus };
     };
   };
 }
@@ -93,7 +93,7 @@ export interface TripDetailDto extends TripDto {
 export interface DailyInitResult {
   created: boolean;
   date: string;
-  transactionDayId: number;
+  transactionDayId: string;
   hauls: number;
   assignments: number;
   trips: number;

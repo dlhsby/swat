@@ -6,16 +6,16 @@ latin1).
 
 ## 1. Design decisions
 
-- **Full rename to English** (no `@@map` back to Indonesian table names). A `legacyId` column is
-  kept on every migrated entity for traceability/debugging; it is nullable and indexed.
+- **Full rename to English** with snake_case tables and columns via Prisma `@@map`/`@map`. Model names remain
+  PascalCase, field names camelCase. Every table and every column is mapped to snake_case in the DB.
+  A `legacyId` column is kept on every migrated entity for traceability/debugging; it is nullable and indexed.
 - **Status/category lookup tables → Prisma enums** where the rows are pure state
-  (`statustrayek`, `statuskendaraan`, `statusjatahkitir`, `kategorispot`, `kategorirute`,
+  (`statustrayek`, `statuskendaraan`, `statusdisposalPermit`, `kategorispot`, `kategorirute`,
   `statuskepegawaian`, `statusriwayatperawatan`, `status{haritransaksi,transaksi,detail}`).
 - **Lookup tables that carry data stay tables:** `Fuel` (price), `FuelCategory`, `WasteSource`
   (code+notes), `LicenseClass`, `VehicleApplication`.
-- **PKs:** `BigInt` autoincrement for high-volume transactional entities (`Trip`, `HaulAssignment`,
-  `Haul`, `FuelQuota`), `Int` autoincrement for master/reference. (Alternative: `cuid()` — decided
-  against to keep numeric ordering and migration of legacy sequences simple.)
+- **PKs:** `String @id @db.Uuid @default(uuid(7))` (UUID v7) for all tables. Every table has a UUID primary key.
+  `legacyId` (Int or BigInt) is the migration bridge for resolving legacy numeric FKs.
 - **Audit columns on every table:** `createdAt` (`@default(now())`), `updatedAt` (`@updatedAt`)
   on all tables. Additionally, `createdById`/`updatedById` (nullable FK to `User`) are included on
   entities where user attribution matters (transactional records, maintenance).
@@ -29,8 +29,8 @@ latin1).
 
 | Legacy (MySQL) | New (PostgreSQL / Prisma) | Notes |
 |----------------|---------------------------|-------|
-| `int(11)` PK AUTO_INCREMENT | `Int @id @default(autoincrement())` | master tables |
-| `bigint(13/20)` PK | `BigInt @id @default(autoincrement())` | transactional tables |
+| `int(11)` PK AUTO_INCREMENT | `String @id @db.Uuid @default(uuid(7))` | all tables use UUID v7 |
+| `bigint(13/20)` PK | `String @id @db.Uuid @default(uuid(7))` | all tables use UUID v7 |
 | `varchar(n)` | `String @db.VarChar(n)` | keep lengths |
 | `date` | `DateTime @db.Date` | |
 | `datetime` (incl. `0000-00-00`) | `DateTime? @db.Timestamptz(6)` | zero-dates → `NULL` |
@@ -49,7 +49,7 @@ enum SiteType        { POOL SPBU TPS TPA }
 enum RouteCategory   { DEPART_POOL REFUEL PICKUP DISPOSAL RETURN_POOL }
 enum TripStatus      { IN_PROGRESS DONE VERIFIED }
 enum DayStatus       { IN_PROGRESS DONE }       // TransactionDay/Haul/HaulAssignment share this
-enum FuelQuotaStatus { ACTIVE INACTIVE }
+enum DisposalPermitStatus { ACTIVE INACTIVE }
 enum VehicleStatus   { GOOD MINOR_DAMAGE MAJOR_DAMAGE LOST }
 enum EmploymentStatus{ SATGAS PNS HONORER }
 enum MaintenanceStatus { PENDING_APPROVAL APPROVED }
@@ -91,8 +91,8 @@ model User {
   tripsVerifiedBy    Trip[]                            @relation("TripVerifiedBy")
   haulAssignmentsCreatedBy HaulAssignment[]          @relation("HaulAssignmentCreatedBy")
   haulAssignmentsUpdatedBy HaulAssignment[]          @relation("HaulAssignmentUpdatedBy")
-  fuelQuotasCreatedBy FuelQuota[]                    @relation("FuelQuotaCreatedBy")
-  fuelQuotasUpdatedBy FuelQuota[]                    @relation("FuelQuotaUpdatedBy")
+  disposalPermitsCreatedBy DisposalPermit[]                    @relation("DisposalPermitCreatedBy")
+  disposalPermitsUpdatedBy DisposalPermit[]                    @relation("DisposalPermitUpdatedBy")
   leviesCreatedBy     Levy[]                         @relation("LevyCreatedBy")
   leviesUpdatedBy     Levy[]                         @relation("LevyUpdatedBy")
   maintenanceRecordsCreatedBy MaintenanceRecord[]   @relation("MaintenanceRecordCreatedBy")
@@ -366,24 +366,24 @@ model TripTemplate {
   updatedAt           DateTime     @updatedAt @db.Timestamptz(6)
 }
 
-model FuelQuota {   // "kitir"
-  id         BigInt          @id @default(autoincrement())
+model DisposalPermit {   // "kitir" — TPA dumping permit
+  id         String          @id @db.Uuid @default(uuid(7))
   legacyId   Int?            @unique
-  code       String?         @db.VarChar(50)          // Kitir code (e.g. "KT-202606-0042"); matched at TPA weighbridge
-  vehicleId  Int
+  code       String?         @db.VarChar(50)          // Kitir QR code (e.g. "KT-202606-0042"); scanned at TPA weighbridge
+  vehicleId  String
   vehicle    Vehicle         @relation(fields: [vehicleId], references: [id])
-  siteId     Int
+  siteId    String
   site       Site            @relation(fields: [siteId], references: [id])
-  status     FuelQuotaStatus @default(ACTIVE)
+  status     DisposalPermitStatus @default(ACTIVE)
   issuedAt   DateTime        @db.Timestamptz(6)
   validFrom  DateTime        @db.Date
   validTo    DateTime        @db.Date
   createdAt  DateTime        @default(now()) @db.Timestamptz(6)
   updatedAt  DateTime        @updatedAt @db.Timestamptz(6)
-  createdById Int?
-  createdBy   User?          @relation("FuelQuotaCreatedBy", fields: [createdById], references: [id])
-  updatedById Int?
-  updatedBy   User?          @relation("FuelQuotaUpdatedBy", fields: [updatedById], references: [id])
+  createdById String?
+  createdBy   User?          @relation("DisposalPermitCreatedBy", fields: [createdById], references: [id])
+  updatedById String?
+  updatedBy   User?          @relation("DisposalPermitUpdatedBy", fields: [updatedById], references: [id])
   @@index([code])
   @@index([vehicleId, status, validFrom, validTo])
   @@index([status, validFrom, validTo])
@@ -646,7 +646,7 @@ model Levy {
   `DailyTonnage.date`, `Levy.date`.
 - Foreign keys are all indexed (Prisma auto-indexes relation scalars; add explicit `@@index` on hot paths).
 - **Polymorphic lookups:** `Photo(ownerType, ownerId)` indexed for fast attachment queries.
-- High-volume tables (`Trip`, `HaulAssignment`, `FuelQuota`) use `BigInt` PKs.
+- All tables use `String @id @db.Uuid @default(uuid(7))` PKs (UUID v7).
 
 ## 6. Constraints & integrity
 

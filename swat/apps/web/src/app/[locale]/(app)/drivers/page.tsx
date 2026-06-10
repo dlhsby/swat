@@ -33,7 +33,7 @@ const EMPLOYMENT_OPTIONS: readonly SelectOption[] = [
 const schema = z.object({
   name: z.string().min(1, 'Nama wajib diisi').max(100),
   idCardNumber: z.string().regex(/^\d{16}$/, 'Nomor KTP harus 16 digit angka'),
-  poolSiteId: z.coerce.number().int().min(1, 'Pool wajib dipilih'),
+  poolSiteId: z.string().uuid('Pool wajib dipilih'),
   employmentStatus: z.enum(['SATGAS', 'PNS', 'HONORER']),
   birthDate: z.string().min(1, 'Tanggal lahir wajib diisi'),
   contact: z.string().min(1, 'Kontak wajib diisi').max(100),
@@ -46,7 +46,7 @@ type Values = z.infer<typeof schema>;
 const defaults: Values = {
   name: '',
   idCardNumber: '',
-  poolSiteId: 0,
+  poolSiteId: '',
   employmentStatus: 'SATGAS',
   birthDate: '',
   contact: '',
@@ -157,7 +157,6 @@ export default function DriversPage(): JSX.Element {
             name="poolSiteId"
             label="Pool"
             required
-            numeric
             options={pools}
             placeholder="Pilih pool"
           />

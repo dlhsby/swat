@@ -1,17 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { EmploymentStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 
 import { PaginationQueryDto } from '../../../../common/dto/pagination-query.dto';
 
 export class ListDriversQueryDto extends PaginationQueryDto {
-  @ApiPropertyOptional({ minimum: 1 })
+  @ApiPropertyOptional()
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  poolSiteId?: number;
+  @IsString()
+  poolSiteId?: string;
 
   @ApiPropertyOptional({ enum: EmploymentStatus })
   @IsOptional()

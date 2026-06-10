@@ -80,6 +80,9 @@ have multiple peer documents under one heading.
 
 - **Language split:** code + database identifiers in **English**; all user-facing UI text in
   **Indonesian** (see the glossary). Never mix.
+- **Database:** Tables and columns are snake_case via Prisma `@@map`/`@map`; model names are
+  PascalCase, field names are camelCase. All primary keys are UUID v7 (`String @id @db.Uuid @default(uuid(7))`).
+  `legacyId` (Int/BigInt) is the numeric bridge for legacy data migration.
 - **Units:** weight in **kilograms (kg)**, odometer/distance in **kilometers (km)**, fuel in
   **liters (L)**, money in **IDR** (stored as integer rupiah; format with thousands separators in UI).
 - **Dates/times:** stored as `timestamptz` (UTC); displayed in **Asia/Jakarta (WIB, UTC+7)**.

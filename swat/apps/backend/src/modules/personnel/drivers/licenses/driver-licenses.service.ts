@@ -14,9 +14,9 @@ import {
 } from './dto/create-driver-license.dto';
 
 export interface DriverLicenseDto {
-  readonly id: number;
-  readonly driverId: number;
-  readonly licenseClassId: number;
+  readonly id: string;
+  readonly driverId: string;
+  readonly licenseClassId: string;
   readonly licenseClassName: string;
   readonly licenseNumber: string;
   readonly expiry: string;
@@ -26,9 +26,9 @@ export interface DriverLicenseDto {
 }
 
 interface LicenseRow {
-  id: number;
-  driverId: number;
-  licenseClassId: number;
+  id: string;
+  driverId: string;
+  licenseClassId: string;
   licenseNumber: string;
   expiry: Date;
   createdAt: Date;
@@ -54,7 +54,7 @@ function toDto(row: LicenseRow): DriverLicenseDto {
 export class DriverLicensesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async assertDriverExists(driverId: number): Promise<void> {
+  private async assertDriverExists(driverId: string): Promise<void> {
     const driver = await this.prisma.driver.findFirst({
       where: { id: driverId, deletedAt: null },
       select: { id: true },
@@ -64,7 +64,7 @@ export class DriverLicensesService {
     }
   }
 
-  async list(driverId: number): Promise<DriverLicenseDto[]> {
+  async list(driverId: string): Promise<DriverLicenseDto[]> {
     await this.assertDriverExists(driverId);
     const rows = await this.prisma.driverLicense.findMany({
       where: { driverId },
@@ -74,7 +74,7 @@ export class DriverLicensesService {
     return rows.map(toDto);
   }
 
-  async create(driverId: number, dto: CreateDriverLicenseDto): Promise<DriverLicenseDto> {
+  async create(driverId: string, dto: CreateDriverLicenseDto): Promise<DriverLicenseDto> {
     await this.assertDriverExists(driverId);
     await this.assertClassExists(dto.licenseClassId);
     await this.assertNumberUnique(driverId, dto.licenseNumber);
@@ -92,8 +92,8 @@ export class DriverLicensesService {
   }
 
   async update(
-    driverId: number,
-    licenseId: number,
+    driverId: string,
+    licenseId: string,
     dto: UpdateDriverLicenseDto,
   ): Promise<DriverLicenseDto> {
     const existing = await this.findOwned(driverId, licenseId);
@@ -116,13 +116,13 @@ export class DriverLicensesService {
     return toDto(row);
   }
 
-  async remove(driverId: number, licenseId: number): Promise<{ message: string }> {
+  async remove(driverId: string, licenseId: string): Promise<{ message: string }> {
     await this.findOwned(driverId, licenseId);
     await this.prisma.driverLicense.delete({ where: { id: licenseId } });
     return { message: 'SIM telah dihapus.' };
   }
 
-  private async findOwned(driverId: number, licenseId: number): Promise<{ licenseNumber: string }> {
+  private async findOwned(driverId: string, licenseId: string): Promise<{ licenseNumber: string }> {
     const license = await this.prisma.driverLicense.findFirst({
       where: { id: licenseId, driverId },
       select: { licenseNumber: true },
@@ -133,7 +133,7 @@ export class DriverLicensesService {
     return license;
   }
 
-  private async assertClassExists(licenseClassId: number): Promise<void> {
+  private async assertClassExists(licenseClassId: string): Promise<void> {
     const cls = await this.prisma.licenseClass.findUnique({
       where: { id: licenseClassId },
       select: { id: true },
@@ -143,7 +143,7 @@ export class DriverLicensesService {
     }
   }
 
-  private async assertNumberUnique(driverId: number, licenseNumber: string): Promise<void> {
+  private async assertNumberUnique(driverId: string, licenseNumber: string): Promise<void> {
     const duplicate = await this.prisma.driverLicense.findFirst({
       where: { driverId, licenseNumber },
       select: { id: true },

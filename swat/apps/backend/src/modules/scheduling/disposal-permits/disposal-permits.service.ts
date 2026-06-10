@@ -1,29 +1,32 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { type FuelQuotaStatus, type Prisma } from '@prisma/client';
+import { type DisposalPermitStatus, type Prisma } from '@prisma/client';
 
 import { formatDateOnly, parseDateOnly } from '../../../common/dates';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
 
 import {
+  DisposalPermitsRepository,
+  type DisposalPermitWithRefs,
+} from './disposal-permits.repository';
+import {
   BulkImportStrategy,
-  type BulkFuelQuotaRowDto,
-  type BulkImportFuelQuotasDto,
+  type BulkDisposalPermitRowDto,
+  type BulkImportDisposalPermitsDto,
   type BulkImportResult,
-} from './dto/bulk-import-fuel-quotas.dto';
-import { type CreateFuelQuotaDto } from './dto/create-fuel-quota.dto';
-import { type ListFuelQuotasQueryDto } from './dto/list-fuel-quotas.query.dto';
-import { type UpdateFuelQuotaDto } from './dto/update-fuel-quota.dto';
-import { FuelQuotasRepository, type FuelQuotaWithRefs } from './fuel-quotas.repository';
+} from './dto/bulk-import-disposal-permits.dto';
+import { type CreateDisposalPermitDto } from './dto/create-disposal-permit.dto';
+import { type ListDisposalPermitsQueryDto } from './dto/list-disposal-permits.query.dto';
+import { type UpdateDisposalPermitDto } from './dto/update-disposal-permit.dto';
 
-export interface FuelQuotaDto {
+export interface DisposalPermitDto {
   readonly id: string;
   readonly code: string | null;
-  readonly vehicleId: number;
+  readonly vehicleId: string;
   readonly vehiclePlate: string;
-  readonly siteId: number;
+  readonly siteId: string;
   readonly siteName: string;
-  readonly status: FuelQuotaStatus;
+  readonly status: DisposalPermitStatus;
   readonly issuedAt: string;
   readonly validFrom: string;
   readonly validTo: string;
@@ -31,30 +34,30 @@ export interface FuelQuotaDto {
   readonly updatedAt: string;
 }
 
-function toDto(quota: FuelQuotaWithRefs): FuelQuotaDto {
+function toDto(permit: DisposalPermitWithRefs): DisposalPermitDto {
   return {
-    id: quota.id.toString(),
-    code: quota.code,
-    vehicleId: quota.vehicleId,
-    vehiclePlate: quota.vehicle.plateNumber,
-    siteId: quota.siteId,
-    siteName: quota.site.name,
-    status: quota.status,
-    issuedAt: formatDateOnly(quota.issuedAt),
-    validFrom: formatDateOnly(quota.validFrom),
-    validTo: formatDateOnly(quota.validTo),
-    createdAt: quota.createdAt.toISOString(),
-    updatedAt: quota.updatedAt.toISOString(),
+    id: permit.id,
+    code: permit.code,
+    vehicleId: permit.vehicleId,
+    vehiclePlate: permit.vehicle.plateNumber,
+    siteId: permit.siteId,
+    siteName: permit.site.name,
+    status: permit.status,
+    issuedAt: formatDateOnly(permit.issuedAt),
+    validFrom: formatDateOnly(permit.validFrom),
+    validTo: formatDateOnly(permit.validTo),
+    createdAt: permit.createdAt.toISOString(),
+    updatedAt: permit.updatedAt.toISOString(),
   };
 }
 
 @Injectable()
-export class FuelQuotasService {
-  constructor(private readonly repo: FuelQuotasRepository) {}
+export class DisposalPermitsService {
+  constructor(private readonly repo: DisposalPermitsRepository) {}
 
   async list(
-    query: ListFuelQuotasQueryDto,
-  ): Promise<{ data: FuelQuotaDto[]; meta: PaginationMeta }> {
+    query: ListDisposalPermitsQueryDto,
+  ): Promise<{ data: DisposalPermitDto[]; meta: PaginationMeta }> {
     const { rows, total } = await this.repo.list({
       page: query.page,
       limit: query.limit,
@@ -66,15 +69,15 @@ export class FuelQuotasService {
     return paginated(rows.map(toDto), total, query);
   }
 
-  async getById(id: string): Promise<FuelQuotaDto> {
-    const quota = await this.repo.findById(this.toBigInt(id));
-    if (!quota) {
+  async getById(id: string): Promise<DisposalPermitDto> {
+    const permit = await this.repo.findById(id);
+    if (!permit) {
       throw new NotFoundException('Jatah kitir tidak ditemukan.');
     }
-    return toDto(quota);
+    return toDto(permit);
   }
 
-  async create(dto: CreateFuelQuotaDto, userId: number): Promise<FuelQuotaDto> {
+  async create(dto: CreateDisposalPermitDto, userId: string): Promise<DisposalPermitDto> {
     const issuedAt = parseDateOnly(dto.issuedAt);
     const validFrom = parseDateOnly(dto.validFrom);
     const validTo = parseDateOnly(dto.validTo);
@@ -86,7 +89,7 @@ export class FuelQuotasService {
     }
     await this.assertRefsExist(dto.vehicleId, dto.siteId);
 
-    const quota = await this.repo.create({
+    const permit = await this.repo.create({
       ...(dto.code !== undefined ? { code: dto.code } : {}),
       ...(dto.status !== undefined ? { status: dto.status } : {}),
       issuedAt,
@@ -96,11 +99,15 @@ export class FuelQuotasService {
       site: { connect: { id: dto.siteId } },
       createdBy: { connect: { id: userId } },
     });
-    return toDto(quota);
+    return toDto(permit);
   }
 
-  async update(id: string, dto: UpdateFuelQuotaDto, userId: number): Promise<FuelQuotaDto> {
-    const existing = await this.repo.findById(this.toBigInt(id));
+  async update(
+    id: string,
+    dto: UpdateDisposalPermitDto,
+    userId: string,
+  ): Promise<DisposalPermitDto> {
+    const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Jatah kitir tidak ditemukan.');
     }
@@ -111,20 +118,20 @@ export class FuelQuotasService {
       }
     }
 
-    const quota = await this.repo.update(this.toBigInt(id), {
+    const permit = await this.repo.update(id, {
       ...(dto.status !== undefined ? { status: dto.status } : {}),
       ...(dto.validTo !== undefined ? { validTo: parseDateOnly(dto.validTo) } : {}),
       updatedBy: { connect: { id: userId } },
     });
-    return toDto(quota);
+    return toDto(permit);
   }
 
   /**
-   * Bulk-import quotas (Impor Massal). Rows are validated against existing
+   * Bulk-import permits (Impor Massal). Rows are validated against existing
    * vehicles/sites + date order; valid rows are upserted by `legacyId`
    * (idempotent re-runs), invalid rows reported with their 1-based row number.
    */
-  async bulkImport(dto: BulkImportFuelQuotasDto, userId: number): Promise<BulkImportResult> {
+  async bulkImport(dto: BulkImportDisposalPermitsDto, userId: string): Promise<BulkImportResult> {
     const strategy = dto.strategy ?? BulkImportStrategy.UPSERT;
     const [vehicleIds, siteIds] = await Promise.all([
       this.repo.allVehicleIds(),
@@ -185,9 +192,9 @@ export class FuelQuotasService {
   }
 
   private validateBulkRow(
-    row: BulkFuelQuotaRowDto,
-    vehicleIds: Set<number>,
-    siteIds: Set<number>,
+    row: BulkDisposalPermitRowDto,
+    vehicleIds: Set<string>,
+    siteIds: Set<string>,
   ): string | null {
     if (!vehicleIds.has(row.vehicleId)) {
       return `Kendaraan #${row.vehicleId} tidak ditemukan.`;
@@ -202,14 +209,14 @@ export class FuelQuotasService {
   }
 
   private async persistBulkRow(
-    row: BulkFuelQuotaRowDto,
+    row: BulkDisposalPermitRowDto,
     isExisting: boolean,
     issuedAt: Date,
-    userId: number,
+    userId: string,
   ): Promise<void> {
     const validFrom = parseDateOnly(row.validFrom);
     const validTo = parseDateOnly(row.validTo);
-    const create: Prisma.FuelQuotaCreateInput = {
+    const create: Prisma.DisposalPermitCreateInput = {
       ...(row.code !== undefined ? { code: row.code } : {}),
       ...(row.status !== undefined ? { status: row.status } : {}),
       issuedAt,
@@ -236,15 +243,7 @@ export class FuelQuotasService {
     );
   }
 
-  private toBigInt(id: string): bigint {
-    try {
-      return BigInt(id);
-    } catch {
-      throw new BadRequestException('ID jatah kitir tidak valid.');
-    }
-  }
-
-  private async assertRefsExist(vehicleId: number, siteId: number): Promise<void> {
+  private async assertRefsExist(vehicleId: string, siteId: string): Promise<void> {
     const [vehicle, site] = await Promise.all([
       this.repo.vehicleExists(vehicleId),
       this.repo.siteExists(siteId),

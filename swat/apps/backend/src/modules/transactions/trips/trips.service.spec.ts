@@ -8,15 +8,20 @@ import { type AuditService } from '../../audit/audit.service';
 import { type TripsRepository } from './trips.repository';
 import { TripsService } from './trips.service';
 
-const USER: SessionUser = { id: 9, username: 'data', roleId: 2, mustChangePassword: false };
+const USER: SessionUser = {
+  id: 'user-9',
+  username: 'data',
+  roleId: 'role-2',
+  mustChangePassword: false,
+};
 
 function buildTrip(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
-    id: 10000n,
-    haulAssignmentId: 1000n,
-    routeId: 4,
+    id: 'trip-10000',
+    haulAssignmentId: 'assignment-1000',
+    routeId: 'route-4',
     route: {
-      id: 4,
+      id: 'route-4',
       category: 'DISPOSAL',
       originSite: { name: 'TPS A' },
       destinationSite: { name: 'TPA B' },
@@ -43,10 +48,13 @@ function buildTrip(overrides: Record<string, unknown> = {}): Record<string, unkn
     createdAt: new Date('2026-06-08T03:00:00Z'),
     updatedAt: new Date('2026-06-08T03:00:00Z'),
     haulAssignment: {
-      id: 1000n,
+      id: 'assignment-1000',
       departActualOdometer: 12010,
-      haul: { vehicleId: 7, vehicle: { currentTareWeight: 8000, currentOdometer: 12010 } },
-      trips: [{ id: 10000n, status: 'IN_PROGRESS', actualOdometer: 0, targetTime: null }],
+      haul: {
+        vehicleId: 'vehicle-7',
+        vehicle: { currentTareWeight: 8000, currentOdometer: 12010 },
+      },
+      trips: [{ id: 'trip-10000', status: 'IN_PROGRESS', actualOdometer: 0, targetTime: null }],
     },
     ...overrides,
   };
@@ -110,7 +118,10 @@ describe('TripsService', () => {
       repo.findForRecording.mockResolvedValue(buildTrip({ status: 'VERIFIED' }));
       await service.record('10000', { ...dispatch, grossWeight: 12000 }, USER);
       // An override edit invalidates the verification: the trip drops back to DONE.
-      expect(repo.update).toHaveBeenCalledWith(10000n, expect.objectContaining({ status: 'DONE' }));
+      expect(repo.update).toHaveBeenCalledWith(
+        'trip-10000',
+        expect.objectContaining({ status: 'DONE' }),
+      );
     });
 
     it('rejects a category the user lacks permission for', async () => {
@@ -134,12 +145,15 @@ describe('TripsService', () => {
       repo.findForRecording.mockResolvedValue(
         buildTrip({
           haulAssignment: {
-            id: 1000n,
+            id: 'assignment-1000',
             departActualOdometer: 12010,
-            haul: { vehicleId: 7, vehicle: { currentTareWeight: 8000, currentOdometer: 12010 } },
+            haul: {
+              vehicleId: 'vehicle-7',
+              vehicle: { currentTareWeight: 8000, currentOdometer: 12010 },
+            },
             trips: [
-              { id: 9999n, status: 'DONE', actualOdometer: 12080, targetTime: null },
-              { id: 10000n, status: 'IN_PROGRESS', actualOdometer: 0, targetTime: null },
+              { id: 'trip-9999', status: 'DONE', actualOdometer: 12080, targetTime: null },
+              { id: 'trip-10000', status: 'IN_PROGRESS', actualOdometer: 0, targetTime: null },
             ],
           },
         }),
@@ -155,7 +169,7 @@ describe('TripsService', () => {
       repo.findForRecording.mockResolvedValue(buildTrip());
       await service.record('10000', { ...dispatch, grossWeight: 12000 }, USER);
       expect(repo.update).toHaveBeenCalledWith(
-        10000n,
+        'trip-10000',
         expect.objectContaining({
           status: 'DONE',
           grossWeight: 12000,
@@ -169,7 +183,7 @@ describe('TripsService', () => {
       repo.findForRecording.mockResolvedValue(buildTrip());
       await service.record('10000', { ...dispatch, grossWeight: 12000, tareWeight: 7500 }, USER);
       expect(repo.update).toHaveBeenCalledWith(
-        10000n,
+        'trip-10000',
         expect.objectContaining({ tareWeight: 7500, netWeight: 4500 }),
       );
     });
@@ -197,7 +211,7 @@ describe('TripsService', () => {
       repo.findForRecording.mockResolvedValue(pickup());
       await service.record('10000', dispatch, USER);
       expect(repo.update).toHaveBeenCalledWith(
-        10000n,
+        'trip-10000',
         expect.objectContaining({ tareWeight: 8000 }),
       );
     });
@@ -211,7 +225,7 @@ describe('TripsService', () => {
       repo.findForRecording.mockResolvedValue(refuel());
       await service.record('10000', { ...dispatch, fuelRequestedLiters: 40 }, USER);
       expect(repo.update).toHaveBeenCalledWith(
-        10000n,
+        'trip-10000',
         expect.objectContaining({ fuelRequestedLiters: 40, fuelApprovedLiters: 40 }),
       );
     });
@@ -220,7 +234,7 @@ describe('TripsService', () => {
       repo.findForRecording.mockResolvedValue(refuel({ fuelRequestedLiters: 35 }));
       await service.record('10000', dispatch, USER);
       expect(repo.update).toHaveBeenCalledWith(
-        10000n,
+        'trip-10000',
         expect.objectContaining({ fuelRequestedLiters: 35, fuelApprovedLiters: 35 }),
       );
     });
@@ -252,7 +266,7 @@ describe('TripsService', () => {
         USER,
       );
       expect(repo.update).toHaveBeenCalledWith(
-        10000n,
+        'trip-10000',
         expect.objectContaining({ fuelApprovedLiters: 50 }),
       );
     });
@@ -282,8 +296,8 @@ describe('TripsService', () => {
       repo.findForRecording.mockResolvedValue(buildTrip({ status: 'DONE' }));
       await service.verify('10000', USER);
       expect(repo.update).toHaveBeenCalledWith(
-        10000n,
-        expect.objectContaining({ status: 'VERIFIED', verifiedBy: { connect: { id: 9 } } }),
+        '10000',
+        expect.objectContaining({ status: 'VERIFIED', verifiedBy: { connect: { id: 'user-9' } } }),
       );
     });
 
@@ -306,15 +320,15 @@ describe('TripsService', () => {
       repo.findFull.mockResolvedValue(
         buildTrip({
           haulAssignment: {
-            id: 1000n,
-            driverId: 3,
-            driver: { id: 3, name: 'Budi' },
+            id: 'assignment-1000',
+            driverId: 'driver-3',
+            driver: { id: 'driver-3', name: 'Budi' },
             haul: {
-              id: 100n,
-              vehicleId: 7,
-              vehicle: { id: 7, plateNumber: 'L 1 AB' },
+              id: 'haul-100',
+              vehicleId: 'vehicle-7',
+              vehicle: { id: 'vehicle-7', plateNumber: 'L 1 AB' },
               transactionDay: {
-                id: 1,
+                id: 'day-1',
                 date: new Date('2026-06-08T00:00:00Z'),
                 status: 'IN_PROGRESS',
               },

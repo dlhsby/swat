@@ -7,7 +7,12 @@ import { type AuditService } from '../audit/audit.service';
 import { type ArchivingRepository } from './archiving.repository';
 import { ArchivingService } from './archiving.service';
 
-const ACTOR: SessionUser = { id: 1, username: 'admin', roleId: 1, mustChangePassword: false };
+const ACTOR: SessionUser = {
+  id: '00000000-0000-0000-0000-0000000000a1',
+  username: 'admin',
+  roleId: '00000000-0000-0000-0000-0000000000b1',
+  mustChangePassword: false,
+};
 const TODAY = parseDateOnly('2026-06-08'); // 13-month cutoff = 2025-05
 
 function createRepo(): jest.Mocked<ArchivingRepository> {
@@ -59,7 +64,9 @@ describe('ArchivingService', () => {
 
     it('skips a partition already in the catalog (idempotent)', async () => {
       repo.findCatalog.mockImplementation((tableName) =>
-        Promise.resolve(tableName === 'trip_y2025m04' ? { id: 7 } : null),
+        Promise.resolve(
+          tableName === 'trip_y2025m04' ? { id: '00000000-0000-0000-0000-0000000000x7' } : null,
+        ),
       );
 
       const summary = await service.runMonthlyArchive(TODAY);
@@ -114,21 +121,32 @@ describe('ArchivingService', () => {
     });
 
     it('409s an archive already re-attached', async () => {
-      repo.getCatalog.mockResolvedValue({ id: 7, checksum: 'abc', reattachedAt: new Date() });
+      repo.getCatalog.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000x7',
+        checksum: 'abc',
+        reattachedAt: new Date(),
+      });
       await expect(service.reattach('trip_y2025m04', '2025-04', ACTOR)).rejects.toBeInstanceOf(
         ConflictException,
       );
     });
 
     it('re-attaches, marks the catalog, and audits the action', async () => {
-      repo.getCatalog.mockResolvedValue({ id: 7, checksum: 'abc', reattachedAt: null });
+      repo.getCatalog.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000x7',
+        checksum: 'abc',
+        reattachedAt: null,
+      });
 
       const result = await service.reattach('trip_y2025m04', '2025-04', ACTOR);
 
       expect(repo.reattach).toHaveBeenCalledWith('trip_y2025m04', '2025-04', 'abc');
-      expect(repo.markReattached).toHaveBeenCalledWith(7);
+      expect(repo.markReattached).toHaveBeenCalledWith('00000000-0000-0000-0000-0000000000x7');
       expect(audit.record).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'archive.reattach', entityId: 7 }),
+        expect.objectContaining({
+          action: 'archive.reattach',
+          entityId: '00000000-0000-0000-0000-0000000000x7',
+        }),
       );
       expect(result).toMatchObject({ rowCount: 100, checksumVerified: true });
     });
@@ -138,7 +156,7 @@ describe('ArchivingService', () => {
     it('coerces BigInt counts and ISO-formats the timestamps', async () => {
       repo.listCatalog.mockResolvedValue([
         {
-          id: 1,
+          id: '00000000-0000-0000-0000-0000000000x1',
           tableName: 'trip_y2025m04',
           period: '2025-04',
           archiveType: 'detached-partition',
@@ -152,7 +170,7 @@ describe('ArchivingService', () => {
       const [row] = await service.listArchives();
 
       expect(row).toEqual({
-        id: 1,
+        id: '00000000-0000-0000-0000-0000000000x1',
         tableName: 'trip_y2025m04',
         period: '2025-04',
         archiveType: 'detached-partition',
@@ -166,7 +184,7 @@ describe('ArchivingService', () => {
     it('passes through a null size and a set re-attach timestamp', async () => {
       repo.listCatalog.mockResolvedValue([
         {
-          id: 2,
+          id: '00000000-0000-0000-0000-0000000000x2',
           tableName: 'haul_y2025m04',
           period: '2025-04',
           archiveType: 'detached-partition',

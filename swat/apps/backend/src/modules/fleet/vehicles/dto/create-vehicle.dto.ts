@@ -17,17 +17,13 @@ const PLATE_REGEX = /^[A-Z]{1,2} \d{1,4} [A-Z]{1,3}$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateVehicleDto {
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Pool wajib dipilih' })
-  @Min(1, { message: 'Pool wajib dipilih' })
-  poolSiteId!: number;
+  @ApiProperty()
+  @IsString({ message: 'Pool wajib dipilih' })
+  poolSiteId!: string;
 
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt({ message: 'Model wajib dipilih' })
-  @Min(1, { message: 'Model wajib dipilih' })
-  modelId!: number;
+  @ApiProperty()
+  @IsString({ message: 'Model wajib dipilih' })
+  modelId!: string;
 
   @ApiPropertyOptional({ enum: VehicleStatus, default: VehicleStatus.GOOD })
   @IsOptional()

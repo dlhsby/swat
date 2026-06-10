@@ -89,7 +89,7 @@ export function TripTemplatesSheet({
     setSaving(true);
     try {
       await createTripTemplate(scheduleId, {
-        routeId: Number(routeId),
+        routeId,
         targetTime,
         fuelRequestedLiters: fuel ? Number(fuel) : undefined,
       });

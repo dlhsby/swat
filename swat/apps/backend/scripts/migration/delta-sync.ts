@@ -16,15 +16,15 @@ import { join } from 'node:path';
 
 import { PrismaClient } from '@prisma/client';
 
-import type { LegacyFuelQuota, LegacySite, LegacyVehicle } from './lib/legacy-types';
-import { mapFuelQuota, mapSite, mapVehicle } from './lib/mappers';
+import type { LegacyDisposalPermit, LegacySite, LegacyVehicle } from './lib/legacy-types';
+import { mapDisposalPermit, mapSite, mapVehicle } from './lib/mappers';
 import { reconcileRow, renderReportMarkdown, type MigrationReport } from './lib/reconcile';
 import { connectLegacy, countRows, legacyDbConfigFromEnv, log, query, warn } from './lib/runtime';
 
 const prisma = new PrismaClient();
 const NOW = new Date();
 
-async function systemUserId(): Promise<number> {
+async function systemUserId(): Promise<string> {
   const admin = await prisma.user.findFirst({ where: { username: 'admin' }, select: { id: true } });
   if (!admin) {
     throw new Error('No admin user — seed before delta-sync.');
@@ -33,7 +33,7 @@ async function systemUserId(): Promise<number> {
 }
 
 /** Idempotent re-upsert of the small, change-tracking-free master tables. */
-async function resyncMasters(sysUser: number): Promise<void> {
+async function resyncMasters(sysUser: string): Promise<void> {
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
     // On update, never re-write the PK or the original `createdAt` — only the
@@ -41,30 +41,60 @@ async function resyncMasters(sysUser: number): Promise<void> {
     // the row's migration timestamp on every parallel-run pass).
     const sites = await query<LegacySite>(conn, 'SELECT * FROM spot');
     for (const s of sites) {
-      const { id, createdAt, ...update } = mapSite(s, NOW);
-      await prisma.site.upsert({
-        where: { id: id as number },
-        create: { id, createdAt, ...update },
-        update,
-      });
+      const mapped = mapSite(s, NOW);
+      const { legacyId, createdAt, ...update } = mapped;
+      if (!legacyId) {
+        continue;
+      }
+      const existing = await prisma.site.findUnique({ where: { legacyId } });
+      if (existing) {
+        await prisma.site.update({
+          where: { id: existing.id },
+          data: update,
+        });
+      } else {
+        await prisma.site.create({
+          data: { legacyId, createdAt, ...update },
+        });
+      }
     }
     const vehicles = await query<LegacyVehicle>(conn, 'SELECT * FROM kendaraan');
     for (const v of vehicles) {
-      const { id, createdAt, ...update } = mapVehicle(v, NOW);
-      await prisma.vehicle.upsert({
-        where: { id: id as number },
-        create: { id, createdAt, ...update },
-        update,
-      });
+      const mapped = mapVehicle(v, NOW);
+      const { legacyId, createdAt, ...update } = mapped;
+      if (!legacyId) {
+        continue;
+      }
+      const existing = await prisma.vehicle.findUnique({ where: { legacyId } });
+      if (existing) {
+        await prisma.vehicle.update({
+          where: { id: existing.id },
+          data: update,
+        });
+      } else {
+        await prisma.vehicle.create({
+          data: { legacyId, createdAt, ...update },
+        });
+      }
     }
-    const quotas = await query<LegacyFuelQuota>(conn, 'SELECT * FROM jatahkitir');
+    const quotas = await query<LegacyDisposalPermit>(conn, 'SELECT * FROM jatahkitir');
     for (const q of quotas) {
-      const { id, createdAt, ...update } = mapFuelQuota(q, NOW, sysUser);
-      await prisma.fuelQuota.upsert({
-        where: { id: id as bigint },
-        create: { id, createdAt, ...update },
-        update,
-      });
+      const mapped = mapDisposalPermit(q, NOW, sysUser);
+      const { legacyId, createdAt, ...update } = mapped;
+      if (!legacyId) {
+        continue;
+      }
+      const existing = await prisma.disposalPermit.findUnique({ where: { legacyId } });
+      if (existing) {
+        await prisma.disposalPermit.update({
+          where: { id: existing.id },
+          data: update,
+        });
+      } else {
+        await prisma.disposalPermit.create({
+          data: { legacyId, createdAt, ...update },
+        });
+      }
     }
     log(
       `Re-synced masters: sites=${sites.length} vehicles=${vehicles.length} kitir=${quotas.length}`,
@@ -91,7 +121,7 @@ async function reconcileKpis(): Promise<MigrationReport> {
       reconcileRow(
         'jatahkitir (count)',
         await countRows(conn, 'jatahkitir'),
-        await prisma.fuelQuota.count(),
+        await prisma.disposalPermit.count(),
       ),
       reconcileRow(
         'trayek (ritase count)',

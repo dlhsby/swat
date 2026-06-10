@@ -30,7 +30,7 @@ or an existing flow — **none is dropped silently**:
 | `insertDB` | Submit a weighing/disposal row | `POST /api/v1/weighbridge/post-weighing` (§1.2) |
 | `insertPenimbanganTerverifikasi` | Submit a **verified** weighing | `POST /api/v1/weighbridge/post-weighing` with `verified:true` (sets Trip → VERIFIED) + `TpaInboundLog` |
 | `updatePembuanganTerverifikasi` | Update a disposal with net weight after verification | `PATCH /api/v1/weighbridge/weighings/:tripId` (idempotent update of the DISPOSAL Trip + log) |
-| `insertJatahKitir` | TPA-side kitir push | `POST /api/v1/fuel-quotas` (service-account auth) — see `fuel-quota-kitir.md` §4 |
+| `insertJatahKitir` | TPA-side kitir push | `POST /api/v1/disposal-permits` (service-account auth) — see `disposal-permits.md` §4 |
 | `getpembuangansampahbyfilter` | Query disposals by filter | `GET /api/v1/weighbridge/weighings?date=&plateNumber=&siteId=` (paginated; reads `TpaInboundLog`/`Trip`) |
 
 **Unit/name conversion (parity G14):** the legacy `konversi_si_swat` table (SI ↔ SWAT unit/name
@@ -39,7 +39,7 @@ conversion used by the Excel weighing import) is handled here alongside `LegacyN
 see `03-data-model.md` §7). The **bulk Excel weighing upload** ("Upload Data Penimbangan",
 legacy `transaksi/importexcel`) is a **Phase 4** ingest path that writes `TpaInboundLog` (and `Trip`
 where resolvable) using these conversions — distinct from the Phase-1 **kitir** bulk import
-(`fuel-quota-kitir.md`).
+(`disposal-permits.md`).
 
 ---
 
@@ -222,8 +222,8 @@ export async function resolveKitir(
     throw new ValidationError('code atau plateNumber harus disediakan');
   }
 
-  // Find FuelQuota by code or vehicle plate
-  let quota: FuelQuota | null = null;
+  // Find DisposalPermit by code or vehicle plate
+  let permit: DisposalPermit | null = null;
   if (code) {
     // Direct code lookup (indexed on FuelQuota.code)
     quota = await db.fuelQuota.findFirst({
@@ -289,7 +289,7 @@ export async function resolveKitir(
 ```typescript
 // POST /api/v1/weighbridge/post-weighing
 export async function postWeighing(
-  kitirId: BigInt,
+  kitirId: String,  // UUID
   plateNumber: string,
   date: string,
   timestamp: string,
@@ -516,7 +516,7 @@ Enhanced for weighbridge integration:
 Desktop App (TPA)
   ↓ (resolve-kitir)
   → SWAT API
-    ├─ Verify kitir (FuelQuota)
+    ├─ Verify kitir (DisposalPermit)
     ├─ Check vehicle status (GOOD)
     └─ Return tare + specs
   ↓ (post-weighing)

@@ -24,7 +24,7 @@ export interface MaintenanceItemView {
 export interface MaintenanceDto {
   readonly id: string;
   readonly code: string | null;
-  readonly vehicleId: number;
+  readonly vehicleId: string;
   readonly vehiclePlate: string;
   readonly vehicleBrand: string;
   readonly type: MaintenanceType;
@@ -56,7 +56,7 @@ function priceItems(items: MaintenanceItemDto[]): {
 
 function toDto(record: MaintenanceWithRefs): MaintenanceDto {
   return {
-    id: record.id.toString(),
+    id: record.id,
     code: record.code,
     vehicleId: record.vehicleId,
     vehiclePlate: record.vehicle.plateNumber,
@@ -70,7 +70,7 @@ function toDto(record: MaintenanceWithRefs): MaintenanceDto {
     totalCost: record.totalCost,
     notes: record.notes,
     items: record.items.map((item) => ({
-      id: item.id.toString(),
+      id: item.id,
       name: item.name,
       qty: item.qty,
       unitPrice: item.unitPrice,
@@ -104,14 +104,14 @@ export class MaintenanceService {
   }
 
   async getById(id: string): Promise<MaintenanceDto> {
-    const record = await this.repo.findById(this.toBigInt(id));
+    const record = await this.repo.findById(id);
     if (!record) {
       throw new NotFoundException('Perawatan tidak ditemukan.');
     }
     return toDto(record);
   }
 
-  async create(dto: CreateMaintenanceDto, userId: number): Promise<MaintenanceDto> {
+  async create(dto: CreateMaintenanceDto, userId: string): Promise<MaintenanceDto> {
     const vehicle = await this.repo.vehicleExists(dto.vehicleId);
     if (!vehicle) {
       throw new BadRequestException('Kendaraan tidak ditemukan.');
@@ -135,8 +135,8 @@ export class MaintenanceService {
     return toDto(record);
   }
 
-  async update(id: string, dto: UpdateMaintenanceDto, userId: number): Promise<MaintenanceDto> {
-    const existing = await this.repo.findById(this.toBigInt(id));
+  async update(id: string, dto: UpdateMaintenanceDto, userId: string): Promise<MaintenanceDto> {
+    const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Perawatan tidak ditemukan.');
     }
@@ -159,19 +159,19 @@ export class MaintenanceService {
       data.items = { deleteMany: {}, create: rows };
     }
 
-    const record = await this.repo.update(this.toBigInt(id), data);
+    const record = await this.repo.update(id, data);
     return toDto(record);
   }
 
   async approve(id: string, actor: SessionUser): Promise<MaintenanceDto> {
-    const existing = await this.repo.findById(this.toBigInt(id));
+    const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Perawatan tidak ditemukan.');
     }
     if (existing.status === MaintenanceStatus.APPROVED) {
       throw new BadRequestException('Perawatan sudah disetujui.');
     }
-    const record = await this.repo.update(this.toBigInt(id), {
+    const record = await this.repo.update(id, {
       status: MaintenanceStatus.APPROVED,
       updatedBy: { connect: { id: actor.id } },
     });
@@ -186,14 +186,14 @@ export class MaintenanceService {
   }
 
   async remove(id: string): Promise<void> {
-    const existing = await this.repo.findById(this.toBigInt(id));
+    const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Perawatan tidak ditemukan.');
     }
     if (existing.status === MaintenanceStatus.APPROVED) {
       throw new BadRequestException('Perawatan yang sudah disetujui tidak dapat dihapus.');
     }
-    await this.repo.delete(this.toBigInt(id));
+    await this.repo.delete(id);
   }
 
   /** Generate `PRW-YYYYMM-NNNN` from the maintenance date + the month's running count. */
@@ -201,13 +201,5 @@ export class MaintenanceService {
     const prefix = `PRW-${date.slice(0, 4)}${date.slice(5, 7)}-`;
     const count = await this.repo.countByCodePrefix(prefix);
     return `${prefix}${String(count + 1).padStart(4, '0')}`;
-  }
-
-  private toBigInt(id: string): bigint {
-    try {
-      return BigInt(id);
-    } catch {
-      throw new BadRequestException('ID perawatan tidak valid.');
-    }
   }
 }

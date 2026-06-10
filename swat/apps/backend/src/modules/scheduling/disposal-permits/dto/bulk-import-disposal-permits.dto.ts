@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FuelQuotaStatus } from '@prisma/client';
+import { DisposalPermitStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -9,6 +9,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
   Min,
@@ -24,7 +25,7 @@ export enum BulkImportStrategy {
   SKIP = 'SKIP',
 }
 
-export class BulkFuelQuotaRowDto {
+export class BulkDisposalPermitRowDto {
   @ApiPropertyOptional({ description: 'Legacy id for idempotent upsert' })
   @IsOptional()
   @Type(() => Number)
@@ -38,17 +39,15 @@ export class BulkFuelQuotaRowDto {
   @MaxLength(50)
   code?: string;
 
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  vehicleId!: number;
+  @ApiProperty({ format: 'uuid' })
+  @IsString()
+  @IsUUID()
+  vehicleId!: string;
 
-  @ApiProperty({ minimum: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  siteId!: number;
+  @ApiProperty({ format: 'uuid' })
+  @IsString()
+  @IsUUID()
+  siteId!: string;
 
   @ApiProperty({ example: '2026-01-01' })
   @IsString()
@@ -60,25 +59,28 @@ export class BulkFuelQuotaRowDto {
   @Matches(DATE_REGEX, { message: 'Tanggal harus berformat YYYY-MM-DD' })
   validTo!: string;
 
-  @ApiPropertyOptional({ enum: FuelQuotaStatus, default: FuelQuotaStatus.ACTIVE })
+  @ApiPropertyOptional({ enum: DisposalPermitStatus, default: DisposalPermitStatus.ACTIVE })
   @IsOptional()
-  @IsEnum(FuelQuotaStatus)
-  status?: FuelQuotaStatus;
+  @IsEnum(DisposalPermitStatus)
+  status?: DisposalPermitStatus;
 }
 
-export class BulkImportFuelQuotasDto {
+export class BulkImportDisposalPermitsDto {
   @ApiPropertyOptional({ enum: BulkImportStrategy, default: BulkImportStrategy.UPSERT })
   @IsOptional()
   @IsEnum(BulkImportStrategy)
   strategy?: BulkImportStrategy;
 
-  @ApiProperty({ type: [BulkFuelQuotaRowDto], description: 'Parsed rows (max 20k per request)' })
+  @ApiProperty({
+    type: [BulkDisposalPermitRowDto],
+    description: 'Parsed rows (max 20k per request)',
+  })
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(20000)
   @ValidateNested({ each: true })
-  @Type(() => BulkFuelQuotaRowDto)
-  rows!: BulkFuelQuotaRowDto[];
+  @Type(() => BulkDisposalPermitRowDto)
+  rows!: BulkDisposalPermitRowDto[];
 }
 
 export interface BulkImportResult {

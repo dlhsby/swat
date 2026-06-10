@@ -133,7 +133,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: CalendarClock,
         permission: 'crew-schedule:read',
       },
-      { key: 'fuelQuotas', href: '/fuel-quotas', icon: Ticket, permission: 'fuel-quota:read' },
+      {
+        key: 'disposalPermits',
+        href: '/disposal-permits',
+        icon: Ticket,
+        permission: 'disposal-permit:read',
+      },
     ],
   },
   {

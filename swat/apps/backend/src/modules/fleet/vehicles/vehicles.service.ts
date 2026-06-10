@@ -16,12 +16,12 @@ import { type UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { VehiclesRepository, type VehicleWithRefs } from './vehicles.repository';
 
 export interface VehicleDto {
-  readonly id: number;
+  readonly id: string;
   readonly plateNumber: string;
   readonly status: VehicleStatus;
-  readonly poolSiteId: number;
+  readonly poolSiteId: string;
   readonly poolSiteName: string;
-  readonly modelId: number;
+  readonly modelId: string;
   readonly modelBrand: string;
   readonly chassisNumber: string;
   readonly engineNumber: string;
@@ -80,7 +80,7 @@ export class VehiclesService {
     return paginated(rows.map(toDto), total, query);
   }
 
-  async getById(id: number): Promise<VehicleDto> {
+  async getById(id: string): Promise<VehicleDto> {
     const vehicle = await this.repo.findById(id);
     if (!vehicle) {
       throw new NotFoundException('Kendaraan tidak ditemukan.');
@@ -117,7 +117,7 @@ export class VehiclesService {
     return toDto(vehicle);
   }
 
-  async update(id: number, dto: UpdateVehicleDto): Promise<VehicleDto> {
+  async update(id: string, dto: UpdateVehicleDto): Promise<VehicleDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Kendaraan tidak ditemukan.');
@@ -156,13 +156,13 @@ export class VehiclesService {
     return toDto(vehicle);
   }
 
-  async remove(id: number): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ message: string }> {
     await this.getById(id);
     await this.repo.softDelete(id);
     return { message: 'Kendaraan telah dihapus.' };
   }
 
-  private async assertRefsExist(modelId?: number, poolSiteId?: number): Promise<void> {
+  private async assertRefsExist(modelId?: string, poolSiteId?: string): Promise<void> {
     if (modelId !== undefined) {
       const model = await this.repo.modelExists(modelId);
       if (!model) {

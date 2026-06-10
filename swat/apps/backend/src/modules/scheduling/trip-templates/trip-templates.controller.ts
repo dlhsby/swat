@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -14,7 +14,7 @@ export class TripTemplatesController {
   @Get()
   @RequirePermissions('trip-template:read')
   @ApiOperation({ summary: 'List trip templates for a crew schedule' })
-  list(@Param('crewScheduleId', ParseIntPipe) crewScheduleId: number): Promise<TripTemplateDto[]> {
+  list(@Param('crewScheduleId') crewScheduleId: string): Promise<TripTemplateDto[]> {
     return this.tripTemplates.list(crewScheduleId);
   }
 
@@ -22,7 +22,7 @@ export class TripTemplatesController {
   @RequirePermissions('trip-template:create')
   @ApiOperation({ summary: 'Add a trip template to a crew schedule' })
   create(
-    @Param('crewScheduleId', ParseIntPipe) crewScheduleId: number,
+    @Param('crewScheduleId') crewScheduleId: string,
     @Body() dto: CreateTripTemplateDto,
   ): Promise<TripTemplateDto> {
     return this.tripTemplates.create(crewScheduleId, dto);
@@ -32,8 +32,8 @@ export class TripTemplatesController {
   @RequirePermissions('trip-template:update')
   @ApiOperation({ summary: 'Update a trip template' })
   update(
-    @Param('crewScheduleId', ParseIntPipe) crewScheduleId: number,
-    @Param('templateId', ParseIntPipe) templateId: number,
+    @Param('crewScheduleId') crewScheduleId: string,
+    @Param('templateId') templateId: string,
     @Body() dto: UpdateTripTemplateDto,
   ): Promise<TripTemplateDto> {
     return this.tripTemplates.update(crewScheduleId, templateId, dto);
@@ -43,8 +43,8 @@ export class TripTemplatesController {
   @RequirePermissions('trip-template:delete')
   @ApiOperation({ summary: 'Delete a trip template' })
   remove(
-    @Param('crewScheduleId', ParseIntPipe) crewScheduleId: number,
-    @Param('templateId', ParseIntPipe) templateId: number,
+    @Param('crewScheduleId') crewScheduleId: string,
+    @Param('templateId') templateId: string,
   ): Promise<{ message: string }> {
     return this.tripTemplates.remove(crewScheduleId, templateId);
   }

@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TripStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Matches, Min } from 'class-validator';
+import { IsEnum, IsOptional, IsUUID, Matches } from 'class-validator';
 
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 
@@ -22,10 +21,8 @@ export class TripSummaryQueryDto extends PaginationQueryDto {
   @IsEnum(TripStatus, { message: 'status tidak valid.' })
   status?: TripStatus;
 
-  @ApiPropertyOptional({ description: 'Filter by route id', minimum: 1 })
+  @ApiPropertyOptional({ description: 'Filter by route id (UUID)' })
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  routeId?: number;
+  @IsUUID(undefined, { message: 'Route id harus berupa UUID' })
+  routeId?: string;
 }

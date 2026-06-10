@@ -13,20 +13,20 @@ describe('AuditService', () => {
 
   it('persists an audit row with stringified entity id and slim actor', async () => {
     await service.record({
-      actor: { id: 3, username: 'admin' },
+      actor: { id: '00000000-0000-0000-0000-0000000000a3', username: 'admin' },
       action: 'user.create',
       entityType: 'User',
-      entityId: 42n,
+      entityId: '00000000-0000-0000-0000-0000000000a42',
       details: 'created',
     });
 
     expect(prisma.auditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        actorId: 3,
+        actorId: '00000000-0000-0000-0000-0000000000a3',
         actorName: 'admin',
         action: 'user.create',
         entityType: 'User',
-        entityId: '42',
+        entityId: '00000000-0000-0000-0000-0000000000a42',
         details: 'created',
       }),
     });
@@ -37,7 +37,7 @@ describe('AuditService', () => {
       actor: { username: 'system' },
       action: 'role.update',
       entityType: 'Role',
-      entityId: 1,
+      entityId: '00000000-0000-0000-0000-0000000000b1',
     });
 
     const { data } = prisma.auditLog.create.mock.calls[0][0];
@@ -47,7 +47,7 @@ describe('AuditService', () => {
 
   it('truncates over-long fields to their column widths', async () => {
     await service.record({
-      actor: { id: 1, username: 'x'.repeat(200) },
+      actor: { id: '00000000-0000-0000-0000-0000000000a1', username: 'x'.repeat(200) },
       action: 'a'.repeat(100),
       entityType: 'e'.repeat(100),
       entityId: 'i'.repeat(100),
@@ -66,10 +66,10 @@ describe('AuditService', () => {
     prisma.auditLog.create.mockRejectedValue(new Error('db down'));
     await expect(
       service.record({
-        actor: { id: 1, username: 'admin' },
+        actor: { id: '00000000-0000-0000-0000-0000000000a1', username: 'admin' },
         action: 'trip.verify',
         entityType: 'Trip',
-        entityId: 9n,
+        entityId: '00000000-0000-0000-0000-0000000000t9',
       }),
     ).resolves.toBeUndefined();
   });

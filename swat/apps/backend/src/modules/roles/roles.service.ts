@@ -37,7 +37,7 @@ export class RolesService {
     return roles.map(toRoleDto);
   }
 
-  async getById(id: number): Promise<RoleDetailDto> {
+  async getById(id: string): Promise<RoleDetailDto> {
     const role = await this.repo.findById(id);
     if (!role) {
       throw new NotFoundException('Peran tidak ditemukan.');
@@ -67,7 +67,7 @@ export class RolesService {
     return toRoleDto(role);
   }
 
-  async update(id: number, dto: UpdateRoleDto, actor: AuditActor): Promise<RoleDto> {
+  async update(id: string, dto: UpdateRoleDto, actor: AuditActor): Promise<RoleDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Peran tidak ditemukan.');
@@ -97,7 +97,7 @@ export class RolesService {
     return toRoleDto(role);
   }
 
-  async remove(id: number, actor: AuditActor): Promise<{ message: string }> {
+  async remove(id: string, actor: AuditActor): Promise<{ message: string }> {
     const role = await this.repo.findById(id);
     if (!role) {
       throw new NotFoundException('Peran tidak ditemukan.');
@@ -119,7 +119,7 @@ export class RolesService {
     return { message: 'Peran telah dihapus.' };
   }
 
-  private async assertPermissionsExist(ids: number[]): Promise<void> {
+  private async assertPermissionsExist(ids: string[]): Promise<void> {
     if (ids.length === 0) {
       return;
     }

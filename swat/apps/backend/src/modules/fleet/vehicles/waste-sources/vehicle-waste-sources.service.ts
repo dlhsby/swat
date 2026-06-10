@@ -3,8 +3,8 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { PrismaService } from '../../../prisma/prisma.service';
 
 export interface VehicleWasteSourceDto {
-  readonly id: number;
-  readonly wasteSourceId: number;
+  readonly id: string;
+  readonly wasteSourceId: string;
   readonly code: string;
   readonly name: string;
 }
@@ -13,7 +13,7 @@ export interface VehicleWasteSourceDto {
 export class VehicleWasteSourcesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async assertVehicleExists(vehicleId: number): Promise<void> {
+  private async assertVehicleExists(vehicleId: string): Promise<void> {
     const vehicle = await this.prisma.vehicle.findFirst({
       where: { id: vehicleId, deletedAt: null },
       select: { id: true },
@@ -23,7 +23,7 @@ export class VehicleWasteSourcesService {
     }
   }
 
-  async list(vehicleId: number): Promise<VehicleWasteSourceDto[]> {
+  async list(vehicleId: string): Promise<VehicleWasteSourceDto[]> {
     await this.assertVehicleExists(vehicleId);
     const links = await this.prisma.vehicleWasteSource.findMany({
       where: { vehicleId },
@@ -38,7 +38,7 @@ export class VehicleWasteSourcesService {
     }));
   }
 
-  async add(vehicleId: number, wasteSourceId: number): Promise<VehicleWasteSourceDto> {
+  async add(vehicleId: string, wasteSourceId: string): Promise<VehicleWasteSourceDto> {
     await this.assertVehicleExists(vehicleId);
     const source = await this.prisma.wasteSource.findUnique({
       where: { id: wasteSourceId },
@@ -61,7 +61,7 @@ export class VehicleWasteSourcesService {
     return { id: link.id, wasteSourceId: link.wasteSourceId, code: source.code, name: source.name };
   }
 
-  async remove(vehicleId: number, wasteSourceId: number): Promise<{ message: string }> {
+  async remove(vehicleId: string, wasteSourceId: string): Promise<{ message: string }> {
     const link = await this.prisma.vehicleWasteSource.findUnique({
       where: { vehicleId_wasteSourceId: { vehicleId, wasteSourceId } },
       select: { id: true },

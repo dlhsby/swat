@@ -84,7 +84,7 @@ describe('status-pill map', () => {
     const domains: PillDomain[] = [
       'trip',
       'day',
-      'fuelQuota',
+      'disposalPermit',
       'vehicle',
       'maintenance',
       'maintenanceType',

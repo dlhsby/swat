@@ -18,19 +18,19 @@ export class RolesRepository {
     return this.prisma.role.findMany({ include: roleInclude, orderBy: { name: 'asc' } });
   }
 
-  findById(id: number): Promise<RoleWithRelations | null> {
+  findById(id: string): Promise<RoleWithRelations | null> {
     return this.prisma.role.findUnique({ where: { id }, include: roleInclude });
   }
 
-  findByName(name: string): Promise<{ id: number } | null> {
+  findByName(name: string): Promise<{ id: string } | null> {
     return this.prisma.role.findUnique({ where: { name }, select: { id: true } });
   }
 
-  permissionsByIds(ids: number[]): Promise<Permission[]> {
+  permissionsByIds(ids: string[]): Promise<Permission[]> {
     return this.prisma.permission.findMany({ where: { id: { in: ids } } });
   }
 
-  permissionsForRole(roleId: number): Promise<Permission[]> {
+  permissionsForRole(roleId: string): Promise<Permission[]> {
     return this.prisma.permission.findMany({
       where: { roles: { some: { roleId } } },
       orderBy: { key: 'asc' },
@@ -38,7 +38,7 @@ export class RolesRepository {
   }
 
   /** Create the role and its permission grants in one transaction. */
-  async create(name: string, permissionIds: number[]): Promise<RoleWithRelations> {
+  async create(name: string, permissionIds: string[]): Promise<RoleWithRelations> {
     return this.prisma.role.create({
       data: {
         name,
@@ -50,8 +50,8 @@ export class RolesRepository {
 
   /** Replace name and/or the full permission set atomically. */
   async update(
-    id: number,
-    data: { name?: string; permissionIds?: number[] },
+    id: string,
+    data: { name?: string; permissionIds?: string[] },
   ): Promise<RoleWithRelations> {
     return this.prisma.$transaction(async (tx) => {
       if (data.permissionIds) {
@@ -69,7 +69,7 @@ export class RolesRepository {
     });
   }
 
-  delete(id: number): Promise<{ id: number }> {
+  delete(id: string): Promise<{ id: string }> {
     return this.prisma.role.delete({ where: { id }, select: { id: true } });
   }
 }

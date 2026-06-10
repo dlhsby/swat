@@ -27,7 +27,7 @@ const SESSION_INVALID = 'Sesi tidak valid atau telah berakhir.';
 
 interface AuditInput {
   readonly action: AuthAction;
-  readonly userId: number | null;
+  readonly userId: string | null;
   readonly username: string;
   readonly ctx: AuthContext;
   readonly details?: string;
@@ -101,7 +101,7 @@ export class AuthService {
     });
   }
 
-  async getMe(userId: number): Promise<MeResult> {
+  async getMe(userId: string): Promise<MeResult> {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, deletedAt: null },
       include: { role: true },
@@ -123,7 +123,7 @@ export class AuthService {
   }
 
   /** Change the caller's own password; clears the forced-change flag. */
-  async changePassword(userId: number, dto: ChangePasswordDto, ctx: AuthContext): Promise<void> {
+  async changePassword(userId: string, dto: ChangePasswordDto, ctx: AuthContext): Promise<void> {
     if (dto.newPassword !== dto.confirmPassword) {
       throw new BadRequestException('Konfirmasi kata sandi tidak cocok.');
     }
@@ -174,7 +174,7 @@ export class AuthService {
    * logged, never stored).
    */
   async forceReset(
-    targetUserId: number,
+    targetUserId: string,
     actor: SessionUser,
     ctx: AuthContext,
   ): Promise<ForceResetResult> {

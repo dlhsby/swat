@@ -6,7 +6,7 @@ import { type CreateUserDto } from './dto/create-user.dto';
 import { type UsersRepository, type UserWithRole } from './users.repository';
 import { UsersService } from './users.service';
 
-const actor: AuditActor = { id: 1, username: 'admin' };
+const actor: AuditActor = { id: '00000000-0000-0000-0000-0000000000a1', username: 'admin' };
 
 jest.mock('../../common/auth/password', () => ({
   generateTempPassword: jest.fn(() => 'Aa1!generatedxx'),
@@ -15,18 +15,18 @@ jest.mock('../../common/auth/password', () => ({
 
 function buildUser(overrides: Partial<UserWithRole> = {}): UserWithRole {
   return {
-    id: 1,
+    id: '00000000-0000-0000-0000-0000000000a1',
     legacyId: null,
     username: 'opr',
     name: 'Operator',
-    roleId: 4,
+    roleId: '00000000-0000-0000-0000-0000000000b4',
     passwordHash: '$argon2id$hash',
     mustChangePassword: true,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-02T00:00:00Z'),
     deletedAt: null,
     role: {
-      id: 4,
+      id: '00000000-0000-0000-0000-0000000000b4',
       legacyId: null,
       name: 'Operator Pool',
       createdAt: new Date(),
@@ -77,13 +77,21 @@ describe('UsersService', () => {
 
   it('returns a single user or 404', async () => {
     repo.findById.mockResolvedValueOnce(buildUser());
-    await expect(service.getById(1)).resolves.toMatchObject({ id: 1 });
+    await expect(service.getById('00000000-0000-0000-0000-0000000000a1')).resolves.toMatchObject({
+      id: '00000000-0000-0000-0000-0000000000a1',
+    });
     repo.findById.mockResolvedValueOnce(null);
-    await expect(service.getById(2)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getById('00000000-0000-0000-0000-0000000000a2')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 
   describe('create', () => {
-    const dto: CreateUserDto = { username: 'newopr', name: 'New', roleId: 4 };
+    const dto: CreateUserDto = {
+      username: 'newopr',
+      name: 'New',
+      roleId: '00000000-0000-0000-0000-0000000000b4',
+    };
 
     it('rejects an unknown role', async () => {
       repo.roleExists.mockResolvedValue(null);
@@ -91,13 +99,13 @@ describe('UsersService', () => {
     });
 
     it('rejects a duplicate username', async () => {
-      repo.roleExists.mockResolvedValue({ id: 4 });
+      repo.roleExists.mockResolvedValue({ id: '00000000-0000-0000-0000-0000000000b4' });
       repo.findByUsername.mockResolvedValue(buildUser());
       await expect(service.create(dto, actor)).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('creates and returns the temporary password', async () => {
-      repo.roleExists.mockResolvedValue({ id: 4 });
+      repo.roleExists.mockResolvedValue({ id: '00000000-0000-0000-0000-0000000000b4' });
       repo.findByUsername.mockResolvedValue(null);
       repo.create.mockResolvedValue(buildUser({ username: 'newopr' }));
 
@@ -115,24 +123,32 @@ describe('UsersService', () => {
   describe('update', () => {
     it('404s on a missing user', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.update(1, { name: 'X' }, actor)).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(
+        service.update('00000000-0000-0000-0000-0000000000a1', { name: 'X' }, actor),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('rejects an unknown role', async () => {
       repo.findById.mockResolvedValue(buildUser());
       repo.roleExists.mockResolvedValue(null);
-      await expect(service.update(1, { roleId: 99 }, actor)).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.update(
+          '00000000-0000-0000-0000-0000000000a1',
+          { roleId: '00000000-0000-0000-0000-0000000000b99' },
+          actor,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('updates name and role', async () => {
       repo.findById.mockResolvedValue(buildUser());
-      repo.roleExists.mockResolvedValue({ id: 5 });
+      repo.roleExists.mockResolvedValue({ id: '00000000-0000-0000-0000-0000000000b5' });
       repo.update.mockResolvedValue(buildUser({ name: 'Renamed' }));
-      const result = await service.update(1, { name: 'Renamed', roleId: 5 }, actor);
+      const result = await service.update(
+        '00000000-0000-0000-0000-0000000000a1',
+        { name: 'Renamed', roleId: '00000000-0000-0000-0000-0000000000b5' },
+        actor,
+      );
       expect(result.name).toBe('Renamed');
       expect(audit.record).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'user.update', entityType: 'User' }),
@@ -143,16 +159,18 @@ describe('UsersService', () => {
   describe('remove', () => {
     it('404s on a missing user', async () => {
       repo.findById.mockResolvedValue(null);
-      await expect(service.remove(1, actor)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.remove('00000000-0000-0000-0000-0000000000a1', actor),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('soft-deletes an existing user', async () => {
       repo.findById.mockResolvedValue(buildUser());
       repo.softDelete.mockResolvedValue(buildUser());
-      await expect(service.remove(1, actor)).resolves.toEqual({
+      await expect(service.remove('00000000-0000-0000-0000-0000000000a1', actor)).resolves.toEqual({
         message: 'Pengguna telah dihapus.',
       });
-      expect(repo.softDelete).toHaveBeenCalledWith(1);
+      expect(repo.softDelete).toHaveBeenCalledWith('00000000-0000-0000-0000-0000000000a1');
       expect(audit.record).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'user.delete', entityType: 'User' }),
       );

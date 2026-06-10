@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -38,7 +28,7 @@ export class VehicleModelsController {
   @Get(':id')
   @RequirePermissions('vehicle-model:read')
   @ApiOperation({ summary: 'Get a vehicle model by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<VehicleModelDto> {
+  getById(@Param('id') id: string): Promise<VehicleModelDto> {
     return this.models.getById(id);
   }
 
@@ -52,17 +42,14 @@ export class VehicleModelsController {
   @Patch(':id')
   @RequirePermissions('vehicle-model:update')
   @ApiOperation({ summary: 'Update a vehicle model' })
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateVehicleModelDto,
-  ): Promise<VehicleModelDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateVehicleModelDto): Promise<VehicleModelDto> {
     return this.models.update(id, dto);
   }
 
   @Delete(':id')
   @RequirePermissions('vehicle-model:delete')
   @ApiOperation({ summary: 'Delete a vehicle model (blocked while referenced)' })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<{ message: string }> {
+  remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.models.remove(id);
   }
 }

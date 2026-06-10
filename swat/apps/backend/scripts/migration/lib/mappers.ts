@@ -11,7 +11,7 @@ import { type Prisma } from '@prisma/client';
 
 import {
   mapEmploymentStatus,
-  mapFuelQuotaStatus,
+  mapDisposalPermitStatus,
   mapRouteCategory,
   mapSiteType,
   mapVehicleStatus,
@@ -22,7 +22,7 @@ import {
   type LegacyDriverLicense,
   type LegacyFuel,
   type LegacyFuelCategory,
-  type LegacyFuelQuota,
+  type LegacyDisposalPermit,
   type LegacyLevy,
   type LegacyLicenseClass,
   type LegacyNameMapRow,
@@ -54,7 +54,6 @@ export function mapVehicleApplication(
   now: Date,
 ): Prisma.VehicleApplicationCreateManyInput {
   return {
-    id: r.APLIKASIKENDARAAN_ID,
     legacyId: r.APLIKASIKENDARAAN_ID,
     name: r.APLIKASIKENDARAAN_NAMA,
     ...audit(now),
@@ -66,7 +65,6 @@ export function mapFuelCategory(
   now: Date,
 ): Prisma.FuelCategoryCreateManyInput {
   return {
-    id: r.KATEGORIBAHANBAKAR_ID,
     legacyId: r.KATEGORIBAHANBAKAR_ID,
     name: r.KATEGORIBAHANBAKAR_NAMA,
     ...audit(now),
@@ -75,9 +73,8 @@ export function mapFuelCategory(
 
 export function mapFuel(r: LegacyFuel, now: Date): Prisma.FuelCreateManyInput {
   return {
-    id: r.BAHANBAKAR_ID,
     legacyId: r.BAHANBAKAR_ID,
-    fuelCategoryId: r.KATEGORIBAHANBAKAR_ID,
+    fuelCategoryId: String(r.KATEGORIBAHANBAKAR_ID),
     name: r.BAHANBAKAR_NAMA,
     pricePerLiter: clampNonNegative(r.BAHANBAKAR_HARGAPERLITER),
     ...audit(now),
@@ -89,7 +86,6 @@ export function mapLicenseClass(
   now: Date,
 ): Prisma.LicenseClassCreateManyInput {
   return {
-    id: r.SIM_ID,
     legacyId: r.SIM_ID,
     name: r.SIM_NAMA,
     ...audit(now),
@@ -99,7 +95,6 @@ export function mapLicenseClass(
 export function mapSite(r: LegacySite, now: Date): Prisma.SiteCreateManyInput {
   const { latitude, longitude } = fixGps(r.SPOT_LATITUDE, r.SPOT_LONGITUDE);
   return {
-    id: r.SPOT_ID,
     legacyId: r.SPOT_ID,
     type: mapSiteType(r.KATEGORISPOT_ID),
     name: r.SPOT_NAMA,
@@ -112,11 +107,10 @@ export function mapSite(r: LegacySite, now: Date): Prisma.SiteCreateManyInput {
 
 export function mapRoute(r: LegacyRoute, now: Date): Prisma.RouteCreateManyInput {
   return {
-    id: r.RUTE_ID,
     legacyId: r.RUTE_ID,
     category: mapRouteCategory(r.KATEGORIRUTE_ID),
-    originSiteId: r.SPOT_ASAL_ID,
-    destinationSiteId: r.SPOT_TUJUAN_ID,
+    originSiteId: String(r.SPOT_ASAL_ID),
+    destinationSiteId: String(r.SPOT_TUJUAN_ID),
     distanceKm: clampNonNegative(r.RUTE_JARAK),
     ...audit(now),
   };
@@ -124,7 +118,6 @@ export function mapRoute(r: LegacyRoute, now: Date): Prisma.RouteCreateManyInput
 
 export function mapWasteSource(r: LegacyWasteSource, now: Date): Prisma.WasteSourceCreateManyInput {
   return {
-    id: r.KATEGORISUMBERSAMPAH_ID,
     legacyId: r.KATEGORISUMBERSAMPAH_ID,
     code: r.KATEGORISUMBERSAMPAH_KODE,
     name: r.KATEGORISUMBERSAMPAH_NAMA,
@@ -138,10 +131,9 @@ export function mapVehicleModel(
   now: Date,
 ): Prisma.VehicleModelCreateManyInput {
   return {
-    id: r.KATEGORIKENDARAAN_ID,
     legacyId: r.KATEGORIKENDARAAN_ID,
-    applicationId: r.APLIKASIKENDARAAN_ID,
-    fuelId: r.BAHANBAKAR_ID,
+    applicationId: String(r.APLIKASIKENDARAAN_ID),
+    fuelId: String(r.BAHANBAKAR_ID),
     brand: r.KATEGORIKENDARAAN_MERK,
     fuelTankCapacity: clampNonNegative(r.KATEGORIKENDARAAN_KAPASITASBAHANBAKAR),
     normalFuelRatio: clampNonNegative(r.KATEGORIKENDARAAN_RASIOBAHANBAKARNORMAL) || 1,
@@ -155,10 +147,9 @@ export function mapVehicleModel(
 
 export function mapVehicle(r: LegacyVehicle, now: Date): Prisma.VehicleCreateManyInput {
   return {
-    id: r.KENDARAAN_ID,
     legacyId: r.KENDARAAN_ID,
-    poolSiteId: r.SPOT_POOL_ID,
-    modelId: r.KATEGORIKENDARAAN_ID,
+    poolSiteId: String(r.SPOT_POOL_ID),
+    modelId: String(r.KATEGORIKENDARAAN_ID),
     status: mapVehicleStatus(r.STATUSKENDARAAN_ID),
     plateNumber: r.KENDARAAN_NOMORPOLISI,
     chassisNumber: r.KENDARAAN_NOMORRANGKA,
@@ -180,17 +171,15 @@ export function mapVehicleWasteSource(
   r: LegacyVehicleWasteSource,
 ): Prisma.VehicleWasteSourceCreateManyInput {
   return {
-    id: r.KATEGORISUMBERSAMPAHKENDARAAN_ID,
-    vehicleId: r.KENDARAAN_ID,
-    wasteSourceId: r.KATEGORISUMBERSAMPAH_ID,
+    vehicleId: String(r.KENDARAAN_ID),
+    wasteSourceId: String(r.KATEGORISUMBERSAMPAH_ID),
   };
 }
 
 export function mapDriver(r: LegacyDriver, now: Date): Prisma.DriverCreateManyInput {
   return {
-    id: r.PENGEMUDI_ID,
     legacyId: r.PENGEMUDI_ID,
-    poolSiteId: r.SPOT_POOL_ID,
+    poolSiteId: String(r.SPOT_POOL_ID),
     employmentStatus: mapEmploymentStatus(r.STATUSKEPEGAWAIAN_ID),
     name: r.PENGEMUDI_NAMA,
     idCardNumber: r.PENGEMUDI_NOMORKTP,
@@ -210,27 +199,25 @@ export function mapDriverLicense(
   now: Date,
 ): Prisma.DriverLicenseCreateManyInput {
   return {
-    id: r.KEPEMILIKANSIM_ID,
     legacyId: r.KEPEMILIKANSIM_ID,
-    driverId: r.PENGEMUDI_ID,
-    licenseClassId: r.SIM_ID,
+    driverId: String(r.PENGEMUDI_ID),
+    licenseClassId: String(r.SIM_ID),
     licenseNumber: r.KEPEMILIKANSIM_NOMORSIM,
     expiry: fixDate(r.KEPEMILIKANSIM_MASABERLAKUSIM) ?? now,
     ...audit(now),
   };
 }
 
-export function mapFuelQuota(
-  r: LegacyFuelQuota,
+export function mapDisposalPermit(
+  r: LegacyDisposalPermit,
   now: Date,
-  systemUserId: number,
-): Prisma.FuelQuotaCreateManyInput {
+  systemUserId: string,
+): Prisma.DisposalPermitCreateManyInput {
   return {
-    id: BigInt(r.JATAHKITIR_ID),
     legacyId: r.JATAHKITIR_ID,
-    vehicleId: r.KENDARAAN_ID,
-    siteId: r.SPOT_ID,
-    status: mapFuelQuotaStatus(r.STATUSJATAHKITIR_ID),
+    vehicleId: String(r.KENDARAAN_ID),
+    siteId: String(r.SPOT_ID),
+    status: mapDisposalPermitStatus(r.STATUSJATAHKITIR_ID),
     issuedAt: fixDate(r.JATAHKITIR_WAKTUDITERBITKAN) ?? now,
     validFrom: fixDate(r.JATAHKITIR_MASABERLAKUAWAL) ?? now,
     validTo: fixDate(r.JATAHKITIR_MASABERLAKUAKHIR) ?? now,
@@ -244,7 +231,6 @@ export function mapDailyTonnage(
   now: Date,
 ): Prisma.DailyTonnageCreateManyInput {
   return {
-    id: r.TONASE_ID,
     legacyId: r.TONASE_ID,
     // amount is BigInt (kg); legacy TONASE_NOMINAL is a double — round to integer.
     amount: BigInt(Math.round(r.TONASE_NOMINAL ?? 0)),
@@ -256,11 +242,10 @@ export function mapDailyTonnage(
 export function mapLevy(
   r: LegacyLevy,
   now: Date,
-  systemUserId: number,
+  systemUserId: string,
 ): Prisma.LevyCreateManyInput {
   return {
-    id: BigInt(r.ID_KATEGORI_RETRIBUSI),
-    legacyId: BigInt(r.ID_KATEGORI_RETRIBUSI),
+    legacyId: r.ID_KATEGORI_RETRIBUSI,
     categoryName: r.NAMA_KATEGORI_RETRIBUSI,
     date: fixDate(r.TANGGAL) ?? now,
     amount: BigInt(r.JUMLAH ?? 0),
@@ -271,7 +256,6 @@ export function mapLevy(
 
 export function mapNameMap(r: LegacyNameMapRow, now: Date): Prisma.LegacyNameMapCreateManyInput {
   return {
-    id: r.id,
     si: trimOrNull(r.si),
     swat: trimOrNull(r.swat),
     ...audit(now),
@@ -284,10 +268,9 @@ export function mapCrewSchedule(
   now: Date,
 ): Prisma.CrewScheduleCreateManyInput {
   return {
-    id: r.id,
     legacyId: r.id,
-    vehicleId: r.vehicleId,
-    driverId: r.driverId,
+    vehicleId: String(r.vehicleId),
+    driverId: String(r.driverId),
     departTime: legacyTimeToDate(r.departTime) ?? new Date('1970-01-01T00:00:00.000Z'),
     returnTime: legacyTimeToDate(r.returnTime) ?? new Date('1970-01-01T00:00:00.000Z'),
     ...audit(now),
@@ -306,10 +289,9 @@ export function mapTripTemplate(
   now: Date,
 ): Prisma.TripTemplateCreateManyInput {
   return {
-    id: r.id,
     legacyId: r.id,
-    crewScheduleId: r.crewScheduleId,
-    routeId: r.routeId,
+    crewScheduleId: String(r.crewScheduleId),
+    routeId: String(r.routeId),
     targetTime: legacyTimeToDate(r.targetTime) ?? new Date('1970-01-01T00:00:00.000Z'),
     fuelRequestedLiters: nonNegativeOrNull(r.fuel),
     ...audit(now),

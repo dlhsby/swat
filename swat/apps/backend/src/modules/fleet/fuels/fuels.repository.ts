@@ -11,7 +11,7 @@ const fuelInclude = {
 export type FuelWithCategory = Prisma.FuelGetPayload<{ include: typeof fuelInclude }>;
 
 export interface ListFuelsFilter extends PageParams {
-  readonly fuelCategoryId?: number;
+  readonly fuelCategoryId?: string;
   readonly search?: string;
 }
 
@@ -42,22 +42,22 @@ export class FuelsRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<FuelWithCategory | null> {
+  findById(id: string): Promise<FuelWithCategory | null> {
     return this.prisma.fuel.findUnique({ where: { id }, include: fuelInclude });
   }
 
-  categoryExists(id: number): Promise<{ id: number } | null> {
+  categoryExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.fuelCategory.findUnique({ where: { id }, select: { id: true } });
   }
 
-  findByNameInCategory(fuelCategoryId: number, name: string): Promise<{ id: number } | null> {
+  findByNameInCategory(fuelCategoryId: string, name: string): Promise<{ id: string } | null> {
     return this.prisma.fuel.findFirst({
       where: { fuelCategoryId, name: { equals: name, mode: 'insensitive' } },
       select: { id: true },
     });
   }
 
-  countModels(id: number): Promise<number> {
+  countModels(id: string): Promise<number> {
     return this.prisma.vehicleModel.count({ where: { fuelId: id } });
   }
 
@@ -65,11 +65,11 @@ export class FuelsRepository {
     return this.prisma.fuel.create({ data, include: fuelInclude });
   }
 
-  update(id: number, data: Prisma.FuelUpdateInput): Promise<FuelWithCategory> {
+  update(id: string, data: Prisma.FuelUpdateInput): Promise<FuelWithCategory> {
     return this.prisma.fuel.update({ where: { id }, data, include: fuelInclude });
   }
 
-  delete(id: number): Promise<{ id: number }> {
+  delete(id: string): Promise<{ id: string }> {
     return this.prisma.fuel.delete({ where: { id }, select: { id: true } });
   }
 }

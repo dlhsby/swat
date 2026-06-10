@@ -33,15 +33,15 @@ export class WasteSourcesRepository {
     return { rows, total };
   }
 
-  findById(id: number): Promise<WasteSource | null> {
+  findById(id: string): Promise<WasteSource | null> {
     return this.prisma.wasteSource.findUnique({ where: { id } });
   }
 
-  findByCode(code: string): Promise<{ id: number } | null> {
+  findByCode(code: string): Promise<{ id: string } | null> {
     return this.prisma.wasteSource.findUnique({ where: { code }, select: { id: true } });
   }
 
-  countVehicleLinks(id: number): Promise<number> {
+  countVehicleLinks(id: string): Promise<number> {
     return this.prisma.vehicleWasteSource.count({ where: { wasteSourceId: id } });
   }
 
@@ -49,11 +49,11 @@ export class WasteSourcesRepository {
     return this.prisma.wasteSource.create({ data });
   }
 
-  update(id: number, data: Prisma.WasteSourceUpdateInput): Promise<WasteSource> {
+  update(id: string, data: Prisma.WasteSourceUpdateInput): Promise<WasteSource> {
     return this.prisma.wasteSource.update({ where: { id }, data });
   }
 
-  delete(id: number): Promise<{ id: number }> {
+  delete(id: string): Promise<{ id: string }> {
     return this.prisma.wasteSource.delete({ where: { id }, select: { id: true } });
   }
 }

@@ -6,25 +6,25 @@ export type VehicleStatus = 'GOOD' | 'MINOR_DAMAGE' | 'MAJOR_DAMAGE' | 'LOST';
 export type EmploymentStatus = 'SATGAS' | 'PNS' | 'HONORER';
 export type SiteType = 'POOL' | 'SPBU' | 'TPS' | 'TPA';
 export type RouteCategoryValue = 'DEPART_POOL' | 'REFUEL' | 'PICKUP' | 'DISPOSAL' | 'RETURN_POOL';
-export type FuelQuotaStatus = 'ACTIVE' | 'INACTIVE';
+export type DisposalPermitStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface VehicleApplicationDto {
-  id: number;
+  id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface FuelCategoryDto {
-  id: number;
+  id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface FuelDto {
-  id: number;
-  fuelCategoryId: number;
+  id: string;
+  fuelCategoryId: string;
   fuelCategoryName: string;
   name: string;
   pricePerLiter: number;
@@ -33,10 +33,10 @@ export interface FuelDto {
 }
 
 export interface VehicleModelDto {
-  id: number;
-  applicationId: number;
+  id: string;
+  applicationId: string;
   applicationName: string;
-  fuelId: number;
+  fuelId: string;
   fuelName: string;
   brand: string;
   fuelTankCapacity: number;
@@ -50,12 +50,12 @@ export interface VehicleModelDto {
 }
 
 export interface VehicleDto {
-  id: number;
+  id: string;
   plateNumber: string;
   status: VehicleStatus;
-  poolSiteId: number;
+  poolSiteId: string;
   poolSiteName: string;
-  modelId: number;
+  modelId: string;
   modelBrand: string;
   chassisNumber: string;
   engineNumber: string;
@@ -71,10 +71,10 @@ export interface VehicleDto {
 }
 
 export interface DriverDto {
-  id: number;
+  id: string;
   name: string;
   idCardNumber: string;
-  poolSiteId: number;
+  poolSiteId: string;
   poolSiteName: string;
   employmentStatus: EmploymentStatus;
   originAddress: string;
@@ -88,14 +88,14 @@ export interface DriverDto {
 }
 
 export interface LicenseClassDto {
-  id: number;
+  id: string;
   name: string;
 }
 
 export interface DriverLicenseDto {
-  id: number;
-  driverId: number;
-  licenseClassId: number;
+  id: string;
+  driverId: string;
+  licenseClassId: string;
   licenseClassName: string;
   licenseNumber: string;
   expiry: string;
@@ -105,7 +105,7 @@ export interface DriverLicenseDto {
 }
 
 export interface SiteDto {
-  id: number;
+  id: string;
   type: SiteType;
   name: string;
   address: string;
@@ -116,11 +116,11 @@ export interface SiteDto {
 }
 
 export interface RouteDto {
-  id: number;
+  id: string;
   category: RouteCategoryValue;
-  originSiteId: number;
+  originSiteId: string;
   originSiteName: string;
-  destinationSiteId: number;
+  destinationSiteId: string;
   destinationSiteName: string;
   distanceKm: number;
   createdAt: string;
@@ -128,7 +128,7 @@ export interface RouteDto {
 }
 
 export interface WasteSourceDto {
-  id: number;
+  id: string;
   code: string;
   name: string;
   notes: string | null;
@@ -137,10 +137,10 @@ export interface WasteSourceDto {
 }
 
 export interface CrewScheduleDto {
-  id: number;
-  vehicleId: number;
+  id: string;
+  vehicleId: string;
   vehiclePlate: string;
-  driverId: number;
+  driverId: string;
   driverName: string;
   departTime: string;
   returnTime: string;
@@ -150,9 +150,9 @@ export interface CrewScheduleDto {
 }
 
 export interface TripTemplateDto {
-  id: number;
-  crewScheduleId: number;
-  routeId: number;
+  id: string;
+  crewScheduleId: string;
+  routeId: string;
   routeCategory: string;
   routeLabel: string;
   targetTime: string;
@@ -161,14 +161,14 @@ export interface TripTemplateDto {
   updatedAt: string;
 }
 
-export interface FuelQuotaDto {
+export interface DisposalPermitDto {
   id: string;
   code: string | null;
-  vehicleId: number;
+  vehicleId: string;
   vehiclePlate: string;
-  siteId: number;
+  siteId: string;
   siteName: string;
-  status: FuelQuotaStatus;
+  status: DisposalPermitStatus;
   issuedAt: string;
   validFrom: string;
   validTo: string;
@@ -189,4 +189,4 @@ export const sitesApi = makeResourceApi<SiteDto>('/sites');
 export const routesApi = makeResourceApi<RouteDto>('/routes');
 export const wasteSourcesApi = makeResourceApi<WasteSourceDto>('/waste-sources');
 export const crewSchedulesApi = makeResourceApi<CrewScheduleDto>('/crew-schedules');
-export const fuelQuotasApi = makeResourceApi<FuelQuotaDto>('/fuel-quotas');
+export const disposalPermitsApi = makeResourceApi<DisposalPermitDto>('/disposal-permits');

@@ -45,7 +45,13 @@ describe('RollupService', () => {
   describe('refreshDailyFuel', () => {
     it('aggregates then replaces the day rows', async () => {
       const date = parseDateOnly('2026-06-08');
-      const rows = [{ vehicleId: 1, fuelApprovedLiters: '80', fuelRequestedLiters: '100' }];
+      const rows = [
+        {
+          vehicleId: '00000000-0000-0000-0000-0000000000v1',
+          fuelApprovedLiters: '80',
+          fuelRequestedLiters: '100',
+        },
+      ];
       repo.aggregateDailyFuel.mockResolvedValue(rows);
 
       await service.refreshDailyFuel(date);
@@ -60,10 +66,14 @@ describe('RollupService', () => {
       const from = parseDateOnly('2026-06-01');
       const to = parseDateOnly('2026-07-01');
       repo.aggregateMonthlyTonnageBySource.mockResolvedValue([
-        { wasteSourceId: 1, totalNetWeight: 25000n, haulCount: 5 },
+        {
+          wasteSourceId: '00000000-0000-0000-0000-0000000000w1',
+          totalNetWeight: 25000n,
+          haulCount: 5,
+        },
       ]);
       repo.aggregateMonthlyTonnageBySite.mockResolvedValue([
-        { siteId: 7, totalNetWeight: 25000n, haulCount: 5 },
+        { siteId: '00000000-0000-0000-0000-0000000000s7', totalNetWeight: 25000n, haulCount: 5 },
       ]);
 
       await service.refreshMonthlyTonnage(parseDateOnly('2026-06-18'));
@@ -71,10 +81,14 @@ describe('RollupService', () => {
       expect(repo.aggregateMonthlyTonnageBySource).toHaveBeenCalledWith(from, to);
       expect(repo.aggregateMonthlyTonnageBySite).toHaveBeenCalledWith(from, to);
       expect(repo.replaceMonthlyTonnageBySource).toHaveBeenCalledWith(from, [
-        { wasteSourceId: 1, totalNetWeight: 25000n, haulCount: 5 },
+        {
+          wasteSourceId: '00000000-0000-0000-0000-0000000000w1',
+          totalNetWeight: 25000n,
+          haulCount: 5,
+        },
       ]);
       expect(repo.replaceMonthlyTonnageBySite).toHaveBeenCalledWith(from, [
-        { siteId: 7, totalNetWeight: 25000n, haulCount: 5 },
+        { siteId: '00000000-0000-0000-0000-0000000000s7', totalNetWeight: 25000n, haulCount: 5 },
       ]);
     });
   });
@@ -83,13 +97,15 @@ describe('RollupService', () => {
     it('aggregates ritase over the anchor month and replaces it', async () => {
       const from = parseDateOnly('2026-06-01');
       const to = parseDateOnly('2026-07-01');
-      repo.aggregateMonthlyRouteActivity.mockResolvedValue([{ routeId: 3, tripCount: 9 }]);
+      repo.aggregateMonthlyRouteActivity.mockResolvedValue([
+        { routeId: '00000000-0000-0000-0000-0000000000r3', tripCount: 9 },
+      ]);
 
       await service.refreshMonthlyRouteActivity(parseDateOnly('2026-06-30'));
 
       expect(repo.aggregateMonthlyRouteActivity).toHaveBeenCalledWith(from, to);
       expect(repo.replaceMonthlyRouteActivity).toHaveBeenCalledWith(from, [
-        { routeId: 3, tripCount: 9 },
+        { routeId: '00000000-0000-0000-0000-0000000000r3', tripCount: 9 },
       ]);
     });
   });

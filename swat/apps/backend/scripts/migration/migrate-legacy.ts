@@ -23,7 +23,7 @@ import type {
   LegacyDriverLicense,
   LegacyFuel,
   LegacyFuelCategory,
-  LegacyFuelQuota,
+  LegacyDisposalPermit,
   LegacyLevy,
   LegacyLicenseClass,
   LegacyNameMapRow,
@@ -45,7 +45,7 @@ import {
   mapDriverLicense,
   mapFuel,
   mapFuelCategory,
-  mapFuelQuota,
+  mapDisposalPermit,
   mapLevy,
   mapLicenseClass,
   mapNameMap,
@@ -90,16 +90,16 @@ async function checkIdempotency(forceReset: boolean): Promise<void> {
   if (forceReset) {
     warn('Force reset: truncating migrated tables (CASCADE).');
     await prisma.$executeRawUnsafe(
-      `TRUNCATE TABLE "FuelQuota","TripTemplate","CrewSchedule","DriverLicense","Driver",
+      `TRUNCATE TABLE "DisposalPermit","TripTemplate","CrewSchedule","DriverLicense","Driver",
        "VehicleWasteSource","Vehicle","VehicleModel","WasteSource","Route","Site","Fuel",
        "FuelCategory","VehicleApplication","LicenseClass","DailyTonnage","Levy","LegacyNameMap"
-       RESTART IDENTITY CASCADE`,
+       CASCADE`,
     );
   }
 }
 
 /** Resolve the system user id used for createdById attribution on migrated rows. */
-async function systemUserId(): Promise<number> {
+async function systemUserId(): Promise<string> {
   const admin = await prisma.user.findFirst({ where: { username: 'admin' }, select: { id: true } });
   if (admin) {
     return admin.id;
@@ -277,7 +277,7 @@ async function migrateAuth(): Promise<void> {
   }
 }
 
-async function migrateScheduling(sysUser: number): Promise<void> {
+async function migrateScheduling(sysUser: string): Promise<void> {
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
     const schedules = await query<LegacyCrewSchedule>(
@@ -289,8 +289,8 @@ async function migrateScheduling(sysUser: number): Promise<void> {
         where: { legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID },
         create: {
           legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID,
-          vehicleId: s.KENDARAAN_ID,
-          driverId: s.PENGEMUDI_ID,
+          vehicleId: String(s.KENDARAAN_ID),
+          driverId: String(s.PENGEMUDI_ID),
           departTime:
             legacyTimeToDate(s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_WAKTUBERANGKATKANDANG) ?? NOW,
           returnTime:
@@ -332,7 +332,7 @@ async function migrateScheduling(sysUser: number): Promise<void> {
         create: {
           legacyId: t.MASTERTRAYEK_ID,
           crewScheduleId,
-          routeId: routeRemap.get(t.RUTE_ID) ?? t.RUTE_ID,
+          routeId: String(routeRemap.get(t.RUTE_ID) ?? t.RUTE_ID),
           targetTime: legacyTimeToDate(t.MASTERTRAYEK_WAKTUTARGET) ?? NOW,
           fuelRequestedLiters: nonNegativeOrNull(t.MASTERTRAYEK_JUMLAHISIBBMDIAJUKAN),
         },
@@ -342,18 +342,18 @@ async function migrateScheduling(sysUser: number): Promise<void> {
     }
     log(`TripTemplate: ${tplCount}`);
 
-    const quotas = await query<LegacyFuelQuota>(conn, 'SELECT * FROM jatahkitir');
-    await prisma.fuelQuota.createMany({
-      data: quotas.map((r) => mapFuelQuota(r, NOW, sysUser)),
+    const quotas = await query<LegacyDisposalPermit>(conn, 'SELECT * FROM jatahkitir');
+    await prisma.disposalPermit.createMany({
+      data: quotas.map((r) => mapDisposalPermit(r, NOW, sysUser)),
       skipDuplicates: true,
     });
-    log(`FuelQuota: ${quotas.length}`);
+    log(`DisposalPermit: ${quotas.length}`);
   } finally {
     await conn.end();
   }
 }
 
-async function migrateAggregates(sysUser: number): Promise<void> {
+async function migrateAggregates(sysUser: string): Promise<void> {
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
     const tonnage = await query<LegacyDailyTonnage>(conn, 'SELECT * FROM tonase');

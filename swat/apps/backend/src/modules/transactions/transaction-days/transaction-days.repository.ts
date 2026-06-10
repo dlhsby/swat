@@ -22,7 +22,7 @@ export type TransactionDayWithTree = Prisma.TransactionDayGetPayload<{
 export class TransactionDaysRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findById(id: number): Promise<TransactionDayWithTree | null> {
+  findById(id: string): Promise<TransactionDayWithTree | null> {
     return this.prisma.transactionDay.findUnique({ where: { id }, include: dayInclude });
   }
 
@@ -30,7 +30,7 @@ export class TransactionDaysRepository {
     return this.prisma.transactionDay.findUnique({ where: { date }, include: dayInclude });
   }
 
-  updateStatus(id: number, status: DayStatus): Promise<TransactionDayWithTree> {
+  updateStatus(id: string, status: DayStatus): Promise<TransactionDayWithTree> {
     return this.prisma.transactionDay.update({
       where: { id },
       data: { status },
@@ -38,7 +38,7 @@ export class TransactionDaysRepository {
     });
   }
 
-  countOpenHauls(id: number): Promise<number> {
+  countOpenHauls(id: string): Promise<number> {
     return this.prisma.haul.count({
       where: { transactionDayId: id, status: { not: 'DONE' } },
     });

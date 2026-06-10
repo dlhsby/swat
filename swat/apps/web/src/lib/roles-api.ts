@@ -1,15 +1,15 @@
 import { apiClient } from './api-client';
 
 export interface PermissionDto {
-  id: number;
+  id: string;
   key: string;
   description: string;
 }
 
 export interface RoleDto {
-  id: number;
+  id: string;
   name: string;
-  permissionIds: number[];
+  permissionIds: string[];
   userCount: number;
   createdAt: string;
   updatedAt: string;
@@ -21,12 +21,12 @@ export interface RoleDetailDto extends RoleDto {
 
 export const rolesApi = {
   list: (): Promise<RoleDto[]> => apiClient.get<RoleDto[]>('/roles'),
-  get: (id: number): Promise<RoleDetailDto> => apiClient.get<RoleDetailDto>(`/roles/${id}`),
-  create: (body: { name: string; permissionIds: number[] }): Promise<RoleDto> =>
+  get: (id: string): Promise<RoleDetailDto> => apiClient.get<RoleDetailDto>(`/roles/${id}`),
+  create: (body: { name: string; permissionIds: string[] }): Promise<RoleDto> =>
     apiClient.post<RoleDto>('/roles', body),
-  update: (id: number, body: { name?: string; permissionIds?: number[] }): Promise<RoleDto> =>
+  update: (id: string, body: { name?: string; permissionIds?: string[] }): Promise<RoleDto> =>
     apiClient.patch<RoleDto>(`/roles/${id}`, body),
-  remove: (id: number): Promise<{ message: string }> =>
+  remove: (id: string): Promise<{ message: string }> =>
     apiClient.delete<{ message: string }>(`/roles/${id}`),
 };
 

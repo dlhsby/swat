@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { type SessionUser } from '../../common/auth/session.types';
@@ -37,7 +27,7 @@ export class UsersController {
   @Get(':id')
   @RequirePermissions('user:read')
   @ApiOperation({ summary: 'Get a user by id' })
-  getById(@Param('id', ParseIntPipe) id: number): Promise<UserDto> {
+  getById(@Param('id') id: string): Promise<UserDto> {
     return this.users.getById(id);
   }
 
@@ -52,7 +42,7 @@ export class UsersController {
   @RequirePermissions('user:update')
   @ApiOperation({ summary: 'Update a user' })
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateUserDto,
     @CurrentUser() actor: SessionUser,
   ): Promise<UserDto> {
@@ -62,10 +52,7 @@ export class UsersController {
   @Delete(':id')
   @RequirePermissions('user:delete')
   @ApiOperation({ summary: 'Soft-delete a user' })
-  remove(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() actor: SessionUser,
-  ): Promise<{ message: string }> {
+  remove(@Param('id') id: string, @CurrentUser() actor: SessionUser): Promise<{ message: string }> {
     return this.users.remove(id, actor);
   }
 }

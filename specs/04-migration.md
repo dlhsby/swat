@@ -128,7 +128,7 @@ Each table is migrated after its FK dependencies. **Order:**
 | 3 | `statuskendaraan` | VehicleStatus (enum) | seeded constant |
 | 4 | `statuskepegawaian` | EmploymentStatus (enum) | seeded constant |
 | 5 | `statustrayek` | TripStatus (enum) | seeded constant |
-| 6 | `statusjatahkitir` | FuelQuotaStatus (enum) | seeded constant |
+| 6 | `statusdisposalPermit` | DisposalPermitStatus (enum) | seeded constant (was `statusjatahkitir`) |
 | 7 | `statusriwayatperawatan` | MaintenanceStatus (enum) | seeded constant |
 | 8 | `kategoribahanbakar` | FuelCategory | table; ~2 rows (Bersubsidi, Non-Subsidi) |
 | 9 | `bahanbakar` | Fuel | table; ~6 rows; FK to FuelCategory |
@@ -153,7 +153,7 @@ Each table is migrated after its FK dependencies. **Order:**
 | **Phase F: Scheduling templates** | — | — | — |
 | 24 | `masterdetailtransaksiangkutsampah` | CrewSchedule | table; 1,411 rows; FK to kendaraan, pengemudi |
 | 25 | `mastertrayek` | TripTemplate | table; 2,128 rows; FK to masterdetailtransaksiangkutsampah, rute |
-| 26 | `jatahkitir` | FuelQuota | 0 in snapshot / **~3.3M live** | batched streamed load (§3.1); partitioned yearly |
+| 26 | `jatahkitir` | DisposalPermit | 0 in snapshot / **~3.3M live** | batched streamed load (§3.1); partitioned yearly |
 | **Phase G: Transactions (empty in snapshot)** | — | — | — |
 | 27 | `haritransaksi` | TransactionDay | 4,413 rows structure only / **millions live** | map `statusharitransaksi` → `DayStatus` (IN_PROGRESS, DONE) |
 | 28 | `transaksiangkutsampah` | Haul | 0 in snapshot / **millions live** | map `statustransaksiangkutsampah` → `DayStatus`; denormalize `operationDate` from TransactionDay.date; batched streamed load (§3.1); partitioned monthly |
@@ -378,26 +378,20 @@ async function migrateRBACGrants() {
 }
 ```
 
-## 7. Identity & sequences
+## 7. Identity & UUID v7 PKs with legacy ID bridge
 
-### Legacy IDs → `legacyId`
-Every migrated row preserves its source PK in the `legacyId` column (indexed, unique per table):
+### All PKs are UUID v7
+Every table has a UUID v7 PK (`String @id @db.Uuid @default(uuid(7))`). Legacy numeric PKs are stored in `legacyId` (indexed, unique per table) for migration traceability and FK resolution:
 ```prisma
 model Vehicle {
-  id       Int @id @default(autoincrement())
-  legacyId Int? @unique
+  id       String @id @db.Uuid @default(uuid(7))
+  legacyId Int?   @unique  // Legacy numeric PK
   // ...
 }
 ```
 
-### Sequence management
-PostgreSQL sequences are created automatically by Prisma. After load, verify next values:
-```sql
--- After migration, set sequence to max(id) + 1
-SELECT SETVAL('vehicle_id_seq', (SELECT MAX(id) FROM vehicle) + 1)
-SELECT SETVAL('trip_id_seq', (SELECT MAX(id) FROM trip) + 1)
--- ... per table
-```
+### Legacy FK resolution
+During migration, the loader generates a map of `legacyId → new UUID` for each table, then resolves legacy FKs (e.g., a Trip's old `haulAssignmentId = 12345`) to new UUIDs by looking up the HaulAssignment with `legacyId = 12345` and copying its new `id`.
 
 ## 8. Validation & reporting
 
@@ -600,7 +594,7 @@ Moving from the **live** legacy PHP app to the new stack while operations contin
 | konversi_si_swat | LegacyNameMap | 31 | migrate; MyISAM→normal | ✓ |
 | menu | (dropped) | 120 | replaced by Permission/RolePermission | — |
 | hakakses | Role | 17 | migrate; map legacy role names | ✓ |
-| jatahkitir | FuelQuota | 0 in snapshot / **~3.3M high-water live** | batched streamed load (§3.1); partitioned yearly | ✓ |
+| jatahkitir | DisposalPermit | 0 in snapshot / **~3.3M high-water live** | batched streamed load (§3.1); partitioned yearly | ✓ |
 | transaksiangkutsampah | Haul | 0 in snapshot / **millions live** | batched streamed load (§3.1); partitioned monthly | ✓ |
 | detailtransaksiangkutsampah | HaulAssignment | 0 in snapshot / **millions live** | batched streamed load (§3.1); partitioned monthly | ✓ |
 | trayek | Trip | 0 in snapshot / **tens of millions live** | batched streamed load (§3.1); partitioned monthly | ✓ |

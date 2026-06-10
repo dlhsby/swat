@@ -17,8 +17,8 @@ export default function RolesPage(): JSX.Element {
   const { rows: roles, reload: reloadRoles } = useResourceList(rolesApi.list);
   const { rows: permissions } = useResourceList<PermissionDto>(permissionsApi.list);
 
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [enabled, setEnabled] = useState<Set<number>>(new Set());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [enabled, setEnabled] = useState<Set<string>>(new Set());
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -29,7 +29,7 @@ export default function RolesPage(): JSX.Element {
     }
   }, [roles, selectedId]);
 
-  const loadDetail = useCallback(async (id: number): Promise<void> => {
+  const loadDetail = useCallback(async (id: string): Promise<void> => {
     setLoadingDetail(true);
     try {
       const detail = await rolesApi.get(id);
@@ -61,7 +61,7 @@ export default function RolesPage(): JSX.Element {
     return [...map.entries()];
   }, [permissions]);
 
-  const toggle = (id: number): void => {
+  const toggle = (id: string): void => {
     setEnabled((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {

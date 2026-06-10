@@ -11,9 +11,9 @@ export interface RefuelDto {
   readonly id: string;
   readonly operationDate: string;
   readonly status: string;
-  readonly vehicleId: number;
+  readonly vehicleId: string;
   readonly vehiclePlate: string;
-  readonly fuelId: number | null;
+  readonly fuelId: string | null;
   readonly fuelName: string | null;
   readonly pricePerLiter: number | null;
   readonly requestedLiters: number | null;
@@ -36,7 +36,7 @@ function toDto(trip: RefuelTrip): RefuelDto {
   const estimatedCost =
     approved !== null && pricePerLiter !== null ? Math.round(approved * pricePerLiter) : null;
   return {
-    id: trip.id.toString(),
+    id: trip.id,
     operationDate: trip.operationDate.toISOString().slice(0, 10),
     status: trip.status,
     vehicleId: trip.haulAssignment.haul.vehicleId,

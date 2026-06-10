@@ -30,7 +30,12 @@ const PERMISSION_MAP: ReadonlyArray<readonly [string, readonly string[]]> = [
   ],
   [
     '/master/jatahkitir',
-    ['fuel-quota:read', 'fuel-quota:create', 'fuel-quota:update', 'fuel-quota:delete'],
+    [
+      'disposal-permit:read',
+      'disposal-permit:create',
+      'disposal-permit:update',
+      'disposal-permit:delete',
+    ],
   ],
   [
     '/master/riwayatperawatan',

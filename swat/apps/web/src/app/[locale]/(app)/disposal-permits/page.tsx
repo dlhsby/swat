@@ -17,10 +17,10 @@ import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { formatDateDisplay } from '@/lib/format';
 import {
-  type FuelQuotaDto,
+  type DisposalPermitDto,
   type SiteDto,
   type VehicleDto,
-  fuelQuotasApi,
+  disposalPermitsApi,
   sitesApi,
   vehiclesApi,
 } from '@/lib/master-api';
@@ -33,8 +33,8 @@ const STATUS_OPTIONS: readonly SelectOption[] = [
 const schema = z
   .object({
     code: z.string().max(50).optional(),
-    vehicleId: z.coerce.number().int().min(1, 'Kendaraan wajib dipilih'),
-    siteId: z.coerce.number().int().min(1, 'Lokasi wajib dipilih'),
+    vehicleId: z.string().uuid('Kendaraan wajib dipilih'),
+    siteId: z.string().uuid('Lokasi wajib dipilih'),
     issuedAt: z.string().min(1, 'Tanggal terbit wajib diisi'),
     validFrom: z.string().min(1, 'Berlaku dari wajib diisi'),
     validTo: z.string().min(1, 'Berlaku sampai wajib diisi'),
@@ -47,14 +47,14 @@ const schema = z
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
   code: undefined,
-  vehicleId: 0,
-  siteId: 0,
+  vehicleId: '',
+  siteId: '',
   issuedAt: '',
   validFrom: '',
   validTo: '',
   status: 'ACTIVE',
 };
-const toForm = (r: FuelQuotaDto): Values => ({
+const toForm = (r: DisposalPermitDto): Values => ({
   code: r.code ?? undefined,
   vehicleId: r.vehicleId,
   siteId: r.siteId,
@@ -71,16 +71,16 @@ const buildPayload = (v: Values, isEdit: boolean): Record<string, unknown> =>
 const siteOption = (s: SiteDto): SelectOption => ({ value: s.id, label: `${s.name} (${s.type})` });
 const vehicleOption = (v: VehicleDto): SelectOption => ({ value: v.id, label: v.plateNumber });
 
-export default function FuelQuotasPage(): JSX.Element {
+export default function DisposalPermitsPage(): JSX.Element {
   const t = useTranslations('nav');
-  const manager = useResourceManager(fuelQuotasApi, (r) => r.id);
+  const manager = useResourceManager(disposalPermitsApi, (r) => r.id);
   const { rows: siteRows } = useResourceList(sitesApi.list);
   const { rows: vehicleRows } = useResourceList(vehiclesApi.list);
   const sites = useMemo(() => siteRows.map(siteOption), [siteRows]);
   const vehicles = useMemo(() => vehicleRows.map(vehicleOption), [vehicleRows]);
   const [bulkOpen, setBulkOpen] = useState(false);
 
-  const columns = useMemo<ColumnDef<FuelQuotaDto, unknown>[]>(
+  const columns = useMemo<ColumnDef<DisposalPermitDto, unknown>[]>(
     () => [
       {
         accessorKey: 'code',
@@ -113,7 +113,7 @@ export default function FuelQuotasPage(): JSX.Element {
         accessorKey: 'status',
         header: 'Status',
         meta: { label: 'Status' },
-        cell: ({ row }) => <StatusPill domain="fuelQuota" value={row.original.status} />,
+        cell: ({ row }) => <StatusPill domain="disposalPermit" value={row.original.status} />,
       },
       {
         id: 'actions',
@@ -124,7 +124,7 @@ export default function FuelQuotasPage(): JSX.Element {
         cell: ({ row }) => (
           <div className="text-right">
             <RowActions
-              resource="fuel-quota"
+              resource="disposal-permit"
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -139,14 +139,14 @@ export default function FuelQuotasPage(): JSX.Element {
 
   return (
     <CrudListShell
-      title={t('fuelQuotas')}
-      resource="fuel-quota"
+      title={t('disposalPermits')}
+      resource="disposal-permit"
       manager={manager}
       columns={columns}
       searchPlaceholder="Cari kode / kendaraan…"
       createLabel="Terbitkan Kitir"
       toolbar={
-        <ProtectedAction permission="fuel-quota:create">
+        <ProtectedAction permission="disposal-permit:create">
           <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)}>
             <Upload className="h-4 w-4" aria-hidden />
             Impor Massal
@@ -168,7 +168,6 @@ export default function FuelQuotasPage(): JSX.Element {
             name="vehicleId"
             label="Kendaraan"
             required
-            numeric
             options={vehicles}
             placeholder="Pilih kendaraan"
             disabled={editing}
@@ -177,7 +176,6 @@ export default function FuelQuotasPage(): JSX.Element {
             name="siteId"
             label="Lokasi"
             required
-            numeric
             options={sites}
             placeholder="Pilih lokasi"
             disabled={editing}

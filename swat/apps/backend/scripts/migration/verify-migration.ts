@@ -42,7 +42,7 @@ const PAIRS: Pair[] = [
   { legacyTable: 'kepemilikansim', count: () => prisma.driverLicense.count() },
   { legacyTable: 'masterdetailtransaksiangkutsampah', count: () => prisma.crewSchedule.count() },
   { legacyTable: 'mastertrayek', count: () => prisma.tripTemplate.count() },
-  { legacyTable: 'jatahkitir', count: () => prisma.fuelQuota.count() },
+  { legacyTable: 'jatahkitir', count: () => prisma.disposalPermit.count() },
   { legacyTable: 'tonase', count: () => prisma.dailyTonnage.count() },
   { legacyTable: 'retribusi', count: () => prisma.levy.count() },
   { legacyTable: 'konversi_si_swat', count: () => prisma.legacyNameMap.count() },
@@ -103,9 +103,9 @@ async function checkFkIntegrity(): Promise<boolean> {
         prisma.$queryRaw`SELECT COUNT(*) AS n FROM "Route" r WHERE r."originSiteId" NOT IN (SELECT id FROM "Site")`,
     ],
     [
-      'fuelQuota.vehicleId',
+      'disposalPermit.vehicleId',
       () =>
-        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "FuelQuota" q WHERE q."vehicleId" NOT IN (SELECT id FROM "Vehicle")`,
+        prisma.$queryRaw`SELECT COUNT(*) AS n FROM "DisposalPermit" q WHERE q."vehicle_id" NOT IN (SELECT id FROM "Vehicle")`,
     ],
   ];
   let ok = true;
