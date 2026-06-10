@@ -4,6 +4,8 @@
   "globalDependencies": [".env", "tsconfig.base.json"],
   "globalEnv": [
     "NODE_ENV",
+    "BE_PORT",
+    "WEB_PORT",
     "DATABASE_URL",
     "REDIS_URL",
     "SESSION_SECRET",
