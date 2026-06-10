@@ -105,6 +105,7 @@ cat <<'EOF'
 Next:
   ./scripts/start.sh        # run backend (:3000) + web (:3001)
 
-Default admin login:  admin / ChangeMe!2026  (must change on first login)
+Default admin login:  admin / Password1234!        (ready to use)
+Forced-reset demo:    adminreset / Password1234!   (must change on first login)
 Adminer:  http://localhost:8080   ·   MinIO console:  http://localhost:9001
 EOF

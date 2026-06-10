@@ -6,6 +6,15 @@ services:
     image: postgres:15-alpine
     container_name: swat-postgres
     restart: unless-stopped
+    # The transactional tables are monthly RANGE-partitioned (Trip/Haul/
+    # HaulAssignment/TpaInboundLog → ~676 child partitions for 2013–2026). Creating
+    # (or resetting) them all in one migration transaction needs many more lock
+    # slots than the default 64 — raise it or `migrate deploy`/`migrate reset` fail
+    # with "out of shared memory / max_locks_per_transaction".
+    command:
+      - postgres
+      - '-c'
+      - 'max_locks_per_transaction=2048'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-swat}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-swat_dev_password}

@@ -645,8 +645,9 @@ async function seedSyntheticData(): Promise<void> {
 
     // TPA weighbridge log — reconciled against the day's disposal tonnage:
     // every 12th day PENDING (no row), the next DISCREPANCY (−20%), the rest
-    // MATCHED (±2%). operationDate is the partition key (not on the Prisma model),
-    // so insert via raw SQL with operationDate = date.
+    // MATCHED (±2%). operation_date is the partition key (not on the Prisma model),
+    // so insert via raw SQL with operation_date = date. `id` is supplied by the
+    // table's gen_random_uuid() default (see the partition migration).
     const alreadyLogged = await prisma.tpaInboundLog.count({ where: { date: opDate } });
     if (alreadyLogged === 0) {
       const bucket = offset % 12;
@@ -664,8 +665,8 @@ async function seedSyntheticData(): Promise<void> {
         // `updatedAt` is app-managed (@updatedAt) with no DB default, so a raw
         // insert must set it explicitly alongside the partition key.
         await prisma.$executeRaw`
-          INSERT INTO "TpaInboundLog"
-            ("operationDate", "date", "plateNumber", "grossWeight", "tareWeight", "netWeight", "updatedAt")
+          INSERT INTO "tpa_inbound_log"
+            ("operation_date", "date", "plate_number", "gross_weight", "tare_weight", "net_weight", "updated_at")
           VALUES
             (${opDate}::date, ${opDate}::date, ${dayVehicle.plateNumber},
              ${tareWeight + tpaNet}, ${tareWeight}, ${tpaNet}, now())
