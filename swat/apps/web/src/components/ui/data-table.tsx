@@ -44,6 +44,8 @@ declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     label?: string;
+    /** Hidden on first render; user can reveal it via the column-toggle menu. */
+    defaultHidden?: boolean;
   }
 }
 
@@ -104,7 +106,17 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>): JSX.Element {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
+    // Columns flagged meta.defaultHidden start hidden (revealable via the toggle).
+    const v: VisibilityState = {};
+    for (const c of columns) {
+      if (c.meta?.defaultHidden) {
+        const id = c.id ?? ('accessorKey' in c ? String(c.accessorKey) : undefined);
+        if (id) v[id] = false;
+      }
+    }
+    return v;
+  });
   const [globalFilter, setGlobalFilter] = useState('');
   const [search, setSearch] = useState('');
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0]);

@@ -10,6 +10,34 @@ import { PageHead } from '@/components/shell/page-head';
 import { Button, ConfirmDialog, DataTable } from '@/components/ui';
 import { type BreadcrumbItem } from '@/components/ui';
 import { type ResourceManager } from '@/hooks/use-resource-manager';
+import { formatDateDisplay } from '@/lib/format';
+
+/** Hidden-by-default audit timestamp columns appended to every master-data table. */
+function auditColumns<T>(): ColumnDef<T, unknown>[] {
+  const dateCell = (value: unknown): JSX.Element => (
+    <span className="tabular-nums text-neutral-500">
+      {typeof value === 'string' && value ? formatDateDisplay(value) : '—'}
+    </span>
+  );
+  return [
+    {
+      id: 'createdAt',
+      accessorFn: (row) => (row as { createdAt?: string }).createdAt ?? null,
+      header: 'Dibuat',
+      enableColumnFilter: false,
+      meta: { label: 'Dibuat', defaultHidden: true },
+      cell: ({ getValue }) => dateCell(getValue()),
+    },
+    {
+      id: 'updatedAt',
+      accessorFn: (row) => (row as { updatedAt?: string }).updatedAt ?? null,
+      header: 'Diubah',
+      enableColumnFilter: false,
+      meta: { label: 'Diubah', defaultHidden: true },
+      cell: ({ getValue }) => dateCell(getValue()),
+    },
+  ];
+}
 
 export interface CrudListShellProps<T> {
   title: string;
@@ -59,6 +87,14 @@ export function CrudListShell<T>({
     </ProtectedAction>
   );
 
+  // Append hidden audit columns, keeping the row-actions column last.
+  const actionsIdx = columns.findIndex((c) => c.id === 'actions');
+  const audit = auditColumns<T>();
+  const mergedColumns =
+    actionsIdx >= 0
+      ? [...columns.slice(0, actionsIdx), ...audit, ...columns.slice(actionsIdx)]
+      : [...columns, ...audit];
+
   return (
     <>
       {embedded ? null : (
@@ -66,7 +102,7 @@ export function CrudListShell<T>({
       )}
 
       <DataTable
-        columns={columns}
+        columns={mergedColumns}
         data={manager.rows}
         loading={manager.loading}
         error={manager.error}
