@@ -23,7 +23,8 @@ export interface LoginResult {
 }
 
 export interface ChangePasswordInput {
-  readonly currentPassword: string;
+  /** Omitted on a forced (first-login) change — see auth.service.changePassword. */
+  readonly currentPassword?: string;
   readonly newPassword: string;
   readonly confirmPassword: string;
 }

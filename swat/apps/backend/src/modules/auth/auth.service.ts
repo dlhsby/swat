@@ -127,18 +127,32 @@ export class AuthService {
     if (dto.newPassword !== dto.confirmPassword) {
       throw new BadRequestException('Konfirmasi kata sandi tidak cocok.');
     }
-    if (dto.newPassword === dto.currentPassword) {
-      throw new BadRequestException('Kata sandi baru harus berbeda dari kata sandi saat ini.');
-    }
 
     const user = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
     if (!user) {
       throw new UnauthorizedException(SESSION_INVALID);
     }
 
-    const currentOk = await verifyPassword(user.passwordHash, dto.currentPassword);
-    if (!currentOk) {
-      throw new BadRequestException('Kata sandi saat ini salah.');
+    if (user.mustChangePassword) {
+      // Forced change (first login / admin reset): the active session and the
+      // server-side flag authorise it — the current password was just entered
+      // at login, so it isn't asked for again. Still block reusing it.
+      const sameAsOld = await verifyPassword(user.passwordHash, dto.newPassword);
+      if (sameAsOld) {
+        throw new BadRequestException('Kata sandi baru harus berbeda dari kata sandi sebelumnya.');
+      }
+    } else {
+      // Voluntary change must prove the current password.
+      if (!dto.currentPassword) {
+        throw new BadRequestException('Kata sandi saat ini wajib diisi.');
+      }
+      if (dto.newPassword === dto.currentPassword) {
+        throw new BadRequestException('Kata sandi baru harus berbeda dari kata sandi saat ini.');
+      }
+      const currentOk = await verifyPassword(user.passwordHash, dto.currentPassword);
+      if (!currentOk) {
+        throw new BadRequestException('Kata sandi saat ini salah.');
+      }
     }
 
     const passwordHash = await hashPassword(dto.newPassword);

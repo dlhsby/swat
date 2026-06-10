@@ -100,7 +100,9 @@ export class PasswordValidator {
 }
 ```
 
-On first login, if `User.mustChangePassword = true`, redirect to `/auth/change-password` before any other page. Clear the flag after successful reset. Admin can set this flag when resetting a user's password.
+On first login, if `User.mustChangePassword = true`, redirect to `/change-password` before any other page. Clear the flag after successful reset. Admin can set this flag when resetting a user's password.
+
+**Forced vs voluntary change.** A *forced* change (`mustChangePassword = true`) does **not** ask for the current password — the active session plus the server-side flag authorise it, and the current password was just entered at login. The server still blocks reusing the existing password. A *voluntary* change (from Profile, flag already cleared) **requires and verifies** the current password. This branch lives in `auth.service.changePassword`; `ChangePasswordDto.currentPassword` is optional and the rule is enforced server-side, never trusting the client.
 
 ### 1.5 Password reset flow (recovery & admin-forced)
 

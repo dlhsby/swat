@@ -242,8 +242,8 @@ phase. This is the parity contract.
 
 ### Change Password (forced on first login)
 - **Route:** `/change-password` (automatic redirect if `mustChangePassword = true`)
-- **Form:** current password, new password (strength indicator), confirm new — all three use `PasswordInput`
-- **Submit:** POST `/api/auth/change-password`; set `mustChangePassword = false` on user
+- **Form:** new password (strength indicator) + confirm — both `PasswordInput`. The **current-password field is shown only for a voluntary change**; on a forced first-login change it is hidden and not sent (the password was just entered at login — see `06-auth-rbac.md §1.4`).
+- **Submit:** PATCH `/auth/change-password`; set `mustChangePassword = false` on user
 - **Redirect:** post-change, go to dashboard
 - **Escape hatch:** the forced screen offers Sign-out (back to `/login`) so a stale/forced session is never trapped
 

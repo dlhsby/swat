@@ -175,51 +175,96 @@ describe('AuthService', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('rejects when the new password equals the current one', async () => {
-      await expect(
-        service.changePassword(
-          1,
-          {
-            currentPassword: 'Same!2026abc',
-            newPassword: 'Same!2026abc',
-            confirmPassword: 'Same!2026abc',
-          },
-          ctx,
-        ),
-      ).rejects.toBeInstanceOf(BadRequestException);
-    });
-
-    it('rejects a wrong current password', async () => {
-      prisma.user.findFirst.mockResolvedValue(buildUser());
-      verify.mockResolvedValue(false);
-      await expect(service.changePassword(1, dto, ctx)).rejects.toBeInstanceOf(BadRequestException);
-      expect(prisma.user.update).not.toHaveBeenCalled();
-    });
-
-    it('updates the hash and clears the forced-change flag', async () => {
-      prisma.user.findFirst.mockResolvedValue(buildUser());
-      verify.mockResolvedValue(true);
-      hashFn.mockResolvedValue('$argon2id$new');
-      prisma.user.update.mockResolvedValue(buildUser());
-
-      await service.changePassword(1, dto, ctx);
-
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: { passwordHash: '$argon2id$new', mustChangePassword: false },
-      });
-      expect(prisma.authAuditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ action: AuthAction.PASSWORD_CHANGE }),
-        }),
-      );
-    });
-
     it('throws when the user is missing', async () => {
       prisma.user.findFirst.mockResolvedValue(null);
       await expect(service.changePassword(1, dto, ctx)).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
+    });
+
+    describe('voluntary change (mustChangePassword = false)', () => {
+      beforeEach(() => {
+        prisma.user.findFirst.mockResolvedValue(buildUser({ mustChangePassword: false }));
+      });
+
+      it('rejects a missing current password', async () => {
+        await expect(
+          service.changePassword(1, { ...dto, currentPassword: '' }, ctx),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(prisma.user.update).not.toHaveBeenCalled();
+      });
+
+      it('rejects when the new password equals the current one', async () => {
+        await expect(
+          service.changePassword(
+            1,
+            {
+              currentPassword: 'Same!2026abc',
+              newPassword: 'Same!2026abc',
+              confirmPassword: 'Same!2026abc',
+            },
+            ctx,
+          ),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      });
+
+      it('rejects a wrong current password', async () => {
+        verify.mockResolvedValue(false);
+        await expect(service.changePassword(1, dto, ctx)).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+        expect(prisma.user.update).not.toHaveBeenCalled();
+      });
+
+      it('updates the hash and clears the forced-change flag', async () => {
+        verify.mockResolvedValue(true);
+        hashFn.mockResolvedValue('$argon2id$new');
+        prisma.user.update.mockResolvedValue(buildUser());
+
+        await service.changePassword(1, dto, ctx);
+
+        expect(prisma.user.update).toHaveBeenCalledWith({
+          where: { id: 1 },
+          data: { passwordHash: '$argon2id$new', mustChangePassword: false },
+        });
+        expect(prisma.authAuditLog.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ action: AuthAction.PASSWORD_CHANGE }),
+          }),
+        );
+      });
+    });
+
+    describe('forced change (mustChangePassword = true)', () => {
+      const forcedDto = { newPassword: 'NewPass!2026x', confirmPassword: 'NewPass!2026x' };
+
+      beforeEach(() => {
+        prisma.user.findFirst.mockResolvedValue(buildUser({ mustChangePassword: true }));
+      });
+
+      it('succeeds without a current password and never checks one', async () => {
+        verify.mockResolvedValue(false); // reuse guard: new != stored
+        hashFn.mockResolvedValue('$argon2id$forced');
+        prisma.user.update.mockResolvedValue(buildUser());
+
+        await service.changePassword(1, forcedDto, ctx);
+
+        expect(prisma.user.update).toHaveBeenCalledWith({
+          where: { id: 1 },
+          data: { passwordHash: '$argon2id$forced', mustChangePassword: false },
+        });
+        // Only the reuse guard runs — no current-password verification.
+        expect(verify).toHaveBeenCalledTimes(1);
+        expect(verify).toHaveBeenCalledWith('$argon2id$hash', forcedDto.newPassword);
+      });
+
+      it('rejects reusing the previous password', async () => {
+        verify.mockResolvedValue(true); // new matches the stored hash
+        await expect(service.changePassword(1, forcedDto, ctx)).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+        expect(prisma.user.update).not.toHaveBeenCalled();
+      });
     });
   });
 

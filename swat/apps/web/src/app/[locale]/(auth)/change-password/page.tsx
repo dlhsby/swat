@@ -31,9 +31,14 @@ export default function ChangePasswordPage(): JSX.Element {
 
   const strength = scorePassword(next);
   const confirmMismatch = confirm.length > 0 && confirm !== next;
-  const canSubmit =
-    current.length > 0 && strength.meetsRequirements && confirm === next && confirm.length > 0;
   const forced = Boolean(user?.mustChangePassword);
+  // A forced first-login change only needs the new password — the current one
+  // was just entered at login. Voluntary changes still require it.
+  const canSubmit =
+    (forced || current.length > 0) &&
+    strength.meetsRequirements &&
+    confirm === next &&
+    confirm.length > 0;
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -44,9 +49,9 @@ export default function ChangePasswordPage(): JSX.Element {
     setError(null);
     try {
       await changePassword({
-        currentPassword: current,
         newPassword: next,
         confirmPassword: confirm,
+        ...(forced ? {} : { currentPassword: current }),
       });
       notify.success(t('success'));
       await refresh();
@@ -87,17 +92,19 @@ export default function ChangePasswordPage(): JSX.Element {
         ) : null}
 
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="current" required>
-              {t('currentPassword')}
-            </Label>
-            <PasswordInput
-              id="current"
-              autoComplete="current-password"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-            />
-          </div>
+          {forced ? null : (
+            <div className="space-y-1.5">
+              <Label htmlFor="current" required>
+                {t('currentPassword')}
+              </Label>
+              <PasswordInput
+                id="current"
+                autoComplete="current-password"
+                value={current}
+                onChange={(e) => setCurrent(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="next" required>
