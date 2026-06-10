@@ -10,7 +10,7 @@ describe('validateEnv', () => {
   it('parses a valid config and applies defaults', () => {
     const env = validateEnv(VALID);
     expect(env.NODE_ENV).toBe('development');
-    expect(env.PORT).toBe(3000);
+    expect(env.BE_PORT).toBe(3000);
     expect(env.S3_FORCE_PATH_STYLE).toBe(true);
     expect(env.REDIS_URL).toContain('redis://');
   });

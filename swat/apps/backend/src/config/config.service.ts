@@ -26,7 +26,7 @@ export class AppConfigService {
   }
 
   get port(): number {
-    return this.get('PORT');
+    return this.get('BE_PORT');
   }
 
   get databaseUrl(): string {

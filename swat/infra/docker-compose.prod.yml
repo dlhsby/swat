@@ -74,7 +74,7 @@ services:
     command: ['sh', '-c', 'npx prisma migrate deploy && node dist/main.js']
     environment:
       NODE_ENV: production
-      PORT: '3000'
+      BE_PORT: '3000'
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SESSION_SECRET: ${SESSION_SECRET}
       JWT_SECRET: ${JWT_SECRET}

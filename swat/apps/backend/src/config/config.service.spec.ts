@@ -5,7 +5,7 @@ import { type Env } from './env.validation';
 
 const ENV: Env = {
   NODE_ENV: 'production',
-  PORT: 4000,
+  BE_PORT: 4000,
   DATABASE_URL: 'postgresql://swat:pw@localhost:5432/swat',
   SESSION_SECRET: 'a-long-enough-session-secret',
   JWT_SECRET: 'a-long-enough-jwt-secret-value',
