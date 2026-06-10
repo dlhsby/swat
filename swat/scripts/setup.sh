@@ -58,9 +58,13 @@ copy_if_missing() {
   fi
 }
 copy_if_missing '.env.local' '.env.example'
+copy_if_missing 'apps/web/.env.local' 'apps/web/.env.example'
 copy_if_missing 'apps/backend/prisma/.env' 'apps/backend/prisma/.env.example'
 copy_if_missing 'infra/docker-compose.env' 'infra/docker-compose.env.example'
 warn 'Review .env.local and set strong SESSION_SECRET / JWT_SECRET for non-local use.'
+echo 'Ports/API URL live in the root .env.local; start.sh exports it so the web'
+echo 'inherits BE_PORT / WEB_PORT / NEXT_PUBLIC_API_BASE_URL — no need to edit'
+echo 'apps/web/.env.local by hand unless you run the web without start.sh.'
 
 # --- 2. Install dependencies ------------------------------------------------
 log 'Installing dependencies (pnpm install)'
@@ -109,9 +113,9 @@ log 'Setup complete ✓'
 cat <<'EOF'
 
 Next:
-  ./scripts/start.sh        # run backend (:3000) + web (:3001)
+  ./scripts/start.sh        # run backend + web (ports from .env.local: BE_PORT / WEB_PORT)
 
-Default admin login:  admin / Password1234!        (ready to use)
-Forced-reset demo:    adminreset / Password1234!   (must change on first login)
+Default admin login:  admin / Password123!         (ready to use)
+Forced-reset demo:    adminreset / Password123!    (must change on first login)
 Adminer:  http://localhost:8080   ·   MinIO console:  http://localhost:9001
 EOF
