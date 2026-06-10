@@ -25,10 +25,10 @@ const schema = z.object({
   fuelId: z.string().uuid('Bahan bakar wajib dipilih'),
   brand: z.string().min(1, 'Merek wajib diisi').max(100, 'Merek maksimal 100 karakter'),
   fuelTankCapacity: z.coerce.number().int().min(1, 'Kapasitas tangki harus lebih dari 0'),
-  normalFuelRatio: z.coerce.number().min(1, 'Rasio minimal 1'),
+  normalFuelRatio: z.coerce.number().int('Rasio harus bilangan bulat').min(1, 'Rasio minimal 1'),
   normalTareWeight: z.coerce.number().int().min(1, 'Berat kosong harus lebih dari 0'),
-  maxNetLoad: z.coerce.number().min(0).optional(),
-  maxNetVolume: z.coerce.number().min(0).optional(),
+  maxNetLoad: z.coerce.number().int('Muatan harus bilangan bulat').min(0).optional(),
+  maxNetVolume: z.coerce.number().int('Volume harus bilangan bulat').min(0).optional(),
   wheelCount: z.coerce.number().int().min(1, 'Jumlah roda harus lebih dari 0'),
 });
 type Values = z.infer<typeof schema>;

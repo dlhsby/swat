@@ -151,7 +151,10 @@ const routeSchema = z
     category: z.enum(['DEPART_POOL', 'REFUEL', 'PICKUP', 'DISPOSAL', 'RETURN_POOL']),
     originSiteId: z.string().uuid('Lokasi asal wajib dipilih'),
     destinationSiteId: z.string().uuid('Lokasi tujuan wajib dipilih'),
-    distanceKm: z.coerce.number().int().min(0, 'Jarak tidak boleh negatif'),
+    distanceKm: z.coerce
+      .number()
+      .int('Jarak harus bilangan bulat (km)')
+      .min(1, 'Jarak minimal 1 km'),
   })
   .refine((d) => d.originSiteId !== d.destinationSiteId, {
     message: 'Lokasi asal dan tujuan harus berbeda.',
@@ -260,7 +263,7 @@ function RoutesTab(): JSX.Element {
             placeholder="Pilih lokasi"
           />
         </div>
-        <NumberField name="distanceKm" label="Jarak" required unit="km" min={0} />
+        <NumberField name="distanceKm" label="Jarak" required unit="km" min={1} />
       </CrudFormDialog>
     </CrudListShell>
   );

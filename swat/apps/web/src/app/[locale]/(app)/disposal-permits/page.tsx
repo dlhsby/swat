@@ -43,6 +43,11 @@ const schema = z
   .refine((d) => d.validFrom <= d.validTo, {
     message: 'Berlaku sampai harus setelah berlaku dari.',
     path: ['validTo'],
+  })
+  // Mirror the backend rule so it's flagged inline, not as a submit error.
+  .refine((d) => d.issuedAt <= d.validTo, {
+    message: 'Tanggal terbit tidak boleh setelah berlaku sampai.',
+    path: ['issuedAt'],
   });
 type Values = z.infer<typeof schema>;
 const defaults: Values = {

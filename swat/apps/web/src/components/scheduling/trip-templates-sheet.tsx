@@ -213,6 +213,7 @@ export function TripTemplatesSheet({
                     id="tpl-fuel"
                     type="number"
                     min={0}
+                    step="0.01"
                     value={fuel}
                     onChange={(e) => setFuel(e.target.value)}
                   />

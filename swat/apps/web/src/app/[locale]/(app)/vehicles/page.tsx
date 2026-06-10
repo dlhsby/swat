@@ -55,7 +55,7 @@ const schema = z.object({
   engineNumber: z.string().min(1, 'Nomor mesin wajib diisi').max(100),
   currentTareWeight: z.coerce.number().int().min(0, 'Berat kosong tidak boleh negatif'),
   currentOdometer: z.coerce.number().int().min(0, 'Odometer tidak boleh negatif'),
-  currentFuelRatio: z.coerce.number().min(1, 'Rasio minimal 1'),
+  currentFuelRatio: z.coerce.number().int('Rasio harus bilangan bulat').min(1, 'Rasio minimal 1'),
   registrationExpiry: z.string().min(1, 'Tanggal STNK wajib diisi'),
   taxExpiry: z.string().min(1, 'Tanggal pajak wajib diisi'),
   notes: z.string().max(512).optional(),

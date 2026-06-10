@@ -35,7 +35,20 @@ const schema = z.object({
   idCardNumber: z.string().regex(/^\d{16}$/, 'Nomor KTP harus 16 digit angka'),
   poolSiteId: z.string().uuid('Pool wajib dipilih'),
   employmentStatus: z.enum(['SATGAS', 'PNS', 'HONORER']),
-  birthDate: z.string().min(1, 'Tanggal lahir wajib diisi'),
+  birthDate: z
+    .string()
+    .min(1, 'Tanggal lahir wajib diisi')
+    // Mirror the backend age check (birthDate + 18y <= now) so an under-18 date
+    // is flagged inline instead of bouncing back as a submit error.
+    .refine((value) => {
+      const birth = new Date(value);
+      if (Number.isNaN(birth.getTime())) {
+        return false;
+      }
+      const eighteenth = new Date(birth);
+      eighteenth.setUTCFullYear(eighteenth.getUTCFullYear() + 18);
+      return eighteenth.getTime() <= Date.now();
+    }, 'Pengemudi harus berusia minimal 18 tahun'),
   contact: z.string().min(1, 'Kontak wajib diisi').max(100),
   originAddress: z.string().min(1, 'Alamat asal wajib diisi').max(256),
   currentAddress: z.string().min(1, 'Alamat saat ini wajib diisi').max(256),

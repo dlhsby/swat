@@ -15,8 +15,8 @@ export class CreateRouteDto {
   @IsString({ message: 'Lokasi tujuan wajib dipilih' })
   destinationSiteId!: string;
 
-  @ApiProperty({ minimum: 0, description: 'Distance in km' })
-  @IsInt()
-  @Min(0.1, { message: 'Jarak harus lebih dari nol' })
+  @ApiProperty({ minimum: 1, description: 'Distance in whole km' })
+  @IsInt({ message: 'Jarak harus bilangan bulat (km)' })
+  @Min(1, { message: 'Jarak minimal 1 km' })
   distanceKm!: number;
 }
