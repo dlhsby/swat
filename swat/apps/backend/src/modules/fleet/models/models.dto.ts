@@ -19,43 +19,44 @@ export class CreateVehicleModelDto {
   @MaxLength(100)
   brand!: string;
 
-  @ApiProperty({ minimum: 1, description: 'Fuel tank capacity (liters)' })
+  // Minimums mirror the legacy `kategorikendaraan` structure: the NOT-NULL
+  // numeric columns legitimately hold 0 in legacy data (allow 0, not 1); the two
+  // nullable columns carry no minimum and may be omitted.
+  @ApiProperty({ minimum: 0, description: 'Fuel tank capacity (liters)' })
   @Type(() => Number)
   @IsInt()
-  @Min(1, { message: 'Kapasitas tangki harus lebih dari 0' })
+  @Min(0, { message: 'Kapasitas tangki tidak boleh negatif' })
   fuelTankCapacity!: number;
 
-  @ApiPropertyOptional({ minimum: 1, default: 1 })
+  @ApiPropertyOptional({ minimum: 0, default: 1 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(1)
+  @Min(0, { message: 'Rasio tidak boleh negatif' })
   normalFuelRatio?: number;
 
-  @ApiProperty({ minimum: 1, description: 'Normal tare weight (kg)' })
+  @ApiProperty({ minimum: 0, description: 'Normal tare weight (kg)' })
   @Type(() => Number)
   @IsInt()
-  @Min(1, { message: 'Berat kosong harus lebih dari 0' })
+  @Min(0, { message: 'Berat kosong tidak boleh negatif' })
   normalTareWeight!: number;
 
-  @ApiPropertyOptional({ minimum: 0 })
+  @ApiPropertyOptional({ description: 'Max net load (kg); nullable in legacy' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(0)
   maxNetLoad?: number;
 
-  @ApiPropertyOptional({ minimum: 0 })
+  @ApiPropertyOptional({ description: 'Max net volume (m³); nullable in legacy' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(0)
   maxNetVolume?: number;
 
-  @ApiProperty({ minimum: 1, description: 'Wheel count' })
+  @ApiProperty({ minimum: 0, description: 'Wheel count' })
   @Type(() => Number)
   @IsInt()
-  @Min(1, { message: 'Jumlah roda harus lebih dari 0' })
+  @Min(0, { message: 'Jumlah roda tidak boleh negatif' })
   wheelCount!: number;
 }
 

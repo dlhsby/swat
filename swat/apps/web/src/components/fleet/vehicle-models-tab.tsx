@@ -19,28 +19,43 @@ import {
   vehicleModelsApi,
 } from '@/lib/master-api';
 
+// Minimums mirror the legacy `kategorikendaraan` structure: the NOT-NULL numeric
+// columns legitimately hold 0 in legacy data, so they allow 0 (not 1); the two
+// nullable columns (max net load/volume) carry no minimum and may be left empty.
 const schema = z.object({
   vehicleTypeId: z.string().uuid('Tipe kendaraan wajib dipilih'),
   fuelId: z.string().uuid('Bahan bakar wajib dipilih'),
   brand: z.string().min(1, 'Merek wajib diisi').max(100, 'Merek maksimal 100 karakter'),
-  fuelTankCapacity: z.coerce.number().int().min(1, 'Kapasitas tangki harus lebih dari 0'),
-  normalFuelRatio: z.coerce.number().int('Rasio harus bilangan bulat').min(1, 'Rasio minimal 1'),
-  normalTareWeight: z.coerce.number().int().min(1, 'Berat kosong harus lebih dari 0'),
-  maxNetLoad: z.coerce.number().int('Muatan harus bilangan bulat').min(0).optional(),
-  maxNetVolume: z.coerce.number().int('Volume harus bilangan bulat').min(0).optional(),
-  wheelCount: z.coerce.number().int().min(1, 'Jumlah roda harus lebih dari 0'),
+  fuelTankCapacity: z.coerce
+    .number()
+    .int('Kapasitas tangki harus bilangan bulat')
+    .min(0, 'Kapasitas tangki tidak boleh negatif'),
+  normalFuelRatio: z.coerce
+    .number()
+    .int('Rasio harus bilangan bulat')
+    .min(0, 'Rasio tidak boleh negatif'),
+  normalTareWeight: z.coerce
+    .number()
+    .int('Berat kosong harus bilangan bulat')
+    .min(0, 'Berat kosong tidak boleh negatif'),
+  maxNetLoad: z.coerce.number().int('Muatan harus bilangan bulat').optional(),
+  maxNetVolume: z.coerce.number().int('Volume harus bilangan bulat').optional(),
+  wheelCount: z.coerce
+    .number()
+    .int('Jumlah roda harus bilangan bulat')
+    .min(0, 'Jumlah roda tidak boleh negatif'),
 });
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
   vehicleTypeId: '',
   fuelId: '',
   brand: '',
-  fuelTankCapacity: 1,
+  fuelTankCapacity: 0,
   normalFuelRatio: 1,
-  normalTareWeight: 1,
+  normalTareWeight: 0,
   maxNetLoad: undefined,
   maxNetVolume: undefined,
-  wheelCount: 4,
+  wheelCount: 0,
 };
 const toForm = (r: VehicleModelDto): Values => ({
   vehicleTypeId: r.vehicleTypeId,
@@ -74,8 +89,46 @@ export function VehicleModelsTab(): JSX.Element {
       {
         accessorKey: 'wheelCount',
         header: 'Roda',
-        meta: { label: 'Roda' },
+        meta: { label: 'Roda', filterVariant: 'number' },
         cell: ({ row }) => <span className="tabular-nums">{row.original.wheelCount}</span>,
+      },
+      {
+        accessorKey: 'fuelTankCapacity',
+        header: 'Kapasitas Tangki',
+        meta: { label: 'Kapasitas Tangki', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.fuelTankCapacity} L</span>,
+      },
+      {
+        accessorKey: 'normalTareWeight',
+        header: 'Berat Kosong Normal',
+        meta: { label: 'Berat Kosong Normal', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.normalTareWeight} kg</span>,
+      },
+      {
+        accessorKey: 'normalFuelRatio',
+        header: 'Rasio BBM Normal',
+        meta: { label: 'Rasio BBM Normal', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.normalFuelRatio}</span>,
+      },
+      {
+        accessorKey: 'maxNetLoad',
+        header: 'Muatan Bersih Maks',
+        meta: { label: 'Muatan Bersih Maks', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {row.original.maxNetLoad == null ? '—' : `${row.original.maxNetLoad} kg`}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'maxNetVolume',
+        header: 'Volume Bersih Maks',
+        meta: { label: 'Volume Bersih Maks', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {row.original.maxNetVolume == null ? '—' : `${row.original.maxNetVolume} m³`}
+          </span>
+        ),
       },
       {
         id: 'actions',
@@ -131,8 +184,8 @@ export function VehicleModelsTab(): JSX.Element {
           />
         </div>
         <div className="grid grid-cols-1 gap-4">
-          <NumberField name="fuelTankCapacity" label="Kapasitas Tangki" required unit="L" min={1} />
-          <NumberField name="wheelCount" label="Jumlah Roda" required min={1} />
+          <NumberField name="fuelTankCapacity" label="Kapasitas Tangki" required unit="L" min={0} />
+          <NumberField name="wheelCount" label="Jumlah Roda" required min={0} />
         </div>
         <div className="grid grid-cols-1 gap-4">
           <NumberField
@@ -140,13 +193,13 @@ export function VehicleModelsTab(): JSX.Element {
             label="Berat Kosong Normal"
             required
             unit="kg"
-            min={1}
+            min={0}
           />
-          <NumberField name="normalFuelRatio" label="Rasio BBM Normal" required min={1} />
+          <NumberField name="normalFuelRatio" label="Rasio BBM Normal" required min={0} />
         </div>
         <div className="grid grid-cols-1 gap-4">
-          <NumberField name="maxNetLoad" label="Muatan Bersih Maks" unit="kg" min={0} />
-          <NumberField name="maxNetVolume" label="Volume Bersih Maks" unit="m³" min={0} />
+          <NumberField name="maxNetLoad" label="Muatan Bersih Maks" unit="kg" />
+          <NumberField name="maxNetVolume" label="Volume Bersih Maks" unit="m³" />
         </div>
       </CrudFormDialog>
     </CrudListShell>
