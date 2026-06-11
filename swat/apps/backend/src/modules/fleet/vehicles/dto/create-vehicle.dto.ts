@@ -12,8 +12,11 @@ import {
   MinLength,
 } from 'class-validator';
 
-/** Indonesian plate format, e.g. `L 1234 AB`. */
-const PLATE_REGEX = /^[A-Z]{1,2} \d{1,4} [A-Z]{1,3}$/;
+// Lenient identifier: a road plate (`L 1234 AB`) OR an asset label for non-road
+// equipment that has no plate (`EXCAVATOR`, `EXA CAT 31`, `DRUM`) and legacy
+// plates carrying an annotation (`L9484NP(S)`). Letters/digits/space + a few
+// punctuation marks, ≤20 (matches Vehicle.plateNumber VarChar(20)).
+const PLATE_REGEX = /^[A-Za-z0-9 ()+\-./]{1,20}$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
@@ -46,10 +49,12 @@ export class CreateVehicleDto {
   @IsEnum(VehicleStatus, { message: 'Status kendaraan tidak valid' })
   status?: VehicleStatus;
 
-  @ApiProperty({ example: 'L 1234 AB', maxLength: 10 })
+  @ApiProperty({ example: 'L 1234 AB', maxLength: 20 })
   @Transform(({ value }) => normalizePlate(value))
   @IsString()
-  @Matches(PLATE_REGEX, { message: 'Format nomor polisi tidak valid (contoh: L 1234 AB)' })
+  @Matches(PLATE_REGEX, {
+    message: 'Nomor polisi / kode aset maks 20 karakter (huruf, angka, spasi, ( ) + - . /)',
+  })
   plateNumber!: string;
 
   @ApiProperty({ maxLength: 100 })

@@ -43,12 +43,15 @@ const STATUS_OPTIONS: readonly SelectOption[] = [
 ];
 
 const schema = z.object({
+  // Lenient: a road plate (L 1234 AB) OR an asset label for non-road equipment
+  // (EXCAVATOR, EXA CAT 31, DRUM) / annotated legacy plates (L9484NP(S)).
   plateNumber: z
     .string()
     .min(1, 'Nomor polisi wajib diisi')
+    .max(20, 'Maksimal 20 karakter')
     .regex(
-      /^[A-Za-z]{1,2}\s?\d{1,4}\s?[A-Za-z]{1,3}$/,
-      'Format nomor polisi tidak valid (contoh: L 1234 AB)',
+      /^[A-Za-z0-9 ()+\-./]{1,20}$/,
+      'Nomor polisi / kode aset maks 20 karakter (huruf, angka, spasi, ( ) + - . /)',
     ),
   // Transient cascade selector — chosen first to filter the model list. Stripped
   // from the payload (the vehicle stores only modelId; its type is derived).

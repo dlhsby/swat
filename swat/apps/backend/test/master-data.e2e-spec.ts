@@ -103,7 +103,9 @@ describe('Master data (e2e)', () => {
       .send({
         poolSiteId: 1,
         modelId: 1,
-        plateNumber: 'not-a-plate',
+        // '@' is outside the lenient plate/asset-label charset (letters, digits,
+        // space, ( ) + - . /), so this is still rejected.
+        plateNumber: 'bad@plate!',
         chassisNumber: 'C',
         engineNumber: 'E',
         currentTareWeight: 8000,
