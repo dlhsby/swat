@@ -124,13 +124,15 @@ export function CrudListShell<T>({
   const createButton = makeCreateButton();
   const toolbarCreateButton = makeCreateButton('hidden sm:inline');
 
-  // Append the hidden id + audit columns, keeping the row-actions column last.
+  // ID leads, the page's own columns follow, then the hidden audit columns, with
+  // the row-actions column kept last.
   const actionsIdx = columns.findIndex((c) => c.id === 'actions');
-  const extra = [hiddenIdColumn<T>(), ...auditColumns<T>()];
+  const id = hiddenIdColumn<T>();
+  const audit = auditColumns<T>();
   const mergedColumns =
     actionsIdx >= 0
-      ? [...columns.slice(0, actionsIdx), ...extra, ...columns.slice(actionsIdx)]
-      : [...columns, ...extra];
+      ? [id, ...columns.slice(0, actionsIdx), ...audit, ...columns.slice(actionsIdx)]
+      : [id, ...columns, ...audit];
 
   return (
     <>
