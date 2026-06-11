@@ -32,6 +32,7 @@ import {
 } from '@prisma/client';
 import { hash } from 'argon2';
 
+import { LEGACY_ROUTES, LEGACY_SITES, LEGACY_VEHICLES } from './legacy-fixtures';
 import { LEGACY_VEHICLE_MODELS } from './legacy-vehicle-models';
 
 const prisma = new PrismaClient();
@@ -418,6 +419,7 @@ async function seedReferenceData(): Promise<void> {
     5: 'Pertalite',
     6: 'Dexlite',
   };
+  const modelIdByLegacy = new Map<number, string>();
   for (const model of LEGACY_VEHICLE_MODELS) {
     const vehicleTypeId = vehicleTypeIdByLegacy.get(model.appLegacyId);
     const fuelId = fuelIdByName.get(FUEL_NAME_BY_LEGACY[model.fuelLegacyId] ?? '');
@@ -435,12 +437,20 @@ async function seedReferenceData(): Promise<void> {
       maxNetVolume: model.maxNetVolume,
       wheelCount: model.wheelCount,
     };
-    await prisma.vehicleModel.upsert({
+    const record = await prisma.vehicleModel.upsert({
       where: { legacyId: model.legacyId },
       update: data,
       create: { legacyId: model.legacyId, ...data },
     });
+    modelIdByLegacy.set(model.legacyId, record.id);
   }
+
+  // Legacy operational master data (spot → site, rute → route, kendaraan →
+  // vehicle), inserted in FK order. Each is idempotent via skipDuplicates on the
+  // unique legacyId; rows whose FKs don't resolve are skipped and counted.
+  const siteIdByLegacy = await seedLegacySites();
+  await seedLegacyRoutes(siteIdByLegacy);
+  await seedLegacyVehicles(siteIdByLegacy, modelIdByLegacy);
 
   for (const source of WASTE_SOURCES) {
     await prisma.wasteSource.upsert({
@@ -449,6 +459,100 @@ async function seedReferenceData(): Promise<void> {
       create: { code: source.code, name: source.name },
     });
   }
+}
+
+/** Legacy sites (spot). Returns the legacyId → uuid map for routes/vehicles. */
+async function seedLegacySites(): Promise<Map<number, string>> {
+  await prisma.site.createMany({
+    data: LEGACY_SITES.map((s) => ({
+      legacyId: s.legacyId,
+      type: s.type,
+      name: s.name,
+      address: s.address,
+      latitude: s.latitude,
+      longitude: s.longitude,
+    })),
+    skipDuplicates: true,
+  });
+  const rows = await prisma.site.findMany({
+    where: { legacyId: { not: null } },
+    select: { id: true, legacyId: true },
+  });
+  const map = new Map<number, string>();
+  for (const r of rows) {
+    if (r.legacyId !== null) map.set(r.legacyId, r.id);
+  }
+  // eslint-disable-next-line no-console
+  console.log(`Legacy sites: ${LEGACY_SITES.length} loaded`);
+  return map;
+}
+
+/** Legacy routes (rute) — origin/destination resolved via the site map. */
+async function seedLegacyRoutes(siteIdByLegacy: Map<number, string>): Promise<void> {
+  let skipped = 0;
+  const data = LEGACY_ROUTES.flatMap((r) => {
+    const originSiteId = siteIdByLegacy.get(r.originLegacyId);
+    const destinationSiteId = siteIdByLegacy.get(r.destinationLegacyId);
+    if (originSiteId === undefined || destinationSiteId === undefined) {
+      skipped += 1;
+      return [];
+    }
+    return [
+      {
+        legacyId: r.legacyId,
+        category: r.category,
+        originSiteId,
+        destinationSiteId,
+        distanceKm: r.distanceKm,
+      },
+    ];
+  });
+  await prisma.route.createMany({ data, skipDuplicates: true });
+  // eslint-disable-next-line no-console
+  console.log(
+    `Legacy routes: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved site)` : ''}`,
+  );
+}
+
+/** Legacy vehicles (kendaraan) — pool + model resolved via maps; 0000 dates → fallback. */
+async function seedLegacyVehicles(
+  siteIdByLegacy: Map<number, string>,
+  modelIdByLegacy: Map<number, string>,
+): Promise<void> {
+  const FALLBACK_DATE = new Date('2020-01-01T00:00:00.000Z');
+  let skipped = 0;
+  const data = LEGACY_VEHICLES.flatMap((v) => {
+    const poolSiteId = siteIdByLegacy.get(v.poolLegacyId);
+    const modelId = modelIdByLegacy.get(v.modelLegacyId);
+    if (poolSiteId === undefined || modelId === undefined) {
+      skipped += 1;
+      return [];
+    }
+    return [
+      {
+        legacyId: v.legacyId,
+        poolSiteId,
+        modelId,
+        status: v.status,
+        plateNumber: v.plateNumber,
+        needsPlateReview: v.needsPlateReview,
+        chassisNumber: v.chassisNumber,
+        engineNumber: v.engineNumber,
+        manufactureYear: v.manufactureYear,
+        currentFuelRatio: v.currentFuelRatio,
+        currentTareWeight: v.currentTareWeight,
+        currentOdometer: v.currentOdometer,
+        registrationExpiry: v.registrationExpiry ? new Date(v.registrationExpiry) : FALLBACK_DATE,
+        taxExpiry: v.taxExpiry ? new Date(v.taxExpiry) : FALLBACK_DATE,
+        notes: v.notes,
+      },
+    ];
+  });
+  await prisma.vehicle.createMany({ data, skipDuplicates: true });
+  // eslint-disable-next-line no-console
+  console.log(
+    `Legacy vehicles: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved pool/model)` : ''}`,
+  );
 }
 
 // ---------------------------------------------------------------------------

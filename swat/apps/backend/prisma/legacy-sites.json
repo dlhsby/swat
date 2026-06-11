@@ -1,0 +1,7474 @@
+[
+  {
+    "legacyId": 1,
+    "type": "POOL",
+    "name": "MENUR",
+    "address": "JL. Menur, No. 31A, Surabaya",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 2,
+    "type": "POOL",
+    "name": "TANJUNGSARI",
+    "address": "Tanjungsari",
+    "latitude": -7.254214,
+    "longitude": 112.702354
+  },
+  {
+    "legacyId": 3,
+    "type": "SPBU",
+    "name": "DUPAK",
+    "address": "Dupak",
+    "latitude": -7.244928,
+    "longitude": 112.715954
+  },
+  {
+    "legacyId": 4,
+    "type": "TPA",
+    "name": "BENOWO",
+    "address": "Benowo",
+    "latitude": -7.218452,
+    "longitude": 112.619743
+  },
+  {
+    "legacyId": 5,
+    "type": "POOL",
+    "name": "KANTOR DKP",
+    "address": "MENUR",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 6,
+    "type": "POOL",
+    "name": "KANTOR TAMAN",
+    "address": "TAMAN",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 7,
+    "type": "TPS",
+    "name": "BENTENG",
+    "address": "BENTENG",
+    "latitude": -7.224826,
+    "longitude": 112.739418
+  },
+  {
+    "legacyId": 8,
+    "type": "TPS",
+    "name": "BULAK BANTENG",
+    "address": "BULAK BANTENG",
+    "latitude": -7.212297,
+    "longitude": 112.769768
+  },
+  {
+    "legacyId": 9,
+    "type": "TPS",
+    "name": "TAMBAK WEDI 1",
+    "address": "JL. TAMBAK WEDI 1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 10,
+    "type": "TPS",
+    "name": "TAMBAK REJO",
+    "address": "TAMBAK REJO",
+    "latitude": -7.2455,
+    "longitude": 112.758377
+  },
+  {
+    "legacyId": 11,
+    "type": "TPS",
+    "name": "SUTOREJO",
+    "address": "SUTOREJO",
+    "latitude": -7.270645,
+    "longitude": 112.793724
+  },
+  {
+    "legacyId": 12,
+    "type": "TPS",
+    "name": "KREMBANGAN BARAT",
+    "address": "KREMBANGAN BARAT",
+    "latitude": -7.238771,
+    "longitude": 112.734215
+  },
+  {
+    "legacyId": 13,
+    "type": "TPS",
+    "name": "SIWALANKERTO LANDASAN",
+    "address": "SIWALANKERTO LANDASAN",
+    "latitude": -7.339413,
+    "longitude": 112.734535
+  },
+  {
+    "legacyId": 14,
+    "type": "TPS",
+    "name": "DUKUH MENANGGAL",
+    "address": "DUKUH MENANGGAL",
+    "latitude": -7.344827,
+    "longitude": 112.724785
+  },
+  {
+    "legacyId": 15,
+    "type": "TPS",
+    "name": "KARAH",
+    "address": "KARAH",
+    "latitude": -7.309711,
+    "longitude": 112.716629
+  },
+  {
+    "legacyId": 16,
+    "type": "TPS",
+    "name": "TENGGILIS MEJOYO",
+    "address": "TENGGILIS MEJOYO",
+    "latitude": -7.324148,
+    "longitude": 112.744537
+  },
+  {
+    "legacyId": 17,
+    "type": "TPS",
+    "name": "KENDANGSARI",
+    "address": "KENDANGSARI",
+    "latitude": -7.323301,
+    "longitude": 112.746094
+  },
+  {
+    "legacyId": 18,
+    "type": "TPS",
+    "name": "KALI KEDINDING",
+    "address": "KALI KEDINDING",
+    "latitude": -7.230634,
+    "longitude": 112.774139
+  },
+  {
+    "legacyId": 19,
+    "type": "TPS",
+    "name": "SEMOLOWARU",
+    "address": "SEMOLOWARU",
+    "latitude": -7.29997,
+    "longitude": 112.773132
+  },
+  {
+    "legacyId": 20,
+    "type": "TPS",
+    "name": "KLAMPIS",
+    "address": "KLAMPIS",
+    "latitude": -7.28703,
+    "longitude": 112.780685
+  },
+  {
+    "legacyId": 21,
+    "type": "TPS",
+    "name": "KAYON",
+    "address": "KAYON",
+    "latitude": -7.271279,
+    "longitude": 112.747467
+  },
+  {
+    "legacyId": 22,
+    "type": "TPS",
+    "name": "PALM RESIDENCE",
+    "address": "PALM RESIDENCE",
+    "latitude": -7.238682,
+    "longitude": 112.635788
+  },
+  {
+    "legacyId": 23,
+    "type": "TPS",
+    "name": "WONOKROMO",
+    "address": "WONOKROMO",
+    "latitude": -7.303449,
+    "longitude": 112.737526
+  },
+  {
+    "legacyId": 24,
+    "type": "TPS",
+    "name": "PGS",
+    "address": "PGS",
+    "latitude": -7.256351,
+    "longitude": 112.730759
+  },
+  {
+    "legacyId": 25,
+    "type": "TPS",
+    "name": "KEDUNG ANYAR",
+    "address": "KEDUNG ANYAR",
+    "latitude": -7.264547,
+    "longitude": 112.728462
+  },
+  {
+    "legacyId": 26,
+    "type": "TPS",
+    "name": "MAKAM MATARAM",
+    "address": "MAKAM MATARAM",
+    "latitude": -7.27647,
+    "longitude": 112.71981
+  },
+  {
+    "legacyId": 27,
+    "type": "TPS",
+    "name": "PGFC",
+    "address": "PGFC",
+    "latitude": -7.29409,
+    "longitude": 112.662529
+  },
+  {
+    "legacyId": 28,
+    "type": "TPS",
+    "name": "JL.SEMUT KALI",
+    "address": "JL.SEMUT KALI",
+    "latitude": -7.246274,
+    "longitude": 112.743057
+  },
+  {
+    "legacyId": 29,
+    "type": "TPS",
+    "name": "SAMPAH COMPECTOR",
+    "address": "SAMPAH COMPECTOR",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 30,
+    "type": "TPS",
+    "name": "PS.BABAAN",
+    "address": "PS.BABAAN",
+    "latitude": -7.22835,
+    "longitude": 112.735619
+  },
+  {
+    "legacyId": 31,
+    "type": "TPS",
+    "name": "RUNGKUT MENANGGAL",
+    "address": "RUNGKUT MENANGGAL",
+    "latitude": -7.34157,
+    "longitude": 112.720444
+  },
+  {
+    "legacyId": 32,
+    "type": "TPS",
+    "name": "PENGHELA",
+    "address": "PENGHELA",
+    "latitude": -7.248678,
+    "longitude": 112.734833
+  },
+  {
+    "legacyId": 33,
+    "type": "TPS",
+    "name": "SIMORUKUN",
+    "address": "SIMORUKUN",
+    "latitude": -7.262867,
+    "longitude": 112.710533
+  },
+  {
+    "legacyId": 34,
+    "type": "TPS",
+    "name": "GEBANG KEPUTIH",
+    "address": "GEBANG KEPUTIH",
+    "latitude": -7.285704,
+    "longitude": 112.78508
+  },
+  {
+    "legacyId": 35,
+    "type": "TPS",
+    "name": "WONOKUSUMO KIDUL",
+    "address": "WONOKUSUMO KIDUL",
+    "latitude": -7.214595,
+    "longitude": 112.754105
+  },
+  {
+    "legacyId": 37,
+    "type": "TPS",
+    "name": "BRATANG",
+    "address": "BRATANG",
+    "latitude": -7.297435,
+    "longitude": 112.761169
+  },
+  {
+    "legacyId": 38,
+    "type": "TPS",
+    "name": "SIDOTOPO WETAN",
+    "address": "SIDOTOPO WETAN",
+    "latitude": -7.23447,
+    "longitude": 112.757416
+  },
+  {
+    "legacyId": 39,
+    "type": "TPS",
+    "name": "PS.BUNGA KAYUN",
+    "address": "PS.BUNGA KAYUN",
+    "latitude": -7.270199,
+    "longitude": 112.746216
+  },
+  {
+    "legacyId": 40,
+    "type": "TPS",
+    "name": "MANYAR SABRANGAN",
+    "address": "MANYAR SABRANGAN",
+    "latitude": -7.287982,
+    "longitude": 112.763016
+  },
+  {
+    "legacyId": 41,
+    "type": "TPS",
+    "name": "PS.DUPAK BANDAREJO",
+    "address": "PS.DUPAK BANDAREJO",
+    "latitude": -7.243066,
+    "longitude": 112.719879
+  },
+  {
+    "legacyId": 42,
+    "type": "TPS",
+    "name": "JL.SIMOKERTO",
+    "address": "JL.SIMOKERTO",
+    "latitude": -7.23761,
+    "longitude": 112.754097
+  },
+  {
+    "legacyId": 43,
+    "type": "TPS",
+    "name": "MEMET",
+    "address": "MEMET",
+    "latitude": -7.243345,
+    "longitude": 112.790833
+  },
+  {
+    "legacyId": 44,
+    "type": "TPS",
+    "name": "NGAGEL DADI",
+    "address": "NGAGEL DADI",
+    "latitude": -7.294749,
+    "longitude": 112.747849
+  },
+  {
+    "legacyId": 45,
+    "type": "TPS",
+    "name": "CANDI PURO",
+    "address": "CANDI PURO",
+    "latitude": -7.257901,
+    "longitude": 112.75769
+  },
+  {
+    "legacyId": 46,
+    "type": "TPS",
+    "name": "CARREFOUR",
+    "address": "CARREFOUR",
+    "latitude": -7.307676,
+    "longitude": 112.765518
+  },
+  {
+    "legacyId": 47,
+    "type": "TPS",
+    "name": "GREGES",
+    "address": "GREGES",
+    "latitude": -7.227709,
+    "longitude": 112.695595
+  },
+  {
+    "legacyId": 48,
+    "type": "TPS",
+    "name": "MAKAM PENELEH",
+    "address": "MAKAM PENELEH",
+    "latitude": -7.253338,
+    "longitude": 112.739838
+  },
+  {
+    "legacyId": 49,
+    "type": "TPS",
+    "name": "GENTING",
+    "address": "GENTING",
+    "latitude": -7.243396,
+    "longitude": 112.716682
+  },
+  {
+    "legacyId": 50,
+    "type": "TPS",
+    "name": "SRIKANA",
+    "address": "SRIKANA",
+    "latitude": -7.274199,
+    "longitude": 112.758621
+  },
+  {
+    "legacyId": 51,
+    "type": "TPS",
+    "name": "MEDOKAN AYU",
+    "address": "MEDOKAN AYU",
+    "latitude": -7.3323,
+    "longitude": 112.789146
+  },
+  {
+    "legacyId": 52,
+    "type": "TPS",
+    "name": "KARANG POH",
+    "address": "KARANG POH",
+    "latitude": -7.262179,
+    "longitude": 112.681435
+  },
+  {
+    "legacyId": 53,
+    "type": "TPS",
+    "name": "MANUKAN TELAGA",
+    "address": "MANUKAN TELAGA",
+    "latitude": -7.264266,
+    "longitude": 112.661827
+  },
+  {
+    "legacyId": 54,
+    "type": "TPS",
+    "name": "TAMAN KETAMPON",
+    "address": "TAMAN KETAMPON",
+    "latitude": -7.287352,
+    "longitude": 112.737045
+  },
+  {
+    "legacyId": 55,
+    "type": "TPS",
+    "name": "DUPAK PRAU",
+    "address": "DUPAK PRAU",
+    "latitude": -7.241955,
+    "longitude": 112.724121
+  },
+  {
+    "legacyId": 56,
+    "type": "TPS",
+    "name": "PS.KEDURUS",
+    "address": "PS.KEDURUS",
+    "latitude": -7.320351,
+    "longitude": 112.705589
+  },
+  {
+    "legacyId": 57,
+    "type": "TPS",
+    "name": "SULUNG",
+    "address": "SULUNG",
+    "latitude": -7.243837,
+    "longitude": 112.739944
+  },
+  {
+    "legacyId": 58,
+    "type": "TPS",
+    "name": "JATI PURWO",
+    "address": "JATI PURWO",
+    "latitude": -7.223094,
+    "longitude": 112.747498
+  },
+  {
+    "legacyId": 59,
+    "type": "TPS",
+    "name": "TP.3",
+    "address": "TP.3",
+    "latitude": -7.261349,
+    "longitude": 112.738472
+  },
+  {
+    "legacyId": 60,
+    "type": "TPS",
+    "name": "KEBRAON",
+    "address": "KEBRAON",
+    "latitude": -7.332837,
+    "longitude": 112.698906
+  },
+  {
+    "legacyId": 61,
+    "type": "TPS",
+    "name": "MOJOARUM",
+    "address": "MOJOARUM",
+    "latitude": -7.266204,
+    "longitude": 112.776772
+  },
+  {
+    "legacyId": 62,
+    "type": "TPS",
+    "name": "PS.KEPUTRAN PKL",
+    "address": "PS.KEPUTRAN PKL",
+    "latitude": -7.274495,
+    "longitude": 112.743355
+  },
+  {
+    "legacyId": 63,
+    "type": "TPS",
+    "name": "ASRAMA BRIMOB NGINDEN",
+    "address": "ASRAMA BRIMOB NGINDEN",
+    "latitude": -7.302206,
+    "longitude": 112.765938
+  },
+  {
+    "legacyId": 64,
+    "type": "TPS",
+    "name": "MERAPI",
+    "address": "MERAPI",
+    "latitude": -7.260434,
+    "longitude": 112.726524
+  },
+  {
+    "legacyId": 65,
+    "type": "TPS",
+    "name": "KEDONDONG",
+    "address": "KEDONDONG",
+    "latitude": -7.263532,
+    "longitude": 112.738014
+  },
+  {
+    "legacyId": 66,
+    "type": "TPS",
+    "name": "SIMOHILIR",
+    "address": "SIMOHILIR",
+    "latitude": -7.272031,
+    "longitude": 112.704079
+  },
+  {
+    "legacyId": 67,
+    "type": "TPS",
+    "name": "SIMO KATRUNGAN",
+    "address": "SIMO KATRUNGAN",
+    "latitude": -7.269772,
+    "longitude": 112.714424
+  },
+  {
+    "legacyId": 68,
+    "type": "TPS",
+    "name": "JAYAMIX",
+    "address": "JAYAMIX",
+    "latitude": -7.249048,
+    "longitude": 112.712204
+  },
+  {
+    "legacyId": 69,
+    "type": "TPS",
+    "name": "MANUKAN KULON",
+    "address": "MANUKAN KULON",
+    "latitude": -7.259044,
+    "longitude": 112.667824
+  },
+  {
+    "legacyId": 70,
+    "type": "TPS",
+    "name": "JEMUR NGAWINAN",
+    "address": "JEMUR NGAWINAN",
+    "latitude": -7.329157,
+    "longitude": 112.732353
+  },
+  {
+    "legacyId": 71,
+    "type": "TPS",
+    "name": "GALAXY MALL",
+    "address": "GALAXY MALL",
+    "latitude": -7.274415,
+    "longitude": 112.782234
+  },
+  {
+    "legacyId": 72,
+    "type": "TPS",
+    "name": "BG.JUNCTION",
+    "address": "BG.JUNCTION",
+    "latitude": -7.255088,
+    "longitude": 112.733742
+  },
+  {
+    "legacyId": 73,
+    "type": "TPS",
+    "name": "TAMBAK ASRI",
+    "address": "TAMBAK ASRI",
+    "latitude": -7.23621,
+    "longitude": 112.712616
+  },
+  {
+    "legacyId": 74,
+    "type": "TPS",
+    "name": "RUNGKUT KIDUL",
+    "address": "RUNGKUT KIDUL",
+    "latitude": -7.340612,
+    "longitude": 112.768013
+  },
+  {
+    "legacyId": 75,
+    "type": "TPS",
+    "name": "PS.KEPUTRAN UTARA",
+    "address": "PS.KEPUTRAN UTARA",
+    "latitude": -7.272761,
+    "longitude": 112.74411
+  },
+  {
+    "legacyId": 76,
+    "type": "TPS",
+    "name": "CITRALAND",
+    "address": "CITRALAND",
+    "latitude": -7.299614,
+    "longitude": 112.634277
+  },
+  {
+    "legacyId": 77,
+    "type": "TPS",
+    "name": "(Tanpa Nama)",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 78,
+    "type": "TPS",
+    "name": "NGAGEL",
+    "address": "NGAGEL",
+    "latitude": -7.288154,
+    "longitude": 112.745316
+  },
+  {
+    "legacyId": 79,
+    "type": "TPS",
+    "name": "PETOJO",
+    "address": "PETOJO",
+    "latitude": -7.264822,
+    "longitude": 112.756569
+  },
+  {
+    "legacyId": 80,
+    "type": "TPS",
+    "name": "KARANG GAYAM",
+    "address": "KARANG GAYAM",
+    "latitude": -7.253011,
+    "longitude": 112.756668
+  },
+  {
+    "legacyId": 81,
+    "type": "TPS",
+    "name": "BUNGURASIH",
+    "address": "BUNGURASIH",
+    "latitude": -7.351106,
+    "longitude": 112.726768
+  },
+  {
+    "legacyId": 82,
+    "type": "TPS",
+    "name": "GRAND CITY",
+    "address": "GRAND CITY",
+    "latitude": -7.262825,
+    "longitude": 112.750603
+  },
+  {
+    "legacyId": 83,
+    "type": "TPS",
+    "name": "KUTISARI PLN",
+    "address": "KUTISARI PLN",
+    "latitude": -7.33611,
+    "longitude": 112.749557
+  },
+  {
+    "legacyId": 84,
+    "type": "TPS",
+    "name": "BALAS KLUMPRIK",
+    "address": "BALAS KLUMPRIK",
+    "latitude": -7.33011,
+    "longitude": 112.681976
+  },
+  {
+    "legacyId": 85,
+    "type": "TPS",
+    "name": "LIDAH WETAN",
+    "address": "LIDAH WETAN",
+    "latitude": -7.307465,
+    "longitude": 112.667946
+  },
+  {
+    "legacyId": 86,
+    "type": "TPS",
+    "name": "BHAKTI HUSADA",
+    "address": "BHAKTI HUSADA",
+    "latitude": -7.313262,
+    "longitude": 112.731003
+  },
+  {
+    "legacyId": 87,
+    "type": "TPS",
+    "name": "WISMA PERMAI",
+    "address": "WISMA PERMAI",
+    "latitude": -7.273908,
+    "longitude": 112.793724
+  },
+  {
+    "legacyId": 88,
+    "type": "TPS",
+    "name": "TENGGILIS UTARA",
+    "address": "TENGGILIS UTARA",
+    "latitude": -7.318115,
+    "longitude": 112.753998
+  },
+  {
+    "legacyId": 89,
+    "type": "TPS",
+    "name": "PS.WIYUNG",
+    "address": "PS.WIYUNG",
+    "latitude": -7.348114,
+    "longitude": 112.694206
+  },
+  {
+    "legacyId": 90,
+    "type": "TPS",
+    "name": "BABATAN PILANG",
+    "address": "BABATAN PILANG",
+    "latitude": -7.314124,
+    "longitude": 112.688759
+  },
+  {
+    "legacyId": 91,
+    "type": "TPS",
+    "name": "BUKIT BARISAN",
+    "address": "BUKIT BARISAN",
+    "latitude": -7.259601,
+    "longitude": 112.723274
+  },
+  {
+    "legacyId": 92,
+    "type": "TPS",
+    "name": "MBAH RATU",
+    "address": "JL.GRESIK",
+    "latitude": -7.233065,
+    "longitude": 112.724831
+  },
+  {
+    "legacyId": 93,
+    "type": "TPS",
+    "name": "TEMBOK DK",
+    "address": "TEMBOK DK",
+    "latitude": -7.251415,
+    "longitude": 112.722733
+  },
+  {
+    "legacyId": 94,
+    "type": "TPS",
+    "name": "KALIJUDAN",
+    "address": "KALIJUDAN",
+    "latitude": -7.251456,
+    "longitude": 112.78154
+  },
+  {
+    "legacyId": 95,
+    "type": "TPS",
+    "name": "PS.SIMOLAWANG",
+    "address": "PS.SIMOLAWANG",
+    "latitude": -7.233344,
+    "longitude": 112.747276
+  },
+  {
+    "legacyId": 96,
+    "type": "TPS",
+    "name": "KALIWARON",
+    "address": "KALIWARON",
+    "latitude": -7.263498,
+    "longitude": 112.768234
+  },
+  {
+    "legacyId": 97,
+    "type": "TPS",
+    "name": "CANDI LONTAR",
+    "address": "CANDI LONTAR",
+    "latitude": -7.265706,
+    "longitude": 112.667236
+  },
+  {
+    "legacyId": 98,
+    "type": "TPS",
+    "name": "JAGIR",
+    "address": "JAGIR",
+    "latitude": -7.302983,
+    "longitude": 112.748917
+  },
+  {
+    "legacyId": 99,
+    "type": "TPS",
+    "name": "TAMBAK DERES",
+    "address": "TAMBAK DERES",
+    "latitude": -7.232616,
+    "longitude": 112.777031
+  },
+  {
+    "legacyId": 100,
+    "type": "TPS",
+    "name": "PT.SIER",
+    "address": "PT.SIER",
+    "latitude": -7.336154,
+    "longitude": 112.763435
+  },
+  {
+    "legacyId": 101,
+    "type": "TPS",
+    "name": "PS.PABEAN",
+    "address": "PS.PABEAN",
+    "latitude": -7.235244,
+    "longitude": 112.741852
+  },
+  {
+    "legacyId": 102,
+    "type": "TPS",
+    "name": "KENDUNG MAKAM",
+    "address": "KENDUNG MAKAM",
+    "latitude": -7.247911,
+    "longitude": 112.634712
+  },
+  {
+    "legacyId": 103,
+    "type": "TPS",
+    "name": "BANGUNSARI",
+    "address": "BANGUNSARI",
+    "latitude": -7.239169,
+    "longitude": 112.71978
+  },
+  {
+    "legacyId": 104,
+    "type": "TPS",
+    "name": "PIRNGADI",
+    "address": "PIRNGADI",
+    "latitude": -7.252728,
+    "longitude": 112.734253
+  },
+  {
+    "legacyId": 105,
+    "type": "TPS",
+    "name": "PBI",
+    "address": "PBI",
+    "latitude": -7.247115,
+    "longitude": 112.750687
+  },
+  {
+    "legacyId": 106,
+    "type": "TPS",
+    "name": "WARU GUNUNG",
+    "address": "WARU GUNUNG",
+    "latitude": -7.348234,
+    "longitude": 112.677795
+  },
+  {
+    "legacyId": 107,
+    "type": "TPS",
+    "name": "PS.KEMBANG",
+    "address": "PS.KEMBANG",
+    "latitude": -7.271608,
+    "longitude": 112.728073
+  },
+  {
+    "legacyId": 108,
+    "type": "TPS",
+    "name": "RPH",
+    "address": "RPH",
+    "latitude": -7.248504,
+    "longitude": 112.743935
+  },
+  {
+    "legacyId": 109,
+    "type": "TPS",
+    "name": "KANGEAN",
+    "address": "KANGEAN",
+    "latitude": -7.290138,
+    "longitude": 112.733528
+  },
+  {
+    "legacyId": 110,
+    "type": "TPS",
+    "name": "JEMUR WONOSARI",
+    "address": "JEMUR WONOSARI",
+    "latitude": -7.323834,
+    "longitude": 112.735733
+  },
+  {
+    "legacyId": 111,
+    "type": "TPS",
+    "name": "PONDOK INDAH WIYUNG",
+    "address": "PONDOK INDAH WIYUNG",
+    "latitude": -7.315186,
+    "longitude": 112.698776
+  },
+  {
+    "legacyId": 112,
+    "type": "TPS",
+    "name": "KEBONSARI MAKAM",
+    "address": "KEBONSARI MAKAM",
+    "latitude": -7.329658,
+    "longitude": 112.71299
+  },
+  {
+    "legacyId": 113,
+    "type": "TPS",
+    "name": "TELUK KUMAI",
+    "address": "TELUK KUMAI",
+    "latitude": -7.219425,
+    "longitude": 112.73336
+  },
+  {
+    "legacyId": 114,
+    "type": "TPS",
+    "name": "BALONGSARI",
+    "address": "BALONGSARI",
+    "latitude": -7.25486,
+    "longitude": 112.679039
+  },
+  {
+    "legacyId": 115,
+    "type": "TPS",
+    "name": "PT.DST",
+    "address": "PT.DST",
+    "latitude": -7.271408,
+    "longitude": 112.697456
+  },
+  {
+    "legacyId": 116,
+    "type": "TPS",
+    "name": "ALAS MALANG",
+    "address": "ALAS MALANG",
+    "latitude": -7.261908,
+    "longitude": 112.636276
+  },
+  {
+    "legacyId": 117,
+    "type": "TPS",
+    "name": "RSAL",
+    "address": "RSAL",
+    "latitude": -7.30596,
+    "longitude": 112.737801
+  },
+  {
+    "legacyId": 118,
+    "type": "TPS",
+    "name": "GAYUNG PRING",
+    "address": "GAYUNG PRING",
+    "latitude": -7.326467,
+    "longitude": 112.723785
+  },
+  {
+    "legacyId": 119,
+    "type": "TPS",
+    "name": "TANJUNG SADARI",
+    "address": "TANJUNG SADARI",
+    "latitude": -7.225815,
+    "longitude": 112.724922
+  },
+  {
+    "legacyId": 120,
+    "type": "TPS",
+    "name": "LAKAR SANTRI",
+    "address": "LAKAR SANTRI",
+    "latitude": -7.28868,
+    "longitude": 112.643318
+  },
+  {
+    "legacyId": 121,
+    "type": "TPS",
+    "name": "DUKUH BULAK BANTENG",
+    "address": "DUKUH BULAK BANTENG",
+    "latitude": -7.214958,
+    "longitude": 112.769363
+  },
+  {
+    "legacyId": 122,
+    "type": "TPS",
+    "name": "BOGEN TAMBAKSARI",
+    "address": "BOGEN TAMBAKSARI",
+    "latitude": -7.251151,
+    "longitude": 112.756889
+  },
+  {
+    "legacyId": 123,
+    "type": "TPS",
+    "name": "PENJARINGAN SARI",
+    "address": "PENJARINGAN SARI",
+    "latitude": -7.318401,
+    "longitude": 112.783295
+  },
+  {
+    "legacyId": 124,
+    "type": "TPS",
+    "name": "PECINDILAN",
+    "address": "PECINDILAN",
+    "latitude": -7.246549,
+    "longitude": 112.747368
+  },
+  {
+    "legacyId": 125,
+    "type": "TPS",
+    "name": "KEMBANG KUNING",
+    "address": "KEMBANG KUNING",
+    "latitude": -7.281006,
+    "longitude": 112.729149
+  },
+  {
+    "legacyId": 126,
+    "type": "TPS",
+    "name": "MEDOKAN",
+    "address": "MEDOKAN",
+    "latitude": -7.326269,
+    "longitude": 112.813354
+  },
+  {
+    "legacyId": 127,
+    "type": "TPS",
+    "name": "WARU GUNUNG I/II",
+    "address": "WARU GUNUNG I/II",
+    "latitude": -7.343615,
+    "longitude": 112.675613
+  },
+  {
+    "legacyId": 128,
+    "type": "TPS",
+    "name": "PUTAT GEDE",
+    "address": "PUTAT GEDE",
+    "latitude": -7.288169,
+    "longitude": 112.69754
+  },
+  {
+    "legacyId": 129,
+    "type": "TPS",
+    "name": "ITS",
+    "address": "ITS",
+    "latitude": -7.276401,
+    "longitude": 112.791649
+  },
+  {
+    "legacyId": 130,
+    "type": "TPS",
+    "name": "PS.BERAS BENDUL MERISI",
+    "address": "PS.BERAS BENDUL MERISI",
+    "latitude": -7.303054,
+    "longitude": 112.749184
+  },
+  {
+    "legacyId": 131,
+    "type": "TPS",
+    "name": "GRAHA SURYANATA",
+    "address": "GRAHA SURYANATA",
+    "latitude": -7.222295,
+    "longitude": 112.608627
+  },
+  {
+    "legacyId": 132,
+    "type": "TPS",
+    "name": "BARATA JAYA",
+    "address": "BARATA JAYA",
+    "latitude": -7.298549,
+    "longitude": 112.756866
+  },
+  {
+    "legacyId": 133,
+    "type": "TPS",
+    "name": "WONOBOYO",
+    "address": "WONOBOYO",
+    "latitude": -7.293376,
+    "longitude": 112.727539
+  },
+  {
+    "legacyId": 134,
+    "type": "TPS",
+    "name": "JL.JETIS KULON",
+    "address": "JL.JETIS KULON",
+    "latitude": -7.307416,
+    "longitude": 112.73452
+  },
+  {
+    "legacyId": 135,
+    "type": "TPS",
+    "name": "TUBANAN",
+    "address": "TUBANAN",
+    "latitude": -7.270962,
+    "longitude": 112.67926
+  },
+  {
+    "legacyId": 136,
+    "type": "TPS",
+    "name": "MEDOKAN SEMAMPIR",
+    "address": "MEDOKAN SEMAMPIR",
+    "latitude": -7.307648,
+    "longitude": 112.789383
+  },
+  {
+    "legacyId": 137,
+    "type": "TPS",
+    "name": "KETINTANG BARU SELATAN",
+    "address": "KETINTANG BARU SELATAN",
+    "latitude": -7.316575,
+    "longitude": 112.717468
+  },
+  {
+    "legacyId": 138,
+    "type": "TPS",
+    "name": "GRAHA FAMILY",
+    "address": "GRAHA FAMILY",
+    "latitude": -7.294446,
+    "longitude": 112.678215
+  },
+  {
+    "legacyId": 139,
+    "type": "TPS",
+    "name": "SONOKWIJENAN",
+    "address": "SONOKWIJENAN",
+    "latitude": -7.278047,
+    "longitude": 112.699516
+  },
+  {
+    "legacyId": 140,
+    "type": "TPS",
+    "name": "WIYUNG DIAN ISTANA",
+    "address": "WIYUNG DIAN ISTANA",
+    "latitude": -7.307937,
+    "longitude": 112.698708
+  },
+  {
+    "legacyId": 141,
+    "type": "TPS",
+    "name": "KEBON AGUNG",
+    "address": "PU.KEBON AGUNG",
+    "latitude": -7.254081,
+    "longitude": 112.750198
+  },
+  {
+    "legacyId": 142,
+    "type": "TPS",
+    "name": "THP KENJERAN",
+    "address": "THP KENJERAN",
+    "latitude": -7.235586,
+    "longitude": 112.790833
+  },
+  {
+    "legacyId": 143,
+    "type": "TPS",
+    "name": "BENDUL MERISI",
+    "address": "BENDUL MERISI",
+    "latitude": -7.305868,
+    "longitude": 112.743797
+  },
+  {
+    "legacyId": 144,
+    "type": "TPS",
+    "name": "DINOYO",
+    "address": "PU.DINOYO",
+    "latitude": -7.283153,
+    "longitude": 112.746193
+  },
+  {
+    "legacyId": 145,
+    "type": "TPS",
+    "name": "KEDUNG BARUK",
+    "address": "KEDUNG BARUK",
+    "latitude": -7.310605,
+    "longitude": 112.776176
+  },
+  {
+    "legacyId": 146,
+    "type": "TPS",
+    "name": "BRATANG/MENUR",
+    "address": "BRATANG/MENUR",
+    "latitude": -7.287627,
+    "longitude": 112.763718
+  },
+  {
+    "legacyId": 147,
+    "type": "TPS",
+    "name": "KALIBOKOR",
+    "address": "KALIBOKOR",
+    "latitude": -7.287457,
+    "longitude": 112.760338
+  },
+  {
+    "legacyId": 148,
+    "type": "TPS",
+    "name": "TAMAN RAYA DARMO",
+    "address": "TAMAN RAYA DARMO",
+    "latitude": -7.280815,
+    "longitude": 112.740959
+  },
+  {
+    "legacyId": 149,
+    "type": "TPS",
+    "name": "RSU DR.SOETOMO",
+    "address": "RSU DR.SOETOMO",
+    "latitude": -7.269023,
+    "longitude": 112.759201
+  },
+  {
+    "legacyId": 150,
+    "type": "TPS",
+    "name": "PS.BENOWO",
+    "address": "PS.BENOWO",
+    "latitude": -7.233837,
+    "longitude": 112.614174
+  },
+  {
+    "legacyId": 151,
+    "type": "TPS",
+    "name": "ROYAL PLAZA",
+    "address": "ROYAL PLAZA",
+    "latitude": -7.312098,
+    "longitude": 112.734093
+  },
+  {
+    "legacyId": 152,
+    "type": "TPS",
+    "name": "ROMO KALISARI",
+    "address": "ROMO KALISARI",
+    "latitude": -7.206988,
+    "longitude": 112.637772
+  },
+  {
+    "legacyId": 153,
+    "type": "TPS",
+    "name": "SAMBIKEREP",
+    "address": "SAMBIKEREP",
+    "latitude": -7.280991,
+    "longitude": 112.651062
+  },
+  {
+    "legacyId": 154,
+    "type": "TPS",
+    "name": "KARANG PILANG",
+    "address": "KARANG PILANG",
+    "latitude": -7.337359,
+    "longitude": 112.688301
+  },
+  {
+    "legacyId": 155,
+    "type": "TPS",
+    "name": "GUBENG MASJID",
+    "address": "GUBENG MASJID",
+    "latitude": -7.266253,
+    "longitude": 112.753075
+  },
+  {
+    "legacyId": 156,
+    "type": "TPS",
+    "name": "KLAKAH REJO",
+    "address": "KLAKAH REJO",
+    "latitude": -7.250365,
+    "longitude": 112.645462
+  },
+  {
+    "legacyId": 157,
+    "type": "TPS",
+    "name": "TPI WIYUNG",
+    "address": "TPI WIYUNG",
+    "latitude": -7.313569,
+    "longitude": 112.699333
+  },
+  {
+    "legacyId": 158,
+    "type": "TPS",
+    "name": "PT.CAMPINA ICE CREAM",
+    "address": "PT.CAMPINA ICE CREAM",
+    "latitude": -7.326262,
+    "longitude": 112.754272
+  },
+  {
+    "legacyId": 159,
+    "type": "TPS",
+    "name": "SUKOMANUNGGAL",
+    "address": "SUKOMANUNGGAL",
+    "latitude": -7.264566,
+    "longitude": 112.696915
+  },
+  {
+    "legacyId": 160,
+    "type": "TPS",
+    "name": "PLATUK DONOMULYO",
+    "address": "PLATUK DONOMULYO",
+    "latitude": -7.229253,
+    "longitude": 112.764885
+  },
+  {
+    "legacyId": 161,
+    "type": "TPS",
+    "name": "BRINGIN",
+    "address": "BRINGIN",
+    "latitude": -7.261129,
+    "longitude": 112.647034
+  },
+  {
+    "legacyId": 162,
+    "type": "TPS",
+    "name": "BOGANGIN",
+    "address": "BOGANGIN",
+    "latitude": -7.327255,
+    "longitude": 112.705589
+  },
+  {
+    "legacyId": 163,
+    "type": "TPS",
+    "name": "DINOYO",
+    "address": "DINOYO",
+    "latitude": -7.283312,
+    "longitude": 112.746193
+  },
+  {
+    "legacyId": 164,
+    "type": "TPS",
+    "name": "PIOS",
+    "address": "PIOS",
+    "latitude": -7.219623,
+    "longitude": 112.655762
+  },
+  {
+    "legacyId": 165,
+    "type": "TPS",
+    "name": "JURANG KUPING",
+    "address": "JURANG KUPING",
+    "latitude": -7.236243,
+    "longitude": 112.607849
+  },
+  {
+    "legacyId": 166,
+    "type": "TPS",
+    "name": "PEGIRIAN",
+    "address": "JL.PEGIRIAN",
+    "latitude": -7.23055,
+    "longitude": 112.744926
+  },
+  {
+    "legacyId": 167,
+    "type": "TPS",
+    "name": "KENDUNG BDH",
+    "address": "KENDUNG BDH",
+    "latitude": -7.253673,
+    "longitude": 112.634911
+  },
+  {
+    "legacyId": 168,
+    "type": "TPS",
+    "name": "TULUS HARAPAN",
+    "address": "TULUS HARAPAN",
+    "latitude": -7.237741,
+    "longitude": 112.742393
+  },
+  {
+    "legacyId": 169,
+    "type": "TPS",
+    "name": "INDRAPURA PLN",
+    "address": "INDRAPURA PLN",
+    "latitude": -7.233245,
+    "longitude": 112.730804
+  },
+  {
+    "legacyId": 170,
+    "type": "TPS",
+    "name": "BULAK BANTENG TIMUR",
+    "address": "BULAK BANTENG TIMUR",
+    "latitude": -7.220216,
+    "longitude": 112.761795
+  },
+  {
+    "legacyId": 171,
+    "type": "TPS",
+    "name": "BRATANG LAPANGAN",
+    "address": "BRATANG LAPANGAN",
+    "latitude": -7.300717,
+    "longitude": 112.74855
+  },
+  {
+    "legacyId": 172,
+    "type": "TPS",
+    "name": "PERMATA SAFIRA",
+    "address": "PERMATA SAFIRA",
+    "latitude": -7.311153,
+    "longitude": 112.659554
+  },
+  {
+    "legacyId": 173,
+    "type": "TPS",
+    "name": "BANGKINGAN",
+    "address": "BANGKINGAN",
+    "latitude": -7.324456,
+    "longitude": 112.659462
+  },
+  {
+    "legacyId": 174,
+    "type": "TPS",
+    "name": "JOYOBOYO",
+    "address": "JOYOBOYO",
+    "latitude": -7.2993,
+    "longitude": 112.73642
+  },
+  {
+    "legacyId": 175,
+    "type": "TPS",
+    "name": "PAKAL TIMUR",
+    "address": "PAKAL TIMUR",
+    "latitude": -7.229698,
+    "longitude": 112.603661
+  },
+  {
+    "legacyId": 176,
+    "type": "TPS",
+    "name": "PT.SPIL",
+    "address": "PT.SPIL",
+    "latitude": -7.222765,
+    "longitude": 112.723709
+  },
+  {
+    "legacyId": 177,
+    "type": "TPS",
+    "name": "SAMPAH DUMPTRUCK",
+    "address": "SAMPAH DUMPTRUCK",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 178,
+    "type": "TPS",
+    "name": "CV.PELITA MAS ANUGERAH",
+    "address": "CV.PELITA MAS ANUGERAH",
+    "latitude": -7.238601,
+    "longitude": 112.62133
+  },
+  {
+    "legacyId": 179,
+    "type": "TPS",
+    "name": "ITC",
+    "address": "ITC",
+    "latitude": -7.239471,
+    "longitude": 112.745193
+  },
+  {
+    "legacyId": 180,
+    "type": "TPS",
+    "name": "PS.PACAR KELING",
+    "address": "PS.PACAR KELING",
+    "latitude": -7.259202,
+    "longitude": 112.756737
+  },
+  {
+    "legacyId": 181,
+    "type": "TPS",
+    "name": "TANJUNG TEMBAGA",
+    "address": "TANJUNG TEMBAGA",
+    "latitude": -7.218054,
+    "longitude": 112.725052
+  },
+  {
+    "legacyId": 182,
+    "type": "TPS",
+    "name": "MENANGGAL",
+    "address": "MENANGGAL",
+    "latitude": -7.342323,
+    "longitude": 112.723724
+  },
+  {
+    "legacyId": 183,
+    "type": "TPS",
+    "name": "PAGESANGAN",
+    "address": "PAGESANGAN",
+    "latitude": -7.338642,
+    "longitude": 112.718384
+  },
+  {
+    "legacyId": 184,
+    "type": "TPS",
+    "name": "PACAR KELING",
+    "address": "PACAR KELING",
+    "latitude": -7.259119,
+    "longitude": 112.756363
+  },
+  {
+    "legacyId": 185,
+    "type": "TPS",
+    "name": "RAYA PRAPEN",
+    "address": "RAYA PRAPEN",
+    "latitude": -7.312458,
+    "longitude": 112.756561
+  },
+  {
+    "legacyId": 186,
+    "type": "TPS",
+    "name": "RUNGKUT ALANG ALANG",
+    "address": "RUNGKUT ALANG ALANG",
+    "latitude": -7.321903,
+    "longitude": 112.778053
+  },
+  {
+    "legacyId": 187,
+    "type": "TPS",
+    "name": "LENMARC DARMO",
+    "address": "LENMARC DARMO",
+    "latitude": -7.288971,
+    "longitude": 112.677666
+  },
+  {
+    "legacyId": 188,
+    "type": "TPS",
+    "name": "PESAPEN POMPA",
+    "address": "PESAPEN POMPA",
+    "latitude": -7.233329,
+    "longitude": 112.73101
+  },
+  {
+    "legacyId": 189,
+    "type": "TPS",
+    "name": "WISATA BUKIT MAS",
+    "address": "WISATA BUKIT MAS",
+    "latitude": -7.31167,
+    "longitude": 112.66526
+  },
+  {
+    "legacyId": 190,
+    "type": "TPS",
+    "name": "KANDANGAN",
+    "address": "KANDANGAN",
+    "latitude": -7.249973,
+    "longitude": 112.650101
+  },
+  {
+    "legacyId": 191,
+    "type": "TPS",
+    "name": "GAPURA SURYA",
+    "address": "GAPURA SURYA",
+    "latitude": -7.2783,
+    "longitude": 112.689278
+  },
+  {
+    "legacyId": 192,
+    "type": "TPS",
+    "name": "SPI",
+    "address": "SPI",
+    "latitude": -7.288864,
+    "longitude": 112.673706
+  },
+  {
+    "legacyId": 193,
+    "type": "TPS",
+    "name": "LEGUNDI ANGGREK",
+    "address": "LEGUNDI ANGGREK",
+    "latitude": -7.383084,
+    "longitude": 112.57589
+  },
+  {
+    "legacyId": 194,
+    "type": "TPS",
+    "name": "KEJAKSAAN SUKOMANUNGGAL",
+    "address": "KEJAKSAAN SUKOMANUNGGAL",
+    "latitude": -7.269223,
+    "longitude": 112.695473
+  },
+  {
+    "legacyId": 195,
+    "type": "TPS",
+    "name": "KEMLATEN",
+    "address": "KEMLATEN",
+    "latitude": -7.331155,
+    "longitude": 112.705086
+  },
+  {
+    "legacyId": 196,
+    "type": "TPS",
+    "name": "PS.SIMO",
+    "address": "PS.SIMO",
+    "latitude": -7.273366,
+    "longitude": 112.702263
+  },
+  {
+    "legacyId": 197,
+    "type": "TPS",
+    "name": "UNESA",
+    "address": "UNESA",
+    "latitude": -7.311498,
+    "longitude": 112.727959
+  },
+  {
+    "legacyId": 198,
+    "type": "TPS",
+    "name": "JAMRUD UTARA",
+    "address": "JAMRUD UTARA",
+    "latitude": -7.196751,
+    "longitude": 112.733719
+  },
+  {
+    "legacyId": 199,
+    "type": "TPS",
+    "name": "JAMBANGAN",
+    "address": "JAMBANGAN",
+    "latitude": -7.32235,
+    "longitude": 112.711594
+  },
+  {
+    "legacyId": 200,
+    "type": "TPS",
+    "name": "BANGKINGAN ASPOL",
+    "address": "BANGKINGAN ASPOL",
+    "latitude": -7.264213,
+    "longitude": 112.745483
+  },
+  {
+    "legacyId": 201,
+    "type": "TPS",
+    "name": "GAYUNG SARI",
+    "address": "GAYUNG SARI",
+    "latitude": -7.331351,
+    "longitude": 112.721603
+  },
+  {
+    "legacyId": 202,
+    "type": "TPS",
+    "name": "WIGUNA TIMUR",
+    "address": "WIGUNA TIMUR",
+    "latitude": -7.335603,
+    "longitude": 112.801163
+  },
+  {
+    "legacyId": 203,
+    "type": "TPS",
+    "name": "PS.KAPASAN",
+    "address": "PS.KAPASAN",
+    "latitude": -7.239274,
+    "longitude": 112.747025
+  },
+  {
+    "legacyId": 204,
+    "type": "TPS",
+    "name": "DARMA HUSADA INDAH",
+    "address": "DARMA HUSADA INDAH",
+    "latitude": -7.265272,
+    "longitude": 112.781509
+  },
+  {
+    "legacyId": 205,
+    "type": "TPS",
+    "name": "KEJAWEN PUTIH",
+    "address": "KEJAWEN PUTIH",
+    "latitude": -7.284115,
+    "longitude": 112.802513
+  },
+  {
+    "legacyId": 206,
+    "type": "TPS",
+    "name": "JOGOLOYO",
+    "address": "JOGOLOYO",
+    "latitude": -7.302653,
+    "longitude": 112.712479
+  },
+  {
+    "legacyId": 207,
+    "type": "TPS",
+    "name": "SIMOLAWANG",
+    "address": "SIMOLAWANG",
+    "latitude": -7.233652,
+    "longitude": 112.74939
+  },
+  {
+    "legacyId": 208,
+    "type": "TPS",
+    "name": "KALIBOKOR",
+    "address": "KALIBOKOR",
+    "latitude": -7.283966,
+    "longitude": 112.761681
+  },
+  {
+    "legacyId": 209,
+    "type": "TPS",
+    "name": "PS.PUCANG",
+    "address": "PS.PUCANG",
+    "latitude": -7.284184,
+    "longitude": 112.755013
+  },
+  {
+    "legacyId": 210,
+    "type": "TPS",
+    "name": "GAPURA NUSANTARA",
+    "address": "GAPURA NUSANTARA",
+    "latitude": -7.260084,
+    "longitude": 112.713936
+  },
+  {
+    "legacyId": 211,
+    "type": "TPS",
+    "name": "PANJANG JIWO",
+    "address": "PANJANG JIWO",
+    "latitude": -7.307782,
+    "longitude": 112.766388
+  },
+  {
+    "legacyId": 212,
+    "type": "TPS",
+    "name": "PT.STAR SURABAYA",
+    "address": "PT.STAR SURABAYA",
+    "latitude": -7.259403,
+    "longitude": 112.679604
+  },
+  {
+    "legacyId": 213,
+    "type": "TPS",
+    "name": "RSI BENOWO",
+    "address": "RSI BENOWO",
+    "latitude": -7.234744,
+    "longitude": 112.61274
+  },
+  {
+    "legacyId": 214,
+    "type": "TPS",
+    "name": "BUKIT MAS",
+    "address": "BUKIT MAS",
+    "latitude": -7.312385,
+    "longitude": 112.665642
+  },
+  {
+    "legacyId": 215,
+    "type": "TPS",
+    "name": "PURI LIDAH KULON INDAH",
+    "address": "PURI LIDAH KULON INDAH",
+    "latitude": -7.304952,
+    "longitude": 112.649475
+  },
+  {
+    "legacyId": 216,
+    "type": "TPS",
+    "name": "JL.GREGES",
+    "address": "JL.GREGES",
+    "latitude": -7.228273,
+    "longitude": 112.681801
+  },
+  {
+    "legacyId": 217,
+    "type": "TPS",
+    "name": "PT.TEJA SEKAWAN",
+    "address": "PT.TEJA SEKAWAN",
+    "latitude": -7.325809,
+    "longitude": 112.758568
+  },
+  {
+    "legacyId": 218,
+    "type": "TPS",
+    "name": "TENGGER KANDANGAN",
+    "address": "TENGGER KANDANGAN",
+    "latitude": -7.255981,
+    "longitude": 112.63485
+  },
+  {
+    "legacyId": 219,
+    "type": "TPS",
+    "name": "PS.GUBENG MASJID",
+    "address": "PS.GUBENG MASJID",
+    "latitude": -7.265444,
+    "longitude": 112.753387
+  },
+  {
+    "legacyId": 220,
+    "type": "TPS",
+    "name": "PS.BARU JAGIR",
+    "address": "PS.BARU JAGIR",
+    "latitude": -7.303249,
+    "longitude": 112.749214
+  },
+  {
+    "legacyId": 221,
+    "type": "TPS",
+    "name": "TELKOM KETINTANG",
+    "address": "TELKOM KETINTANG",
+    "latitude": -7.309152,
+    "longitude": 112.727654
+  },
+  {
+    "legacyId": 222,
+    "type": "TPS",
+    "name": "PLAZA SURABAYA",
+    "address": "PLAZA SURABAYA",
+    "latitude": -7.265434,
+    "longitude": 112.748398
+  },
+  {
+    "legacyId": 223,
+    "type": "TPS",
+    "name": "KALIDAMI",
+    "address": "KALIDAMI",
+    "latitude": -7.275033,
+    "longitude": 112.764503
+  },
+  {
+    "legacyId": 224,
+    "type": "TPS",
+    "name": "PANGKALAN RORO",
+    "address": "PANGKALAN RORO",
+    "latitude": -7.209724,
+    "longitude": 112.736191
+  },
+  {
+    "legacyId": 225,
+    "type": "TPS",
+    "name": "KBS",
+    "address": "KBS",
+    "latitude": -7.29726,
+    "longitude": 112.738113
+  },
+  {
+    "legacyId": 226,
+    "type": "TPS",
+    "name": "PETEMON KUBURAN",
+    "address": "PETEMON KUBURAN",
+    "latitude": -7.264476,
+    "longitude": 112.718842
+  },
+  {
+    "legacyId": 227,
+    "type": "TPS",
+    "name": "JMP",
+    "address": "JMP",
+    "latitude": -7.234541,
+    "longitude": 112.737976
+  },
+  {
+    "legacyId": 228,
+    "type": "TPS",
+    "name": "CIPUTRA WORLD",
+    "address": "CIPUTRA WORLD",
+    "latitude": -7.291849,
+    "longitude": 112.719299
+  },
+  {
+    "legacyId": 229,
+    "type": "TPS",
+    "name": "TELUK NIBUNG",
+    "address": "TELUK NIBUNG",
+    "latitude": -7.216091,
+    "longitude": 112.730873
+  },
+  {
+    "legacyId": 230,
+    "type": "TPS",
+    "name": "KALIMAS RAYON UTARA",
+    "address": "KALIMAS RAYON UTARA",
+    "latitude": -7.235088,
+    "longitude": 112.738914
+  },
+  {
+    "legacyId": 231,
+    "type": "TPS",
+    "name": "METRO",
+    "address": "METRO",
+    "latitude": -7.263149,
+    "longitude": 112.748268
+  },
+  {
+    "legacyId": 232,
+    "type": "TPS",
+    "name": "TP.4",
+    "address": "TP.4",
+    "latitude": -7.261276,
+    "longitude": 112.738525
+  },
+  {
+    "legacyId": 233,
+    "type": "TPS",
+    "name": "KALISARI",
+    "address": "KALISARI",
+    "latitude": -7.273992,
+    "longitude": 112.800743
+  },
+  {
+    "legacyId": 234,
+    "type": "TPS",
+    "name": "SPAZIO",
+    "address": "SPAZIO",
+    "latitude": -7.288975,
+    "longitude": 112.677818
+  },
+  {
+    "legacyId": 235,
+    "type": "TPS",
+    "name": "PTC",
+    "address": "PTC",
+    "latitude": -7.290167,
+    "longitude": 112.675034
+  },
+  {
+    "legacyId": 236,
+    "type": "TPS",
+    "name": "MRUTU KALIANYAR",
+    "address": "MRUTU KALIANYAR",
+    "latitude": -7.212328,
+    "longitude": 112.757996
+  },
+  {
+    "legacyId": 237,
+    "type": "TPS",
+    "name": "JAJAR TUNGGAL",
+    "address": "JAJAR TUNGGAL",
+    "latitude": -7.303374,
+    "longitude": 112.704094
+  },
+  {
+    "legacyId": 238,
+    "type": "TPS",
+    "name": "ASRAMA BRIMOB PPI",
+    "address": "ASRAMA BRIMOB",
+    "latitude": -7.352374,
+    "longitude": 112.709946
+  },
+  {
+    "legacyId": 239,
+    "type": "TPS",
+    "name": "BABADAN",
+    "address": "BABADAN",
+    "latitude": -7.244086,
+    "longitude": 112.719238
+  },
+  {
+    "legacyId": 240,
+    "type": "TPS",
+    "name": "PAKUWON INDAH",
+    "address": "PAKUWON INDAH",
+    "latitude": -7.289814,
+    "longitude": 112.675667
+  },
+  {
+    "legacyId": 241,
+    "type": "TPS",
+    "name": "JAMRUD SELATAN",
+    "address": "JAMRUD SELATAN",
+    "latitude": -7.210571,
+    "longitude": 112.734062
+  },
+  {
+    "legacyId": 242,
+    "type": "TPS",
+    "name": "GAYUNG KEBONSARI",
+    "address": "GAYUNG KEBONSARI",
+    "latitude": -7.324658,
+    "longitude": 112.724739
+  },
+  {
+    "legacyId": 243,
+    "type": "TPS",
+    "name": "KENDAL SARI",
+    "address": "KENDAL SARI",
+    "latitude": -7.312933,
+    "longitude": 12.786581
+  },
+  {
+    "legacyId": 244,
+    "type": "TPS",
+    "name": "WONOREJO",
+    "address": "WONOREJO",
+    "latitude": -7.311521,
+    "longitude": 112.793892
+  },
+  {
+    "legacyId": 245,
+    "type": "TPS",
+    "name": "IPLT KEPUTIH",
+    "address": "KEPUTIH TINJA",
+    "latitude": -7.290715,
+    "longitude": 112.813377
+  },
+  {
+    "legacyId": 246,
+    "type": "TPS",
+    "name": "MARGOMULYO PERMAI",
+    "address": "MARGOMULYO PERMAI",
+    "latitude": -7.244761,
+    "longitude": 112.682671
+  },
+  {
+    "legacyId": 247,
+    "type": "TPS",
+    "name": "KODAM",
+    "address": "KODAM",
+    "latitude": -7.29843,
+    "longitude": 112.724335
+  },
+  {
+    "legacyId": 248,
+    "type": "TPS",
+    "name": "KRAMAT",
+    "address": "KRAMAT",
+    "latitude": -7.250149,
+    "longitude": 112.738457
+  },
+  {
+    "legacyId": 249,
+    "type": "TPS",
+    "name": "CARREFOUR ITC",
+    "address": "CARREFOUR ITC",
+    "latitude": -7.240989,
+    "longitude": 112.745735
+  },
+  {
+    "legacyId": 250,
+    "type": "TPS",
+    "name": "CARREFOUR GOCI",
+    "address": "CARREFOUR GOCI",
+    "latitude": -7.291596,
+    "longitude": 112.706505
+  },
+  {
+    "legacyId": 251,
+    "type": "TPS",
+    "name": "TAMAN DARMO",
+    "address": "TAMAN DARMO",
+    "latitude": -7.272996,
+    "longitude": 112.693459
+  },
+  {
+    "legacyId": 252,
+    "type": "TPS",
+    "name": "LIDAH KULON",
+    "address": "LIDAH KULON",
+    "latitude": -7.305857,
+    "longitude": 112.653999
+  },
+  {
+    "legacyId": 253,
+    "type": "TPS",
+    "name": "PRAPEN",
+    "address": "PRAPEN",
+    "latitude": -7.312857,
+    "longitude": 112.76107
+  },
+  {
+    "legacyId": 254,
+    "type": "TPS",
+    "name": "PRAPEN DKK",
+    "address": "PRAPEN DKK",
+    "latitude": -7.312857,
+    "longitude": 112.76107
+  },
+  {
+    "legacyId": 255,
+    "type": "TPS",
+    "name": "PS.KEPUTRAN SELATAN",
+    "address": "PS.KEPUTRAN SELATAN",
+    "latitude": -7.277075,
+    "longitude": 112.74369
+  },
+  {
+    "legacyId": 256,
+    "type": "TPS",
+    "name": "PS.MANUKAN WETAN",
+    "address": "PS.MANUKAN WETAN",
+    "latitude": -7.260193,
+    "longitude": 112.662453
+  },
+  {
+    "legacyId": 257,
+    "type": "TPS",
+    "name": "PS.TURI",
+    "address": "PS.TURI",
+    "latitude": -7.246066,
+    "longitude": 112.73571
+  },
+  {
+    "legacyId": 258,
+    "type": "TPS",
+    "name": "PURIMAS",
+    "address": "PURIMAS",
+    "latitude": -7.332401,
+    "longitude": 112.788071
+  },
+  {
+    "legacyId": 259,
+    "type": "TPS",
+    "name": "PS.BUAH WONOKUSUMO",
+    "address": "PS.BUAH WONOKUSUMO",
+    "latitude": -7.223508,
+    "longitude": 112.752419
+  },
+  {
+    "legacyId": 260,
+    "type": "TPS",
+    "name": "JL.PRAPAT KURUNG",
+    "address": "JL.PRAPAT KURUNG",
+    "latitude": -7.209891,
+    "longitude": 112.729797
+  },
+  {
+    "legacyId": 261,
+    "type": "TPS",
+    "name": "SMA 16",
+    "address": "SMA 16",
+    "latitude": -7.309506,
+    "longitude": 112.75959
+  },
+  {
+    "legacyId": 262,
+    "type": "TPS",
+    "name": "JL.M.NASIR",
+    "address": "JL.M.NASIR",
+    "latitude": -7.217312,
+    "longitude": 112.727074
+  },
+  {
+    "legacyId": 263,
+    "type": "TPS",
+    "name": "GUNUNGSARI II",
+    "address": "GUNUNGSARI II",
+    "latitude": -7.307094,
+    "longitude": 112.720192
+  },
+  {
+    "legacyId": 264,
+    "type": "TPS",
+    "name": "BUKIT DARMO GOLF",
+    "address": "BUKIT DARMO GOLF",
+    "latitude": -7.287901,
+    "longitude": 112.690231
+  },
+  {
+    "legacyId": 265,
+    "type": "TPS",
+    "name": "GRAHA SATIVA",
+    "address": "GRAHA SATIVA",
+    "latitude": -7.343728,
+    "longitude": 112.717613
+  },
+  {
+    "legacyId": 266,
+    "type": "TPS",
+    "name": "KENJERAN",
+    "address": "KENJERAN",
+    "latitude": -7.235756,
+    "longitude": 112.790962
+  },
+  {
+    "legacyId": 267,
+    "type": "TPS",
+    "name": "PS.LOAK/DUPAK RUKUN",
+    "address": "PS.LOAK/DUPAK RUKUN",
+    "latitude": -7.249026,
+    "longitude": 112.712219
+  },
+  {
+    "legacyId": 268,
+    "type": "TPS",
+    "name": "UD.SUMBER HIDUP",
+    "address": "UD.SUMBER HIDUP",
+    "latitude": -7.233505,
+    "longitude": 112.742455
+  },
+  {
+    "legacyId": 269,
+    "type": "TPS",
+    "name": "WONOREJO",
+    "address": "WONOREJO",
+    "latitude": -7.315628,
+    "longitude": 112.79776
+  },
+  {
+    "legacyId": 270,
+    "type": "TPS",
+    "name": "JL.KALIANGET UTARA",
+    "address": "JL.KALIANGET UTARA",
+    "latitude": -7.203834,
+    "longitude": 112.73452
+  },
+  {
+    "legacyId": 271,
+    "type": "TPS",
+    "name": "POLDA JATIM",
+    "address": "POLDA JATIM",
+    "latitude": -7.322498,
+    "longitude": 112.731018
+  },
+  {
+    "legacyId": 272,
+    "type": "TPS",
+    "name": "PURI LIDAH KULON",
+    "address": "PURI LIDAH KULON",
+    "latitude": -7.305338,
+    "longitude": 112.650726
+  },
+  {
+    "legacyId": 273,
+    "type": "TPS",
+    "name": "BUNTARAN",
+    "address": "BUNTARAN",
+    "latitude": -7.254137,
+    "longitude": 112.672958
+  },
+  {
+    "legacyId": 274,
+    "type": "TPS",
+    "name": "NILAM",
+    "address": "NILAM",
+    "latitude": -7.26824,
+    "longitude": 112.706879
+  },
+  {
+    "legacyId": 275,
+    "type": "TPS",
+    "name": "TAMBAK OSO WILANGUN",
+    "address": "TAMBAK OSO WILANGUN",
+    "latitude": -7.211164,
+    "longitude": 112.652122
+  },
+  {
+    "legacyId": 276,
+    "type": "TPS",
+    "name": "GRIYA CITRA ASRI",
+    "address": "GRIYA CITRA ASRI",
+    "latitude": -7.26144,
+    "longitude": 112.645271
+  },
+  {
+    "legacyId": 277,
+    "type": "TPS",
+    "name": "SEMOLOWARU I/II",
+    "address": "SEMOLOWARU I/II",
+    "latitude": -7.302879,
+    "longitude": 112.790359
+  },
+  {
+    "legacyId": 278,
+    "type": "TPS",
+    "name": "KODIKAL",
+    "address": "KODIKAL",
+    "latitude": -7.230113,
+    "longitude": 112.717369
+  },
+  {
+    "legacyId": 279,
+    "type": "TPS",
+    "name": "PS.ASEMROWO",
+    "address": "PS.ASEMROWO",
+    "latitude": -7.245991,
+    "longitude": 112.706436
+  },
+  {
+    "legacyId": 280,
+    "type": "TPS",
+    "name": "PS.GENTENG",
+    "address": "PS.GENTENG",
+    "latitude": -7.259119,
+    "longitude": 112.741341
+  },
+  {
+    "legacyId": 281,
+    "type": "TPS",
+    "name": "PS.ATUM",
+    "address": "PS.ATUM",
+    "latitude": -7.240772,
+    "longitude": 112.744736
+  },
+  {
+    "legacyId": 282,
+    "type": "TPS",
+    "name": "YANI GOLF",
+    "address": "YANI GOLF",
+    "latitude": -7.306898,
+    "longitude": 112.715363
+  },
+  {
+    "legacyId": 283,
+    "type": "TPS",
+    "name": "PT. PERUSAHAAN KECAP KENARI",
+    "address": "JL. DONOKERTO XI NO.14-16",
+    "latitude": -7.241801,
+    "longitude": 112.754417
+  },
+  {
+    "legacyId": 284,
+    "type": "TPS",
+    "name": "PS.BUAH BARU PENELEH",
+    "address": "PS.BUAH BARU PENELEH",
+    "latitude": -7.250801,
+    "longitude": 112.73922
+  },
+  {
+    "legacyId": 285,
+    "type": "TPS",
+    "name": "BABAT JERAWAT",
+    "address": "BABAT JERAWAT",
+    "latitude": -7.235363,
+    "longitude": 112.628716
+  },
+  {
+    "legacyId": 286,
+    "type": "TPS",
+    "name": "THR",
+    "address": "THR",
+    "latitude": -7.253719,
+    "longitude": 112.750351
+  },
+  {
+    "legacyId": 287,
+    "type": "TPS",
+    "name": "SUMBEREJO",
+    "address": "SUMBEREJO",
+    "latitude": -7.230352,
+    "longitude": 112.608894
+  },
+  {
+    "legacyId": 288,
+    "type": "TPS",
+    "name": "JAWAR",
+    "address": "JAWAR",
+    "latitude": -7.267208,
+    "longitude": 112.703194
+  },
+  {
+    "legacyId": 289,
+    "type": "TPS",
+    "name": "KALIMAS BARU UTARA",
+    "address": "KALIMAS BARU UTARA",
+    "latitude": -7.206875,
+    "longitude": 112.735893
+  },
+  {
+    "legacyId": 290,
+    "type": "TPS",
+    "name": "PS.KAPAS KRAMPUNG",
+    "address": "PS.KAPAS KRAMPUNG",
+    "latitude": -7.249665,
+    "longitude": 112.762108
+  },
+  {
+    "legacyId": 291,
+    "type": "TPS",
+    "name": "RSI.BENOWO",
+    "address": "RSI.BENOWO",
+    "latitude": -7.234978,
+    "longitude": 112.612801
+  },
+  {
+    "legacyId": 292,
+    "type": "TPS",
+    "name": "PT.GALAXY BUMI PERMAI",
+    "address": "PT.GALAXY BUMI PERMAI",
+    "latitude": -7.290533,
+    "longitude": 112.788071
+  },
+  {
+    "legacyId": 293,
+    "type": "TPS",
+    "name": "MARINIR GUNUNGSARI",
+    "address": "MARINIR GUNUNGSARI",
+    "latitude": -7.30498,
+    "longitude": 112.708061
+  },
+  {
+    "legacyId": 294,
+    "type": "TPS",
+    "name": "PP.WIKA",
+    "address": "PP.WIKA",
+    "latitude": -7.330917,
+    "longitude": 112.757538
+  },
+  {
+    "legacyId": 295,
+    "type": "TPS",
+    "name": "PONDOK MANGGALA",
+    "address": "PONDOK MANGGALA",
+    "latitude": -7.327971,
+    "longitude": 112.682304
+  },
+  {
+    "legacyId": 296,
+    "type": "TPS",
+    "name": "MENTARI",
+    "address": "MENTARI",
+    "latitude": -7.261446,
+    "longitude": 112.722862
+  },
+  {
+    "legacyId": 297,
+    "type": "TPS",
+    "name": "SEMEMI",
+    "address": "SEMEMI",
+    "latitude": -7.249558,
+    "longitude": 112.640488
+  },
+  {
+    "legacyId": 298,
+    "type": "TPS",
+    "name": "GRAHA BUKOPIN",
+    "address": "GRAHA BUKOPIN",
+    "latitude": -7.265692,
+    "longitude": 112.744995
+  },
+  {
+    "legacyId": 299,
+    "type": "TPS",
+    "name": "PT.ARAYA",
+    "address": "PT.ARAYA",
+    "latitude": -7.258356,
+    "longitude": 112.753609
+  },
+  {
+    "legacyId": 300,
+    "type": "TPS",
+    "name": "WONOREJO I",
+    "address": "WONOREJO I",
+    "latitude": -7.267832,
+    "longitude": 112.732681
+  },
+  {
+    "legacyId": 301,
+    "type": "TPS",
+    "name": "PT.SINAR KENTJANA",
+    "address": "PT.SINAR KENTJANA",
+    "latitude": -7.313079,
+    "longitude": 112.732536
+  },
+  {
+    "legacyId": 302,
+    "type": "TPS",
+    "name": "KALIANAK",
+    "address": "KALIANAK",
+    "latitude": -7.228666,
+    "longitude": 112.683548
+  },
+  {
+    "legacyId": 303,
+    "type": "TPS",
+    "name": "JAGIR KALIMIR",
+    "address": "JAGIR KALIMIR",
+    "latitude": -7.303007,
+    "longitude": 112.749229
+  },
+  {
+    "legacyId": 304,
+    "type": "TPS",
+    "name": "SITI KHATIJAH",
+    "address": "SEKOLAHAN SITI KHADIJAH",
+    "latitude": -7.307216,
+    "longitude": 112.733841
+  },
+  {
+    "legacyId": 305,
+    "type": "TPS",
+    "name": "SOLOTIGO & GADUKAN",
+    "address": "SOLOTIGO & GADUKAN",
+    "latitude": -7.251658,
+    "longitude": 112.728767
+  },
+  {
+    "legacyId": 306,
+    "type": "TPS",
+    "name": "KALISARI & KALIJUDAN",
+    "address": "KALISARI & KALIJUDAN",
+    "latitude": -7.258395,
+    "longitude": 112.782349
+  },
+  {
+    "legacyId": 307,
+    "type": "TPS",
+    "name": "KALIANAK 51",
+    "address": "KALIANAK 51",
+    "latitude": -7.228719,
+    "longitude": 112.683342
+  },
+  {
+    "legacyId": 308,
+    "type": "TPS",
+    "name": "LANGKIR",
+    "address": "LANGKIR",
+    "latitude": -7.254793,
+    "longitude": 112.626648
+  },
+  {
+    "legacyId": 309,
+    "type": "TPS",
+    "name": "MIRAH",
+    "address": "MIRAH",
+    "latitude": -7.253293,
+    "longitude": 112.715446
+  },
+  {
+    "legacyId": 310,
+    "type": "TPS",
+    "name": "SUMBEREJO II",
+    "address": "SUMBEREJO II",
+    "latitude": -7.223437,
+    "longitude": 112.604378
+  },
+  {
+    "legacyId": 311,
+    "type": "TPS",
+    "name": "PT.LMU(LARIS MANIS UTAMA)",
+    "address": "PT.LMU(LARIS MANIS UTAMA)",
+    "latitude": -7.221484,
+    "longitude": 112.727989
+  },
+  {
+    "legacyId": 312,
+    "type": "TPS",
+    "name": "DARMOKALI",
+    "address": "DARMOKALI",
+    "latitude": -7.291642,
+    "longitude": 112.740013
+  },
+  {
+    "legacyId": 313,
+    "type": "TPS",
+    "name": "PT.SRIWIJAYA",
+    "address": "PT.SRIWIJAYA",
+    "latitude": -7.279639,
+    "longitude": 112.741997
+  },
+  {
+    "legacyId": 314,
+    "type": "TPS",
+    "name": "KALIJUDAN",
+    "address": "KALIJUDAN",
+    "latitude": -7.25218,
+    "longitude": 112.783257
+  },
+  {
+    "legacyId": 315,
+    "type": "TPS",
+    "name": "DUPAK BANDAREJO",
+    "address": "DUPAK BANDAREJO",
+    "latitude": -7.244027,
+    "longitude": 112.720299
+  },
+  {
+    "legacyId": 316,
+    "type": "TPS",
+    "name": "PANGKALAN KALIMAS III",
+    "address": "PANGKALAN KALIMAS III",
+    "latitude": -7.232535,
+    "longitude": 112.739403
+  },
+  {
+    "legacyId": 317,
+    "type": "TPS",
+    "name": "PERAK KEDAMEN",
+    "address": "PERAK KEDAMEN",
+    "latitude": -7.217851,
+    "longitude": 112.728012
+  },
+  {
+    "legacyId": 318,
+    "type": "TPS",
+    "name": "JAGIR",
+    "address": "JAGIR",
+    "latitude": -7.305154,
+    "longitude": 112.756706
+  },
+  {
+    "legacyId": 319,
+    "type": "TPS",
+    "name": "WTC",
+    "address": "WTC",
+    "latitude": -7.263377,
+    "longitude": 112.748207
+  },
+  {
+    "legacyId": 320,
+    "type": "TPS",
+    "name": "AMPEL MAKAM",
+    "address": "AMPEL MAKAM",
+    "latitude": -7.22947,
+    "longitude": 112.742683
+  },
+  {
+    "legacyId": 321,
+    "type": "TPS",
+    "name": "JL.KALIANGET SELATAN",
+    "address": "JL.KALIANGET SELATAN",
+    "latitude": -7.203823,
+    "longitude": 112.734573
+  },
+  {
+    "legacyId": 322,
+    "type": "TPS",
+    "name": "KALI KEPITING & FLORES",
+    "address": "KALI KEPITING & FLORES",
+    "latitude": -7.263293,
+    "longitude": 112.770782
+  },
+  {
+    "legacyId": 323,
+    "type": "TPS",
+    "name": "KENJERAN & KALISARI",
+    "address": "KENJERAN & KALISARI",
+    "latitude": -7.233798,
+    "longitude": 112.791176
+  },
+  {
+    "legacyId": 324,
+    "type": "TPS",
+    "name": "UD. SUMBER HIDUP",
+    "address": "UD. SUMBER HIDUP",
+    "latitude": -7.365084,
+    "longitude": 112.762901
+  },
+  {
+    "legacyId": 325,
+    "type": "TPS",
+    "name": "CARREFOUR BOJES",
+    "address": "CARREFOUR BOJES",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 326,
+    "type": "TPS",
+    "name": "TNI AL UJUNG",
+    "address": "TNI AL UJUNG",
+    "latitude": -7.21453,
+    "longitude": 112.718315
+  },
+  {
+    "legacyId": 327,
+    "type": "TPS",
+    "name": "BRATANG",
+    "address": "BRATANG",
+    "latitude": -7.29663,
+    "longitude": 112.756142
+  },
+  {
+    "legacyId": 328,
+    "type": "TPS",
+    "name": "PAKUWON CITY",
+    "address": "PAKUWON CITY",
+    "latitude": -7.277144,
+    "longitude": 112.805969
+  },
+  {
+    "legacyId": 329,
+    "type": "TPS",
+    "name": "GOCI(GOLDEN CITY)",
+    "address": "GOCI(GOLDEN CITY)",
+    "latitude": -7.291575,
+    "longitude": 112.706528
+  },
+  {
+    "legacyId": 330,
+    "type": "TPS",
+    "name": "SEMOLOWARU I & II",
+    "address": "SEMOLOWARU I & II",
+    "latitude": -7.301073,
+    "longitude": 112.781296
+  },
+  {
+    "legacyId": 331,
+    "type": "TPS",
+    "name": "PS.BUAH TANJUNGSARI",
+    "address": "PS.BUAH TANJUNGSARI",
+    "latitude": -7.255755,
+    "longitude": 112.700928
+  },
+  {
+    "legacyId": 332,
+    "type": "TPS",
+    "name": "BOSEM KALIDAMI",
+    "address": "BOSEM KALIDAMI",
+    "latitude": -7.275033,
+    "longitude": 112.764641
+  },
+  {
+    "legacyId": 333,
+    "type": "TPS",
+    "name": "GUNUNGSARI I",
+    "address": "GUNUNGSARI I",
+    "latitude": -7.304476,
+    "longitude": 112.72506
+  },
+  {
+    "legacyId": 334,
+    "type": "TPS",
+    "name": "SOLOTIGO",
+    "address": "SOLOTIGO",
+    "latitude": -7.250434,
+    "longitude": 112.729797
+  },
+  {
+    "legacyId": 335,
+    "type": "TPS",
+    "name": "PESAPEN",
+    "address": "PESAPEN",
+    "latitude": -7.233818,
+    "longitude": 112.732407
+  },
+  {
+    "legacyId": 336,
+    "type": "TPS",
+    "name": "KALIJUDAN & KALISARI",
+    "address": "KALIJUDAN & KALISARI",
+    "latitude": -7.258906,
+    "longitude": 112.778107
+  },
+  {
+    "legacyId": 337,
+    "type": "TPS",
+    "name": "KOMPOS SUTOREJO",
+    "address": "KOMPOS SUTOREJO",
+    "latitude": -7.260609,
+    "longitude": 112.790367
+  },
+  {
+    "legacyId": 338,
+    "type": "TPS",
+    "name": "BMI",
+    "address": "BMI",
+    "latitude": -7.256678,
+    "longitude": 112.68441
+  },
+  {
+    "legacyId": 339,
+    "type": "TPS",
+    "name": "GADUKAN",
+    "address": "GADUKAN",
+    "latitude": -7.230767,
+    "longitude": 112.71357
+  },
+  {
+    "legacyId": 340,
+    "type": "TPS",
+    "name": "SEMOLOWARU I",
+    "address": "SEMOLOWARU I",
+    "latitude": -7.302686,
+    "longitude": 112.77906
+  },
+  {
+    "legacyId": 341,
+    "type": "TPS",
+    "name": "KALIDAMI II",
+    "address": "KALIDAMI II",
+    "latitude": -7.277571,
+    "longitude": 112.762238
+  },
+  {
+    "legacyId": 342,
+    "type": "TPS",
+    "name": "FLORES & BANYU URIP",
+    "address": "FLORES & BANYU URIP",
+    "latitude": -7.278753,
+    "longitude": 112.749069
+  },
+  {
+    "legacyId": 343,
+    "type": "TPS",
+    "name": "RUSUNAWA GUNUNGSARI",
+    "address": "RUSUNAWA GUNUNGSARI",
+    "latitude": -7.308156,
+    "longitude": 112.711487
+  },
+  {
+    "legacyId": 344,
+    "type": "TPS",
+    "name": "SAMPAH PATROLI",
+    "address": "SAMPAH PATROLI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 345,
+    "type": "TPS",
+    "name": "KALIJUDAN & KENJERAN",
+    "address": "KALIJUDAN & KENJERAN",
+    "latitude": -7.258906,
+    "longitude": 112.778107
+  },
+  {
+    "legacyId": 346,
+    "type": "TPS",
+    "name": "BOSEM WONOREJO",
+    "address": "BOSEM WONOREJO",
+    "latitude": -7.30952,
+    "longitude": 112.796738
+  },
+  {
+    "legacyId": 347,
+    "type": "TPS",
+    "name": "DINOYO GODER",
+    "address": "DINOYO GODER",
+    "latitude": -7.279508,
+    "longitude": 112.743896
+  },
+  {
+    "legacyId": 348,
+    "type": "TPS",
+    "name": "KALISARI & KALIJUDAN & KEPITING",
+    "address": "KALISARI & KALIJUDAN & KEPITING",
+    "latitude": -7.263505,
+    "longitude": 112.771126
+  },
+  {
+    "legacyId": 349,
+    "type": "TPS",
+    "name": "UD.HAPPY",
+    "address": "UD.HAPPY",
+    "latitude": -7.250972,
+    "longitude": 112.739388
+  },
+  {
+    "legacyId": 350,
+    "type": "TPS",
+    "name": "MUSING",
+    "address": "MUSING",
+    "latitude": -7.209531,
+    "longitude": 112.732628
+  },
+  {
+    "legacyId": 351,
+    "type": "TPS",
+    "name": "PANGKALAN KALIMAS IV",
+    "address": "PANGKALAN KALIMAS IV",
+    "latitude": -7.229876,
+    "longitude": 112.738403
+  },
+  {
+    "legacyId": 352,
+    "type": "TPS",
+    "name": "WARU GUNUNG",
+    "address": "WARU GUNUNG",
+    "latitude": -7.343226,
+    "longitude": 112.676208
+  },
+  {
+    "legacyId": 353,
+    "type": "TPS",
+    "name": "BANYU URIP",
+    "address": "BANYU URIP",
+    "latitude": -7.267967,
+    "longitude": 112.711426
+  },
+  {
+    "legacyId": 354,
+    "type": "TPS",
+    "name": "SEMOLOWARU II",
+    "address": "SEMOLOWARU II",
+    "latitude": -7.304763,
+    "longitude": 112.773567
+  },
+  {
+    "legacyId": 355,
+    "type": "TPS",
+    "name": "KALIJUDAN",
+    "address": "KALIJUDAN",
+    "latitude": -7.260907,
+    "longitude": 112.778015
+  },
+  {
+    "legacyId": 356,
+    "type": "TPS",
+    "name": "PT.INDRA JAYA SWASTIKA",
+    "address": "PT.INDRA JAYA SWASTIKA",
+    "latitude": -7.228175,
+    "longitude": 112.684669
+  },
+  {
+    "legacyId": 357,
+    "type": "TPS",
+    "name": "SEMOLOWARU I+II",
+    "address": "SEMOLOWARU I+II",
+    "latitude": -7.300094,
+    "longitude": 112.772453
+  },
+  {
+    "legacyId": 358,
+    "type": "TPS",
+    "name": "UD.PODO MAJU",
+    "address": "UD.PODO MAJU",
+    "latitude": -7.239591,
+    "longitude": 112.769478
+  },
+  {
+    "legacyId": 359,
+    "type": "TPS",
+    "name": "SURAMADU",
+    "address": "Suramadu",
+    "latitude": -7.216436,
+    "longitude": 112.776802
+  },
+  {
+    "legacyId": 360,
+    "type": "TPS",
+    "name": "PANDEGILING",
+    "address": "PANDEGILING",
+    "latitude": -7.277054,
+    "longitude": 112.739441
+  },
+  {
+    "legacyId": 361,
+    "type": "TPS",
+    "name": "KALI KEPITING",
+    "address": "KALI KEPITING",
+    "latitude": -7.263665,
+    "longitude": 112.773308
+  },
+  {
+    "legacyId": 362,
+    "type": "TPS",
+    "name": "SIMPANG DUKUH",
+    "address": "SIMPANG DUKUH",
+    "latitude": -7.26071,
+    "longitude": 112.742035
+  },
+  {
+    "legacyId": 363,
+    "type": "TPS",
+    "name": "TAMAN BUNGKUL",
+    "address": "TAMAN BUNGKUL",
+    "latitude": -7.29088,
+    "longitude": 112.73983
+  },
+  {
+    "legacyId": 364,
+    "type": "TPS",
+    "name": "TAMAN SULAWESI",
+    "address": "TAMAN SULAWESI",
+    "latitude": -7.27671,
+    "longitude": 112.745926
+  },
+  {
+    "legacyId": 365,
+    "type": "POOL",
+    "name": "Kendaraan Non-Dinas",
+    "address": "Kendaraan Non-Dinas",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 366,
+    "type": "POOL",
+    "name": "UNKNOWN",
+    "address": "UNKNOWN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 367,
+    "type": "TPS",
+    "name": "KAMPUNG SERATUS",
+    "address": "KAMPUNG SERATUS",
+    "latitude": -7.210656,
+    "longitude": 112.742033
+  },
+  {
+    "legacyId": 368,
+    "type": "TPS",
+    "name": "SEMOLOWARU BAHARI",
+    "address": "SEMOLOWARU BAHARI",
+    "latitude": -7.302901,
+    "longitude": 112.790451
+  },
+  {
+    "legacyId": 369,
+    "type": "TPS",
+    "name": "WONOKUSUMO WETAN",
+    "address": "WONOKUSUMO WETAN",
+    "latitude": -7.214599,
+    "longitude": 112.754108
+  },
+  {
+    "legacyId": 370,
+    "type": "TPS",
+    "name": "JL.SIDOTOPO",
+    "address": "-",
+    "latitude": -7.223345,
+    "longitude": 112.747755
+  },
+  {
+    "legacyId": 371,
+    "type": "TPS",
+    "name": "RINGROAD ITS",
+    "address": "-",
+    "latitude": -7.276841,
+    "longitude": 112.791646
+  },
+  {
+    "legacyId": 372,
+    "type": "TPS",
+    "name": "JL.SIDOTOPO ISKANDARMUDA",
+    "address": "-",
+    "latitude": -7.225509,
+    "longitude": 112.742837
+  },
+  {
+    "legacyId": 373,
+    "type": "TPS",
+    "name": "HOTEL SANTIKA",
+    "address": "PANDEGILING",
+    "latitude": -7.275598,
+    "longitude": 112.733652
+  },
+  {
+    "legacyId": 374,
+    "type": "TPS",
+    "name": "PS.WONOKROMO",
+    "address": "PS.WONOKROMO",
+    "latitude": -7.301997,
+    "longitude": 112.739217
+  },
+  {
+    "legacyId": 375,
+    "type": "TPS",
+    "name": "KALI KEPITING",
+    "address": "KALI KEPITING",
+    "latitude": -7.263479,
+    "longitude": 112.771061
+  },
+  {
+    "legacyId": 376,
+    "type": "TPS",
+    "name": "APARTEMENT TRILIUM",
+    "address": "JL.PEMUDA",
+    "latitude": -7.266228,
+    "longitude": 112.749016
+  },
+  {
+    "legacyId": 377,
+    "type": "TPS",
+    "name": "KALIMAS BARU",
+    "address": "KALIMAS BARU",
+    "latitude": -7.21443,
+    "longitude": 112.736758
+  },
+  {
+    "legacyId": 378,
+    "type": "TPS",
+    "name": "PT.REGENCY 21",
+    "address": "JL.ARIEF RAHMAN HAKIM",
+    "latitude": -7.289799,
+    "longitude": 112.783746
+  },
+  {
+    "legacyId": 379,
+    "type": "TPS",
+    "name": "CITO",
+    "address": "JL. A.YANI",
+    "latitude": -7.34499,
+    "longitude": 112.728854
+  },
+  {
+    "legacyId": 380,
+    "type": "TPS",
+    "name": "BALONGSARI",
+    "address": "BALONGSARI",
+    "latitude": -7.254542,
+    "longitude": 112.678713
+  },
+  {
+    "legacyId": 381,
+    "type": "TPS",
+    "name": "ESA SAMPOERNA",
+    "address": "JL.IR SOEKARNO",
+    "latitude": -7.287181,
+    "longitude": 112.780548
+  },
+  {
+    "legacyId": 382,
+    "type": "TPS",
+    "name": "HM SAMPOERNA (K.R)",
+    "address": "HM SAMPOERNA (K.R)",
+    "latitude": -7.323593,
+    "longitude": 112.765862
+  },
+  {
+    "legacyId": 383,
+    "type": "TPS",
+    "name": "PS.SEMEMI",
+    "address": "PS.SEMEMI",
+    "latitude": -7.247858,
+    "longitude": 112.640376
+  },
+  {
+    "legacyId": 384,
+    "type": "TPS",
+    "name": "PT.DHARMA ANUGRAH INDAH",
+    "address": "JL.MARGOMULYO",
+    "latitude": -7.235532,
+    "longitude": 112.684255
+  },
+  {
+    "legacyId": 385,
+    "type": "TPS",
+    "name": "CAMAT TAMBAKSARI",
+    "address": "-",
+    "latitude": -7.253075,
+    "longitude": 112.75469
+  },
+  {
+    "legacyId": 386,
+    "type": "TPS",
+    "name": "MASPION SQUARE",
+    "address": "MARGOREJO",
+    "latitude": -7.314443,
+    "longitude": 112.734541
+  },
+  {
+    "legacyId": 388,
+    "type": "TPS",
+    "name": "RUMAH KOMPOS METRO",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 389,
+    "type": "TPS",
+    "name": "PS.LAKAR SANTRI",
+    "address": "PS.LAKAR SANTRI",
+    "latitude": -7.29983,
+    "longitude": 112.63454
+  },
+  {
+    "legacyId": 390,
+    "type": "TPS",
+    "name": "HOTEL SOMERSET",
+    "address": "-",
+    "latitude": -7.28383,
+    "longitude": 112.705994
+  },
+  {
+    "legacyId": 391,
+    "type": "TPS",
+    "name": "RS.SILOAM",
+    "address": "-",
+    "latitude": -7.274057,
+    "longitude": 112.746517
+  },
+  {
+    "legacyId": 392,
+    "type": "TPS",
+    "name": "TWIN HOTEL",
+    "address": "JL.KAPASARI",
+    "latitude": -7.247688,
+    "longitude": 112.749476
+  },
+  {
+    "legacyId": 393,
+    "type": "TPS",
+    "name": "RS.ADI HUSADA UNDAAN",
+    "address": "UNDAAN",
+    "latitude": -7.251644,
+    "longitude": 112.745884
+  },
+  {
+    "legacyId": 394,
+    "type": "TPS",
+    "name": "NGAGEL MADYA UTARA",
+    "address": "-",
+    "latitude": -7.288305,
+    "longitude": 112.759496
+  },
+  {
+    "legacyId": 395,
+    "type": "TPS",
+    "name": "ROYAL SQUARE",
+    "address": "JL.MENGANTI",
+    "latitude": -7.313254,
+    "longitude": 112.703351
+  },
+  {
+    "legacyId": 396,
+    "type": "TPS",
+    "name": "RS.MITRA KELUARGA SATELIT",
+    "address": "JL.SATELIT INDAH",
+    "latitude": -7.266678,
+    "longitude": 112.691221
+  },
+  {
+    "legacyId": 397,
+    "type": "TPS",
+    "name": "SINGGASANA HOTEL",
+    "address": "JL.GUNUNGSARI",
+    "latitude": -7.306455,
+    "longitude": 112.718525
+  },
+  {
+    "legacyId": 399,
+    "type": "TPS",
+    "name": "RUSUN WARU GUNUNG",
+    "address": "RUSUN WARU GUNUNG",
+    "latitude": -7.343449,
+    "longitude": 112.676479
+  },
+  {
+    "legacyId": 400,
+    "type": "TPS",
+    "name": "PT.PRAMBANAN KENCANA",
+    "address": "PT.PRAMBANAN KENCANA",
+    "latitude": -7.325722,
+    "longitude": 112.749476
+  },
+  {
+    "legacyId": 401,
+    "type": "TPS",
+    "name": "PT.ECIA EGUN",
+    "address": "PT.ECIA EGUN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 402,
+    "type": "TPS",
+    "name": "PT.GRANDE FAMILY VIEW (PLASA GRAHA FAMILY)",
+    "address": "PT.GRANDE FAMILY VIEW (PLASA GRAHA FAMILY)",
+    "latitude": -7.302311,
+    "longitude": 112.693067
+  },
+  {
+    "legacyId": 403,
+    "type": "TPS",
+    "name": "GIANT RAJAWALI",
+    "address": "GIANT RAJAWALI",
+    "latitude": -7.238407,
+    "longitude": 112.734579
+  },
+  {
+    "legacyId": 404,
+    "type": "TPS",
+    "name": "SUKOLILO DIAN REGENCY",
+    "address": "-",
+    "latitude": -7.288184,
+    "longitude": 112.816509
+  },
+  {
+    "legacyId": 405,
+    "type": "TPS",
+    "name": "PT.CARBON & ELEKTRIK",
+    "address": "JL.RAYA RUNGKUT",
+    "latitude": -7.319701,
+    "longitude": 112.769557
+  },
+  {
+    "legacyId": 406,
+    "type": "TPS",
+    "name": "RS.DARMO",
+    "address": "-",
+    "latitude": -7.28732,
+    "longitude": 112.739
+  },
+  {
+    "legacyId": 407,
+    "type": "TPS",
+    "name": "RKZ",
+    "address": "-",
+    "latitude": -7.291723,
+    "longitude": 112.736745
+  },
+  {
+    "legacyId": 409,
+    "type": "TPS",
+    "name": "PT.NUSA DUA INDONESIA",
+    "address": "DYANDRA & CO",
+    "latitude": -7.26974,
+    "longitude": 112.742686
+  },
+  {
+    "legacyId": 410,
+    "type": "TPS",
+    "name": "RS.AL IRSYAD",
+    "address": "JL.KH MAS MANSYUR",
+    "latitude": -7.228314,
+    "longitude": 112.741131
+  },
+  {
+    "legacyId": 412,
+    "type": "TPS",
+    "name": "PT.CALMIC INDONESIA",
+    "address": "TENGGILIS",
+    "latitude": -7.324226,
+    "longitude": 112.753945
+  },
+  {
+    "legacyId": 413,
+    "type": "TPS",
+    "name": "RS.ONKOLOGI",
+    "address": "GALAXY BUMI PERMAI",
+    "latitude": -7.291642,
+    "longitude": 112.789185
+  },
+  {
+    "legacyId": 414,
+    "type": "TPS",
+    "name": "WATER PLACE RESIDENCE",
+    "address": "JL.PUNCAK LONTAR",
+    "latitude": -7.307856,
+    "longitude": 112.682438
+  },
+  {
+    "legacyId": 415,
+    "type": "TPS",
+    "name": "HOTEL MERITUS",
+    "address": "JL.BASUKI RAHMAT",
+    "latitude": -7.266954,
+    "longitude": 112.741785
+  },
+  {
+    "legacyId": 416,
+    "type": "TPS",
+    "name": "RS.MANYAR MEDIKAL CENTER",
+    "address": "JL.MANYAR",
+    "latitude": -7.289964,
+    "longitude": 112.76346
+  },
+  {
+    "legacyId": 417,
+    "type": "TPS",
+    "name": "ROYAL RESIDENCE",
+    "address": "JL.MENGANTI",
+    "latitude": -7.311038,
+    "longitude": 112.680319
+  },
+  {
+    "legacyId": 418,
+    "type": "TPS",
+    "name": "RS.WILLIAM BOOTH",
+    "address": "JL.DIPONEGORO",
+    "latitude": -7.290361,
+    "longitude": 112.736851
+  },
+  {
+    "legacyId": 419,
+    "type": "TPS",
+    "name": "HOTEL SANTIKA PREMIER",
+    "address": "JL.RAYA GUBENG",
+    "latitude": -7.271777,
+    "longitude": 112.748968
+  },
+  {
+    "legacyId": 420,
+    "type": "TPS",
+    "name": "PT.SINAR BAJA ELEKTRIK",
+    "address": "JL.MARGOMULYO",
+    "latitude": -7.242393,
+    "longitude": 112.682438
+  },
+  {
+    "legacyId": 421,
+    "type": "TPS",
+    "name": "SURABAYA KARNIVAL",
+    "address": "-",
+    "latitude": -7.345158,
+    "longitude": 112.732857
+  },
+  {
+    "legacyId": 422,
+    "type": "TPS",
+    "name": "UD.SUMBER KENCANA",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 423,
+    "type": "TPS",
+    "name": "DR.APARTEMEN",
+    "address": "SUKOLILO",
+    "latitude": -7.289451,
+    "longitude": 112.812269
+  },
+  {
+    "legacyId": 424,
+    "type": "TPS",
+    "name": "NATIONAL HOSPITAL",
+    "address": "JL.BOULEVARD",
+    "latitude": -7.299394,
+    "longitude": 112.676489
+  },
+  {
+    "legacyId": 425,
+    "type": "TPS",
+    "name": "BULOG DIVRE JATIM",
+    "address": "GAYUNGAN",
+    "latitude": -7.327972,
+    "longitude": 112.730262
+  },
+  {
+    "legacyId": 426,
+    "type": "TPS",
+    "name": "HM SAMPOERNA (R.I)",
+    "address": "RUNGKUT INDUSTRI",
+    "latitude": -7.334485,
+    "longitude": 112.765088
+  },
+  {
+    "legacyId": 427,
+    "type": "TPS",
+    "name": "ASRAMA HAJI SBY",
+    "address": "MANYAR KERTOADI",
+    "latitude": -7.282851,
+    "longitude": 112.778628
+  },
+  {
+    "legacyId": 428,
+    "type": "TPS",
+    "name": "PT.SIDO MAKMUR PUTRA",
+    "address": "JL.KALIANAK",
+    "latitude": -7.229521,
+    "longitude": 112.704222
+  },
+  {
+    "legacyId": 429,
+    "type": "TPS",
+    "name": "CARREFOUR SIAMIN",
+    "address": "JL.ABDUL WAHAB SIAMIN",
+    "latitude": -7.29554,
+    "longitude": 112.707025
+  },
+  {
+    "legacyId": 430,
+    "type": "TPS",
+    "name": "CARREFOUR BUBUTAN",
+    "address": "-",
+    "latitude": -7.254604,
+    "longitude": 112.733288
+  },
+  {
+    "legacyId": 431,
+    "type": "TPS",
+    "name": "DARMO SENTOSA RAYA",
+    "address": "JAJAR TUNGGAL",
+    "latitude": -7.304772,
+    "longitude": 112.70436
+  },
+  {
+    "legacyId": 432,
+    "type": "TPS",
+    "name": "PT.BJTI",
+    "address": "PERAK",
+    "latitude": -7.214747,
+    "longitude": 112.73011
+  },
+  {
+    "legacyId": 433,
+    "type": "TPS",
+    "name": "RSI.JEMURSARI",
+    "address": "-",
+    "latitude": -7.323077,
+    "longitude": 112.740347
+  },
+  {
+    "legacyId": 434,
+    "type": "TPS",
+    "name": "KALIBUTUH",
+    "address": "-",
+    "latitude": -7.255062,
+    "longitude": 112.721723
+  },
+  {
+    "legacyId": 435,
+    "type": "TPS",
+    "name": "-",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 436,
+    "type": "TPS",
+    "name": "LANTAMAL",
+    "address": "-",
+    "latitude": -7.2255,
+    "longitude": 112.74312
+  },
+  {
+    "legacyId": 437,
+    "type": "TPS",
+    "name": "KALI KEDINDING",
+    "address": "KALI KEDINDING",
+    "latitude": -7.227653,
+    "longitude": 112.771821
+  },
+  {
+    "legacyId": 438,
+    "type": "TPS",
+    "name": "TERMINAL TELUK LAMONG",
+    "address": "PERAK",
+    "latitude": -7.216747,
+    "longitude": 112.732886
+  },
+  {
+    "legacyId": 439,
+    "type": "TPS",
+    "name": "TAMBAK DONO",
+    "address": "-",
+    "latitude": -7.227416,
+    "longitude": 112.616155
+  },
+  {
+    "legacyId": 440,
+    "type": "TPS",
+    "name": "PAKAL MADYA",
+    "address": "PAKAL MADYA",
+    "latitude": -7.244343,
+    "longitude": 112.615964
+  },
+  {
+    "legacyId": 441,
+    "type": "TPS",
+    "name": "PRADAH KALI KENDAL",
+    "address": "-",
+    "latitude": -7.286623,
+    "longitude": 112.693891
+  },
+  {
+    "legacyId": 442,
+    "type": "TPS",
+    "name": "AMPEL PARIWISATA",
+    "address": "-",
+    "latitude": -7.229534,
+    "longitude": 112.742572
+  },
+  {
+    "legacyId": 443,
+    "type": "TPS",
+    "name": "RUNGKUT ASRI",
+    "address": "-",
+    "latitude": -7.3283,
+    "longitude": 112.770659
+  },
+  {
+    "legacyId": 444,
+    "type": "TPS",
+    "name": "MATARAM UTARA",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 445,
+    "type": "TPS",
+    "name": "KODAM I",
+    "address": "dekat kantor provost",
+    "latitude": -7.298174,
+    "longitude": 112.725681
+  },
+  {
+    "legacyId": 446,
+    "type": "TPS",
+    "name": "KODAM II",
+    "address": "-",
+    "latitude": -7.298174,
+    "longitude": 112.725681
+  },
+  {
+    "legacyId": 447,
+    "type": "TPS",
+    "name": "DUPAK",
+    "address": "-",
+    "latitude": -7.245282,
+    "longitude": 112.726142
+  },
+  {
+    "legacyId": 448,
+    "type": "TPS",
+    "name": "REKANAN TAMAN",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 449,
+    "type": "TPS",
+    "name": "SAMPAH SALURAN",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 450,
+    "type": "TPS",
+    "name": "HOTEL THE ALANA",
+    "address": "Jalan Ketintang Baru I",
+    "latitude": -7.316165,
+    "longitude": 112.729899
+  },
+  {
+    "legacyId": 451,
+    "type": "TPS",
+    "name": "HOTEL SANTIKA JEMURSARI",
+    "address": "JL. JEMURSARI",
+    "latitude": -7.24403,
+    "longitude": 112.632668
+  },
+  {
+    "legacyId": 452,
+    "type": "TPS",
+    "name": "RS. UNAIR",
+    "address": "KAMPUS UNAIR C",
+    "latitude": -7.24403,
+    "longitude": 112.632668
+  },
+  {
+    "legacyId": 453,
+    "type": "TPS",
+    "name": "APARTEMEN METROPOLIS",
+    "address": "TENGGILIS",
+    "latitude": -7.24403,
+    "longitude": 112.632668
+  },
+  {
+    "legacyId": 454,
+    "type": "TPS",
+    "name": "MS.WONOREJO II",
+    "address": "-",
+    "latitude": -7.24403,
+    "longitude": 112.632668
+  },
+  {
+    "legacyId": 455,
+    "type": "TPS",
+    "name": "GRAMEDIA EXPO",
+    "address": "JL. BASUKI RAHMAT",
+    "latitude": -7.269953,
+    "longitude": 112.742128
+  },
+  {
+    "legacyId": 456,
+    "type": "TPS",
+    "name": "PRAPEN 88",
+    "address": "DEKAT TRAC",
+    "latitude": -7.316244,
+    "longitude": 112.753555
+  },
+  {
+    "legacyId": 457,
+    "type": "TPS",
+    "name": "BOSEM MOROKREMBANGAN",
+    "address": "JL.GRESIK",
+    "latitude": -7.233852,
+    "longitude": 112.719469
+  },
+  {
+    "legacyId": 458,
+    "type": "TPS",
+    "name": "UNIVERSITAS WIJAYA PUTRA",
+    "address": "JL.RAYA BENOWO",
+    "latitude": -7.24403,
+    "longitude": 112.632668
+  },
+  {
+    "legacyId": 459,
+    "type": "TPS",
+    "name": "HM SAMPOERNA (T.S)",
+    "address": "TANJUNG SARI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 460,
+    "type": "TPS",
+    "name": "DUPAK BANGUNSARI",
+    "address": "DUPAK BANGUNSARI",
+    "latitude": -7.241955,
+    "longitude": 112.724121
+  },
+  {
+    "legacyId": 461,
+    "type": "TPS",
+    "name": "KENJERAN I & II",
+    "address": "KENJERAN I & II",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 462,
+    "type": "TPS",
+    "name": "JATI SRONO",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 463,
+    "type": "TPS",
+    "name": "PT.HM SAMPOERNA",
+    "address": "Jalan Taman Sampoerna",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 464,
+    "type": "TPS",
+    "name": "DARMO INDAH",
+    "address": "DARMO INDAH",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 465,
+    "type": "TPS",
+    "name": "TANDES",
+    "address": "TANDES",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 466,
+    "type": "TPS",
+    "name": "KIAI TAMBAK DERES",
+    "address": "KIAI TAMBAK DERES",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 467,
+    "type": "TPS",
+    "name": "EX.SIDOMAKMUR",
+    "address": "EX.SIDOMAKMUR",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 468,
+    "type": "TPS",
+    "name": "RUKO GOLDEN PALACE",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 469,
+    "type": "TPS",
+    "name": "KUWUKAN",
+    "address": "KUWUKAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 470,
+    "type": "TPS",
+    "name": "HOTEL SATELIT",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 471,
+    "type": "TPS",
+    "name": "WISATA BUKIT MAS II",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 473,
+    "type": "TPS",
+    "name": "PRAMBANAN RESIDENCE",
+    "address": "PRAMBANAN RESIDENCE",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 474,
+    "type": "TPS",
+    "name": "PT.TEDJA SEKAWAN COCOA INDUSTRI",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 475,
+    "type": "TPS",
+    "name": "SUMATRA 36 APARTEMEN",
+    "address": "Jl. Sumatra No. 36 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 476,
+    "type": "TPS",
+    "name": "JL.A.YANI",
+    "address": "JL.A.YANI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 477,
+    "type": "TPS",
+    "name": "BG JUNCTION",
+    "address": "Jl. Bubutan Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 478,
+    "type": "TPS",
+    "name": "PT. SEGAR MAS PRIMA",
+    "address": "Jl. Dupak No.10 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 479,
+    "type": "TPS",
+    "name": "PT. SEGAR MAS PRIMA",
+    "address": "Jl. Dupak No. 10 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 480,
+    "type": "TPS",
+    "name": "CV. PELITA MAS ANUGERAH",
+    "address": "Jl. Pakal AMD Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 481,
+    "type": "TPS",
+    "name": "WEDDING DEKORASI",
+    "address": "Jl. Karang Poh 18 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 483,
+    "type": "TPS",
+    "name": "JL.KALIANGET",
+    "address": "Jl. Kalianget Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 484,
+    "type": "TPS",
+    "name": "PS.KRAMPUNG",
+    "address": "Jl. Tambak Rejo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 485,
+    "type": "TPS",
+    "name": "EAST COAST CENTER",
+    "address": "Jl. Kejawan Putih Mutiara Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 487,
+    "type": "TPS",
+    "name": "PT.SEGAR MAS PRIMA",
+    "address": "PT.SEGAR MAS PRIMA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 488,
+    "type": "TPS",
+    "name": "Jl. GENTENG KALI NO.73-75 SBY",
+    "address": "Jl. Genteng Kali No.73-75 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 489,
+    "type": "TPS",
+    "name": "JL.GENTENG KALI",
+    "address": "JL.GENTENG KALI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 490,
+    "type": "TPS",
+    "name": "JL.GENTENG KALI NO.73-75 SBY",
+    "address": "JL.GENTENG KALI NO.73-75 SBY",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 492,
+    "type": "TPS",
+    "name": "PRAMBANAN RESIDENCE",
+    "address": "PRAMBANAN RESIDENCE",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 493,
+    "type": "TPS",
+    "name": "UD.AMIN JAYA",
+    "address": "Jl. Margomulyo Permai Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 494,
+    "type": "TPS",
+    "name": "MADE",
+    "address": "MADE",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 495,
+    "type": "TPS",
+    "name": "MAKAM LIDAH KULON",
+    "address": "MAKAM LIDAH KULON",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 496,
+    "type": "TPS",
+    "name": "WISMA LIDAH KULON",
+    "address": "WISMA LIDAH KULON",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 497,
+    "type": "TPS",
+    "name": "PAKUWON INDAH II",
+    "address": "Perum Pakuwon Indah Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 498,
+    "type": "TPS",
+    "name": "HOTEL SHANGRILLA",
+    "address": "Jl. Mayjen Sungkono 120 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 499,
+    "type": "TPS",
+    "name": "HOTEL SHANGRILLA",
+    "address": "Jl. Mayjen Sungkono 120 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 500,
+    "type": "TPS",
+    "name": "JL. TAMBAK ASRI 244",
+    "address": "JL. TAMBAK ASRI 244 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 501,
+    "type": "TPS",
+    "name": "PASMAR MARINIR",
+    "address": "PASMAR MARINIR",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 502,
+    "type": "TPS",
+    "name": "RSI A.YANI",
+    "address": "Jl. A. Yani Surabaya",
+    "latitude": 25,
+    "longitude": 25
+  },
+  {
+    "legacyId": 503,
+    "type": "TPS",
+    "name": "MOROKREMBANGAN",
+    "address": "MOROKREMBANGAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 504,
+    "type": "TPS",
+    "name": "HOTEL MAJAPAHIT",
+    "address": "HOTEL MAJAPAHIT",
+    "latitude": 25,
+    "longitude": 25
+  },
+  {
+    "legacyId": 505,
+    "type": "TPS",
+    "name": "ROTERM",
+    "address": "Jl. Roterm Perak Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 506,
+    "type": "TPS",
+    "name": "KODOMINIUM GRAHA FAMILY",
+    "address": "Perum Graha Family",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 507,
+    "type": "TPS",
+    "name": "PLAZA GRAHA FAMILY",
+    "address": "PLAZA GRAHA FAMILY",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 508,
+    "type": "TPS",
+    "name": "KAMPUS C UNAIR",
+    "address": "Kampus C Mulyorejo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 509,
+    "type": "TPS",
+    "name": "HOTEL NOVOTEL",
+    "address": "Jl. Ngagel Surabaya",
+    "latitude": 30,
+    "longitude": 30
+  },
+  {
+    "legacyId": 510,
+    "type": "TPS",
+    "name": "KONDOMINIUM GRAHA FAMILY",
+    "address": "KONDOMINIUM GRAHA FAMILY",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 512,
+    "type": "TPA",
+    "name": "TPA BENOWO",
+    "address": "Jl. Benowo",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 513,
+    "type": "TPS",
+    "name": "PT. GUNAWAN JAYA STEEL",
+    "address": "Jl. Margomulyo no. 29 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 514,
+    "type": "TPS",
+    "name": "CARREFOUR GEMBOMG",
+    "address": "Jl. Gembong Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 515,
+    "type": "TPS",
+    "name": "GAPURA ASDP",
+    "address": "Jl. Kalimas Baru Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 516,
+    "type": "TPS",
+    "name": "UD. MARTA ELEKTRONIK",
+    "address": "Jl. Tambak Oso Wilangon Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 517,
+    "type": "TPS",
+    "name": "PT.GUNAWAN JAYA STEEL",
+    "address": "PT.GUNAWAN JAYA STEEL",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 518,
+    "type": "TPS",
+    "name": "PS.WONOKUSUMO",
+    "address": "PS.WONOKUSUMO",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 519,
+    "type": "TPS",
+    "name": "CV.PELITA MAS ANUGERAH",
+    "address": "CV.PELITA MAS ANUGERAH",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 520,
+    "type": "TPS",
+    "name": "RS.JIWA MENUR",
+    "address": "Jl. Raya Menur 120 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 521,
+    "type": "TPS",
+    "name": "RSI.NUN",
+    "address": "Jl. Manukan Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 522,
+    "type": "TPS",
+    "name": "LARANGAN",
+    "address": "LARANGAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 523,
+    "type": "TPS",
+    "name": "PS.BUAH DUPAK RUKUN",
+    "address": "Jl. Dupak Rukun Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 524,
+    "type": "TPS",
+    "name": "KODAM V BRAWIJAYA",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 525,
+    "type": "TPS",
+    "name": "BULAK BANTENG BANDAREJO",
+    "address": "BULAK BANTENG BANDAREJO",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 526,
+    "type": "TPS",
+    "name": "HOTEL BUMI SURABAYA",
+    "address": "Jl. Basuki Rahmat Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 527,
+    "type": "TPS",
+    "name": "HOTEL SWISS BELINN TUNJUNGAN",
+    "address": "Jl. Tunjungan 101 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 528,
+    "type": "TPS",
+    "name": "SKYWALKER PJU",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 529,
+    "type": "TPS",
+    "name": "YUSTISI",
+    "address": "YUSTISI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 530,
+    "type": "TPS",
+    "name": "SAMPAH DEKORASI",
+    "address": "DEKORASI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 531,
+    "type": "TPS",
+    "name": "SARANA",
+    "address": "SARANA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 532,
+    "type": "TPS",
+    "name": "SKYWALKER TAMAN",
+    "address": "SKYWALKER TAMAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 533,
+    "type": "TPS",
+    "name": "PT.PDS",
+    "address": "Jl. Perak Timur 620 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 534,
+    "type": "TPS",
+    "name": "PT. JAYA PARI STEEL",
+    "address": "Jl. Raya Margomulyo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 535,
+    "type": "TPS",
+    "name": "APARTEMEN SUMATRA 36",
+    "address": "Jl. Sumatra 36 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 537,
+    "type": "TPS",
+    "name": "PT. BUMI MASPION (Unit IV)",
+    "address": "Jl. Romokalisari Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 538,
+    "type": "TPS",
+    "name": "PT.BUMI MASPION (UNIT IV)",
+    "address": "PT.BUMI MASPION (UNIT IV)",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 539,
+    "type": "TPS",
+    "name": "RUSUN ROMOKALISARI",
+    "address": "RUSUN ROMOKALISARI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 540,
+    "type": "TPS",
+    "name": "PERUMAHAN DARMO HILL",
+    "address": "Jl. Mayjen Sungkono Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 541,
+    "type": "TPS",
+    "name": "PT SUCOFINDO (Persero)",
+    "address": "Jl. A. Yani No. 315 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 542,
+    "type": "TPS",
+    "name": "RUKO 21 KLAMPIS",
+    "address": "Ruko 21 Klampis Blok A-3 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 544,
+    "type": "TPS",
+    "name": "MARVELL CITY MALL",
+    "address": "Jl. Ngagel Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 545,
+    "type": "TPS",
+    "name": "PT. YOSOMULYO JAJAG",
+    "address": "Jl. Margomulyo 67 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 546,
+    "type": "TPS",
+    "name": "PT. PP (Persero) Tbk.",
+    "address": "Jl. Raya Tidar 360 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 547,
+    "type": "TPS",
+    "name": "LONTAR KELURAHAN",
+    "address": "LONTAR KELURAHAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 548,
+    "type": "TPS",
+    "name": "RUMAH DINAS MARINIR",
+    "address": "RUMAH DINAS MARINIR",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 549,
+    "type": "TPS",
+    "name": "RUMDIN KARANGPILANG",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 550,
+    "type": "TPS",
+    "name": "PT. INDOAGRI LESTARI ABADI",
+    "address": "Jl. Tanjung Mutiara Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 551,
+    "type": "TPS",
+    "name": "HOTEL SAHID",
+    "address": "Jl. Sumatra Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 552,
+    "type": "TPS",
+    "name": "SUMUR WELUT",
+    "address": "SUMUR WELUT",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 553,
+    "type": "TPS",
+    "name": "PT.PELINDO III",
+    "address": "Jl. Perak Timur 620 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 554,
+    "type": "TPS",
+    "name": "VASA HOTEL",
+    "address": "Jl. HR. Muhammad 31 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 555,
+    "type": "TPS",
+    "name": "OPERASIONAL",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 556,
+    "type": "TPS",
+    "name": "SKYWALKER DEKORASI",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 557,
+    "type": "TPS",
+    "name": "BABADAN INDAH",
+    "address": "BABADAN INDAH",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 558,
+    "type": "TPS",
+    "name": "PEDESTRIAN",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 559,
+    "type": "TPS",
+    "name": "PT.GELORA DJAJA",
+    "address": "Jl. Buntaran Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 560,
+    "type": "TPS",
+    "name": "SURABAYA TOWN SQUARE",
+    "address": "Jl. A. Yani Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 561,
+    "type": "TPS",
+    "name": "RM.BANDAR DJAKARTA",
+    "address": "Jl. HR. Muhammad No. 360 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 562,
+    "type": "TPS",
+    "name": "CV. PETRO JAYA",
+    "address": "Jl. Tambak Oso Wilangon 2-4 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 563,
+    "type": "TPS",
+    "name": "PS.MODERN",
+    "address": "Jl. Raya Darmo Permai II Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 564,
+    "type": "TPS",
+    "name": "APARTEMEN PUNCAK PERMAI",
+    "address": "Jl. Darmo Permai III Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 565,
+    "type": "TPS",
+    "name": "A.PUNCAK BUKIT GOLF",
+    "address": "Jl. Bukit Darmo Boulevard Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 566,
+    "type": "TPS",
+    "name": "A.GUNAWANGSA MENUR",
+    "address": "Jl. Menur Pumpungan Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 567,
+    "type": "TPS",
+    "name": "TRANSMART RUNGKUT",
+    "address": "Jl. Raya Kalirungkut Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 568,
+    "type": "TPS",
+    "name": "PT.KINARA GILANG SEMESTA",
+    "address": "Jl. Lebak Jaya Tengah 24 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 569,
+    "type": "TPS",
+    "name": "CV.MEKAR JAYA ABADI",
+    "address": "Jl. Ngagel 165 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 570,
+    "type": "TPS",
+    "name": "KILINIK FERINA",
+    "address": "Jl.Irian Barat Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 571,
+    "type": "TPS",
+    "name": "KILINIK FERINA",
+    "address": "Jl.Irian Barat Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 572,
+    "type": "TPS",
+    "name": "KLINIK FERINA",
+    "address": "Jl.Irian Barat Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 573,
+    "type": "TPS",
+    "name": "PT.MAGI",
+    "address": "Jl.Kedung Baruk Tengah 8 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 574,
+    "type": "TPS",
+    "name": "HOTEL CIPUTRA WORLD",
+    "address": "Jl. Mayjen Sungkono Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 575,
+    "type": "TPS",
+    "name": "HOTEL SWISS BELLIN MANYAR",
+    "address": "Jl. Manyar Kertoarjo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 576,
+    "type": "TPS",
+    "name": "BENDUNGAN SUMUR WELUT",
+    "address": "BENDUNGAN SUMUR WELUT",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 577,
+    "type": "TPS",
+    "name": "PT.SPINDO",
+    "address": "Jl. WaruGunung Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 578,
+    "type": "TPS",
+    "name": "BENOWO KRAJAN",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 579,
+    "type": "TPS",
+    "name": "BENOWO KRAJAN",
+    "address": "BENOWO KRAJAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 580,
+    "type": "TPS",
+    "name": "BABATAN PRATAMA",
+    "address": "BABATAN PRATAMA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 581,
+    "type": "TPS",
+    "name": "PS. TURI BARU TAHAP 3",
+    "address": "Jl. Dupak Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 582,
+    "type": "TPS",
+    "name": "RSIA PUTRI",
+    "address": "Jl. Arief Rahman Hakim 122 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 583,
+    "type": "TPS",
+    "name": "SAWO BRINGIN",
+    "address": "SAWO BRINGIN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 584,
+    "type": "TPS",
+    "name": "APARTEMEN MANSION",
+    "address": "Jl.Puncak Bukit Lontar Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 585,
+    "type": "TPS",
+    "name": "OPAK MARINIR",
+    "address": "OPAK MARINIR",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 586,
+    "type": "TPS",
+    "name": "PT.MULTILINE",
+    "address": "Jl.Kalianak Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 587,
+    "type": "TPS",
+    "name": "PT. CENTRAL PROTEINA PRIMA",
+    "address": "Jl. Dupak Rukun no.81 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 588,
+    "type": "TPS",
+    "name": "PT.SAMATOR LAND",
+    "address": "Jl. Kedung Baruk 26-28 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 589,
+    "type": "TPS",
+    "name": "SIDOREJO PAKAL",
+    "address": "SIDOREJO PAKAL",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 590,
+    "type": "TPS",
+    "name": "HOTEL JW MARRIOT",
+    "address": "Jl. Embong Malang Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 591,
+    "type": "TPS",
+    "name": "PT.PERTAMINA",
+    "address": "Jl. Jagir Wonokromo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 592,
+    "type": "TPS",
+    "name": "RUKOM MERR",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 593,
+    "type": "TPS",
+    "name": "WIYUNG PRATAMA",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 594,
+    "type": "TPS",
+    "name": "MARINIR OPAK",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 595,
+    "type": "TPS",
+    "name": "KEJATI",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 596,
+    "type": "TPS",
+    "name": "PS. ASEM",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 597,
+    "type": "TPS",
+    "name": "PS. BUAH PENELEH",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 598,
+    "type": "TPS",
+    "name": "KRENUK",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 599,
+    "type": "TPS",
+    "name": "KRENUK",
+    "address": "KRENUK",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 600,
+    "type": "TPS",
+    "name": "LENMARC MALL",
+    "address": "Jl. Darmo Bukit Boulevard Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 601,
+    "type": "TPS",
+    "name": "TP.6",
+    "address": "Jl. Basuki Rahmat No. 8-12 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 602,
+    "type": "TPS",
+    "name": "KANTOR PAJAK",
+    "address": "Jl.Jagir Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 603,
+    "type": "TPS",
+    "name": "EDUCITY RESIDENCE",
+    "address": "Jl. Kalisari Selatan 1/1A Pakuwon City Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 604,
+    "type": "TPS",
+    "name": "LEMPUNG PERDANA",
+    "address": "LEMPUNG PERDANA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 605,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH MS GREGES",
+    "address": "ANGKUTAN SAMPAH MS GREGES",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 606,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA DUPAK",
+    "address": "ANGKUTAN SAMPAH PA DUPAK",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 607,
+    "type": "TPS",
+    "name": "TAMBAK WEDI",
+    "address": "JL. TAMBAK WEDI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 608,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA GUNUNGSARI II",
+    "address": "ANGKUTAN SAMPAH PA GUNUNGSARI II",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 609,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH MS KALIDAMI",
+    "address": "ANGKUTAN SAMPAH MS KALIDAMI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 610,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH MS BRATANG",
+    "address": "ANGKUTAN SAMPAH MS BRATANG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 611,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH MS WONOREJO II",
+    "address": "ANGKUTAN SAMPAH MS WONOREJO II",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 612,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA MUNGSING",
+    "address": "ANGKUTAN SAMPAH PA MUNGSING",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 613,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA PESAPEN",
+    "address": "ANGKUTAN SAMPAH PA PESAPEN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 614,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH MS SALATIGA",
+    "address": "ANGKUTAN SAMPAH MS SALATIGA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 615,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA KENJERAN I / ASAP-ASAP",
+    "address": "ANGKUTAN SAMPAH PA KENJERAN I / ASAP-ASAP",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 616,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA BALONG II",
+    "address": "ANGKUTAN SAMPAH PA BALONG II",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 617,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA KALIJUDAN",
+    "address": "ANGKUTAN SAMPAH PA KALIJUDAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 618,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA JAGIR KALIMIR",
+    "address": "ANGKUTAN SAMPAH PA JAGIR KALIMIR",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 619,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA KALISARI",
+    "address": "ANGKUTAN SAMPAH PA KALISARI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 620,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA RING ROAD ITS",
+    "address": "ANGKUTAN SAMPAH PA RING ROAD ITS",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 621,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA SEMOLO I",
+    "address": "ANGKUTAN SAMPAH PA SEMOLO I",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 622,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA WONOREJO I",
+    "address": "ANGKUTAN SAMPAH PA WONOREJO I",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 623,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH MS JEBLOKAN",
+    "address": "ANGKUTAN SAMPAH MS JEBLOKAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 624,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH SCREEN MANUAL BANYU URIP",
+    "address": "ANGKUTAN SAMPAH SCREEN MANUAL BANYU URIP",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 625,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA JAMBANGAN",
+    "address": "ANGKUTAN SAMPAH PA JAMBANGAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 626,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA BRATANG",
+    "address": "ANGKUTAN SAMPAH PA BRATANG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 627,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA KEBON AGUNG",
+    "address": "ANGKUTAN SAMPAH PA KEBON AGUNG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 628,
+    "type": "TPS",
+    "name": "PT.PULAUINTAN",
+    "address": "Jl. Baulevard Family Utara Blok W Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 629,
+    "type": "TPS",
+    "name": "PT. HARMONY",
+    "address": "Jl. Romokalisari Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 630,
+    "type": "TPS",
+    "name": "RUSUN SUMUR WELUT",
+    "address": "RUSUN SUMUR WELUT",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 631,
+    "type": "TPS",
+    "name": "PT.CITRA PRIMA CONTAINER",
+    "address": "Jl. Margomulyo No.44 Blok G-21 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 632,
+    "type": "TPS",
+    "name": "HOTEL WYNDHAM",
+    "address": "Jl. Basuki Rahmat No. 67-73 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 633,
+    "type": "TPS",
+    "name": "PODOMORO",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 634,
+    "type": "TPS",
+    "name": "PT. BAHAGIA INTRA NIAGA",
+    "address": "Jl. Simo Pomahan No. 37P Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 635,
+    "type": "TPS",
+    "name": "KAMPUS B UNAIR",
+    "address": "Jl. Airlangga Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 636,
+    "type": "TPS",
+    "name": "HOTEL RICH PLACE",
+    "address": "Jl. HR. Muhammad  Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 637,
+    "type": "TPS",
+    "name": "PT.WIKA (Persero) Tbk.",
+    "address": "Proyek Terminal Teluk Lamong Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 638,
+    "type": "TPS",
+    "name": "PT.TIGA MENARA",
+    "address": "Jl. Tanjungsari Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 639,
+    "type": "TPS",
+    "name": "PERUM DIAN REGENCY 2",
+    "address": "Jl. Sukolilo Kasih 1 No. 19 Keputih Sukolilo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 640,
+    "type": "TPS",
+    "name": "RS.HAJI SUKOLILO",
+    "address": "Jl. Manyar Kertoadi Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 641,
+    "type": "TPS",
+    "name": "HOTEL DAFAM",
+    "address": "Jl. Ir. Soekarno Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 642,
+    "type": "TPS",
+    "name": "POLITEKNIK PELAYARAN SBY",
+    "address": "Jl. Gunung Anyar Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 643,
+    "type": "TPS",
+    "name": "RS.MATA G.KEBONSARI",
+    "address": "Jl.Gayung Kebonsari No.49 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 644,
+    "type": "TPS",
+    "name": "JURANG INDAH",
+    "address": "JURANG INDAH",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 645,
+    "type": "TPS",
+    "name": "PT.GEMA LESTARI INDONESIA",
+    "address": "Jl. Romokalisari Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 646,
+    "type": "TPS",
+    "name": "APARTEMEN Skylof &The; Voila",
+    "address": "Jl. Mayjen Sungkono 87-89 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 647,
+    "type": "TPS",
+    "name": "PT.SUPARMA",
+    "address": "Jl. Mastrip Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 648,
+    "type": "TPS",
+    "name": "DHARMAHUSADA MAS",
+    "address": "Jl. Mulyosari Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 649,
+    "type": "TPS",
+    "name": "SUKOLILO  DIAN REGENCY 2",
+    "address": "Jl. sukolilo dian regency surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 650,
+    "type": "TPS",
+    "name": "GREGES TIMUR",
+    "address": "GREGES TIMUR",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 651,
+    "type": "TPS",
+    "name": "LARRITA BAKERY SHOP",
+    "address": "Jl. Rungkut Madya No. 163 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 652,
+    "type": "TPS",
+    "name": "HOTEL BATIQA",
+    "address": "Jl. Darmo Kali Surabay",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 653,
+    "type": "TPS",
+    "name": "PT.DIAN MEGA SARANA INDONESIA",
+    "address": "Jl. Johor Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 654,
+    "type": "TPS",
+    "name": "KEPUTIH MAKAM",
+    "address": "KEPUTIH MAKAM",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 655,
+    "type": "TPS",
+    "name": "BABATAN MUKTI",
+    "address": "BABATAN MUKTI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 656,
+    "type": "TPS",
+    "name": "PT.PULAUINTAN MANYAR",
+    "address": "Jl. Manyar Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 657,
+    "type": "TPS",
+    "name": "MERCURE ACCOR HOTEL",
+    "address": "Jl. Darmo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 658,
+    "type": "TPS",
+    "name": "UD.SUMBER KENCONO",
+    "address": "Jl. Dinoyo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 659,
+    "type": "TPS",
+    "name": "RS.PREMIER SBY",
+    "address": "Jl. Nginden Intan Barat Blok B Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 660,
+    "type": "TPS",
+    "name": "PS BABA'AN",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 661,
+    "type": "TPS",
+    "name": "SURABAYA TOWN SQUARE",
+    "address": "SURABAYA TOWN SQUARE",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 662,
+    "type": "TPS",
+    "name": "PS.KEPUTRAN SELATAN II",
+    "address": "PS.KEPUTRAN SELATAN II",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 663,
+    "type": "TPS",
+    "name": "RS.ASRAMA HAJI SBY",
+    "address": "RS.ASRAMA HAJI SBY",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 664,
+    "type": "TPS",
+    "name": "BULAK BANTENG II",
+    "address": "BULAK BANTENG II",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 665,
+    "type": "TPS",
+    "name": "PAKAL SIDOREJO",
+    "address": "PAKAL SIDOREJO",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 666,
+    "type": "TPS",
+    "name": "CV.SINAR BAJA ELECTRIC",
+    "address": "Jl. Margomulyo No.5 Tandes Surabaya",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 667,
+    "type": "TPS",
+    "name": "MRUTU KALIANYAR II",
+    "address": "MRUTU KALIANYAR II",
+    "latitude": -7.278607,
+    "longitude": 112.762779
+  },
+  {
+    "legacyId": 668,
+    "type": "TPS",
+    "name": "CV.SUN BOGA",
+    "address": "Jl. Dinoyo Tangsi 6 No.18 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 669,
+    "type": "TPS",
+    "name": "GUDANG BUAH A.JAIS",
+    "address": "Jl.Achmad Jais no.25-27 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 670,
+    "type": "TPS",
+    "name": "MARGOMULYO INDAH",
+    "address": "Jl.Margomulyo Indah Blok-B No.6",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 671,
+    "type": "TPS",
+    "name": "PT.PUSAKA NURI UTAMA",
+    "address": "Jl. Raya Darmokali No. 2-6 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 672,
+    "type": "TPS",
+    "name": "PT.WARNA WARNI MEDIA",
+    "address": "Jl. Pemuda Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 673,
+    "type": "TPS",
+    "name": "GEDUNG JATIM EXPO",
+    "address": "Jl. A.Yani Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 674,
+    "type": "TPS",
+    "name": "PLAZA MARINA",
+    "address": "Jl. Raya Margorejo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 675,
+    "type": "TPS",
+    "name": "IGOR'S PASTRY",
+    "address": "Jl. Biliton 51 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 676,
+    "type": "TPS",
+    "name": "RS.HUSADA UTAMA",
+    "address": "Jl. Prof.Dr.Moestopo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 677,
+    "type": "TPS",
+    "name": "IGOR'S PASTRY",
+    "address": "JL. BILITON NO.51 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 678,
+    "type": "TPS",
+    "name": "TPS TAMBAK REJO",
+    "address": "TPS TAMBAK REJO",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 679,
+    "type": "TPS",
+    "name": "KASUARI",
+    "address": "KASUARI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 680,
+    "type": "TPS",
+    "name": "PT.KAMADJAJA LOGISTIC",
+    "address": "PT.KAMADJAJA LOGISTIC",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 681,
+    "type": "TPS",
+    "name": "PT.MITRA PENTA",
+    "address": "JL. MANYAR KARTIKA II NO.9",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 682,
+    "type": "TPS",
+    "name": "PT.JAPFA COMFEED Margomulyo",
+    "address": "Jl. Margomulyo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 683,
+    "type": "TPS",
+    "name": "PT.PAL INDONESIA",
+    "address": "Jl. Ujung Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 684,
+    "type": "TPS",
+    "name": "PT.MAJU TERUS KAWAN",
+    "address": "Jl. Tanjungsari 77 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 685,
+    "type": "TPS",
+    "name": "UD.WISMA INDAH",
+    "address": "JL.KARANG ASEM 16E",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 686,
+    "type": "TPS",
+    "name": "SKYLOFT SOHO & VOILA",
+    "address": "JL. MAYJEND SUNGKONO 87-89",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 687,
+    "type": "TPS",
+    "name": "PT.GLOBAL INTERINTI INDUSTRY",
+    "address": "JL. TANJUNG TEMBAGA NO.8",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 688,
+    "type": "TPS",
+    "name": "BALE HINGGIL",
+    "address": "MEDOKAN SEMAMPIR INDAH",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 689,
+    "type": "TPS",
+    "name": "BALAI YASA (PT.KAI)",
+    "address": "Jl. Tapaksiring No. 5 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 690,
+    "type": "TPS",
+    "name": "UINSA",
+    "address": "IAIN SUNAN AMPEL",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 691,
+    "type": "TPS",
+    "name": "KAMPOENG ROTI",
+    "address": "Jl. Raya Wiyung Gg. Pasar No. 162C Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 692,
+    "type": "TPS",
+    "name": "PT.HENSON FARMA",
+    "address": "JL. KARANG PILANG BARAT NO.200",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 693,
+    "type": "TPS",
+    "name": "APARTEMEN PRAXIS",
+    "address": "APARTEMEN PRAXIS",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 694,
+    "type": "TPS",
+    "name": "MOVENPICK HOTEL SURABAYA CITY",
+    "address": "Jl. A. Yani No. 71 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 695,
+    "type": "TPS",
+    "name": "BINTANG DIPONGGO",
+    "address": "BINTANG DIPONGGO",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 696,
+    "type": "TPS",
+    "name": "PT.SAMUDRA",
+    "address": "JL.MARGOMULYO",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 697,
+    "type": "TPS",
+    "name": "NEW ROYAL RESTAURANT",
+    "address": "JL. MANYAR KERTOARJO 39-41",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 698,
+    "type": "TPS",
+    "name": "ROYAL RESTORAN",
+    "address": "Jl. Manyar Kertoarjo Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 699,
+    "type": "TPS",
+    "name": "CV.BEAUTY KASATAMA",
+    "address": "JL. KAPASARI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 700,
+    "type": "TPS",
+    "name": "RUMAH DURIAN CEMARA MAS",
+    "address": "RUMAH DURIAN CEMARA MAS",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 701,
+    "type": "TPS",
+    "name": "RUNGKUT MEGAH RAYA",
+    "address": "RUNGKUT MEGAH RAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 702,
+    "type": "TPS",
+    "name": "KODAM KARTIKA JAYA",
+    "address": "KODAM KARTIKA JAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 703,
+    "type": "TPS",
+    "name": "PT. OMNIFLORA",
+    "address": "JL. MUSI NO.9",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 704,
+    "type": "TPS",
+    "name": "A. PUNCAK DHARMAHUSADA",
+    "address": "Jl. Ir. Soekarno Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 705,
+    "type": "TPS",
+    "name": "ISLAMIC CENTER",
+    "address": "JL. DUKUH KUPANG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 706,
+    "type": "TPS",
+    "name": "BALAI JASA KONSTRUKSI",
+    "address": "Jl. Bukit Darmo Raya Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 707,
+    "type": "TPS",
+    "name": "MULYO MUKTI",
+    "address": "MULYO MUKTI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 708,
+    "type": "TPS",
+    "name": "FOOD JUNCTION",
+    "address": "BANJAR SUGIHAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 709,
+    "type": "TPS",
+    "name": "P3SRS PAKUWON MALL BLOK 3",
+    "address": "JL. PUNCAK INDAH LONTAR NO. 2",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 710,
+    "type": "TPS",
+    "name": "RS.MUJI RAHAYU",
+    "address": "RS.MUJI RAHAYU",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 711,
+    "type": "TPS",
+    "name": "KODIKLATAL BUMIMORO",
+    "address": "KODIKLATAL BUMIMORO",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 712,
+    "type": "TPS",
+    "name": "PT. SINAR AGUNG MAKMUR",
+    "address": "JL. WONOSARI LOR 1 / 5-7",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 713,
+    "type": "TPS",
+    "name": "PT. WIJAYA KARYA FLYOVER TELUK LAMONG",
+    "address": "PT. WIJAYA KARYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 714,
+    "type": "TPS",
+    "name": "PT. TAIYOUNG ENGREEN",
+    "address": "Jl. Tanjungsari 73-75",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 715,
+    "type": "TPS",
+    "name": "GRAND PAKUWON",
+    "address": "JL. MARGOMULYO INDAH BLOK C NO. 39",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 716,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA PETEKAN",
+    "address": "JL.KALIMAS BARU NO.60",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 717,
+    "type": "TPS",
+    "name": "MICHAEL FLOWER DESIGN",
+    "address": "JL. KEDUNG COWEK 135K",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 718,
+    "type": "TPS",
+    "name": "PT. BHIRAWA STEEL",
+    "address": "JL. MARGOMULYO NO.6",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 719,
+    "type": "TPS",
+    "name": "HOTEL ZEST JEMURSARI",
+    "address": "JL. RAYA PRAPEN NO.266",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 720,
+    "type": "TPS",
+    "name": "TANTO TANJUNG TEMBAGA",
+    "address": "JL. TANJUNG TEMBAGA NO.1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 721,
+    "type": "TPS",
+    "name": "TANTO PRAPAT KURUNG",
+    "address": "JL. PRAPAT KURUNG SELATAN NO.17",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 722,
+    "type": "TPS",
+    "name": "TANTO TELUK KUMAI",
+    "address": "JL. TELUK KUMAI TIMUR NO.8-12",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 723,
+    "type": "TPS",
+    "name": "TANTO ROMOKALISARI",
+    "address": "JL. ROMOKALISARI NO.84",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 724,
+    "type": "TPS",
+    "name": "PT.MASAJI TATANAN KONTENER INDONESIA",
+    "address": "JL. GREGES JAYA III NO. 2-4-6",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 725,
+    "type": "TPS",
+    "name": "HOTEL IBIS STYLE JEMURSARI",
+    "address": "JL. JEMURSARI 110-112",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 726,
+    "type": "TPS",
+    "name": "ONE EAST RESIDENCE",
+    "address": "JL. KERTAJAYA INDAH 79",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 727,
+    "type": "TPS",
+    "name": "TAMANSARI PAPILIO",
+    "address": "JL. A.YANI 176-178",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 728,
+    "type": "TPS",
+    "name": "CV.KERAVINDO SURYATAMA",
+    "address": "JL. KALIMAS BARAT 57A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 729,
+    "type": "TPS",
+    "name": "MANYAR BUKTONG",
+    "address": "MANYAR BUKTONG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 730,
+    "type": "TPS",
+    "name": "KERTOPATEN",
+    "address": "KERTOPATEN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 731,
+    "type": "TPS",
+    "name": "MNC GRAHA SURABAYA",
+    "address": "JL. TAMAN ADE IRMA SURYANI NASUTION NO. 21",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 732,
+    "type": "TPS",
+    "name": "BANTARAN KALITEBU",
+    "address": "BANTARAN KALITEBU",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 733,
+    "type": "TPS",
+    "name": "TPS3R WARUGUNUNG",
+    "address": "TPS3R WARUGUNUNG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 734,
+    "type": "TPS",
+    "name": "JL.WARUGUNUNG",
+    "address": "JL.WARUGUNUNG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 735,
+    "type": "TPS",
+    "name": "ANGKUTAN SAMPAH PA DAN MS TAMBAK WEDI",
+    "address": "JL. ANGKUTAN SAMPAH PA DAN MS TAMBAK WEDI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 736,
+    "type": "TPS",
+    "name": "JERUK",
+    "address": "JERUK",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 737,
+    "type": "TPS",
+    "name": "APARTEMEN THE ROSEBAY",
+    "address": "JL. GOLF FAMILY BARAT VIII NO. 1-19",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 738,
+    "type": "TPS",
+    "name": "LAGOON AVENUE MALL",
+    "address": "JL. ABDUL WAHAB SIAMIN 9-10",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 739,
+    "type": "TPS",
+    "name": "APARTEMEN GRAHA GOLF",
+    "address": "JL. RAYA GOLF GRAHA FAMILY NO. 2",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 740,
+    "type": "TPS",
+    "name": "APARTEMEN THE VIA & THE VUE",
+    "address": "JL. PONDOK BLIMBING BLOK B2 NOMOR 22 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 741,
+    "type": "TPS",
+    "name": "PT. MEGA ARUNA NUSANTARA PROPERTI",
+    "address": "JL. TAMBAK OSOWILANGUN TIMUR SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 742,
+    "type": "TPS",
+    "name": "AYAM BAKAR PAK D",
+    "address": "JL. KEBONSARI 25F SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 743,
+    "type": "TPS",
+    "name": "RSI DARUS SYIFA",
+    "address": "JL. RAYA BENOWO NO. 5",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 744,
+    "type": "TPS",
+    "name": "PT.BRINGIN KARYA SEJAHTERA",
+    "address": "JL. BASUKI RAHMAT NO. 122-238",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 745,
+    "type": "TPS",
+    "name": "PERUM JASA TIRTA I",
+    "address": "JL. KARAH NO.6",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 746,
+    "type": "TPS",
+    "name": "PT. JAPFA INDOLAND",
+    "address": "JL. BASUKI RAHMAT 129-137",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 747,
+    "type": "TPS",
+    "name": "PT.INTILAND DEVELOPMENT TBK",
+    "address": "JL. PANGLIMA SUDIRMAN 101-103",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 748,
+    "type": "TPS",
+    "name": "P3SRS EASTCOAST MANSION",
+    "address": "JL. LAGUNA KEJAWAN PUTIH MUTIARA NO. 17A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 749,
+    "type": "TPS",
+    "name": "APARTEMEN TAMAN MELATI",
+    "address": "JL. MULYOREJO UTARA NO.201",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 750,
+    "type": "TPS",
+    "name": "PT.HUTOMO MANDALA RAHARJO",
+    "address": "KOMPLEK PERGUDANGAN MARGOMULYO JAYA BLOK F2",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 751,
+    "type": "TPS",
+    "name": "HOTEL WESTIN & FOUR POINTS",
+    "address": "JL. PUNCAK INDAH LONTAR NO.2",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 752,
+    "type": "TPS",
+    "name": "P3SRS EASTCOAST RESIDENCE",
+    "address": "JL. KALISARI TIMUR XVI NO.1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 753,
+    "type": "TPS",
+    "name": "PPK.PUNCAK MARINA SURABAYA",
+    "address": "JL. MARGOREJO INDAH XVII 2-4",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 754,
+    "type": "TPS",
+    "name": "TANTO TANJUNG EMAS",
+    "address": "JL. TANJUNG EMAS NO.1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 755,
+    "type": "TPS",
+    "name": "HYPERMART ARIEF RACHMAN HAKIM",
+    "address": "JL. ARIEF RACHMAN HAKIM NO.155",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 756,
+    "type": "TPS",
+    "name": "FOUR POINTS HOTEL TUNJUNGAN PLAZA",
+    "address": "JL. BASUKI RAHMAT NO. 6-12",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 757,
+    "type": "TPS",
+    "name": "HARRIS POPI HOTELS & CONVENTIONS GUBENG",
+    "address": "JL. BANGKA 8-18 GUBENG SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 758,
+    "type": "TPS",
+    "name": "MERCURE HOTEL SURABAYA MANYAR",
+    "address": "JL MANYAR KERTOARJO NO. 44 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 759,
+    "type": "TPS",
+    "name": "PT. MITRA ABADI WISESA",
+    "address": "JL. KALIMAS BARU POS III NO.138",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 760,
+    "type": "TPS",
+    "name": "RS. GOTONG ROYONG",
+    "address": "JL. MEDOKAN SEMAMPIR INDAH 97",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 761,
+    "type": "TPS",
+    "name": "RS.ADI HUSADA KAPASARI",
+    "address": "JL. KAPASARI NO.97-101 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 762,
+    "type": "TPS",
+    "name": "SENTRAL BAHANA EKATAMA",
+    "address": "JL. RAYA MANUKAN KULON 86 TANDES SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 763,
+    "type": "TPS",
+    "name": "P3SRS BESS MANSION",
+    "address": "JL. JEMURSARI NO. 15AA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 764,
+    "type": "TPS",
+    "name": "RESTORAN FOOD LOKAL GUBENG 66",
+    "address": "JL. RAYA GUBENG 66",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 765,
+    "type": "TPS",
+    "name": "PT.GITANUSA SARANA NIAGA",
+    "address": "JL. KAPAS KRAMPUNG 45",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 766,
+    "type": "TPS",
+    "name": "COMMUNEL CAFE",
+    "address": "JL. KENJERAN NO.271",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 767,
+    "type": "TPS",
+    "name": "BUKTONG",
+    "address": "BUKTONG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 768,
+    "type": "TPS",
+    "name": "KALITEBU",
+    "address": "KALITEBU",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 769,
+    "type": "TPS",
+    "name": "BRANJANGAN",
+    "address": "BRANJANGAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 770,
+    "type": "TPS",
+    "name": "ROYALE DURIAN",
+    "address": "JL. DR.IR SOEKARNO 88A SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 771,
+    "type": "TPS",
+    "name": "GRAND DAFAM SIGNATURE",
+    "address": "JL. KAYON NO 4-10 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 772,
+    "type": "TPS",
+    "name": "PT.TIRTAKENCANA TATAWARNA",
+    "address": "JL.A.YANI 317",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 773,
+    "type": "TPS",
+    "name": "SPAZIO TOWER",
+    "address": "JL. MAYJEND YONO SOEWOYO 35",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 774,
+    "type": "TPS",
+    "name": "SHERATON",
+    "address": "JL. EMBONG MALANG 25-31",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 775,
+    "type": "TPS",
+    "name": "PT.PUJI SURYA INDAH",
+    "address": "JL. DUPAK RUKUN N0.88",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 776,
+    "type": "TPS",
+    "name": "DOUBLETREE HILTON SURABAYA",
+    "address": "JL. TUNJUNGAN NO.12 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 777,
+    "type": "TPS",
+    "name": "PS.BUAH KOBLEN",
+    "address": "JL. KOBLEN KIDUL 18 SBY",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 778,
+    "type": "TPS",
+    "name": "HOTEL HARRIS SATELIT",
+    "address": "JL. HR MUHAMAD 2A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 779,
+    "type": "TPS",
+    "name": "HOTEL PLATINUM",
+    "address": "JL. TUNJUNGAN NO.11-25",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 780,
+    "type": "TPS",
+    "name": "HOTEL IBIS TIDAR",
+    "address": "JL. TIDAR NO.74",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 781,
+    "type": "TPS",
+    "name": "HOTEL PANA HOUSE",
+    "address": "JL. GAYUNG KEBONSARI 61-65",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 782,
+    "type": "TPS",
+    "name": "PT.MITRA TANGKAS PRATAMA",
+    "address": "JL. TAMBAK OSO WILANGUN MO.5",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 783,
+    "type": "TPS",
+    "name": "RS.MITRA KELUARGA KENJERAN",
+    "address": "JL. KENJERAN NO. 506",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 784,
+    "type": "TPS",
+    "name": "NGEMPLAK",
+    "address": "JL. NGEMPLAK",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 785,
+    "type": "TPS",
+    "name": "BANGKINGAN BARU",
+    "address": "BANGKINGAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 786,
+    "type": "TPS",
+    "name": "SAMBIKEREP",
+    "address": "SAMBIKEREP",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 787,
+    "type": "TPS",
+    "name": "RSPAL DR. RAMELAN",
+    "address": "JL. GADUNG NO.1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 788,
+    "type": "TPS",
+    "name": "UBAYA",
+    "address": "JL. NGAGEL JAYA SELATAN 169",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 789,
+    "type": "TPS",
+    "name": "MCDONALD'S KENJERAN",
+    "address": "JL. DR.IR SOEKARNO NO.6 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 790,
+    "type": "TPS",
+    "name": "THE VERTU APARTEMENT",
+    "address": "JL.MAYJEND SUNGKONO NO.87-89 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 791,
+    "type": "TPS",
+    "name": "P3SRSS CIPUTRA WORLD OFFICE",
+    "address": "JL. MAYJEND SUNGKONO 87-89 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 792,
+    "type": "TPS",
+    "name": "PAKUWON CITY 2",
+    "address": "JL.KALISARI SELATAN 1/1A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 793,
+    "type": "TPS",
+    "name": "MCDONALD'S MANYAR",
+    "address": "JL. RAYA MANYAR KERTOARJO NO.15",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 794,
+    "type": "TPS",
+    "name": "HOTEL IBIS BASRA",
+    "address": "JL. BASUKI RAHMAT 94-96",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 795,
+    "type": "TPS",
+    "name": "MCDONALD'S MULYOSARI",
+    "address": "JL. RAYA MULYOSARI KOMPLEK RUKO CENTRAL PARK AB-01",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 796,
+    "type": "TPS",
+    "name": "MCDONALD'S MERR",
+    "address": "JL. DR.IR SOEKARNO NO.218A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 797,
+    "type": "TPS",
+    "name": "MCDONALD'S MAYJEND SUNGKONO",
+    "address": "JL. RAYA MAYJEND SUNGKONO NO. 153",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 798,
+    "type": "TPS",
+    "name": "PERUMAHAN GRAND HARVEST",
+    "address": "JL. GRAHA BALAS (ESTATE MANAJEMENT OFFICE)",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 799,
+    "type": "TPS",
+    "name": "MCDONALD'S WIYUNG",
+    "address": "JL. RAYA MENGANTI BABATAN 640",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 800,
+    "type": "TPS",
+    "name": "MCDONALD'S GRAHA FAMILY",
+    "address": "JL. GRAHA FAMILY UTARA KL 5 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 801,
+    "type": "TPS",
+    "name": "MCDONALD'S BASUKI RAHMAT",
+    "address": "JL. BASUKI RAHMAT 21-23",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 802,
+    "type": "TPS",
+    "name": "PASAR INDUK SIDOTOPO",
+    "address": "JL. SIDOTOPO LOR 68a",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 803,
+    "type": "TPS",
+    "name": "GRAND DHAMAHUSADA LAGOON",
+    "address": "JL. MULYOSARI NO 366A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 804,
+    "type": "TPS",
+    "name": "UPN",
+    "address": "JL. RUNGKUT MADYA GUNUNG ANYAR NO.1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 805,
+    "type": "TPS",
+    "name": "SATORIA TOWER",
+    "address": "JL. PRADAH JAYA 1 NO.1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 806,
+    "type": "TPS",
+    "name": "RUMAH SAKIT UBAYA",
+    "address": "JL. PANJANG JIWO PERMAI NO. 87-89",
+    "latitude": -7.314172,
+    "longitude": 112.765817
+  },
+  {
+    "legacyId": 807,
+    "type": "TPS",
+    "name": "HOTEL FAIRFIELD BY MARRIOTT",
+    "address": "JL. MAYJEND SUNGKONO 178",
+    "latitude": -7.288786,
+    "longitude": 112.71063
+  },
+  {
+    "legacyId": 808,
+    "type": "TPS",
+    "name": "PT. FORMOSA SEJATI LOGISTICS",
+    "address": "JL. SUKOMANUNGGAL NO.107",
+    "latitude": -7.263704,
+    "longitude": 112.696237
+  },
+  {
+    "legacyId": 809,
+    "type": "TPS",
+    "name": "TRANS ICON MALL",
+    "address": "JL. A.YANI NO.260",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 810,
+    "type": "TPS",
+    "name": "PT. ALFA VIKTORI FAMILIA",
+    "address": "JL. MUHAMMAD NOER NP.215",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 811,
+    "type": "TPS",
+    "name": "PT. WELLSUN PLASTIC TECHNOLOGY",
+    "address": "JL. RAYA MANUKAN KULON NO. 96-98",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 812,
+    "type": "TPS",
+    "name": "P3SRS VOZA OFFICE",
+    "address": "JL. HR MUHAMMAD NO. 31",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 813,
+    "type": "TPS",
+    "name": "PT.LOTTE SHOPPING INDONESIA",
+    "address": "JL. MASTRIP NO.558",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 814,
+    "type": "TPS",
+    "name": "HOTEL MERCURE GRAND MIRAMA",
+    "address": "JL. RAYA DARMO 68-78",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 815,
+    "type": "TPS",
+    "name": "MANUKAN KULON BARU",
+    "address": "MANUKAN KULON BARU",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 816,
+    "type": "TPS",
+    "name": "CV.SALSA BEAUTY CENTER",
+    "address": "JL. BRONGGALAN 12",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 817,
+    "type": "TPS",
+    "name": "PT.GEMA LESTARI INDONESIA",
+    "address": "JL. ROMOKALISARI (TPI) NO.28 FGH",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 818,
+    "type": "TPS",
+    "name": "THE SOUTHERN HOTEL",
+    "address": "JL. JEMURSARI NO. 110-112",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 819,
+    "type": "TPS",
+    "name": "PT. BAMBOE INDONESIA",
+    "address": "JL. KEDINDING TENGAH II NO. 8A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 820,
+    "type": "TPS",
+    "name": "MCDONALD'S RUNGKUT",
+    "address": "JL. RUNGKUT MADYA 57-59",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 821,
+    "type": "TPS",
+    "name": "APARTEMEN THE CITY SQUARE",
+    "address": "JL. MARGOREJO INDAH NO. 105-107",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 822,
+    "type": "TPS",
+    "name": "PT. CITRA PERSADA INFRASTRUKTUR",
+    "address": "JL. WISATA MENANGGAL NO.21",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 823,
+    "type": "TPS",
+    "name": "MCDONALD'S RAJAWALI",
+    "address": "JL. RAJAWALI NO.57",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 824,
+    "type": "TPS",
+    "name": "MAYAPADA HOSPITAL",
+    "address": "JL. MAYJEND SUNGKONO NO. 16-20 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 825,
+    "type": "TPS",
+    "name": "LUMINOR HOTEL",
+    "address": "JL. RAYA JEMURSARI NO.206-208",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 826,
+    "type": "TPS",
+    "name": "PT.WIKA-WEGE KSO",
+    "address": "JL. INDRAPURA NO.17",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 827,
+    "type": "TPS",
+    "name": "HOTEL 88 KEDUNGSARI",
+    "address": "JL. KEDUNGSARI 76-78",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 828,
+    "type": "TPS",
+    "name": "HOTEL 88 EMBONG KENONGO",
+    "address": "JL. EMBONG KENONGO 11-17",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 829,
+    "type": "TPS",
+    "name": "HOTEL 88 EMBONG MALANG",
+    "address": "JL. EMBONG MALANG NO.84",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 830,
+    "type": "TPS",
+    "name": "SINARMAS LAND PLAZA",
+    "address": "JL. PEMUDA NO.60-70",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 831,
+    "type": "TPS",
+    "name": "APARTEMEN GUNAWANGSA MERR",
+    "address": "JL. KEDUNG BARUK NO.69",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 832,
+    "type": "TPS",
+    "name": "PT. RIMBARIA REKAWIRA",
+    "address": "JL. KEDINDING TENGAH II NO. 4",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 833,
+    "type": "TPS",
+    "name": "KOPERASI KARYAWAN SIER",
+    "address": "JL. RUNGKUT INDUSTRI RAYA NO. 10",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 834,
+    "type": "TPS",
+    "name": "APAR. GRAND SUNGKONO LAGOON",
+    "address": "JL. ABDUL WAHAB SIAMIN KAV 9-10",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 835,
+    "type": "TPS",
+    "name": "APARTEMEN KLASKA RESIDENCE",
+    "address": "JL. JAGIR WONOKROMO NO. 100",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 836,
+    "type": "TPS",
+    "name": "RS. WIYUNG SEJAHTERA",
+    "address": "JL. KARANGAN PDAM 1-3",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 837,
+    "type": "TPS",
+    "name": "APARTEMEN ALESSANDRO",
+    "address": "JL. MENGANTI KARANGAN 32",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 838,
+    "type": "TPS",
+    "name": "AMG TOWER",
+    "address": "AMG TOWER",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 839,
+    "type": "TPS",
+    "name": "MCDONALDS DARMO",
+    "address": "JL. DARMO",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 840,
+    "type": "TPS",
+    "name": "TPS3R Gunung Anyar",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 841,
+    "type": "TPS",
+    "name": "TPS3R Kedung Cowek",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 842,
+    "type": "TPS",
+    "name": "TPS3R Banjar Sugihan",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 843,
+    "type": "TPS",
+    "name": "APARTEMEN PUNCAK KERTAJAYA",
+    "address": "JL. KERTAJAYA INDAH REGENCY",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 844,
+    "type": "TPS",
+    "name": "APARTEMEN PURI DARMO",
+    "address": "JL. RAYA KUPANG BARU NO. 17A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 845,
+    "type": "TPS",
+    "name": "APARTEMEN PUNCAK CBD",
+    "address": "JL. KRAMAT NO.1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 846,
+    "type": "TPS",
+    "name": "D'PRIMAHOTEL",
+    "address": "JL. PRAPEN NO. 22",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 847,
+    "type": "TPS",
+    "name": "APARTEMEN ROYAL CITY LOFT",
+    "address": "JL. ROYAL RESIDENCE B7 KAV.2-10",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 848,
+    "type": "TPS",
+    "name": "PT.UNTUNG BERSAMA SEJAHTERA",
+    "address": "JL. KENJERAN 395-399",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 849,
+    "type": "TPS",
+    "name": "HOTEL GRAND DARMO SUITE",
+    "address": "JL. PROGO 1-3",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 850,
+    "type": "TPS",
+    "name": "FAVE HOTEL RUNGKUT",
+    "address": "JL. RAYA KALIRUNGKUT 23-25",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 851,
+    "type": "TPS",
+    "name": "HOTEL AMARIS MARGOREJO",
+    "address": "JL. MARGOREJO INDAH 114-115",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 852,
+    "type": "TPS",
+    "name": "BOGASARI",
+    "address": "JL. NILAM TIMUR NO. 16 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 853,
+    "type": "TPS",
+    "name": "P3SRS GUNAWANGSA TIDAR",
+    "address": "JL. TIDAR NO. 350",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 854,
+    "type": "TPS",
+    "name": "ONE ICON RESIDENCE",
+    "address": "JL. EMBONG MALANG NO. 21-31",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 855,
+    "type": "TPS",
+    "name": "TWIN TOWER & RESIDENCE",
+    "address": "JL. KALISARI III NO. 2",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 856,
+    "type": "TPS",
+    "name": "POP HOTEL DIPONEGORO",
+    "address": "JL. DIPONEGORO NO. 33",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 857,
+    "type": "TPS",
+    "name": "ASRAMA MAHASISWA NUSANTARA",
+    "address": "JL. JEMUR ANDAYANI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 858,
+    "type": "TPS",
+    "name": "GACOAN AMBENGAN 49",
+    "address": "JL. AMBENGAN 49",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 859,
+    "type": "TPS",
+    "name": "GACOAN KENJERAN 361-363",
+    "address": "JL. KENJERAN 361-363",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 860,
+    "type": "TPS",
+    "name": "GACOAN IR. SOEKARNO 443",
+    "address": "JL. IR. SOEKARNO 443",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 861,
+    "type": "TPS",
+    "name": "GACOAN A.YANI 174A",
+    "address": "JL. A. YANI 174A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 862,
+    "type": "TPS",
+    "name": "GACOAN MANUKAN WETAN 38",
+    "address": "JL. MANUKAN WETAN 38",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 863,
+    "type": "TPS",
+    "name": "GACOAN MAYJEND SUNGKONO 126",
+    "address": "JL. MAYJEND SUNGKONO 126",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 864,
+    "type": "TPS",
+    "name": "GACOAN MANYAR KERTOARJO 3/109",
+    "address": "JL. MANYAR KERTOARJO 3/109",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 865,
+    "type": "TPS",
+    "name": "GACOAN MARGOREJO INDAH 94",
+    "address": "JL. MARGOREJO INDAH 94",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 866,
+    "type": "TPS",
+    "name": "APARTEMEN PAVILION PERMATA",
+    "address": "JL. ABDUL WAHAB SIAMIN NO. 751B",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 867,
+    "type": "TPS",
+    "name": "JAVA PARAGON HOTEL DAN RESIDENCE",
+    "address": "JL. MAYJEND SUNGKONO 101-103",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 868,
+    "type": "TPS",
+    "name": "RSIA KENDANGSARI MERR",
+    "address": "JL. IR. SOEKARNO NO. 2",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 869,
+    "type": "TPS",
+    "name": "RS. WIJAYA",
+    "address": "JL. JEMURSARI VI NO. 14",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 870,
+    "type": "TPS",
+    "name": "VERWOODHOTEL&RESIDENCE;",
+    "address": "JL. KALIMANTAN NO. 05 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 871,
+    "type": "TPS",
+    "name": "WEST MARKET SURABAYA",
+    "address": "JL. MAYJEND JONOSEWOJO KAV.3 NO. 3 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 872,
+    "type": "TPS",
+    "name": "CV. UNGGUL MAKMUR",
+    "address": "JL. IKAN MUNGSING 7 NO. 26",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 873,
+    "type": "TPS",
+    "name": "PT.ASIA PRAMULIA",
+    "address": "JL. KEDUNG ASEM NO. 9",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 874,
+    "type": "TPS",
+    "name": "TP RESIDENCE",
+    "address": "JL. EMBONG MALANG NO.1,3,5",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 875,
+    "type": "TPS",
+    "name": "TPS3R TENGGILIS",
+    "address": "TPS3R TENGGILIS",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 876,
+    "type": "TPS",
+    "name": "PT. SALIM IVOMAS PRATAMA",
+    "address": "JL. TANJUNG TEMBAGA NO. 2-6",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 877,
+    "type": "TPS",
+    "name": "HOTEL AMARIS EMBONG MALANG",
+    "address": "JL. KEDUNGDORO 1-3",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 878,
+    "type": "TPS",
+    "name": "PT. DEPO JANGKAR PASIFIK",
+    "address": "JL. TANJUNG TEMBAGA NO. 12",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 879,
+    "type": "TPS",
+    "name": "PT. SANMAS",
+    "address": "JL. RAYA BABAT JERAWAT NO. 43",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 880,
+    "type": "TPS",
+    "name": "TAMBAK SARIOSO",
+    "address": "TAMBAK SARIOSO",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 881,
+    "type": "TPS",
+    "name": "DIKLAT PROVINSI",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 882,
+    "type": "TPS",
+    "name": "TPS3R Tambak Wedi",
+    "address": "TPS3R TAMBAK WEDI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 884,
+    "type": "TPS",
+    "name": "TPS3R Sumberejo",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 885,
+    "type": "TPS",
+    "name": "TPS3R Sutorejo",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 886,
+    "type": "TPS",
+    "name": "TPS3R Karang Pilang",
+    "address": "TPS3R Karang Pilang",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 887,
+    "type": "TPS",
+    "name": "TELKOM LANDMARK MANYAR",
+    "address": "TELKOM LANDMARK MANYAR",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 888,
+    "type": "TPS",
+    "name": "RSIA KENDANGSARI",
+    "address": "RSIA KENDANGSARI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 889,
+    "type": "TPS",
+    "name": "TPS3R Oso Wilangun",
+    "address": "TPS3R Oso Wilangun",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 890,
+    "type": "TPS",
+    "name": "IBIS BUDGET DIPONEGORO",
+    "address": "IBIS BUDGET DIPONEGORO",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 891,
+    "type": "TPS",
+    "name": "FAHRUL ROSI",
+    "address": "JL. TAMBAK WEDI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 892,
+    "type": "TPS",
+    "name": "PT. JACOBIS",
+    "address": "JL. Raya Kalirungkut No. 7-9 Surabaya",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 893,
+    "type": "TPS",
+    "name": "RS BUNDA",
+    "address": "JL. RAYA KANDANGAN NO. 23-24",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 894,
+    "type": "TPS",
+    "name": "RSU BHAKTI RAHAYU",
+    "address": "JL. KETINTANG MADYA I NO. 16",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 895,
+    "type": "TPS",
+    "name": "HOTEL CLEO BASRA",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 896,
+    "type": "TPS",
+    "name": "HOTEL CLEO JEMURSARI",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 897,
+    "type": "TPS",
+    "name": "HOTEL CLEO WAMUS",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 898,
+    "type": "TPS",
+    "name": "ARC 100",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 899,
+    "type": "TPS",
+    "name": "UD. STAR LABORATORIES",
+    "address": "UD. STAR LABORATORIES",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 900,
+    "type": "TPS",
+    "name": "BNI GRAHA PANGERAN",
+    "address": "JL. AHMAD YANI 286",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 901,
+    "type": "TPS",
+    "name": "RSU SURABAYA MEDICAL SERVICE",
+    "address": "JL. KAPUAS NO. 2",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 902,
+    "type": "TPS",
+    "name": "PT. PANEN MAKMUR BERJAYA",
+    "address": "JL. KEDINDING LOR NO. 40C SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 903,
+    "type": "TPS",
+    "name": "THE GALAXY RESIDENCE",
+    "address": "JL. DR. IR. H SOEKARNO NO. 178 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 904,
+    "type": "TPS",
+    "name": "MORAZEN HOTEL SURABAYA",
+    "address": "JL. KAYOON NO. 4-10 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 905,
+    "type": "TPS",
+    "name": "RSIA IBI SURABAYA",
+    "address": "JL. DUPAK NO. 15A",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 906,
+    "type": "TPS",
+    "name": "JAPFA NILAM",
+    "address": "JL. NILAM BARAT NO. 5-9",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 908,
+    "type": "TPS",
+    "name": "APARTEMEN KYO SOCIETY",
+    "address": "JL. RAYA PANJANG JIWO PERMAI",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 909,
+    "type": "TPS",
+    "name": "APARTEMEN TAMANSARI PAPILIO",
+    "address": "JL. AHMAD YANI 176-178",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 910,
+    "type": "TPS",
+    "name": "APARTEMEN BELLEVIEW",
+    "address": "JL. MANYAR KERTOARJO III NO. 78",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 911,
+    "type": "TPS",
+    "name": "BONNET SUPERMARKET DAN HOTEL",
+    "address": "JL. MANYAR KERTOARJO V NO. 62",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 912,
+    "type": "TPS",
+    "name": "WARON HOSPITAL",
+    "address": "JL. KALIWARON NO. 106-114",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 913,
+    "type": "TPS",
+    "name": "HOTEL ALOFT PAKUWON CITY",
+    "address": "JL. MUTIARA I,KEJAWAN PUTIH TAMBAK",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 914,
+    "type": "TPS",
+    "name": "APARTEMEN TAMAN BEVERLY",
+    "address": "JL. HR MUHAMAD NO. 49-55",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 915,
+    "type": "TPS",
+    "name": "GRAND INNA TUNJUNGAN HOTEL",
+    "address": "JL. GUBERNUR SURYO NO. 1-3",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 916,
+    "type": "TPS",
+    "name": "RSIA GRAHA MEDIKA",
+    "address": "BABATAN WIYUNG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 917,
+    "type": "TPS",
+    "name": "PT. INDOWIRE PRIMA INDUSTRINDO",
+    "address": "JL. MARGOMULYO INDAH C-1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 918,
+    "type": "TPS",
+    "name": "PT. PLATINUM CERAMICS",
+    "address": "JL. KARANG PILANG BARAT NO. 201",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 919,
+    "type": "TPS",
+    "name": "RS. TINGKAT III BRAWIJAYA",
+    "address": "JL. KESATRIAN NO. 17",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 920,
+    "type": "TPS",
+    "name": "PT. SATELIT SRITI",
+    "address": "JL. BANYU URIP NO. 231",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 921,
+    "type": "TPS",
+    "name": "GOLDVITEL HOTEL",
+    "address": "JL. BASUKI RAHMAT NO. 147",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 922,
+    "type": "TPS",
+    "name": "BABATAN KARANGAN",
+    "address": "BABATAN KARANGAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 923,
+    "type": "TPS",
+    "name": "RUMAH POMPA",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 924,
+    "type": "TPS",
+    "name": "UD. SUMBER BESI",
+    "address": "JL. KALIMAS BARAT NO. 49",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 925,
+    "type": "TPS",
+    "name": "SAMPAH PERANTINGAN",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 926,
+    "type": "TPS",
+    "name": "PT. GRAHA PENA JAWA POS",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 927,
+    "type": "TPS",
+    "name": "PKW CITY PROJECT",
+    "address": "JL. KEJAWEN PUTIH MUTIARA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 928,
+    "type": "TPS",
+    "name": "YPTA-UNTAG",
+    "address": "JL. SEMOLOWARU NO. 45 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 929,
+    "type": "TPS",
+    "name": "RS GIGI DAN MULUT UNAIR",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 930,
+    "type": "TPS",
+    "name": "BAWASLU KOTA SURABAYA",
+    "address": "JL. RAYA TENGGILIS MEJOYO NO. 1 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 931,
+    "type": "TPS",
+    "name": "APARTEMEN HIGH POINT",
+    "address": "JL. SIWALANKERTO NO. 161-165 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 932,
+    "type": "TPS",
+    "name": "PGN OFFTAKE TANDES",
+    "address": "JL. DUMAR INDUSTRI NO. 16",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 933,
+    "type": "TPS",
+    "name": "SAMPAH PERAWATAN",
+    "address": "SAMPAH PERAWATAN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 934,
+    "type": "TPS",
+    "name": "RSUD HUSADA PRIMA",
+    "address": "JL. KARANG TEMBOK NO. 39 PEGIRIAN SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 935,
+    "type": "TPS",
+    "name": "MIDTOWN HOTEL SURABAYA",
+    "address": "JL. BASUKI RAHMAT NO. 76 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 936,
+    "type": "TPS",
+    "name": "RUMAH SAKIT DARMO",
+    "address": "JL. RAYA DARMO NO. 90 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 937,
+    "type": "TPS",
+    "name": "PT. GELURAN ADIKARYA",
+    "address": "JL. MASTRIP IX",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 938,
+    "type": "TPS",
+    "name": "UD. STAR",
+    "address": "JL. KENDANG SARI YKP BLOK F NO. 52",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 939,
+    "type": "TPS",
+    "name": "TAMAN RIVERA REGENCY",
+    "address": "TAMAN RIVERA REGENCY",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 940,
+    "type": "TPS",
+    "name": "PRIMEBIZ HOTEL",
+    "address": "JL. KETINTANG MADYA 144 BLOK E NO. 1",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 941,
+    "type": "TPS",
+    "name": "CV. ANUGERAH ARTHA ABADI",
+    "address": "JL. NAMBANGAN NO.9",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 942,
+    "type": "TPS",
+    "name": "PT. PET FOOD INDOPRIMA",
+    "address": "JL. MARGOMULYO 36-38 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 943,
+    "type": "TPS",
+    "name": "PT. MULTIPLASTINDO MAKMUR",
+    "address": "JL. DARMOKALI 10-12 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 944,
+    "type": "TPS",
+    "name": "CV. PERJUANGAN STEEL",
+    "address": "JL. MARGOMULYO INDAH NO. 15D SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 945,
+    "type": "TPS",
+    "name": "PT. SUSANTI MEGAH",
+    "address": "JL. DUPAK RUKUN NO. 71-73 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 947,
+    "type": "TPS",
+    "name": "LEEDON HOTEL & SUITES SURABAYA",
+    "address": "JL. JAKSA AGUNG",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 948,
+    "type": "TPS",
+    "name": "COSMOPOLIS RESORT",
+    "address": "JL. ARIEF RAHMAN HAKIM NO. 147",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 949,
+    "type": "TPS",
+    "name": "PT. SENTOSA KARYA PUTRO",
+    "address": "JL. TAMBAK OSO WILANGUN N0. 82E",
+    "latitude": null,
+    "longitude": null
+  }
+]
