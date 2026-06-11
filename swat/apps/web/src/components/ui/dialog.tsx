@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn';
 
 /**
  * Dialog / Modal (design-system §3.12) — focus-trapped, Esc closes, pop entrance.
- * Becomes a bottom sheet on < sm.
+ * Stays centered on every breakpoint; scrolls within a 90dvh cap on short screens.
  */
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
@@ -48,9 +48,8 @@ export const DialogContent = forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          'fixed left-1/2 top-1/2 z-modal grid w-[min(90vw,520px)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg bg-neutral-0 p-6 shadow-lg',
+          'fixed left-1/2 top-1/2 z-modal grid max-h-[90dvh] w-[min(92vw,520px)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-lg bg-neutral-0 p-6 shadow-lg',
           'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-          'max-sm:bottom-0 max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:data-[state=closed]:slide-out-to-bottom max-sm:data-[state=open]:slide-in-from-bottom',
           className,
         )}
         {...props}

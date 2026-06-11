@@ -93,14 +93,18 @@ export function CrudListShell<T>({
   const t = useTranslations('crud');
   const label = createLabel ?? t('new');
 
-  const createButton = (
+  // Empty-state CTA keeps its label; the toolbar action collapses to an icon on
+  // mobile (label hidden < sm) so it sits flush with the other icon buttons.
+  const makeCreateButton = (labelClassName?: string): JSX.Element => (
     <ProtectedAction permission={`${resource}:create`}>
-      <Button onClick={manager.openCreate}>
+      <Button onClick={manager.openCreate} aria-label={label}>
         <Plus className="h-4 w-4" aria-hidden />
-        {label}
+        <span className={labelClassName}>{label}</span>
       </Button>
     </ProtectedAction>
   );
+  const createButton = makeCreateButton();
+  const toolbarCreateButton = makeCreateButton('hidden sm:inline');
 
   // Append hidden audit columns, keeping the row-actions column last.
   const actionsIdx = columns.findIndex((c) => c.id === 'actions');
@@ -126,7 +130,7 @@ export function CrudListShell<T>({
         refreshing={manager.loading}
         searchPlaceholder={searchPlaceholder ?? t('search')}
         toolbar={toolbar}
-        actions={createButton}
+        actions={toolbarCreateButton}
         emptyAction={createButton}
       />
 
