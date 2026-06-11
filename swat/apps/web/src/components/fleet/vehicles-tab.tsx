@@ -2,7 +2,8 @@
 
 import { type ColumnDef } from '@tanstack/react-table';
 import { Recycle } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { z } from 'zod';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
@@ -20,14 +21,17 @@ import { RowActions } from '@/components/crud/row-actions';
 import { VehicleWasteSourcesSheet } from '@/components/fleet/vehicle-waste-sources-sheet';
 import { DropdownMenuItem, StatusPill } from '@/components/ui';
 import { useOptions } from '@/hooks/use-options';
+import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { formatDateDisplay, formatNumber } from '@/lib/format';
 import {
   type SiteDto,
   type VehicleDto,
   type VehicleModelDto,
+  type VehicleTypeDto,
   sitesApi,
   vehicleModelsApi,
+  vehicleTypesApi,
   vehiclesApi,
 } from '@/lib/master-api';
 
@@ -46,6 +50,9 @@ const schema = z.object({
       /^[A-Za-z]{1,2}\s?\d{1,4}\s?[A-Za-z]{1,3}$/,
       'Format nomor polisi tidak valid (contoh: L 1234 AB)',
     ),
+  // Transient cascade selector — chosen first to filter the model list. Stripped
+  // from the payload (the vehicle stores only modelId; its type is derived).
+  vehicleTypeId: z.string().min(1, 'Tipe kendaraan wajib dipilih'),
   modelId: z.string().uuid('Model wajib dipilih'),
   poolSiteId: z.string().uuid('Pool wajib dipilih'),
   status: z.enum(['GOOD', 'MINOR_DAMAGE', 'MAJOR_DAMAGE', 'LOST']),
@@ -62,6 +69,7 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
   plateNumber: '',
+  vehicleTypeId: '',
   modelId: '',
   poolSiteId: '',
   status: 'GOOD',
@@ -77,6 +85,8 @@ const defaults: Values = {
 };
 const toForm = (r: VehicleDto): Values => ({
   plateNumber: r.plateNumber,
+  // Derived from the model once the model list loads (see ModelCascadeFields).
+  vehicleTypeId: '',
   modelId: r.modelId,
   poolSiteId: r.poolSiteId,
   status: r.status,
@@ -90,7 +100,12 @@ const toForm = (r: VehicleDto): Values => ({
   taxExpiry: r.taxExpiry,
   notes: r.notes ?? undefined,
 });
-const modelOption = (m: VehicleModelDto): SelectOption => ({ value: m.id, label: m.brand });
+// vehicleTypeId is a UI-only cascade filter — drop it before sending.
+const buildPayload = (v: Values): Record<string, unknown> => {
+  const { vehicleTypeId: _vehicleTypeId, ...rest } = v;
+  return rest;
+};
+const typeOption = (a: VehicleTypeDto): SelectOption => ({ value: a.id, label: a.name });
 const poolOption = (s: SiteDto): SelectOption => ({ value: s.id, label: s.name });
 
 function SectionLabel({ children }: { children: string }): JSX.Element {
@@ -101,10 +116,78 @@ function SectionLabel({ children }: { children: string }): JSX.Element {
   );
 }
 
+/**
+ * Type → model cascade (mirrors the legacy app): the user picks a vehicle type
+ * first, and the model list narrows to that type. The model picker stays
+ * disabled until a type is chosen. On edit, the type is derived from the saved
+ * model so the right list shows; changing the type clears a now-invalid model.
+ */
+function ModelCascadeFields({
+  types,
+  models,
+}: {
+  types: readonly SelectOption[];
+  models: readonly VehicleModelDto[];
+}): JSX.Element {
+  const form = useFormContext<Values>();
+  const typeId = form.watch('vehicleTypeId');
+  const modelId = form.watch('modelId');
+
+  // Edit: derive the type from the already-selected model once models load.
+  useEffect(() => {
+    if (!typeId && modelId) {
+      const model = models.find((m) => m.id === modelId);
+      if (model) form.setValue('vehicleTypeId', model.vehicleTypeId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelId, models]);
+
+  // Changing the type invalidates a model from a different type — clear it.
+  useEffect(() => {
+    if (modelId && typeId) {
+      const model = models.find((m) => m.id === modelId);
+      if (model && model.vehicleTypeId !== typeId) {
+        form.setValue('modelId', '');
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeId]);
+
+  const modelOptions = useMemo<SelectOption[]>(
+    () =>
+      models
+        .filter((m) => !typeId || m.vehicleTypeId === typeId)
+        .map((m) => ({ value: m.id, label: m.brand })),
+    [models, typeId],
+  );
+
+  return (
+    <>
+      <SelectField
+        name="vehicleTypeId"
+        label="Tipe Kendaraan"
+        required
+        options={types}
+        placeholder="Pilih tipe kendaraan"
+      />
+      <SelectField
+        name="modelId"
+        label="Merek/Model"
+        required
+        options={modelOptions}
+        placeholder={typeId ? 'Pilih model' : 'Pilih tipe kendaraan dahulu'}
+        disabled={!typeId}
+      />
+    </>
+  );
+}
+
 /** Vehicles (Kendaraan) — embedded tab of the combined vehicle page. */
 export function VehiclesTab(): JSX.Element {
   const manager = useResourceManager(vehiclesApi, (r) => r.id);
-  const { options: models } = useOptions(vehicleModelsApi.list, modelOption);
+  // Full model rows (need vehicleTypeId for the cascade); types for the picker.
+  const { rows: modelRows } = useResourceList(vehicleModelsApi.list);
+  const { options: types } = useOptions(vehicleTypesApi.list, typeOption);
   const { options: pools } = useOptions(sitesApi.list, poolOption);
   const [sourcesFor, setSourcesFor] = useState<VehicleDto | null>(null);
 
@@ -238,19 +321,14 @@ export function VehiclesTab(): JSX.Element {
         schema={schema}
         defaults={defaults}
         toForm={toForm}
+        buildPayload={buildPayload}
         title={{ create: 'Tambah Kendaraan', edit: 'Ubah Kendaraan' }}
       >
         <SectionLabel>Data Dasar</SectionLabel>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <TextField name="plateNumber" label="Nomor Polisi" required placeholder="L 1234 AB" />
           <NumberField name="manufactureYear" label="Tahun" min={1900} max={2100} />
-          <SelectField
-            name="modelId"
-            label="Merek/Model"
-            required
-            options={models}
-            placeholder="Pilih model"
-          />
+          <ModelCascadeFields types={types} models={modelRows} />
           <SelectField
             name="poolSiteId"
             label="Pool"
@@ -262,7 +340,7 @@ export function VehiclesTab(): JSX.Element {
         </div>
 
         <SectionLabel>Identitas & Dimensi</SectionLabel>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <TextField name="chassisNumber" label="Nomor Rangka" required />
           <TextField name="engineNumber" label="Nomor Mesin" required />
           <NumberField name="currentTareWeight" label="Berat Kosong" required unit="kg" min={0} />
@@ -271,7 +349,7 @@ export function VehiclesTab(): JSX.Element {
         </div>
 
         <SectionLabel>Masa Berlaku</SectionLabel>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <DateField name="registrationExpiry" label="STNK Berlaku Sampai" required />
           <DateField name="taxExpiry" label="Pajak STNK Sampai" required />
         </div>

@@ -147,7 +147,7 @@ function SitesTab(): JSX.Element {
         <SelectField name="type" label="Jenis Lokasi" required options={SITE_TYPES} />
         <TextField name="name" label="Nama" required />
         <TextareaField name="address" label="Alamat" required />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <NumberField name="latitude" label="Lintang (opsional)" />
           <NumberField name="longitude" label="Bujur (opsional)" />
         </div>
@@ -259,7 +259,7 @@ function RoutesTab(): JSX.Element {
         className="max-w-[520px]"
       >
         <SelectField name="category" label="Jenis Rute" required options={ROUTE_CATEGORIES} />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <SelectField
             name="originSiteId"
             label="Asal"

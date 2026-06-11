@@ -127,7 +127,7 @@ export default function CrewSchedulesPage(): JSX.Element {
         title={{ create: 'Tambah Jadwal Kru', edit: 'Ubah Jadwal Kru' }}
         className="max-w-[520px]"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <SelectField
             name="vehicleId"
             label="Kendaraan"

@@ -103,7 +103,7 @@ describe('NumberInput', () => {
     expect(onValueChange).toHaveBeenCalledWith(10);
   });
 
-  it('routes typing through onValueChange (clamped) and the native onChange', async () => {
+  it('routes typing through onValueChange and the native onChange', async () => {
     const onValueChange = vi.fn();
     const onChange = vi.fn();
     render(
@@ -112,6 +112,17 @@ describe('NumberInput', () => {
     await userEvent.type(screen.getByLabelText('qty'), '7');
     expect(onValueChange).toHaveBeenLastCalledWith(7);
     expect(onChange).toHaveBeenCalled();
+  });
+
+  it('does NOT clamp partial typing on a high-min field (year stays typeable)', async () => {
+    // Regression: clamping each keystroke to min 1900 made "2024" un-typeable —
+    // "2" snapped to 1900. Typing must surface the raw value; bounds are checked
+    // by the stepper and by schema validation, not mid-type.
+    const onValueChange = vi.fn();
+    render(<NumberInput aria-label="tahun" min={1900} max={2100} onValueChange={onValueChange} />);
+    await userEvent.type(screen.getByLabelText('tahun'), '2');
+    expect(onValueChange).toHaveBeenLastCalledWith(2);
+    expect(onValueChange).not.toHaveBeenCalledWith(1900);
   });
 });
 

@@ -51,12 +51,15 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
   };
 
   // Forward the raw event (for register/onChange consumers) and, when the field
-  // holds a valid number, surface the parsed value via onValueChange too.
+  // holds a valid number, surface the parsed value via onValueChange. Do NOT
+  // clamp while typing: clamping each keystroke makes high-min fields (e.g. a
+  // year with min 1900) un-typeable — "2" would snap to 1900 before "2024" is
+  // finished. Bounds are enforced by the stepper and by schema validation.
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
     onChange?.(event);
     const next = event.target.valueAsNumber;
     if (!Number.isNaN(next)) {
-      onValueChange?.(clamp(next));
+      onValueChange?.(next);
     }
   };
 

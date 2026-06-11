@@ -178,7 +178,7 @@ export default function DisposalPermitsPage(): JSX.Element {
         title={{ create: 'Terbitkan Kitir', edit: 'Ubah Kitir' }}
         className="max-w-[520px]"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <SelectField
             name="vehicleId"
             label="Kendaraan"

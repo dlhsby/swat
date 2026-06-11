@@ -197,7 +197,7 @@ export default function DriversPage(): JSX.Element {
         title={{ create: 'Tambah Pengemudi', edit: 'Ubah Pengemudi' }}
         className="max-w-[640px]"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <TextField name="name" label="Nama" required />
           <TextField name="idCardNumber" label="Nomor KTP" required placeholder="16 digit" />
           <SelectField
@@ -218,7 +218,7 @@ export default function DriversPage(): JSX.Element {
         </div>
         <TextareaField name="originAddress" label="Alamat Asal" required />
         <TextareaField name="currentAddress" label="Alamat Saat Ini" required />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4">
           <TextField name="safetyTraining" label="Pelatihan K3" placeholder="BELUM" />
         </div>
         <TextareaField name="notes" label="Catatan" placeholder="Opsional" />
