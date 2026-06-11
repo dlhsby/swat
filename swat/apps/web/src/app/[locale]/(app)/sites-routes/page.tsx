@@ -3,7 +3,8 @@
 import { type ColumnDef } from '@tanstack/react-table';
 import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useFormContext } from 'react-hook-form';
 import { z } from 'zod';
 
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
@@ -18,7 +19,7 @@ import {
 import { RowActions } from '@/components/crud/row-actions';
 import { PageHead } from '@/components/shell/page-head';
 import { Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
-import { useOptions } from '@/hooks/use-options';
+import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { formatNumber } from '@/lib/format';
 import {
@@ -187,9 +188,90 @@ const routeToForm = (r: RouteDto): RouteValues => ({
 });
 const siteOption = (s: SiteDto): SelectOption => ({ value: s.id, label: `${s.name} (${s.type})` });
 
+/**
+ * Per route category, which site TYPE the origin / destination must be. Mirrors
+ * the legacy app's leg semantics: a "Berangkat dari Pool" leg starts at a Pool,
+ * "Isi BBM" ends at an SPBU, "Ambil Sampah" ends at a TPS, "Buang ke TPA" ends at
+ * a TPA, "Kembali ke Pool" ends at a Pool. An undefined end is unconstrained.
+ */
+const ROUTE_SITE_CONSTRAINTS: Record<
+  RouteCategoryValue,
+  { origin?: SiteType; destination?: SiteType }
+> = {
+  DEPART_POOL: { origin: 'POOL' },
+  REFUEL: { destination: 'SPBU' },
+  PICKUP: { destination: 'TPS' },
+  DISPOSAL: { destination: 'TPA' },
+  RETURN_POOL: { destination: 'POOL' },
+};
+
+/**
+ * Origin/destination pickers that narrow to the site type required by the chosen
+ * route category, and clear a selection that the new category no longer allows.
+ */
+function RouteSiteFields({ sites }: { sites: readonly SiteDto[] }): JSX.Element {
+  const form = useFormContext<RouteValues>();
+  const category = form.watch('category');
+  const originSiteId = form.watch('originSiteId');
+  const destinationSiteId = form.watch('destinationSiteId');
+  const constraint = ROUTE_SITE_CONSTRAINTS[category];
+
+  // Drop a now-invalid selection whenever the category changes.
+  useEffect(() => {
+    if (originSiteId && constraint.origin) {
+      const s = sites.find((x) => x.id === originSiteId);
+      if (s && s.type !== constraint.origin) form.setValue('originSiteId', '');
+    }
+    if (destinationSiteId && constraint.destination) {
+      const s = sites.find((x) => x.id === destinationSiteId);
+      if (s && s.type !== constraint.destination) form.setValue('destinationSiteId', '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
+  const originOptions = useMemo(
+    () => sites.filter((s) => !constraint.origin || s.type === constraint.origin).map(siteOption),
+    [sites, constraint.origin],
+  );
+  const destinationOptions = useMemo(
+    () =>
+      sites
+        .filter((s) => !constraint.destination || s.type === constraint.destination)
+        .map(siteOption),
+    [sites, constraint.destination],
+  );
+
+  return (
+    <div className="grid gap-4">
+      <SelectField
+        name="originSiteId"
+        label="Asal"
+        required
+        options={originOptions}
+        placeholder="Pilih lokasi"
+        description={
+          constraint.origin ? `Hanya lokasi ${siteTypeLabel(constraint.origin)}` : undefined
+        }
+      />
+      <SelectField
+        name="destinationSiteId"
+        label="Tujuan"
+        required
+        options={destinationOptions}
+        placeholder="Pilih lokasi"
+        description={
+          constraint.destination
+            ? `Hanya lokasi ${siteTypeLabel(constraint.destination)}`
+            : undefined
+        }
+      />
+    </div>
+  );
+}
+
 function RoutesTab(): JSX.Element {
   const manager = useResourceManager(routesApi, (r) => r.id);
-  const { options: sites } = useOptions(sitesApi.list, siteOption);
+  const { rows: sites } = useResourceList(sitesApi.list);
   const columns = useMemo<ColumnDef<RouteDto, unknown>[]>(
     () => [
       {
@@ -259,22 +341,7 @@ function RoutesTab(): JSX.Element {
         className="max-w-[520px]"
       >
         <SelectField name="category" label="Jenis Rute" required options={ROUTE_CATEGORIES} />
-        <div className="grid gap-4">
-          <SelectField
-            name="originSiteId"
-            label="Asal"
-            required
-            options={sites}
-            placeholder="Pilih lokasi"
-          />
-          <SelectField
-            name="destinationSiteId"
-            label="Tujuan"
-            required
-            options={sites}
-            placeholder="Pilih lokasi"
-          />
-        </div>
+        <RouteSiteFields sites={sites} />
         <NumberField name="distanceKm" label="Jarak" required unit="km" min={1} />
       </CrudFormDialog>
     </CrudListShell>
