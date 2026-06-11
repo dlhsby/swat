@@ -258,8 +258,12 @@ export class DisposalPermitsService {
   ): Promise<void> {
     const validFrom = parseDateOnly(row.validFrom);
     const validTo = parseDateOnly(row.validTo);
+    // Barcode: prefer an explicit code, else fall back to the legacy JATAHKITIR_ID
+    // (the legacy app printed that id as the barcode, so this keeps already-printed
+    // kitir scannable). In-app issues use the KT-YYYYMM-NNNN generator instead.
+    const code = row.code ?? (row.legacyId !== undefined ? String(row.legacyId) : undefined);
     const create: Prisma.DisposalPermitCreateInput = {
-      ...(row.code !== undefined ? { code: row.code } : {}),
+      ...(code !== undefined ? { code } : {}),
       ...(row.status !== undefined ? { status: row.status } : {}),
       issuedAt,
       validFrom,
@@ -270,7 +274,7 @@ export class DisposalPermitsService {
     };
     if (isExisting && row.legacyId !== undefined) {
       await this.repo.upsertByLegacyId(row.legacyId, create, {
-        ...(row.code !== undefined ? { code: row.code } : {}),
+        ...(code !== undefined ? { code } : {}),
         ...(row.status !== undefined ? { status: row.status } : {}),
         validFrom,
         validTo,

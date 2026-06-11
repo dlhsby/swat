@@ -207,6 +207,17 @@ describe('DisposalPermitsService', () => {
       expect(repo.createPlain).toHaveBeenCalledTimes(1);
     });
 
+    it('defaults the barcode to the legacy id when no code is given', async () => {
+      // Legacy printed JATAHKITIR_ID as the barcode → keep it on import.
+      await service.bulkImport(
+        { rows: [{ ...row, legacyId: 3375948 }] },
+        '00000000-0000-0000-0000-000000000007',
+      );
+      expect(repo.createPlain).toHaveBeenCalledWith(
+        expect.objectContaining({ code: '3375948', legacyId: 3375948 }),
+      );
+    });
+
     it('reports unknown vehicle/site with the 1-based row number', async () => {
       const result = await service.bulkImport(
         {
