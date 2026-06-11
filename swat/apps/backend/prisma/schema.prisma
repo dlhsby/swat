@@ -556,7 +556,10 @@ model TripTemplate {
 model DisposalPermit {
   id          String               @id @default(uuid(7)) @db.Uuid
   legacyId    Int?                 @unique @map("legacy_id")
-  code        String?              @db.VarChar(50)
+  // Printable barcode, auto-generated KT-YYYYMM-NNNN on issue (the legacy app used
+  // the jatahkitir row id as the barcode; UUIDs can't serve that, so it's its own
+  // unique field).
+  code        String?              @unique @db.VarChar(50)
   vehicleId   String               @map("vehicle_id") @db.Uuid
   vehicle     Vehicle              @relation(fields: [vehicleId], references: [id])
   siteId      String               @map("site_id") @db.Uuid
@@ -575,7 +578,6 @@ model DisposalPermit {
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
   deletedById String?   @map("deleted_by_id") @db.Uuid
 
-  @@index([code])
   @@index([vehicleId, status, validFrom, validTo])
   @@index([status, validFrom, validTo])
   @@map("disposal_permit")

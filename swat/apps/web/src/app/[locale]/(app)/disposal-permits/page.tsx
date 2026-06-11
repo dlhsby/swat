@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { ProtectedAction } from '@/components/auth/protected-action';
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
 import { CrudListShell } from '@/components/crud/crud-list-shell';
-import { DateField, type SelectOption, SelectField, TextField } from '@/components/crud/fields';
+import { DateField, type SelectOption, SelectField } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
 import { KitirBulkImportDialog } from '@/components/scheduling/kitir-bulk-import-dialog';
 import { Button, StatusPill } from '@/components/ui';
@@ -32,7 +32,6 @@ const STATUS_OPTIONS: readonly SelectOption[] = [
 
 const schema = z
   .object({
-    code: z.string().max(50).optional(),
     vehicleId: z.string().uuid('Kendaraan wajib dipilih'),
     siteId: z.string().uuid('Lokasi wajib dipilih'),
     issuedAt: z.string().min(1, 'Tanggal terbit wajib diisi'),
@@ -51,7 +50,6 @@ const schema = z
   });
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
-  code: undefined,
   vehicleId: '',
   siteId: '',
   issuedAt: '',
@@ -60,7 +58,6 @@ const defaults: Values = {
   status: 'ACTIVE',
 };
 const toForm = (r: DisposalPermitDto): Values => ({
-  code: r.code ?? undefined,
   vehicleId: r.vehicleId,
   siteId: r.siteId,
   issuedAt: r.issuedAt,
@@ -70,9 +67,7 @@ const toForm = (r: DisposalPermitDto): Values => ({
 });
 // The kitir update DTO only accepts status + validTo (extend/revoke lifecycle).
 const buildPayload = (v: Values, isEdit: boolean): Record<string, unknown> =>
-  isEdit
-    ? { status: v.status, validTo: v.validTo }
-    : { ...v, code: v.code && v.code.length > 0 ? v.code : undefined };
+  isEdit ? { status: v.status, validTo: v.validTo } : { ...v };
 const siteOption = (s: SiteDto): SelectOption => ({ value: s.id, label: `${s.name} (${s.type})` });
 const vehicleOption = (v: VehicleDto): SelectOption => ({ value: v.id, label: v.plateNumber });
 
@@ -89,8 +84,8 @@ export default function DisposalPermitsPage(): JSX.Element {
     () => [
       {
         accessorKey: 'code',
-        header: 'Kode',
-        meta: { label: 'Kode' },
+        header: 'Kode (Barcode)',
+        meta: { label: 'Kode (Barcode)' },
         cell: ({ row }) => (
           <span className="font-mono text-body-sm">{row.original.code ?? '—'}</span>
         ),
@@ -200,9 +195,6 @@ export default function DisposalPermitsPage(): JSX.Element {
           <DateField name="validTo" label="Berlaku Sampai" required />
           <SelectField name="status" label="Status" required options={STATUS_OPTIONS} />
         </div>
-        {!editing ? (
-          <TextField name="code" label="Kode (opsional)" placeholder="Otomatis bila kosong" />
-        ) : null}
       </CrudFormDialog>
 
       <KitirBulkImportDialog

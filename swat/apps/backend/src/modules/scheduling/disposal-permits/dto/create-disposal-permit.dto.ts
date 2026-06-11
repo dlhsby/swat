@@ -5,7 +5,10 @@ import { IsEnum, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export class CreateDisposalPermitDto {
-  @ApiPropertyOptional({ maxLength: 50, description: 'Kitir code (auto/blank if omitted)' })
+  @ApiPropertyOptional({
+    maxLength: 50,
+    description: 'Barcode; auto-generated KT-YYYYMM-NNNN when omitted',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(50)

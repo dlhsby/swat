@@ -20,6 +20,21 @@ import { type CreateDisposalPermitDto } from './dto/create-disposal-permit.dto';
 import { type ListDisposalPermitsQueryDto } from './dto/list-disposal-permits.query.dto';
 import { type UpdateDisposalPermitDto } from './dto/update-disposal-permit.dto';
 
+/** True when a Prisma write tripped the unique constraint on `code` (P2002). */
+function isCodeUniqueViolation(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) {
+    return false;
+  }
+  const e = err as { code?: string; meta?: { target?: unknown } };
+  if (e.code !== 'P2002') {
+    return false;
+  }
+  const target = e.meta?.target;
+  return (
+    target === 'disposal_permit_code_key' || (Array.isArray(target) && target.includes('code'))
+  );
+}
+
 export interface DisposalPermitDto {
   readonly id: string;
   readonly code: string | null;
@@ -93,17 +108,40 @@ export class DisposalPermitsService {
     }
     await this.assertRefsExist(dto.vehicleId, dto.siteId);
 
-    const permit = await this.repo.create({
-      ...(dto.code !== undefined ? { code: dto.code } : {}),
-      ...(dto.status !== undefined ? { status: dto.status } : {}),
-      issuedAt,
-      validFrom,
-      validTo,
-      vehicle: { connect: { id: dto.vehicleId } },
-      site: { connect: { id: dto.siteId } },
-      createdBy: { connect: { id: userId } },
-    });
-    return toDto(permit);
+    // The kitir code is the printable barcode. Auto-generate KT-YYYYMM-NNNN from
+    // the issue month + a per-month counter unless an explicit code was supplied
+    // (bulk import / migration). Retry on the rare concurrent-counter collision.
+    for (let attempt = 0; ; attempt += 1) {
+      const code = dto.code ?? (await this.generateCode(issuedAt));
+      try {
+        const permit = await this.repo.create({
+          code,
+          ...(dto.status !== undefined ? { status: dto.status } : {}),
+          issuedAt,
+          validFrom,
+          validTo,
+          vehicle: { connect: { id: dto.vehicleId } },
+          site: { connect: { id: dto.siteId } },
+          createdBy: { connect: { id: userId } },
+        });
+        return toDto(permit);
+      } catch (err) {
+        if (dto.code === undefined && attempt < 4 && isCodeUniqueViolation(err)) {
+          continue;
+        }
+        throw err;
+      }
+    }
+  }
+
+  /** Next barcode for the issue month: `KT-YYYYMM-NNNN`, counter per period. */
+  private async generateCode(issuedAt: Date): Promise<string> {
+    const period = `${issuedAt.getUTCFullYear()}${String(issuedAt.getUTCMonth() + 1).padStart(2, '0')}`;
+    const prefix = `KT-${period}-`;
+    const last = await this.repo.maxCodeForPrefix(prefix);
+    const lastNum = last ? Number(last.slice(prefix.length)) : 0;
+    const next = Number.isFinite(lastNum) ? lastNum + 1 : 1;
+    return `${prefix}${String(next).padStart(4, '0')}`;
   }
 
   async update(

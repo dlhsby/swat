@@ -69,6 +69,17 @@ export class DisposalPermitsRepository {
     return this.prisma.disposalPermit.create({ data, include: permitInclude });
   }
 
+  /** Highest existing kitir code for a `KT-YYYYMM-` prefix (codes are fixed-width,
+   * so lexical desc = numeric desc). Drives the per-period counter. */
+  async maxCodeForPrefix(prefix: string): Promise<string | null> {
+    const row = await this.prisma.disposalPermit.findFirst({
+      where: { code: { startsWith: prefix } },
+      orderBy: { code: 'desc' },
+      select: { code: true },
+    });
+    return row?.code ?? null;
+  }
+
   async allVehicleIds(): Promise<Set<string>> {
     const rows = await this.prisma.vehicle.findMany({
       where: { deletedAt: null },

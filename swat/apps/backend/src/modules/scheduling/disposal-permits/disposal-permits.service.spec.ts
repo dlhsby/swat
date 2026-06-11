@@ -32,6 +32,7 @@ describe('DisposalPermitsService', () => {
     vehicleExists: jest.Mock;
     siteExists: jest.Mock;
     create: jest.Mock;
+    maxCodeForPrefix: jest.Mock;
     update: jest.Mock;
     allVehicleIds: jest.Mock;
     allSiteIds: jest.Mock;
@@ -49,6 +50,7 @@ describe('DisposalPermitsService', () => {
       vehicleExists: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000001' }),
       siteExists: jest.fn().mockResolvedValue({ id: '00000000-0000-0000-0000-000000000002' }),
       create: jest.fn(),
+      maxCodeForPrefix: jest.fn().mockResolvedValue(null),
       update: jest.fn(),
       allVehicleIds: jest
         .fn()
@@ -105,6 +107,22 @@ describe('DisposalPermitsService', () => {
     const result = await service.create(dto, '00000000-0000-0000-0000-000000000007');
     expect(result.id).toBe('00000000-0000-0000-0000-000000000042');
     expect(result.validTo).toBe('2026-06-30');
+  });
+
+  it('auto-generates the barcode KT-YYYYMM-NNNN from the issue month', async () => {
+    // No existing code for the period → first counter; issuedAt 2026-06-01 → 202606.
+    repo.maxCodeForPrefix.mockResolvedValue(null);
+    repo.create.mockResolvedValue(buildPermit());
+    await service.create(dto, '00000000-0000-0000-0000-000000000007');
+    expect(repo.maxCodeForPrefix).toHaveBeenCalledWith('KT-202606-');
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ code: 'KT-202606-0001' }));
+  });
+
+  it('continues the per-month counter from the highest existing code', async () => {
+    repo.maxCodeForPrefix.mockResolvedValue('KT-202606-0041');
+    repo.create.mockResolvedValue(buildPermit());
+    await service.create(dto, '00000000-0000-0000-0000-000000000007');
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ code: 'KT-202606-0042' }));
   });
 
   it('404s an unknown permit', async () => {
