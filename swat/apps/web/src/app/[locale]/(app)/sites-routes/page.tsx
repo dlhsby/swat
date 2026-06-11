@@ -164,15 +164,24 @@ const routeSchema = z
     category: z.enum(['DEPART_POOL', 'REFUEL', 'PICKUP', 'DISPOSAL', 'RETURN_POOL']),
     originSiteId: z.string().uuid('Lokasi asal wajib dipilih'),
     destinationSiteId: z.string().uuid('Lokasi tujuan wajib dipilih'),
+    // 0 is allowed — legacy routes overwhelmingly carry distance 0.
     distanceKm: z.coerce
       .number()
       .int('Jarak harus bilangan bulat (km)')
-      .min(1, 'Jarak minimal 1 km'),
+      .min(0, 'Jarak tidak boleh negatif'),
   })
-  .refine((d) => d.originSiteId !== d.destinationSiteId, {
-    message: 'Lokasi asal dan tujuan harus berbeda.',
-    path: ['destinationSiteId'],
-  });
+  // Pool-anchored legs (berangkat/kembali ke pool) may share origin & destination;
+  // every other category must run between two distinct sites.
+  .refine(
+    (d) =>
+      d.originSiteId !== d.destinationSiteId ||
+      d.category === 'DEPART_POOL' ||
+      d.category === 'RETURN_POOL',
+    {
+      message: 'Lokasi asal dan tujuan harus berbeda.',
+      path: ['destinationSiteId'],
+    },
+  );
 type RouteValues = z.infer<typeof routeSchema>;
 const routeDefaults: RouteValues = {
   category: 'PICKUP',
@@ -342,7 +351,7 @@ function RoutesTab(): JSX.Element {
       >
         <SelectField name="category" label="Jenis Rute" required options={ROUTE_CATEGORIES} />
         <RouteSiteFields sites={sites} />
-        <NumberField name="distanceKm" label="Jarak" required unit="km" min={1} />
+        <NumberField name="distanceKm" label="Jarak" required unit="km" min={0} />
       </CrudFormDialog>
     </CrudListShell>
   );

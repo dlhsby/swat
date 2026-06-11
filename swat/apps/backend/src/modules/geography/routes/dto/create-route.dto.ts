@@ -15,8 +15,10 @@ export class CreateRouteDto {
   @IsString({ message: 'Lokasi tujuan wajib dipilih' })
   destinationSiteId!: string;
 
-  @ApiProperty({ minimum: 1, description: 'Distance in whole km' })
+  // 0 is allowed: legacy routes overwhelmingly carry distance 0 (the old app did
+  // not track leg distance), so the field must round-trip that on edit.
+  @ApiProperty({ minimum: 0, description: 'Distance in whole km' })
   @IsInt({ message: 'Jarak harus bilangan bulat (km)' })
-  @Min(1, { message: 'Jarak minimal 1 km' })
+  @Min(0, { message: 'Jarak tidak boleh negatif' })
   distanceKm!: number;
 }

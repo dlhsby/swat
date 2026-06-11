@@ -86,6 +86,26 @@ describe('RoutesService', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
+    it('allows a pool-anchored self-loop (DEPART_POOL, same site, distance 0)', async () => {
+      const pool = '550e8400-e29b-41d4-a716-446655440002';
+      repo.create.mockResolvedValue(
+        buildRoute({
+          category: RouteCategory.DEPART_POOL,
+          originSiteId: pool,
+          destinationSiteId: pool,
+          distanceKm: 0,
+        }),
+      );
+      await expect(
+        service.create({
+          category: RouteCategory.DEPART_POOL,
+          originSiteId: pool,
+          destinationSiteId: pool,
+          distanceKm: 0,
+        }),
+      ).resolves.toMatchObject({ category: RouteCategory.DEPART_POOL });
+    });
+
     it('rejects a missing site', async () => {
       repo.siteExists.mockResolvedValueOnce(null);
       await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);

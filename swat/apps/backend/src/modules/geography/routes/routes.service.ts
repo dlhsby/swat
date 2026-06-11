@@ -15,6 +15,14 @@ import { type ListRoutesQueryDto } from './dto/list-routes.query.dto';
 import { type UpdateRouteDto } from './dto/update-route.dto';
 import { RoutesRepository, type RouteWithSites } from './routes.repository';
 
+// Pool-anchored legs ("Berangkat dari Pool" / "Kembali ke Pool") are legitimately
+// recorded with the same site for origin and destination; every other category is
+// a real trip between two distinct sites.
+const SELF_LOOP_ALLOWED: ReadonlySet<RouteCategory> = new Set<RouteCategory>([
+  'DEPART_POOL',
+  'RETURN_POOL',
+]);
+
 export interface RouteDto {
   readonly id: string;
   readonly category: RouteCategory;
@@ -68,7 +76,7 @@ export class RoutesService {
   }
 
   async create(dto: CreateRouteDto): Promise<RouteDto> {
-    if (dto.originSiteId === dto.destinationSiteId) {
+    if (dto.originSiteId === dto.destinationSiteId && !SELF_LOOP_ALLOWED.has(dto.category)) {
       throw new BadRequestException('Lokasi asal dan tujuan tidak boleh sama.');
     }
     await this.assertSitesExist(dto.originSiteId, dto.destinationSiteId);
@@ -98,9 +106,9 @@ export class RoutesService {
 
     const originSiteId = dto.originSiteId ?? existing.originSiteId;
     const destinationSiteId = dto.destinationSiteId ?? existing.destinationSiteId;
-    const category = dto.category ?? existing.category;
+    const category: RouteCategory = dto.category ?? existing.category;
 
-    if (originSiteId === destinationSiteId) {
+    if (originSiteId === destinationSiteId && !SELF_LOOP_ALLOWED.has(category)) {
       throw new BadRequestException('Lokasi asal dan tujuan tidak boleh sama.');
     }
     if (dto.originSiteId !== undefined || dto.destinationSiteId !== undefined) {
