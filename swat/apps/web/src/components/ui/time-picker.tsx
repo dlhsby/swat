@@ -7,12 +7,13 @@ import { cn } from '@/lib/cn';
 
 import { Button } from './button';
 import { Input, type InputProps } from './input';
-import { Popover, PopoverContent, PopoverTrigger } from './popover';
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './popover';
 
 const PRESETS = ['08:00', '12:00', '16:00'] as const;
 
-// 24-hour columns. Hours 00–23; minutes in 5-minute steps (any minute is still
-// reachable by typing into the field).
+// 24-hour options laid out as tap-friendly grids (no inner scroll — a portalled
+// scroll area inside a Dialog/Sheet is blocked by the scroll-lock). Hours 00–23;
+// minutes in 5-minute steps (any minute is still reachable by typing).
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
 
@@ -68,15 +69,15 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
   const setHour = (h: string): void => onValueChange?.(`${h}:${curMinute || '00'}`);
   const setMinute = (m: string): void => onValueChange?.(`${curHour || '00'}:${m}`);
 
-  const column = (
+  const grid = (
     items: readonly string[],
     selected: string,
     onPick: (v: string) => void,
     label: string,
   ): JSX.Element => (
-    <div className="flex w-16 flex-col" role="listbox" aria-label={label}>
-      <p className="pb-1 text-center text-tiny font-semibold text-neutral-500">{label}</p>
-      <div className="h-44 space-y-0.5 overflow-y-auto pr-1">
+    <div role="group" aria-label={label}>
+      <p className="pb-1.5 text-tiny font-semibold text-neutral-500">{label}</p>
+      <div className="grid grid-cols-6 gap-1">
         {items.map((item) => (
           <button
             key={item}
@@ -85,7 +86,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
             aria-selected={item === selected}
             onClick={() => onPick(item)}
             className={cn(
-              'w-full rounded-base px-2 py-1 text-center text-body-sm tabular-nums hover:bg-neutral-100',
+              'rounded-base px-1 py-1.5 text-center text-body-sm tabular-nums hover:bg-neutral-100',
               item === selected
                 ? 'bg-primary-700 font-semibold text-white hover:bg-primary-700'
                 : 'text-neutral-700',
@@ -100,43 +101,47 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
 
   return (
     <div className="space-y-2">
-      <div className="relative">
-        <Input
-          ref={ref}
-          type="text"
-          inputMode="numeric"
-          placeholder="HH:mm"
-          maxLength={5}
-          autoComplete="off"
-          disabled={disabled}
-          value={value}
-          onChange={(e) => onValueChange?.(formatLive(e.target.value))}
-          onBlur={(e) => {
-            onValueChange?.(normalize(e.target.value));
-            onBlur?.(e);
-          }}
-          className={cn('tnum pr-9', className)}
-          {...props}
-        />
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverAnchor asChild>
+          <div className="relative">
+            <Input
+              ref={ref}
+              type="text"
+              inputMode="numeric"
+              placeholder="HH:mm"
+              maxLength={5}
+              autoComplete="off"
               disabled={disabled}
-              aria-label="Pilih jam"
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500 hover:text-neutral-700 disabled:cursor-not-allowed disabled:text-neutral-300"
-            >
-              <Clock className="h-4 w-4" aria-hidden />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-auto p-3">
-            <div className="flex gap-2">
-              {column(HOURS, curHour, setHour, 'Jam')}
-              {column(MINUTES, curMinute, setMinute, 'Menit')}
-            </div>
-          </PopoverContent>
-        </Popover>
-      </div>
+              value={value}
+              onChange={(e) => onValueChange?.(formatLive(e.target.value))}
+              onBlur={(e) => {
+                onValueChange?.(normalize(e.target.value));
+                onBlur?.(e);
+              }}
+              className={cn('tnum pr-9', className)}
+              {...props}
+            />
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label="Pilih jam"
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500 hover:text-neutral-700 disabled:cursor-not-allowed disabled:text-neutral-300"
+              >
+                <Clock className="h-4 w-4" aria-hidden />
+              </button>
+            </PopoverTrigger>
+          </div>
+        </PopoverAnchor>
+        <PopoverContent
+          align="start"
+          className="w-[min(18rem,calc(100vw-2rem))] space-y-3 p-3"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          {grid(HOURS, curHour, setHour, 'Jam')}
+          {grid(MINUTES, curMinute, setMinute, 'Menit')}
+        </PopoverContent>
+      </Popover>
       {presets ? (
         <div className="flex flex-wrap gap-1.5">
           <Button

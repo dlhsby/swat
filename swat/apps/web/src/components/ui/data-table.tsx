@@ -204,7 +204,7 @@ export function DataTable<TData, TValue>({
           ) : null}
           {toolbar}
           {enableColumnToggle || actions || onRefresh || hasFilterableColumns ? (
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               {hasFilterableColumns ? (
                 <Button
                   variant="outline"
@@ -222,7 +222,7 @@ export function DataTable<TData, TValue>({
                   )}
                 >
                   <Filter className="h-4 w-4" aria-hidden />
-                  Filter
+                  <span className="hidden sm:inline">Filter</span>
                   {columnFilters.length > 0 ? (
                     <span
                       className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-700 px-1 text-tiny font-semibold tabular-nums text-white"
@@ -241,7 +241,7 @@ export function DataTable<TData, TValue>({
                   title="Hapus semua filter kolom"
                 >
                   <X className="h-4 w-4" aria-hidden />
-                  Hapus Filter
+                  <span className="hidden sm:inline">Hapus Filter</span>
                 </Button>
               ) : null}
               {enableColumnToggle ? (
@@ -249,7 +249,7 @@ export function DataTable<TData, TValue>({
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
                       <SlidersHorizontal className="h-4 w-4" aria-hidden />
-                      Kolom
+                      <span className="hidden sm:inline">Kolom</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -281,7 +281,7 @@ export function DataTable<TData, TValue>({
                   title="Muat ulang data"
                 >
                   <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} aria-hidden />
-                  Muat Ulang
+                  <span className="hidden sm:inline">Muat Ulang</span>
                 </Button>
               ) : null}
               {actions}
