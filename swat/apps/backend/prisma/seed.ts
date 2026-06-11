@@ -32,7 +32,13 @@ import {
 } from '@prisma/client';
 import { hash } from 'argon2';
 
-import { LEGACY_ROUTES, LEGACY_SITES, LEGACY_VEHICLES } from './legacy-fixtures';
+import {
+  LEGACY_DRIVER_LICENSES,
+  LEGACY_DRIVERS,
+  LEGACY_ROUTES,
+  LEGACY_SITES,
+  LEGACY_VEHICLES,
+} from './legacy-fixtures';
 import { LEGACY_VEHICLE_MODELS } from './legacy-vehicle-models';
 
 const prisma = new PrismaClient();
@@ -451,6 +457,8 @@ async function seedReferenceData(): Promise<void> {
   const siteIdByLegacy = await seedLegacySites();
   await seedLegacyRoutes(siteIdByLegacy);
   await seedLegacyVehicles(siteIdByLegacy, modelIdByLegacy);
+  const driverIdByLegacy = await seedLegacyDrivers(siteIdByLegacy);
+  await seedLegacyDriverLicenses(driverIdByLegacy);
 
   for (const source of WASTE_SOURCES) {
     await prisma.wasteSource.upsert({
@@ -554,21 +562,90 @@ async function seedLegacyVehicles(
   const CHUNK = 25;
   for (let i = 0; i < data.length; i += CHUNK) {
     await Promise.all(
-      data
-        .slice(i, i + CHUNK)
-        .map(({ legacyId, ...rest }) =>
-          prisma.vehicle.upsert({
-            where: { legacyId },
-            update: rest,
-            create: { legacyId, ...rest },
-          }),
-        ),
+      data.slice(i, i + CHUNK).map(({ legacyId, ...rest }) =>
+        prisma.vehicle.upsert({
+          where: { legacyId },
+          update: rest,
+          create: { legacyId, ...rest },
+        }),
+      ),
     );
   }
   // eslint-disable-next-line no-console
   console.log(
     `Legacy vehicles: ${data.length} upserted${skipped ? `, ${skipped} skipped (unresolved pool/model)` : ''}`,
   );
+}
+
+/** Legacy drivers (pengemudi) — pool resolved via the site map. Returns the
+ * legacyId → uuid map for licenses. */
+async function seedLegacyDrivers(
+  siteIdByLegacy: Map<number, string>,
+): Promise<Map<number, string>> {
+  const FALLBACK_BIRTH = new Date('1970-01-01T00:00:00.000Z');
+  let skipped = 0;
+  const data = LEGACY_DRIVERS.flatMap((d) => {
+    const poolSiteId = siteIdByLegacy.get(d.poolLegacyId);
+    if (poolSiteId === undefined) {
+      skipped += 1;
+      return [];
+    }
+    return [
+      {
+        legacyId: d.legacyId,
+        poolSiteId,
+        employmentStatus: d.employmentStatus,
+        name: d.name,
+        idCardNumber: d.idCardNumber,
+        originAddress: d.originAddress,
+        currentAddress: d.currentAddress,
+        birthDate: d.birthDate ? new Date(d.birthDate) : FALLBACK_BIRTH,
+        contact: d.contact,
+        safetyTraining: d.safetyTraining,
+        notes: d.notes,
+      },
+    ];
+  });
+  await prisma.driver.createMany({ data, skipDuplicates: true });
+  const rows = await prisma.driver.findMany({
+    where: { legacyId: { not: null } },
+    select: { id: true, legacyId: true },
+  });
+  const map = new Map<number, string>();
+  for (const r of rows) {
+    if (r.legacyId !== null) map.set(r.legacyId, r.id);
+  }
+  // eslint-disable-next-line no-console
+  console.log(`Legacy drivers: ${data.length} loaded${skipped ? `, ${skipped} skipped` : ''}`);
+  return map;
+}
+
+/** Legacy driver licenses (kepemilikansim) — driver via map, class by name. */
+async function seedLegacyDriverLicenses(driverIdByLegacy: Map<number, string>): Promise<void> {
+  const FALLBACK_EXPIRY = new Date('2020-01-01T00:00:00.000Z');
+  const classes = await prisma.licenseClass.findMany({ select: { id: true, name: true } });
+  const classIdByName = new Map(classes.map((c) => [c.name, c.id]));
+  let skipped = 0;
+  const data = LEGACY_DRIVER_LICENSES.flatMap((l) => {
+    const driverId = driverIdByLegacy.get(l.driverLegacyId);
+    const licenseClassId = classIdByName.get(l.licenseClassName);
+    if (driverId === undefined || licenseClassId === undefined) {
+      skipped += 1;
+      return [];
+    }
+    return [
+      {
+        legacyId: l.legacyId,
+        driverId,
+        licenseClassId,
+        licenseNumber: l.licenseNumber,
+        expiry: l.expiry ? new Date(l.expiry) : FALLBACK_EXPIRY,
+      },
+    ];
+  });
+  await prisma.driverLicense.createMany({ data, skipDuplicates: true });
+  // eslint-disable-next-line no-console
+  console.log(`Legacy licenses: ${data.length} loaded${skipped ? `, ${skipped} skipped` : ''}`);
 }
 
 // ---------------------------------------------------------------------------

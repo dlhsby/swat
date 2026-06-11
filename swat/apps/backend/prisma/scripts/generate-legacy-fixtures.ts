@@ -12,7 +12,12 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { mapRouteCategory, mapSiteType, mapVehicleStatus } from '../../scripts/migration/lib/enums';
+import {
+  mapEmploymentStatus,
+  mapRouteCategory,
+  mapSiteType,
+  mapVehicleStatus,
+} from '../../scripts/migration/lib/enums';
 import {
   clampNonNegative,
   dedupeRoutes,
@@ -173,12 +178,62 @@ function main(): void {
     };
   });
 
+  // --- Drivers (pengemudi) -----------------------------------------------
+  const driverRows = parseInserts(sql, 'pengemudi');
+  const driverLegacyIds = new Set<number>();
+  const drivers = driverRows.map((r) => {
+    const legacyId = num(r[0]);
+    driverLegacyIds.add(legacyId);
+    const birth = fixDate(r[7]);
+    return {
+      legacyId,
+      poolLegacyId: num(r[1]),
+      employmentStatus: mapEmploymentStatus(num(r[2])),
+      name: (trimOrNull(r[3]) ?? '(Tanpa Nama)').slice(0, 100),
+      idCardNumber: (trimOrNull(r[4]) ?? '').slice(0, 16),
+      originAddress: (trimOrNull(r[5]) ?? '-').slice(0, 256),
+      currentAddress: (trimOrNull(r[6]) ?? '-').slice(0, 256),
+      // birthDate is NOT NULL; a 0000-00-00/invalid legacy date → seed fallback.
+      birthDate: birth ? birth.toISOString().slice(0, 10) : null,
+      contact: (trimOrNull(r[8]) ?? '-').slice(0, 100),
+      safetyTraining: trimOrNull(r[9]),
+      notes: trimOrNull(r[11]),
+    };
+  });
+
+  // --- Driver licenses (kepemilikansim) — class resolved by SIM name ------
+  const simNameById = new Map<number, string>();
+  for (const r of parseInserts(sql, 'sim')) {
+    simNameById.set(num(r[0]), (trimOrNull(r[1]) ?? '').trim());
+  }
+  let orphanLicenses = 0;
+  const licenses = parseInserts(sql, 'kepemilikansim').flatMap((r) => {
+    const driverLegacyId = num(r[1]);
+    const licenseClassName = simNameById.get(num(r[2]));
+    if (!driverLegacyIds.has(driverLegacyId) || !licenseClassName) {
+      orphanLicenses += 1;
+      return [];
+    }
+    const exp = fixDate(r[4]);
+    return [
+      {
+        legacyId: num(r[0]),
+        driverLegacyId,
+        licenseClassName,
+        licenseNumber: (trimOrNull(r[3]) ?? '-').slice(0, 12),
+        expiry: exp ? exp.toISOString().slice(0, 10) : null,
+      },
+    ];
+  });
+
   // --- Emit (pure JSON; the typed wrapper lives in legacy-fixtures.ts) -----
   // JSON, not TS literals: a multi-thousand-row array of enum-typed object
   // literals overflows tsc's union representation (TS2590). The wrapper casts.
   writeFileSync(resolve(OUT_DIR, 'legacy-sites.json'), JSON.stringify(sites, null, 1));
   writeFileSync(resolve(OUT_DIR, 'legacy-routes.json'), JSON.stringify(routes, null, 1));
   writeFileSync(resolve(OUT_DIR, 'legacy-vehicles.json'), JSON.stringify(vehicles, null, 1));
+  writeFileSync(resolve(OUT_DIR, 'legacy-drivers.json'), JSON.stringify(drivers, null, 1));
+  writeFileSync(resolve(OUT_DIR, 'legacy-licenses.json'), JSON.stringify(licenses, null, 1));
 
   // --- Cleanup report -----------------------------------------------------
   process.stdout.write(
@@ -187,6 +242,8 @@ function main(): void {
       `  sites:    ${sites.length} (from ${spotRows.length} spot rows)`,
       `  routes:   ${routes.length} kept · ${dropped.length} duplicates · ${orphanRoutes} orphans dropped (from ${ruteRows.length})`,
       `  vehicles: ${vehicles.length} (${plateReview} needsPlateReview) from ${kRows.length} kendaraan rows`,
+      `  drivers:  ${drivers.length} (from ${driverRows.length} pengemudi rows)`,
+      `  licenses: ${licenses.length} · ${orphanLicenses} orphans dropped`,
       ``,
     ].join('\n'),
   );

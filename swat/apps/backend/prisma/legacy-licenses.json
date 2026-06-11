@@ -1,0 +1,100 @@
+[
+  {
+    "legacyId": 4,
+    "driverLegacyId": 4,
+    "licenseClassName": "BI",
+    "licenseNumber": "920515143597",
+    "expiry": "2017-05-24"
+  },
+  {
+    "legacyId": 5,
+    "driverLegacyId": 5,
+    "licenseClassName": "BII",
+    "licenseNumber": "821215143336",
+    "expiry": "2017-12-09"
+  },
+  {
+    "legacyId": 6,
+    "driverLegacyId": 6,
+    "licenseClassName": "BI",
+    "licenseNumber": "870815142971",
+    "expiry": "2016-08-13"
+  },
+  {
+    "legacyId": 7,
+    "driverLegacyId": 7,
+    "licenseClassName": "BI",
+    "licenseNumber": "860114430877",
+    "expiry": "2012-01-19"
+  },
+  {
+    "legacyId": 8,
+    "driverLegacyId": 8,
+    "licenseClassName": "BI",
+    "licenseNumber": "920115143154",
+    "expiry": "2017-01-28"
+  },
+  {
+    "legacyId": 9,
+    "driverLegacyId": 10,
+    "licenseClassName": "BI",
+    "licenseNumber": "843015540155",
+    "expiry": "2015-03-09"
+  },
+  {
+    "legacyId": 10,
+    "driverLegacyId": 11,
+    "licenseClassName": "BI",
+    "licenseNumber": "770415480672",
+    "expiry": "2017-04-19"
+  },
+  {
+    "legacyId": 11,
+    "driverLegacyId": 12,
+    "licenseClassName": "BI",
+    "licenseNumber": "850615550582",
+    "expiry": "2018-06-26"
+  },
+  {
+    "legacyId": 12,
+    "driverLegacyId": 13,
+    "licenseClassName": "BI",
+    "licenseNumber": "850415480335",
+    "expiry": "2016-04-04"
+  },
+  {
+    "legacyId": 13,
+    "driverLegacyId": 133,
+    "licenseClassName": "BI",
+    "licenseNumber": "670115480116",
+    "expiry": "2018-01-10"
+  },
+  {
+    "legacyId": 14,
+    "driverLegacyId": 134,
+    "licenseClassName": "BI",
+    "licenseNumber": "870515143822",
+    "expiry": "2014-05-22"
+  },
+  {
+    "legacyId": 15,
+    "driverLegacyId": 135,
+    "licenseClassName": "BI",
+    "licenseNumber": "930915530839",
+    "expiry": "2014-09-01"
+  },
+  {
+    "legacyId": 16,
+    "driverLegacyId": 136,
+    "licenseClassName": "BI",
+    "licenseNumber": "900615410633",
+    "expiry": "2019-06-04"
+  },
+  {
+    "legacyId": 17,
+    "driverLegacyId": 209,
+    "licenseClassName": "A",
+    "licenseNumber": "-",
+    "expiry": null
+  }
+]

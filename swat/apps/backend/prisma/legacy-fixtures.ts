@@ -11,7 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { RouteCategory, SiteType, VehicleStatus } from '@prisma/client';
+import type { EmploymentStatus, RouteCategory, SiteType, VehicleStatus } from '@prisma/client';
 
 export interface LegacySite {
   readonly legacyId: number;
@@ -53,7 +53,34 @@ function load<T>(file: string): readonly T[] {
   return JSON.parse(readFileSync(join(__dirname, file), 'utf8')) as readonly T[];
 }
 
+export interface LegacyDriver {
+  readonly legacyId: number;
+  readonly poolLegacyId: number;
+  readonly employmentStatus: EmploymentStatus;
+  readonly name: string;
+  readonly idCardNumber: string;
+  readonly originAddress: string;
+  readonly currentAddress: string;
+  /** ISO yyyy-MM-dd, or null when the legacy date was 0000-00-00 (seed applies a fallback). */
+  readonly birthDate: string | null;
+  readonly contact: string;
+  readonly safetyTraining: string | null;
+  readonly notes: string | null;
+}
+
+export interface LegacyDriverLicense {
+  readonly legacyId: number;
+  readonly driverLegacyId: number;
+  /** Resolved against the seeded LicenseClass by name (A / BI / … / D). */
+  readonly licenseClassName: string;
+  readonly licenseNumber: string;
+  readonly expiry: string | null;
+}
+
 export const LEGACY_SITES: readonly LegacySite[] = load<LegacySite>('legacy-sites.json');
 export const LEGACY_ROUTES: readonly LegacyRoute[] = load<LegacyRoute>('legacy-routes.json');
 export const LEGACY_VEHICLES: readonly LegacyVehicle[] =
   load<LegacyVehicle>('legacy-vehicles.json');
+export const LEGACY_DRIVERS: readonly LegacyDriver[] = load<LegacyDriver>('legacy-drivers.json');
+export const LEGACY_DRIVER_LICENSES: readonly LegacyDriverLicense[] =
+  load<LegacyDriverLicense>('legacy-licenses.json');
