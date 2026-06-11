@@ -5,7 +5,9 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const roleInclude = {
   permissions: { select: { permissionId: true } },
-  _count: { select: { users: true } },
+  // User is soft-deleted (audited); the audit middleware does not filter a
+  // relation _count, so count only live users to avoid inflating the tally.
+  _count: { select: { users: { where: { deletedAt: null } } } },
 } satisfies Prisma.RoleInclude;
 
 export type RoleWithRelations = Prisma.RoleGetPayload<{ include: typeof roleInclude }>;

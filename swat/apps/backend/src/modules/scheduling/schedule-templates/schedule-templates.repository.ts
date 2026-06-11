@@ -7,7 +7,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 const crewInclude = {
   vehicle: { select: { id: true, plateNumber: true } },
   driver: { select: { id: true, name: true } },
-  _count: { select: { tripTemplates: true } },
+  // TripTemplate is soft-deleted (audited), and the audit middleware does NOT
+  // filter a relation _count — so count only the live rows explicitly, else
+  // deleted trip templates inflate the displayed count.
+  _count: { select: { tripTemplates: { where: { deletedAt: null } } } },
 } satisfies Prisma.ScheduleTemplateInclude;
 
 export type ScheduleTemplateWithRefs = Prisma.ScheduleTemplateGetPayload<{
