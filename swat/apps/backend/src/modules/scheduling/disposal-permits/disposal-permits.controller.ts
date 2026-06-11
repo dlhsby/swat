@@ -1,8 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { type SessionUser } from '../../../common/auth/session.types';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { type PaginationMeta } from '../../../common/types/api-response';
 
@@ -39,21 +37,15 @@ export class DisposalPermitsController {
   @Post()
   @RequirePermissions('disposal-permit:create')
   @ApiOperation({ summary: 'Issue a disposal permit (kitir)' })
-  create(
-    @Body() dto: CreateDisposalPermitDto,
-    @CurrentUser() user: SessionUser,
-  ): Promise<DisposalPermitDto> {
-    return this.disposalPermits.create(dto, user.id);
+  create(@Body() dto: CreateDisposalPermitDto): Promise<DisposalPermitDto> {
+    return this.disposalPermits.create(dto);
   }
 
   @Post('bulk-import')
   @RequirePermissions('disposal-permit:create')
   @ApiOperation({ summary: 'Bulk-import disposal permits (Impor Massal); upsert by legacyId' })
-  bulkImport(
-    @Body() dto: BulkImportDisposalPermitsDto,
-    @CurrentUser() user: SessionUser,
-  ): Promise<BulkImportResult> {
-    return this.disposalPermits.bulkImport(dto, user.id);
+  bulkImport(@Body() dto: BulkImportDisposalPermitsDto): Promise<BulkImportResult> {
+    return this.disposalPermits.bulkImport(dto);
   }
 
   @Patch(':id')
@@ -62,8 +54,7 @@ export class DisposalPermitsController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateDisposalPermitDto,
-    @CurrentUser() user: SessionUser,
   ): Promise<DisposalPermitDto> {
-    return this.disposalPermits.update(id, dto, user.id);
+    return this.disposalPermits.update(id, dto);
   }
 }

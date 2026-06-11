@@ -65,7 +65,7 @@ export class DisposalPermitsRepository {
     return this.prisma.site.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
-  create(data: Prisma.DisposalPermitCreateInput): Promise<DisposalPermitWithRefs> {
+  create(data: Prisma.DisposalPermitUncheckedCreateInput): Promise<DisposalPermitWithRefs> {
     return this.prisma.disposalPermit.create({ data, include: permitInclude });
   }
 
@@ -101,7 +101,10 @@ export class DisposalPermitsRepository {
       return new Set();
     }
     const rows = await this.prisma.disposalPermit.findMany({
-      where: { legacyId: { in: legacyIds } },
+      // Include soft-deleted rows (passing a deletedAt clause opts out of the audit
+      // middleware's `deletedAt: null` injection) so a re-imported legacyId that was
+      // soft-deleted is treated as existing → upserted/resurrected, not re-created.
+      where: { legacyId: { in: legacyIds }, deletedAt: { not: undefined } },
       select: { legacyId: true },
     });
     return new Set(rows.flatMap((r) => (r.legacyId === null ? [] : [r.legacyId])));
@@ -110,8 +113,8 @@ export class DisposalPermitsRepository {
   /** Idempotent by legacyId — used by the bulk importer. */
   async upsertByLegacyId(
     legacyId: number,
-    create: Prisma.DisposalPermitCreateInput,
-    update: Prisma.DisposalPermitUpdateInput,
+    create: Prisma.DisposalPermitUncheckedCreateInput,
+    update: Prisma.DisposalPermitUncheckedUpdateInput,
   ): Promise<void> {
     await this.prisma.disposalPermit.upsert({
       where: { legacyId },
@@ -120,11 +123,14 @@ export class DisposalPermitsRepository {
     });
   }
 
-  async createPlain(data: Prisma.DisposalPermitCreateInput): Promise<void> {
+  async createPlain(data: Prisma.DisposalPermitUncheckedCreateInput): Promise<void> {
     await this.prisma.disposalPermit.create({ data });
   }
 
-  update(id: string, data: Prisma.DisposalPermitUpdateInput): Promise<DisposalPermitWithRefs> {
+  update(
+    id: string,
+    data: Prisma.DisposalPermitUncheckedUpdateInput,
+  ): Promise<DisposalPermitWithRefs> {
     return this.prisma.disposalPermit.update({ where: { id }, data, include: permitInclude });
   }
 }

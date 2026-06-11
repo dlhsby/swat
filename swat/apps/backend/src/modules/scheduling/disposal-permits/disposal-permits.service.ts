@@ -96,7 +96,7 @@ export class DisposalPermitsService {
     return toDto(permit);
   }
 
-  async create(dto: CreateDisposalPermitDto, userId: string): Promise<DisposalPermitDto> {
+  async create(dto: CreateDisposalPermitDto): Promise<DisposalPermitDto> {
     const issuedAt = parseDateOnly(dto.issuedAt);
     const validFrom = parseDateOnly(dto.validFrom);
     const validTo = parseDateOnly(dto.validTo);
@@ -120,9 +120,11 @@ export class DisposalPermitsService {
           issuedAt,
           validFrom,
           validTo,
-          vehicle: { connect: { id: dto.vehicleId } },
-          site: { connect: { id: dto.siteId } },
-          createdBy: { connect: { id: userId } },
+          // Scalar FKs (unchecked input): the audit middleware stamps the scalar
+          // createdById/updatedById, which the relation-style (checked) input would
+          // reject because DisposalPermit declares createdBy/updatedBy relations.
+          vehicleId: dto.vehicleId,
+          siteId: dto.siteId,
         });
         return toDto(permit);
       } catch (err) {
@@ -144,11 +146,7 @@ export class DisposalPermitsService {
     return `${prefix}${String(next).padStart(4, '0')}`;
   }
 
-  async update(
-    id: string,
-    dto: UpdateDisposalPermitDto,
-    userId: string,
-  ): Promise<DisposalPermitDto> {
+  async update(id: string, dto: UpdateDisposalPermitDto): Promise<DisposalPermitDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Jatah kitir tidak ditemukan.');
@@ -163,7 +161,7 @@ export class DisposalPermitsService {
     const permit = await this.repo.update(id, {
       ...(dto.status !== undefined ? { status: dto.status } : {}),
       ...(dto.validTo !== undefined ? { validTo: parseDateOnly(dto.validTo) } : {}),
-      updatedBy: { connect: { id: userId } },
+      // updatedById is stamped by the audit middleware (see create()).
     });
     return toDto(permit);
   }
@@ -173,7 +171,7 @@ export class DisposalPermitsService {
    * vehicles/sites + date order; valid rows are upserted by `legacyId`
    * (idempotent re-runs), invalid rows reported with their 1-based row number.
    */
-  async bulkImport(dto: BulkImportDisposalPermitsDto, userId: string): Promise<BulkImportResult> {
+  async bulkImport(dto: BulkImportDisposalPermitsDto): Promise<BulkImportResult> {
     const strategy = dto.strategy ?? BulkImportStrategy.UPSERT;
     const [vehicleIds, siteIds] = await Promise.all([
       this.repo.allVehicleIds(),
@@ -207,7 +205,7 @@ export class DisposalPermitsService {
       }
 
       try {
-        await this.persistBulkRow(row, isExisting, issuedAt, userId);
+        await this.persistBulkRow(row, isExisting, issuedAt);
         if (isExisting) {
           updated += 1;
         } else {
@@ -254,33 +252,35 @@ export class DisposalPermitsService {
     row: BulkDisposalPermitRowDto,
     isExisting: boolean,
     issuedAt: Date,
-    userId: string,
   ): Promise<void> {
     const validFrom = parseDateOnly(row.validFrom);
     const validTo = parseDateOnly(row.validTo);
     // Barcode: prefer an explicit code, else fall back to the legacy JATAHKITIR_ID
     // (the legacy app printed that id as the barcode, so this keeps already-printed
     // kitir scannable). In-app issues use the KT-YYYYMM-NNNN generator instead.
+    // (createdById/updatedById are stamped by the audit middleware.)
     const code = row.code ?? (row.legacyId !== undefined ? String(row.legacyId) : undefined);
-    const create: Prisma.DisposalPermitCreateInput = {
+    const create: Prisma.DisposalPermitUncheckedCreateInput = {
       ...(code !== undefined ? { code } : {}),
       ...(row.status !== undefined ? { status: row.status } : {}),
       issuedAt,
       validFrom,
       validTo,
-      vehicle: { connect: { id: row.vehicleId } },
-      site: { connect: { id: row.siteId } },
-      createdBy: { connect: { id: userId } },
+      vehicleId: row.vehicleId,
+      siteId: row.siteId,
     };
     if (isExisting && row.legacyId !== undefined) {
+      // Re-import resurrects a soft-deleted kitir (deletedAt → null) so a previously
+      // deleted legacyId round-trips instead of hitting the unique constraint.
       await this.repo.upsertByLegacyId(row.legacyId, create, {
         ...(code !== undefined ? { code } : {}),
         ...(row.status !== undefined ? { status: row.status } : {}),
         validFrom,
         validTo,
-        vehicle: { connect: { id: row.vehicleId } },
-        site: { connect: { id: row.siteId } },
-        updatedBy: { connect: { id: userId } },
+        vehicleId: row.vehicleId,
+        siteId: row.siteId,
+        deletedAt: null,
+        deletedById: null,
       });
       return;
     }
