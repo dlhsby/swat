@@ -42,6 +42,8 @@ import { createTripTemplate, deleteTripTemplate, listTripTemplates } from '@/lib
 export interface TripTemplatesSheetProps {
   schedule: ScheduleTemplateDto | null;
   onOpenChange: (open: boolean) => void;
+  /** Notifies the parent list to refresh its trip-template count after a change. */
+  onMutated?: () => void;
 }
 
 // Ordered the way a day is planned: leave the pool, refuel, collect, dump, return.
@@ -91,6 +93,7 @@ const siteOption = (s: SiteDto): { value: string; label: string } => ({
 export function TripTemplatesSheet({
   schedule,
   onOpenChange,
+  onMutated,
 }: TripTemplatesSheetProps): JSX.Element {
   const [templates, setTemplates] = useState<TripTemplateDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -201,6 +204,7 @@ export function TripTemplatesSheet({
       notify.success('Template Trip ditambahkan.');
       resetForm();
       await reload();
+      onMutated?.();
     } catch (err) {
       notify.error(err instanceof ApiError ? err.message : 'Gagal menambah rute.');
     } finally {
@@ -217,6 +221,7 @@ export function TripTemplatesSheet({
       notify.success('Template Trip dihapus.');
       setDeleteTarget(null);
       await reload();
+      onMutated?.();
     } catch (err) {
       notify.error(err instanceof ApiError ? err.message : 'Gagal menghapus rute.');
     }

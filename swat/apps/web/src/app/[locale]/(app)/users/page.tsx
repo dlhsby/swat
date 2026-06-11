@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
+import { hiddenIdColumn } from '@/components/crud/crud-list-shell';
 import { SelectField, TextField } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
 import { PageHead } from '@/components/shell/page-head';
@@ -128,6 +129,7 @@ export default function UsersPage(): JSX.Element {
 
   const columns = useMemo<ColumnDef<UserDto, unknown>[]>(
     () => [
+      hiddenIdColumn<UserDto>(),
       {
         accessorKey: 'name',
         header: 'Nama',

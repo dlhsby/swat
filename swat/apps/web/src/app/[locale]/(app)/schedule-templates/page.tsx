@@ -153,6 +153,7 @@ export default function ScheduleTemplatesPage(): JSX.Element {
       <TripTemplatesSheet
         schedule={templatesFor}
         onOpenChange={(open) => !open && setTemplatesFor(null)}
+        onMutated={() => void manager.reload()}
       />
     </CrudListShell>
   );

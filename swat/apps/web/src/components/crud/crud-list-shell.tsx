@@ -12,6 +12,24 @@ import { type BreadcrumbItem } from '@/components/ui';
 import { type ResourceManager } from '@/hooks/use-resource-manager';
 import { formatDateDisplay } from '@/lib/format';
 
+/** Hidden-by-default `id` column (the UUID), revealable via the column toggle. */
+export function hiddenIdColumn<T>(): ColumnDef<T, unknown> {
+  return {
+    id: 'id',
+    accessorFn: (row) => (row as { id?: string }).id ?? null,
+    header: 'ID',
+    meta: { label: 'ID', defaultHidden: true },
+    cell: ({ getValue }) => {
+      const value = getValue();
+      return (
+        <span className="font-mono text-tiny text-neutral-500">
+          {typeof value === 'string' && value ? value : '—'}
+        </span>
+      );
+    },
+  };
+}
+
 /** Hidden-by-default audit columns (timestamps + actor names) appended to every master-data table. */
 function auditColumns<T>(): ColumnDef<T, unknown>[] {
   const dateCell = (value: unknown): JSX.Element => (
@@ -106,13 +124,13 @@ export function CrudListShell<T>({
   const createButton = makeCreateButton();
   const toolbarCreateButton = makeCreateButton('hidden sm:inline');
 
-  // Append hidden audit columns, keeping the row-actions column last.
+  // Append the hidden id + audit columns, keeping the row-actions column last.
   const actionsIdx = columns.findIndex((c) => c.id === 'actions');
-  const audit = auditColumns<T>();
+  const extra = [hiddenIdColumn<T>(), ...auditColumns<T>()];
   const mergedColumns =
     actionsIdx >= 0
-      ? [...columns.slice(0, actionsIdx), ...audit, ...columns.slice(actionsIdx)]
-      : [...columns, ...audit];
+      ? [...columns.slice(0, actionsIdx), ...extra, ...columns.slice(actionsIdx)]
+      : [...columns, ...extra];
 
   return (
     <>

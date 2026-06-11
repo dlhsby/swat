@@ -5,6 +5,7 @@ import { AlertTriangle, Droplets, Fuel, Receipt } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 
+import { hiddenIdColumn } from '@/components/crud/crud-list-shell';
 import { PageHead } from '@/components/shell/page-head';
 import { Badge, Card, CardContent, DataTable } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
@@ -48,6 +49,7 @@ export default function RefuelLogPage(): JSX.Element {
 
   const columns = useMemo<ColumnDef<RefuelDto, unknown>[]>(
     () => [
+      hiddenIdColumn<RefuelDto>(),
       {
         accessorKey: 'operationDate',
         header: 'Tanggal',

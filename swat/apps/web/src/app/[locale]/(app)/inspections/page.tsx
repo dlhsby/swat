@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
+import { hiddenIdColumn } from '@/components/crud/crud-list-shell';
 import { type SelectOption } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
 import { InspectionDialog } from '@/components/operations/inspection-dialog';
@@ -65,6 +66,7 @@ export default function InspectionsPage(): JSX.Element {
 
   const columns = useMemo<ColumnDef<InspectionDto, unknown>[]>(
     () => [
+      hiddenIdColumn<InspectionDto>(),
       {
         accessorKey: 'date',
         header: 'Tanggal',

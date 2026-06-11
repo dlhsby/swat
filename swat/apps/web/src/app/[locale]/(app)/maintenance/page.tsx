@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
+import { hiddenIdColumn } from '@/components/crud/crud-list-shell';
 import { type SelectOption } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
 import { MaintenanceDialog } from '@/components/operations/maintenance-dialog';
@@ -125,6 +126,7 @@ export default function MaintenancePage(): JSX.Element {
 
   const columns = useMemo<ColumnDef<MaintenanceDto, unknown>[]>(
     () => [
+      hiddenIdColumn<MaintenanceDto>(),
       {
         accessorKey: 'code',
         header: 'Kode',
