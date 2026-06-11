@@ -548,10 +548,26 @@ async function seedLegacyVehicles(
       },
     ];
   });
-  await prisma.vehicle.createMany({ data, skipDuplicates: true });
+  // Upsert (not createMany) so re-seeding UPDATES existing rows — e.g. the 999
+  // placeholder normalization lands on a DB seeded before that cleanup. Chunked
+  // to bound concurrency against the connection pool.
+  const CHUNK = 25;
+  for (let i = 0; i < data.length; i += CHUNK) {
+    await Promise.all(
+      data
+        .slice(i, i + CHUNK)
+        .map(({ legacyId, ...rest }) =>
+          prisma.vehicle.upsert({
+            where: { legacyId },
+            update: rest,
+            create: { legacyId, ...rest },
+          }),
+        ),
+    );
+  }
   // eslint-disable-next-line no-console
   console.log(
-    `Legacy vehicles: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved pool/model)` : ''}`,
+    `Legacy vehicles: ${data.length} upserted${skipped ? `, ${skipped} skipped (unresolved pool/model)` : ''}`,
   );
 }
 

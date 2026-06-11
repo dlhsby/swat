@@ -90,6 +90,14 @@ function parseInserts(sql: string, table: string): Field[][] {
 
 const num = (f: Field | undefined): number => (f == null ? 0 : Number(f));
 
+// 999 is the legacy "unknown" sentinel for kendaraan numerics (same convention
+// as kategorikendaraan, where 999 → 0/1 on import). Map it out so the UI shows a
+// real 0/unknown instead of a fake 999. Negatives already clamp to 0.
+const unsentinel = (f: Field | undefined): number => {
+  const n = clampNonNegative(f);
+  return n === 999 ? 0 : n;
+};
+
 function main(): void {
   const sql = readFileSync(DUMP, 'utf8');
 
@@ -155,9 +163,10 @@ function main(): void {
       chassisNumber: (trimOrNull(r[5]) ?? '-').slice(0, 100),
       engineNumber: (trimOrNull(r[6]) ?? '-').slice(0, 100),
       manufactureYear: fixYear(r[7], NOW),
-      currentFuelRatio: clampNonNegative(r[8]) || 1,
-      currentTareWeight: clampNonNegative(r[9]),
-      currentOdometer: clampNonNegative(r[10]),
+      // ratio falls back to 1 (0 is invalid); tare/odometer keep 0 = unknown.
+      currentFuelRatio: unsentinel(r[8]) || 1,
+      currentTareWeight: unsentinel(r[9]),
+      currentOdometer: unsentinel(r[10]),
       registrationExpiry: reg ? reg.toISOString().slice(0, 10) : null,
       taxExpiry: tax ? tax.toISOString().slice(0, 10) : null,
       notes: trimOrNull(r[13]),
