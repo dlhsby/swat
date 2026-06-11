@@ -122,6 +122,8 @@ export function CrudListShell<T>({
         loading={manager.loading}
         error={manager.error}
         onRetry={() => void manager.reload()}
+        onRefresh={() => void manager.reload()}
+        refreshing={manager.loading}
         searchPlaceholder={searchPlaceholder ?? t('search')}
         toolbar={toolbar}
         actions={createButton}

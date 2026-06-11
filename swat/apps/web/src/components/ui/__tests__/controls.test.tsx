@@ -153,6 +153,18 @@ describe('TimePicker', () => {
     expect(input).toHaveValue('18:30');
   });
 
+  it('picks hour and minute from the 24-hour dropdown', async () => {
+    function Controlled(): JSX.Element {
+      const [v, setV] = useState('');
+      return <TimePicker aria-label="jam" value={v} onValueChange={setV} />;
+    }
+    render(<Controlled />);
+    await userEvent.click(screen.getByRole('button', { name: 'Pilih jam' }));
+    await userEvent.click(screen.getByRole('option', { name: '09' }));
+    await userEvent.click(screen.getByRole('option', { name: '30' }));
+    expect(screen.getByRole('textbox', { name: 'jam' })).toHaveValue('09:30');
+  });
+
   it('clamps an out-of-range time on blur', async () => {
     const onValueChange = vi.fn();
     render(<TimePicker aria-label="jam" value="99:99" onValueChange={onValueChange} />);

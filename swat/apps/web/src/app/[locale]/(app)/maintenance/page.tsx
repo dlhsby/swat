@@ -236,6 +236,8 @@ export default function MaintenancePage(): JSX.Element {
         loading={loading}
         error={error}
         onRetry={() => void reload()}
+        onRefresh={() => void reload()}
+        refreshing={loading}
         searchPlaceholder="Cari kode / kendaraan…"
         emptyAction={createButton}
       />

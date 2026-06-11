@@ -136,6 +136,8 @@ export default function InspectionsPage(): JSX.Element {
         loading={loading}
         error={error}
         onRetry={() => void reload()}
+        onRefresh={() => void reload()}
+        refreshing={loading}
         searchPlaceholder="Cari kendaraan…"
         emptyAction={createButton}
       />

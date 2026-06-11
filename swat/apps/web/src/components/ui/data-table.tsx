@@ -17,6 +17,7 @@ import {
   ArrowUp,
   ChevronsUpDown,
   Filter,
+  RefreshCw,
   Search,
   SlidersHorizontal,
   X,
@@ -71,6 +72,10 @@ export interface DataTableProps<TData, TValue> {
   emptyTitle?: string;
   /** Extra toolbar content (filters) rendered between search and column-toggle. */
   toolbar?: ReactNode;
+  /** Reload the grid's data; renders a refresh button after the column-toggle. */
+  onRefresh?: () => void;
+  /** Spins the refresh button while a reload is in flight. */
+  refreshing?: boolean;
   /** Primary action(s) (e.g. [Buat Baru]) shown at the toolbar's right edge,
    * after the column-toggle, so the data controls sit together. */
   actions?: ReactNode;
@@ -106,6 +111,8 @@ export function DataTable<TData, TValue>({
   emptyAction,
   emptyTitle = 'Belum ada data',
   toolbar,
+  onRefresh,
+  refreshing = false,
   actions,
   className,
 }: DataTableProps<TData, TValue>): JSX.Element {
@@ -174,7 +181,12 @@ export function DataTable<TData, TValue>({
   const colCount = table.getVisibleLeafColumns().length || 1;
   const hasFilterableColumns = table.getAllColumns().some((c) => c.getCanFilter());
   const showToolbar =
-    hasSearch || Boolean(toolbar) || enableColumnToggle || Boolean(actions) || hasFilterableColumns;
+    hasSearch ||
+    Boolean(toolbar) ||
+    enableColumnToggle ||
+    Boolean(onRefresh) ||
+    Boolean(actions) ||
+    hasFilterableColumns;
 
   return (
     <div className={cn('space-y-3', className)}>
@@ -191,7 +203,7 @@ export function DataTable<TData, TValue>({
             />
           ) : null}
           {toolbar}
-          {enableColumnToggle || actions || hasFilterableColumns ? (
+          {enableColumnToggle || actions || onRefresh || hasFilterableColumns ? (
             <div className="ml-auto flex items-center gap-2">
               {hasFilterableColumns ? (
                 <Button
@@ -258,6 +270,19 @@ export function DataTable<TData, TValue>({
                       ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+              ) : null}
+              {onRefresh ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRefresh}
+                  disabled={refreshing}
+                  aria-label="Muat ulang"
+                  title="Muat ulang data"
+                >
+                  <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} aria-hidden />
+                  Muat Ulang
+                </Button>
               ) : null}
               {actions}
             </div>

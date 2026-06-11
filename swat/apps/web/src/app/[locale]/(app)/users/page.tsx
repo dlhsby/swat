@@ -222,6 +222,8 @@ export default function UsersPage(): JSX.Element {
         loading={loading}
         error={error}
         onRetry={() => void reload()}
+        onRefresh={() => void reload()}
+        refreshing={loading}
         searchPlaceholder="Cari pengguna…"
         emptyAction={createButton}
       />

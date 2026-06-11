@@ -127,6 +127,8 @@ export default function RefuelLogPage(): JSX.Element {
         loading={loading}
         error={error}
         onRetry={() => void reload()}
+        onRefresh={() => void reload()}
+        refreshing={loading}
         searchPlaceholder="Cari kendaraan / BBM…"
       />
     </>
