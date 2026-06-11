@@ -95,6 +95,18 @@ function SitesTab(): JSX.Element {
       },
       { accessorKey: 'address', header: 'Alamat', meta: { label: 'Alamat' } },
       {
+        accessorKey: 'latitude',
+        header: 'Lintang',
+        meta: { label: 'Lintang', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.latitude ?? '—'}</span>,
+      },
+      {
+        accessorKey: 'longitude',
+        header: 'Bujur',
+        meta: { label: 'Bujur', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.longitude ?? '—'}</span>,
+      },
+      {
         id: 'actions',
         header: '',
         enableSorting: false,

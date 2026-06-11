@@ -103,9 +103,19 @@ export default function DisposalPermitsPage(): JSX.Element {
       },
       { accessorKey: 'siteName', header: 'Lokasi', meta: { label: 'Lokasi' } },
       {
+        accessorKey: 'issuedAt',
+        header: 'Tanggal Terbit',
+        meta: { label: 'Tanggal Terbit', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {row.original.issuedAt ? formatDateDisplay(row.original.issuedAt) : '—'}
+          </span>
+        ),
+      },
+      {
         accessorKey: 'validFrom',
         header: 'Berlaku Dari',
-        meta: { label: 'Berlaku Dari' },
+        meta: { label: 'Berlaku Dari', filterVariant: 'date' },
         cell: ({ row }) => formatDateDisplay(row.original.validFrom),
       },
       {

@@ -21,7 +21,7 @@ import { VehicleWasteSourcesSheet } from '@/components/fleet/vehicle-waste-sourc
 import { DropdownMenuItem, StatusPill } from '@/components/ui';
 import { useOptions } from '@/hooks/use-options';
 import { useResourceManager } from '@/hooks/use-resource-manager';
-import { formatNumber } from '@/lib/format';
+import { formatDateDisplay, formatNumber } from '@/lib/format';
 import {
   type SiteDto,
   type VehicleDto,
@@ -133,6 +133,68 @@ export function VehiclesTab(): JSX.Element {
         header: 'Status',
         meta: { label: 'Status' },
         cell: ({ row }) => <StatusPill domain="vehicle" value={row.original.status} />,
+      },
+      {
+        accessorKey: 'manufactureYear',
+        header: 'Tahun',
+        meta: { label: 'Tahun', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">{row.original.manufactureYear ?? '—'}</span>
+        ),
+      },
+      {
+        accessorKey: 'chassisNumber',
+        header: 'Nomor Rangka',
+        meta: { label: 'Nomor Rangka', defaultHidden: true },
+        cell: ({ row }) => <span className="font-mono">{row.original.chassisNumber || '—'}</span>,
+      },
+      {
+        accessorKey: 'engineNumber',
+        header: 'Nomor Mesin',
+        meta: { label: 'Nomor Mesin', defaultHidden: true },
+        cell: ({ row }) => <span className="font-mono">{row.original.engineNumber || '—'}</span>,
+      },
+      {
+        accessorKey: 'currentTareWeight',
+        header: 'Berat Kosong',
+        meta: { label: 'Berat Kosong', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">{formatNumber(row.original.currentTareWeight)} kg</span>
+        ),
+      },
+      {
+        accessorKey: 'currentFuelRatio',
+        header: 'Rasio BBM',
+        meta: { label: 'Rasio BBM', defaultHidden: true, filterVariant: 'number' },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.currentFuelRatio}</span>,
+      },
+      {
+        accessorKey: 'registrationExpiry',
+        header: 'STNK Berlaku',
+        meta: { label: 'STNK Berlaku', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {row.original.registrationExpiry
+              ? formatDateDisplay(row.original.registrationExpiry)
+              : '—'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'taxExpiry',
+        header: 'Pajak Sampai',
+        meta: { label: 'Pajak Sampai', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {row.original.taxExpiry ? formatDateDisplay(row.original.taxExpiry) : '—'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'notes',
+        header: 'Catatan',
+        meta: { label: 'Catatan', defaultHidden: true },
+        cell: ({ row }) => <span>{row.original.notes || '—'}</span>,
       },
       {
         id: 'actions',

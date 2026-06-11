@@ -21,7 +21,7 @@ import { DriverLicensesSheet } from '@/components/personnel/driver-licenses-shee
 import { Avatar, AvatarFallback, DropdownMenuItem, StatusPill } from '@/components/ui';
 import { useOptions } from '@/hooks/use-options';
 import { useResourceManager } from '@/hooks/use-resource-manager';
-import { initialsOf } from '@/lib/format';
+import { formatDateDisplay, initialsOf } from '@/lib/format';
 import { type DriverDto, type SiteDto, driversApi, sitesApi } from '@/lib/master-api';
 
 const EMPLOYMENT_OPTIONS: readonly SelectOption[] = [
@@ -119,6 +119,40 @@ export default function DriversPage(): JSX.Element {
       },
       { accessorKey: 'poolSiteName', header: 'Pool', meta: { label: 'Pool' } },
       { accessorKey: 'contact', header: 'Kontak', meta: { label: 'Kontak' } },
+      {
+        accessorKey: 'birthDate',
+        header: 'Tanggal Lahir',
+        meta: { label: 'Tanggal Lahir', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {row.original.birthDate ? formatDateDisplay(row.original.birthDate) : '—'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'originAddress',
+        header: 'Alamat Asal',
+        meta: { label: 'Alamat Asal', defaultHidden: true },
+        cell: ({ row }) => <span>{row.original.originAddress || '—'}</span>,
+      },
+      {
+        accessorKey: 'currentAddress',
+        header: 'Alamat Sekarang',
+        meta: { label: 'Alamat Sekarang', defaultHidden: true },
+        cell: ({ row }) => <span>{row.original.currentAddress || '—'}</span>,
+      },
+      {
+        accessorKey: 'safetyTraining',
+        header: 'Pelatihan K3',
+        meta: { label: 'Pelatihan K3', defaultHidden: true },
+        cell: ({ row }) => <span>{row.original.safetyTraining || '—'}</span>,
+      },
+      {
+        accessorKey: 'notes',
+        header: 'Catatan',
+        meta: { label: 'Catatan', defaultHidden: true },
+        cell: ({ row }) => <span>{row.original.notes || '—'}</span>,
+      },
       {
         id: 'actions',
         header: '',
