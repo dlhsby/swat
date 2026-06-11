@@ -226,14 +226,102 @@ function main(): void {
     ];
   });
 
+  // --- Schedule templates (masterdetailtransaksiangkutsampah) -------------
+  // SWAT models a crew pairing as unique (vehicle, driver); legacy records the
+  // same pair more than once. Dedupe on the pair (keep first) and remap dropped
+  // schedules to the kept one so trip templates still resolve — mirrors
+  // migrate-legacy.ts so the baked seed matches the live migration.
+  const timeOrNull = (f: Field | undefined): string | null => {
+    const m = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec((f ?? '').trim());
+    return m ? `${m[1]}:${m[2]}:${m[3] ?? '00'}` : null;
+  };
+  const scheduleRows = parseInserts(sql, 'masterdetailtransaksiangkutsampah');
+  const scheduleKeptByPair = new Map<string, number>();
+  const scheduleRemap = new Map<number, number>();
+  const keptScheduleIds = new Set<number>();
+  let scheduleDropped = 0;
+  const scheduleTemplates = scheduleRows.flatMap((r) => {
+    const legacyId = num(r[0]);
+    const pair = `${num(r[1])}:${num(r[2])}`;
+    const kept = scheduleKeptByPair.get(pair);
+    if (kept !== undefined) {
+      scheduleRemap.set(legacyId, kept);
+      scheduleDropped += 1;
+      return [];
+    }
+    scheduleKeptByPair.set(pair, legacyId);
+    scheduleRemap.set(legacyId, legacyId);
+    keptScheduleIds.add(legacyId);
+    return [
+      {
+        legacyId,
+        vehicleLegacyId: num(r[1]),
+        driverLegacyId: num(r[2]),
+        departTime: timeOrNull(r[3]),
+        returnTime: timeOrNull(r[4]),
+      },
+    ];
+  });
+
+  // --- Trip templates (mastertrayek) --------------------------------------
+  // Remap the parent schedule + route to their kept rows, then snapshot the
+  // route's (category, origin, destination) onto the leg.
+  const routeRemap = new Map<number, number>();
+  {
+    const seen = new Map<string, number>();
+    for (const r of ruteRows) {
+      const id = num(r[0]);
+      const key = routeDedupeKey(num(r[2]), num(r[3]), num(r[1]));
+      if (!seen.has(key)) seen.set(key, id);
+      routeRemap.set(id, seen.get(key) as number);
+    }
+  }
+  const routeByLegacy = new Map(routes.map((r) => [r.legacyId, r]));
+  const tripRows = parseInserts(sql, 'mastertrayek');
+  let tripOrphanRoute = 0;
+  let tripOrphanSchedule = 0;
+  const tripTemplates = tripRows.flatMap((r) => {
+    const scheduleLegacyId = scheduleRemap.get(num(r[1])) ?? num(r[1]);
+    if (!keptScheduleIds.has(scheduleLegacyId)) {
+      tripOrphanSchedule += 1;
+      return [];
+    }
+    const routeLegacyId = routeRemap.get(num(r[2])) ?? num(r[2]);
+    const route = routeByLegacy.get(routeLegacyId);
+    if (route === undefined) {
+      tripOrphanRoute += 1;
+      return [];
+    }
+    return [
+      {
+        legacyId: num(r[0]),
+        scheduleLegacyId,
+        routeLegacyId,
+        routeCategory: route.category,
+        originLegacyId: route.originLegacyId,
+        destinationLegacyId: route.destinationLegacyId,
+        targetTime: timeOrNull(r[3]),
+        fuelRequestedLiters: r[4] == null ? null : clampNonNegative(r[4]) || null,
+      },
+    ];
+  });
+
   // --- Emit (pure JSON; the typed wrapper lives in legacy-fixtures.ts) -----
   // JSON, not TS literals: a multi-thousand-row array of enum-typed object
   // literals overflows tsc's union representation (TS2590). The wrapper casts.
-  writeFileSync(resolve(OUT_DIR, 'legacy-sites.json'), JSON.stringify(sites, null, 1));
-  writeFileSync(resolve(OUT_DIR, 'legacy-routes.json'), JSON.stringify(routes, null, 1));
-  writeFileSync(resolve(OUT_DIR, 'legacy-vehicles.json'), JSON.stringify(vehicles, null, 1));
-  writeFileSync(resolve(OUT_DIR, 'legacy-drivers.json'), JSON.stringify(drivers, null, 1));
-  writeFileSync(resolve(OUT_DIR, 'legacy-licenses.json'), JSON.stringify(licenses, null, 1));
+  writeFileSync(resolve(OUT_DIR, 'legacy-sites.json'), JSON.stringify(sites, null, 2) + '\n');
+  writeFileSync(resolve(OUT_DIR, 'legacy-routes.json'), JSON.stringify(routes, null, 2) + '\n');
+  writeFileSync(resolve(OUT_DIR, 'legacy-vehicles.json'), JSON.stringify(vehicles, null, 2) + '\n');
+  writeFileSync(resolve(OUT_DIR, 'legacy-drivers.json'), JSON.stringify(drivers, null, 2) + '\n');
+  writeFileSync(resolve(OUT_DIR, 'legacy-licenses.json'), JSON.stringify(licenses, null, 2) + '\n');
+  writeFileSync(
+    resolve(OUT_DIR, 'legacy-schedule-templates.json'),
+    JSON.stringify(scheduleTemplates, null, 2) + '\n',
+  );
+  writeFileSync(
+    resolve(OUT_DIR, 'legacy-trip-templates.json'),
+    JSON.stringify(tripTemplates, null, 2) + '\n',
+  );
 
   // --- Cleanup report -----------------------------------------------------
   process.stdout.write(
@@ -244,6 +332,8 @@ function main(): void {
       `  vehicles: ${vehicles.length} (${plateReview} needsPlateReview) from ${kRows.length} kendaraan rows`,
       `  drivers:  ${drivers.length} (from ${driverRows.length} pengemudi rows)`,
       `  licenses: ${licenses.length} · ${orphanLicenses} orphans dropped`,
+      `  schedules:${scheduleTemplates.length} kept · ${scheduleDropped} duplicate vehicle+driver dropped (from ${scheduleRows.length})`,
+      `  trips:    ${tripTemplates.length} kept · ${tripOrphanSchedule} orphan-schedule · ${tripOrphanRoute} orphan-route dropped (from ${tripRows.length})`,
       ``,
     ].join('\n'),
   );

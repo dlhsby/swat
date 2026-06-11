@@ -36,7 +36,9 @@ import {
   LEGACY_DRIVER_LICENSES,
   LEGACY_DRIVERS,
   LEGACY_ROUTES,
+  LEGACY_SCHEDULE_TEMPLATES,
   LEGACY_SITES,
+  LEGACY_TRIP_TEMPLATES,
   LEGACY_VEHICLES,
 } from './legacy-fixtures';
 import { LEGACY_VEHICLE_MODELS } from './legacy-vehicle-models';
@@ -455,10 +457,14 @@ async function seedReferenceData(): Promise<void> {
   // vehicle), inserted in FK order. Each is idempotent via skipDuplicates on the
   // unique legacyId; rows whose FKs don't resolve are skipped and counted.
   const siteIdByLegacy = await seedLegacySites();
-  await seedLegacyRoutes(siteIdByLegacy);
-  await seedLegacyVehicles(siteIdByLegacy, modelIdByLegacy);
+  const routeIdByLegacy = await seedLegacyRoutes(siteIdByLegacy);
+  const vehicleIdByLegacy = await seedLegacyVehicles(siteIdByLegacy, modelIdByLegacy);
   const driverIdByLegacy = await seedLegacyDrivers(siteIdByLegacy);
   await seedLegacyDriverLicenses(driverIdByLegacy);
+  // Scheduling templates depend on vehicles + drivers; trip templates additionally
+  // on routes + sites (snapshot). Mirror the legacy planner verbatim.
+  const scheduleIdByLegacy = await seedLegacyScheduleTemplates(vehicleIdByLegacy, driverIdByLegacy);
+  await seedLegacyTripTemplates(scheduleIdByLegacy, routeIdByLegacy, siteIdByLegacy);
 
   for (const source of WASTE_SOURCES) {
     await prisma.wasteSource.upsert({
@@ -495,8 +501,9 @@ async function seedLegacySites(): Promise<Map<number, string>> {
   return map;
 }
 
-/** Legacy routes (rute) — origin/destination resolved via the site map. */
-async function seedLegacyRoutes(siteIdByLegacy: Map<number, string>): Promise<void> {
+/** Legacy routes (rute) — origin/destination resolved via the site map.
+ * Returns the legacyId → uuid map for trip-template snapshots. */
+async function seedLegacyRoutes(siteIdByLegacy: Map<number, string>): Promise<Map<number, string>> {
   let skipped = 0;
   const data = LEGACY_ROUTES.flatMap((r) => {
     const originSiteId = siteIdByLegacy.get(r.originLegacyId);
@@ -516,17 +523,26 @@ async function seedLegacyRoutes(siteIdByLegacy: Map<number, string>): Promise<vo
     ];
   });
   await prisma.route.createMany({ data, skipDuplicates: true });
+  const rows = await prisma.route.findMany({
+    where: { legacyId: { not: null } },
+    select: { id: true, legacyId: true },
+  });
+  const map = new Map<number, string>();
+  for (const r of rows) {
+    if (r.legacyId !== null) map.set(r.legacyId, r.id);
+  }
   // eslint-disable-next-line no-console
   console.log(
     `Legacy routes: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved site)` : ''}`,
   );
+  return map;
 }
 
 /** Legacy vehicles (kendaraan) — pool + model resolved via maps; 0000 dates → fallback. */
 async function seedLegacyVehicles(
   siteIdByLegacy: Map<number, string>,
   modelIdByLegacy: Map<number, string>,
-): Promise<void> {
+): Promise<Map<number, string>> {
   const FALLBACK_DATE = new Date('2020-01-01T00:00:00.000Z');
   let skipped = 0;
   const data = LEGACY_VEHICLES.flatMap((v) => {
@@ -571,10 +587,19 @@ async function seedLegacyVehicles(
       ),
     );
   }
+  const rows = await prisma.vehicle.findMany({
+    where: { legacyId: { not: null } },
+    select: { id: true, legacyId: true },
+  });
+  const map = new Map<number, string>();
+  for (const r of rows) {
+    if (r.legacyId !== null) map.set(r.legacyId, r.id);
+  }
   // eslint-disable-next-line no-console
   console.log(
     `Legacy vehicles: ${data.length} upserted${skipped ? `, ${skipped} skipped (unresolved pool/model)` : ''}`,
   );
+  return map;
 }
 
 /** Legacy drivers (pengemudi) — pool resolved via the site map. Returns the
@@ -646,6 +671,101 @@ async function seedLegacyDriverLicenses(driverIdByLegacy: Map<number, string>): 
   await prisma.driverLicense.createMany({ data, skipDuplicates: true });
   // eslint-disable-next-line no-console
   console.log(`Legacy licenses: ${data.length} loaded${skipped ? `, ${skipped} skipped` : ''}`);
+}
+
+/** "HH:mm:ss" → a 1970-01-01 UTC time (Prisma @db.Time); null → 05:30 fallback. */
+function legacyTime(value: string | null, fallbackHour: number): Date {
+  const m = value ? /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value) : null;
+  if (!m) {
+    return new Date(Date.UTC(1970, 0, 1, fallbackHour, 0));
+  }
+  return new Date(Date.UTC(1970, 0, 1, Number(m[1]), Number(m[2]), Number(m[3] ?? '0')));
+}
+
+/** Legacy schedule templates (masterdetailtransaksiangkutsampah) — vehicle + driver
+ * resolved via maps. Returns the legacyId → uuid map for trip templates. */
+async function seedLegacyScheduleTemplates(
+  vehicleIdByLegacy: Map<number, string>,
+  driverIdByLegacy: Map<number, string>,
+): Promise<Map<number, string>> {
+  let skipped = 0;
+  const data = LEGACY_SCHEDULE_TEMPLATES.flatMap((s) => {
+    const vehicleId = vehicleIdByLegacy.get(s.vehicleLegacyId);
+    const driverId = driverIdByLegacy.get(s.driverLegacyId);
+    if (vehicleId === undefined || driverId === undefined) {
+      skipped += 1;
+      return [];
+    }
+    return [
+      {
+        legacyId: s.legacyId,
+        vehicleId,
+        driverId,
+        departTime: legacyTime(s.departTime, 5),
+        returnTime: legacyTime(s.returnTime, 15),
+      },
+    ];
+  });
+  await prisma.scheduleTemplate.createMany({ data, skipDuplicates: true });
+  const rows = await prisma.scheduleTemplate.findMany({
+    where: { legacyId: { not: null } },
+    select: { id: true, legacyId: true },
+  });
+  const map = new Map<number, string>();
+  for (const r of rows) {
+    if (r.legacyId !== null) map.set(r.legacyId, r.id);
+  }
+  // eslint-disable-next-line no-console
+  console.log(
+    `Legacy schedule templates: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved vehicle/driver)` : ''}`,
+  );
+  return map;
+}
+
+/** Legacy trip templates (mastertrayek) — parent schedule + route + snapshot
+ * sites resolved via maps. Keeps the route_id FK and its denormalized snapshot. */
+async function seedLegacyTripTemplates(
+  scheduleIdByLegacy: Map<number, string>,
+  routeIdByLegacy: Map<number, string>,
+  siteIdByLegacy: Map<number, string>,
+): Promise<void> {
+  let skipped = 0;
+  const data = LEGACY_TRIP_TEMPLATES.flatMap((t) => {
+    const scheduleTemplateId = scheduleIdByLegacy.get(t.scheduleLegacyId);
+    const routeId = routeIdByLegacy.get(t.routeLegacyId);
+    const originSiteId = siteIdByLegacy.get(t.originLegacyId);
+    const destinationSiteId = siteIdByLegacy.get(t.destinationLegacyId);
+    if (
+      scheduleTemplateId === undefined ||
+      routeId === undefined ||
+      originSiteId === undefined ||
+      destinationSiteId === undefined
+    ) {
+      skipped += 1;
+      return [];
+    }
+    return [
+      {
+        legacyId: t.legacyId,
+        scheduleTemplateId,
+        routeId,
+        routeCategory: t.routeCategory,
+        originSiteId,
+        destinationSiteId,
+        targetTime: legacyTime(t.targetTime, 6),
+        fuelRequestedLiters: t.fuelRequestedLiters,
+      },
+    ];
+  });
+  // Chunked createMany to bound the payload against the connection pool.
+  const CHUNK = 500;
+  for (let i = 0; i < data.length; i += CHUNK) {
+    await prisma.tripTemplate.createMany({ data: data.slice(i, i + CHUNK), skipDuplicates: true });
+  }
+  // eslint-disable-next-line no-console
+  console.log(
+    `Legacy trip templates: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved fk)` : ''}`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -865,6 +985,9 @@ async function seedSyntheticData(): Promise<void> {
       data: {
         scheduleTemplateId: scheduleTemplate.id,
         routeId: disposalRoute.id,
+        routeCategory: disposalRoute.category,
+        originSiteId: disposalRoute.originSiteId,
+        destinationSiteId: disposalRoute.destinationSiteId,
         targetTime: timeOfDay(6, 0),
         fuelRequestedLiters: 50,
       },

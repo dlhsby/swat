@@ -77,6 +77,26 @@ export interface LegacyDriverLicense {
   readonly expiry: string | null;
 }
 
+export interface LegacyScheduleTemplate {
+  readonly legacyId: number;
+  readonly vehicleLegacyId: number;
+  readonly driverLegacyId: number;
+  /** "HH:mm:ss", or null when the legacy time was empty/invalid (seed applies a fallback). */
+  readonly departTime: string | null;
+  readonly returnTime: string | null;
+}
+
+export interface LegacyTripTemplate {
+  readonly legacyId: number;
+  readonly scheduleLegacyId: number;
+  readonly routeLegacyId: number;
+  readonly routeCategory: RouteCategory;
+  readonly originLegacyId: number;
+  readonly destinationLegacyId: number;
+  readonly targetTime: string | null;
+  readonly fuelRequestedLiters: number | null;
+}
+
 export const LEGACY_SITES: readonly LegacySite[] = load<LegacySite>('legacy-sites.json');
 export const LEGACY_ROUTES: readonly LegacyRoute[] = load<LegacyRoute>('legacy-routes.json');
 export const LEGACY_VEHICLES: readonly LegacyVehicle[] =
@@ -84,3 +104,8 @@ export const LEGACY_VEHICLES: readonly LegacyVehicle[] =
 export const LEGACY_DRIVERS: readonly LegacyDriver[] = load<LegacyDriver>('legacy-drivers.json');
 export const LEGACY_DRIVER_LICENSES: readonly LegacyDriverLicense[] =
   load<LegacyDriverLicense>('legacy-licenses.json');
+export const LEGACY_SCHEDULE_TEMPLATES: readonly LegacyScheduleTemplate[] =
+  load<LegacyScheduleTemplate>('legacy-schedule-templates.json');
+export const LEGACY_TRIP_TEMPLATES: readonly LegacyTripTemplate[] = load<LegacyTripTemplate>(
+  'legacy-trip-templates.json',
+);
