@@ -1,5 +1,13 @@
 import { apiClient } from './api-client';
-import { type TripTemplateDto } from './master-api';
+import { type RouteCategoryValue, type TripTemplateDto } from './master-api';
+
+export interface CreateTripTemplateBody {
+  category: RouteCategoryValue;
+  originSiteId: string;
+  destinationSiteId: string;
+  targetTime: string;
+  fuelRequestedLiters?: number;
+}
 
 export function listTripTemplates(scheduleId: string): Promise<TripTemplateDto[]> {
   return apiClient.get<TripTemplateDto[]>(`/schedule-templates/${scheduleId}/trip-templates`);
@@ -7,7 +15,7 @@ export function listTripTemplates(scheduleId: string): Promise<TripTemplateDto[]
 
 export function createTripTemplate(
   scheduleId: string,
-  body: { routeId: string; targetTime: string; fuelRequestedLiters?: number },
+  body: CreateTripTemplateBody,
 ): Promise<TripTemplateDto> {
   return apiClient.post<TripTemplateDto>(`/schedule-templates/${scheduleId}/trip-templates`, {
     ...body,

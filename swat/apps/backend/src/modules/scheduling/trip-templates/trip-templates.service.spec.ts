@@ -1,5 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
+import { type RoutesService } from '../../geography/routes/routes.service';
 import { type PrismaService } from '../../prisma/prisma.service';
 
 import { TripTemplatesService } from './trip-templates.service';
@@ -25,8 +26,7 @@ function buildRow(overrides: Record<string, unknown> = {}): Record<string, unkno
 
 describe('TripTemplatesService', () => {
   let prisma: {
-    scheduleTemplate: { findUnique: jest.Mock };
-    route: { findFirst: jest.Mock };
+    scheduleTemplate: { findFirst: jest.Mock };
     tripTemplate: {
       findMany: jest.Mock;
       findFirst: jest.Mock;
@@ -35,13 +35,13 @@ describe('TripTemplatesService', () => {
       delete: jest.Mock;
     };
   };
+  let routes: { resolveOrCreate: jest.Mock };
   let service: TripTemplatesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
     prisma = {
-      scheduleTemplate: { findUnique: jest.fn().mockResolvedValue({ id: 1 }) },
-      route: { findFirst: jest.fn().mockResolvedValue({ id: 2 }) },
+      scheduleTemplate: { findFirst: jest.fn().mockResolvedValue({ id: 1 }) },
       tripTemplate: {
         findMany: jest.fn(),
         findFirst: jest.fn().mockResolvedValue({ id: 1 }),
@@ -50,20 +50,30 @@ describe('TripTemplatesService', () => {
         delete: jest.fn(),
       },
     };
-    service = new TripTemplatesService(prisma as unknown as PrismaService);
+    routes = { resolveOrCreate: jest.fn().mockResolvedValue({ id: 2 }) };
+    service = new TripTemplatesService(
+      prisma as unknown as PrismaService,
+      routes as unknown as RoutesService,
+    );
   });
 
   const SID = '00000000-0000-0000-0000-000000000001';
   const SID9 = '00000000-0000-0000-0000-000000000009';
   const TID = '00000000-0000-0000-0000-0000000000a1';
   const TID5 = '00000000-0000-0000-0000-0000000000a5';
-  const RID2 = '00000000-0000-0000-0000-0000000000b2';
+  const ORIGIN = '00000000-0000-0000-0000-0000000000d1';
+  const DEST = '00000000-0000-0000-0000-0000000000d2';
   const RID3 = '00000000-0000-0000-0000-0000000000b3';
-  const RID99 = '00000000-0000-0000-0000-0000000000c9';
-  const dto = { routeId: RID2, targetTime: '06:30', fuelRequestedLiters: 20 };
+  const dto = {
+    category: 'DISPOSAL' as const,
+    originSiteId: ORIGIN,
+    destinationSiteId: DEST,
+    targetTime: '06:30',
+    fuelRequestedLiters: 20,
+  };
 
   it('404s for an unknown schedule template', async () => {
-    prisma.scheduleTemplate.findUnique.mockResolvedValue(null);
+    prisma.scheduleTemplate.findFirst.mockResolvedValue(null);
     await expect(service.list(SID9)).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -77,14 +87,18 @@ describe('TripTemplatesService', () => {
     });
   });
 
-  it('rejects a missing route on create', async () => {
-    prisma.route.findFirst.mockResolvedValue(null);
+  it('propagates a route-resolution error on create (e.g. invalid self-loop)', async () => {
+    routes.resolveOrCreate.mockRejectedValue(new BadRequestException('bad'));
     await expect(service.create(SID, dto)).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('creates a template', async () => {
+  it('creates a template, resolving the route from category + start/end', async () => {
     prisma.tripTemplate.create.mockResolvedValue(buildRow());
     await expect(service.create(SID, dto)).resolves.toMatchObject({ routeId: 2 });
+    expect(routes.resolveOrCreate).toHaveBeenCalledWith('DISPOSAL', ORIGIN, DEST);
+    expect(prisma.tripTemplate.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ routeId: 2 }) }),
+    );
   });
 
   it('404s updating/removing a template not under the schedule', async () => {
@@ -95,18 +109,29 @@ describe('TripTemplatesService', () => {
     await expect(service.remove(SID, TID5)).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('rejects an update whose new route is missing', async () => {
+  it('leaves the route untouched on a time/fuel-only update', async () => {
     prisma.tripTemplate.findFirst.mockResolvedValue({ id: 1 });
-    prisma.route.findFirst.mockResolvedValue(null);
-    await expect(service.update(SID, TID, { routeId: RID99 })).rejects.toBeInstanceOf(
-      BadRequestException,
+    prisma.tripTemplate.update.mockResolvedValue(buildRow());
+    await service.update(SID, TID, { targetTime: '07:00' });
+    expect(routes.resolveOrCreate).not.toHaveBeenCalled();
+    expect(prisma.tripTemplate.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ routeId: expect.anything() }),
+      }),
     );
   });
 
-  it('updates route, time, and fuel together', async () => {
+  it('re-resolves the route when the full triple is supplied on update', async () => {
     prisma.tripTemplate.findFirst.mockResolvedValue({ id: 1 });
+    routes.resolveOrCreate.mockResolvedValue({ id: RID3 });
     prisma.tripTemplate.update.mockResolvedValue(buildRow());
-    await service.update(SID, TID, { routeId: RID3, targetTime: '07:00', fuelRequestedLiters: 25 });
+    await service.update(SID, TID, {
+      category: 'DISPOSAL',
+      originSiteId: ORIGIN,
+      destinationSiteId: DEST,
+      targetTime: '07:00',
+      fuelRequestedLiters: 25,
+    });
     expect(prisma.tripTemplate.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: TID },

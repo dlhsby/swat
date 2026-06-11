@@ -78,9 +78,22 @@ export class ScheduleTemplatesService {
   async create(dto: CreateScheduleTemplateDto): Promise<ScheduleTemplateDto> {
     this.assertTimeOrder(dto.departTime, dto.returnTime);
     await this.assertRefsExist(dto.vehicleId, dto.driverId);
-    const duplicate = await this.repo.findByVehicleAndDriver(dto.vehicleId, dto.driverId);
-    if (duplicate) {
+
+    // The (vehicle, driver) unique constraint ignores soft-deletes. If a previously
+    // deleted template exists for this pair, resurrect it (with the new times) rather
+    // than hitting the DB constraint; a live one is a genuine duplicate.
+    const existing = await this.repo.findAnyByVehicleAndDriver(dto.vehicleId, dto.driverId);
+    if (existing && existing.deletedAt === null) {
       throw new ConflictException('Jadwal untuk kendaraan dan pengemudi ini sudah ada.');
+    }
+    if (existing) {
+      const resurrected = await this.repo.update(existing.id, {
+        departTime: parseTimeOnly(dto.departTime),
+        returnTime: parseTimeOnly(dto.returnTime),
+        deletedAt: null,
+        deletedById: null,
+      });
+      return toDto(resurrected);
     }
 
     const schedule = await this.repo.create({
@@ -106,8 +119,8 @@ export class ScheduleTemplatesService {
     const driverId = dto.driverId ?? existing.driverId;
     if (dto.vehicleId !== undefined || dto.driverId !== undefined) {
       await this.assertRefsExist(vehicleId, driverId);
-      const duplicate = await this.repo.findByVehicleAndDriver(vehicleId, driverId);
-      if (duplicate && duplicate.id !== id) {
+      const duplicate = await this.repo.findAnyByVehicleAndDriver(vehicleId, driverId);
+      if (duplicate && duplicate.deletedAt === null && duplicate.id !== id) {
         throw new ConflictException('Jadwal untuk kendaraan dan pengemudi ini sudah ada.');
       }
     }

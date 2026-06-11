@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { type Prisma } from '@prisma/client';
 
 import { formatTimeOnly, parseTimeOnly } from '../../../common/dates';
+import { RoutesService } from '../../geography/routes/routes.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import {
@@ -51,25 +52,18 @@ function toDto(template: TemplateWithRoute): TripTemplateDto {
 
 @Injectable()
 export class TripTemplatesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly routes: RoutesService,
+  ) {}
 
   private async assertScheduleExists(scheduleTemplateId: string): Promise<void> {
-    const schedule = await this.prisma.scheduleTemplate.findUnique({
-      where: { id: scheduleTemplateId },
+    const schedule = await this.prisma.scheduleTemplate.findFirst({
+      where: { id: scheduleTemplateId, deletedAt: null },
       select: { id: true },
     });
     if (!schedule) {
       throw new NotFoundException('Jadwal kru tidak ditemukan.');
-    }
-  }
-
-  private async assertRouteExists(routeId: string): Promise<void> {
-    const route = await this.prisma.route.findFirst({
-      where: { id: routeId, deletedAt: null },
-      select: { id: true },
-    });
-    if (!route) {
-      throw new BadRequestException('Rute tidak ditemukan.');
     }
   }
 
@@ -85,11 +79,17 @@ export class TripTemplatesService {
 
   async create(scheduleTemplateId: string, dto: CreateTripTemplateDto): Promise<TripTemplateDto> {
     await this.assertScheduleExists(scheduleTemplateId);
-    await this.assertRouteExists(dto.routeId);
+    // Resolve the (category, origin, destination) triple to a route, creating it
+    // if this start→end pairing has never been recorded (legacy planner behaviour).
+    const route = await this.routes.resolveOrCreate(
+      dto.category,
+      dto.originSiteId,
+      dto.destinationSiteId,
+    );
     const row = await this.prisma.tripTemplate.create({
       data: {
         scheduleTemplateId,
-        routeId: dto.routeId,
+        routeId: route.id,
         targetTime: parseTimeOnly(dto.targetTime),
         ...(dto.fuelRequestedLiters !== undefined
           ? { fuelRequestedLiters: dto.fuelRequestedLiters }
@@ -106,13 +106,25 @@ export class TripTemplatesService {
     dto: UpdateTripTemplateDto,
   ): Promise<TripTemplateDto> {
     await this.findOwned(scheduleTemplateId, templateId);
-    if (dto.routeId !== undefined) {
-      await this.assertRouteExists(dto.routeId);
+    // A route change requires the full triple (category + start + end); partial
+    // edits (time / fuel only) leave the existing route untouched.
+    let routeId: string | undefined;
+    if (
+      dto.category !== undefined &&
+      dto.originSiteId !== undefined &&
+      dto.destinationSiteId !== undefined
+    ) {
+      const route = await this.routes.resolveOrCreate(
+        dto.category,
+        dto.originSiteId,
+        dto.destinationSiteId,
+      );
+      routeId = route.id;
     }
     const row = await this.prisma.tripTemplate.update({
       where: { id: templateId },
       data: {
-        ...(dto.routeId !== undefined ? { routeId: dto.routeId } : {}),
+        ...(routeId !== undefined ? { routeId } : {}),
         ...(dto.targetTime !== undefined ? { targetTime: parseTimeOnly(dto.targetTime) } : {}),
         ...(dto.fuelRequestedLiters !== undefined
           ? { fuelRequestedLiters: dto.fuelRequestedLiters }

@@ -98,6 +98,28 @@ export class RoutesService {
     return toRouteDto(route);
   }
 
+  /**
+   * Find the active route for an (origin, destination, category) triple, creating
+   * it on the fly when absent. Mirrors the legacy "pick start + end → reuse or add
+   * the route" flow used by the trip-template planner, so operators never browse the
+   * full route catalogue. Auto-created routes start at distance 0 (legacy distances
+   * are frequently unknown); edit them later in Lokasi & Rute if needed.
+   */
+  async resolveOrCreate(
+    category: RouteCategory,
+    originSiteId: string,
+    destinationSiteId: string,
+  ): Promise<RouteDto> {
+    if (originSiteId === destinationSiteId && !SELF_LOOP_ALLOWED.has(category)) {
+      throw new BadRequestException('Lokasi asal dan tujuan tidak boleh sama.');
+    }
+    const existing = await this.repo.findDuplicate(originSiteId, destinationSiteId, category);
+    if (existing) {
+      return this.getById(existing.id);
+    }
+    return this.create({ category, originSiteId, destinationSiteId, distanceKm: 0 });
+  }
+
   async update(id: string, dto: UpdateRouteDto): Promise<RouteDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {

@@ -47,8 +47,10 @@ export class VehicleWasteSourcesService {
     if (!source) {
       throw new NotFoundException('Sumber sampah tidak ditemukan.');
     }
-    const existing = await this.prisma.vehicleWasteSource.findUnique({
-      where: { vehicleId_wasteSourceId: { vehicleId, wasteSourceId } },
+    // findFirst on a flat where: the audit middleware rewrites findUnique → findFirst
+    // (to inject `deletedAt: null`), which can't take the compound-key wrapper.
+    const existing = await this.prisma.vehicleWasteSource.findFirst({
+      where: { vehicleId, wasteSourceId, deletedAt: null },
       select: { id: true },
     });
     if (existing) {
@@ -62,8 +64,8 @@ export class VehicleWasteSourcesService {
   }
 
   async remove(vehicleId: string, wasteSourceId: string): Promise<{ message: string }> {
-    const link = await this.prisma.vehicleWasteSource.findUnique({
-      where: { vehicleId_wasteSourceId: { vehicleId, wasteSourceId } },
+    const link = await this.prisma.vehicleWasteSource.findFirst({
+      where: { vehicleId, wasteSourceId, deletedAt: null },
       select: { id: true },
     });
     if (!link) {

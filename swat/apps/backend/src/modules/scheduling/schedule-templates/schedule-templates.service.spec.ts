@@ -25,7 +25,7 @@ describe('ScheduleTemplatesService', () => {
   let repo: {
     list: jest.Mock;
     findById: jest.Mock;
-    findByVehicleAndDriver: jest.Mock;
+    findAnyByVehicleAndDriver: jest.Mock;
     vehicleExists: jest.Mock;
     driverExists: jest.Mock;
     create: jest.Mock;
@@ -39,7 +39,7 @@ describe('ScheduleTemplatesService', () => {
     repo = {
       list: jest.fn(),
       findById: jest.fn(),
-      findByVehicleAndDriver: jest.fn().mockResolvedValue(null),
+      findAnyByVehicleAndDriver: jest.fn().mockResolvedValue(null),
       vehicleExists: jest.fn().mockResolvedValue({ id: 1 }),
       driverExists: jest.fn().mockResolvedValue({ id: 2 }),
       create: jest.fn(),
@@ -84,9 +84,23 @@ describe('ScheduleTemplatesService', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('rejects a duplicate vehicle+driver pairing', async () => {
-      repo.findByVehicleAndDriver.mockResolvedValue({ id: 9 });
+    it('rejects a live duplicate vehicle+driver pairing', async () => {
+      repo.findAnyByVehicleAndDriver.mockResolvedValue({ id: 9, deletedAt: null });
       await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('resurrects a soft-deleted pairing instead of conflicting', async () => {
+      repo.findAnyByVehicleAndDriver.mockResolvedValue({
+        id: 9,
+        deletedAt: new Date('2026-01-01T00:00:00Z'),
+      });
+      repo.update.mockResolvedValue(buildSchedule());
+      await expect(service.create(dto)).resolves.toMatchObject({ departTime: '05:00' });
+      expect(repo.create).not.toHaveBeenCalled();
+      expect(repo.update).toHaveBeenCalledWith(
+        9,
+        expect.objectContaining({ deletedAt: null, deletedById: null }),
+      );
     });
 
     it('rejects a missing vehicle or driver', async () => {
@@ -120,7 +134,7 @@ describe('ScheduleTemplatesService', () => {
 
     it('rejects an update that collides with another pairing', async () => {
       repo.findById.mockResolvedValue(buildSchedule());
-      repo.findByVehicleAndDriver.mockResolvedValue({ id: 2 });
+      repo.findAnyByVehicleAndDriver.mockResolvedValue({ id: 2, deletedAt: null });
       await expect(
         service.update(ID, { vehicleId: '00000000-0000-0000-0000-000000000005' }),
       ).rejects.toBeInstanceOf(ConflictException);

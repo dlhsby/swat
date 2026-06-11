@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { GeographyModule } from '../geography/geography.module';
+
 import { DisposalPermitsController } from './disposal-permits/disposal-permits.controller';
 import { DisposalPermitsRepository } from './disposal-permits/disposal-permits.repository';
 import { DisposalPermitsService } from './disposal-permits/disposal-permits.service';
@@ -14,6 +16,7 @@ import { TripTemplatesService } from './trip-templates/trip-templates.service';
  * disposal permits (kitir).
  */
 @Module({
+  imports: [GeographyModule],
   controllers: [ScheduleTemplatesController, TripTemplatesController, DisposalPermitsController],
   providers: [
     ScheduleTemplatesService,

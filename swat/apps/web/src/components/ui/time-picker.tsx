@@ -34,6 +34,10 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
       <Input
         ref={ref}
         type="time"
+        // Force 24-hour HH:mm entry regardless of the OS locale: the native time
+        // input picks AM/PM vs 24h from the element's `lang`, so pin it to id-ID
+        // (Indonesian uses 24-hour clock) instead of inheriting en-US (12h + AM/PM).
+        lang="id-ID"
         value={value}
         trailing={<Clock className="h-4 w-4" aria-hidden />}
         onChange={(e) => onValueChange?.(e.target.value)}

@@ -52,10 +52,20 @@ export class ScheduleTemplatesRepository {
     return this.prisma.scheduleTemplate.findUnique({ where: { id }, include: crewInclude });
   }
 
-  findByVehicleAndDriver(vehicleId: string, driverId: string): Promise<{ id: string } | null> {
-    return this.prisma.scheduleTemplate.findUnique({
-      where: { vehicleId_driverId: { vehicleId, driverId } },
-      select: { id: true },
+  /**
+   * Any schedule template for this (vehicle, driver) pair — including a soft-deleted
+   * one. The `@@unique([vehicleId, driverId])` constraint ignores `deletedAt`, so the
+   * service must see a soft-deleted row to resurrect it instead of hitting the DB
+   * constraint. Passing a `deletedAt` clause opts out of the middleware's
+   * `deletedAt: null` injection.
+   */
+  findAnyByVehicleAndDriver(
+    vehicleId: string,
+    driverId: string,
+  ): Promise<{ id: string; deletedAt: Date | null } | null> {
+    return this.prisma.scheduleTemplate.findFirst({
+      where: { vehicleId, driverId, deletedAt: { not: undefined } },
+      select: { id: true, deletedAt: true },
     });
   }
 

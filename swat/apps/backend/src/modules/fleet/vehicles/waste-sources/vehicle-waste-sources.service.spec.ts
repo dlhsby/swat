@@ -10,7 +10,7 @@ describe('VehicleWasteSourcesService', () => {
     wasteSource: { findUnique: jest.Mock };
     vehicleWasteSource: {
       findMany: jest.Mock;
-      findUnique: jest.Mock;
+      findFirst: jest.Mock;
       create: jest.Mock;
       delete: jest.Mock;
     };
@@ -32,7 +32,7 @@ describe('VehicleWasteSourcesService', () => {
       },
       vehicleWasteSource: {
         findMany: jest.fn(),
-        findUnique: jest.fn().mockResolvedValue(null),
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(),
         delete: jest.fn(),
       },
@@ -71,7 +71,7 @@ describe('VehicleWasteSourcesService', () => {
   });
 
   it('409s a duplicate link', async () => {
-    prisma.vehicleWasteSource.findUnique.mockResolvedValue({
+    prisma.vehicleWasteSource.findFirst.mockResolvedValue({
       id: '00000000-0000-0000-0000-000000000010',
     });
     await expect(
@@ -90,14 +90,14 @@ describe('VehicleWasteSourcesService', () => {
   });
 
   it('404s removing a non-existent link, else removes', async () => {
-    prisma.vehicleWasteSource.findUnique.mockResolvedValueOnce(null);
+    prisma.vehicleWasteSource.findFirst.mockResolvedValueOnce(null);
     await expect(
       service.remove(
         '00000000-0000-0000-0000-000000000001',
         '00000000-0000-0000-0000-000000000002',
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
-    prisma.vehicleWasteSource.findUnique.mockResolvedValueOnce({
+    prisma.vehicleWasteSource.findFirst.mockResolvedValueOnce({
       id: '00000000-0000-0000-0000-000000000010',
     });
     await expect(
