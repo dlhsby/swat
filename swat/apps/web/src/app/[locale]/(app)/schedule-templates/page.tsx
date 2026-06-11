@@ -124,7 +124,10 @@ export default function ScheduleTemplatesPage(): JSX.Element {
         schema={schema}
         defaults={defaults}
         toForm={toForm}
-        title={{ create: 'Tambah Template Jadwal', edit: 'Ubah Template Jadwal' }}
+        title={{
+          create: 'Tambah Template Jadwal Pengangkutan',
+          edit: 'Ubah Template Jadwal Pengangkutan',
+        }}
         className="max-w-[520px]"
       >
         <div className="grid gap-4">

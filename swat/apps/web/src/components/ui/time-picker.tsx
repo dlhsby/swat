@@ -1,4 +1,3 @@
-import { Clock } from 'lucide-react';
 import { forwardRef } from 'react';
 
 import { cn } from '@/lib/cn';
@@ -39,7 +38,6 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
         // (Indonesian uses 24-hour clock) instead of inheriting en-US (12h + AM/PM).
         lang="id-ID"
         value={value}
-        trailing={<Clock className="h-4 w-4" aria-hidden />}
         onChange={(e) => onValueChange?.(e.target.value)}
         className={cn('tnum', className)}
         {...props}
