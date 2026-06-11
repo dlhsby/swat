@@ -54,7 +54,7 @@ export default function RoutesPage(): JSX.Element {
           icon={MapPin}
           label={t('kpiTrips')}
           value={formatNumber(totalTrips)}
-          unit="trayek"
+          unit="rute"
           loading={routes.isLoading}
         />
       </div>

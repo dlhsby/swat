@@ -34,6 +34,7 @@ describe('TripTemplatesService', () => {
       update: jest.Mock;
       delete: jest.Mock;
     };
+    site: { findFirst: jest.Mock };
   };
   let routes: { resolveOrCreate: jest.Mock };
   let service: TripTemplatesService;
@@ -44,11 +45,17 @@ describe('TripTemplatesService', () => {
       scheduleTemplate: { findFirst: jest.fn().mockResolvedValue({ id: 1 }) },
       tripTemplate: {
         findMany: jest.fn(),
-        findFirst: jest.fn().mockResolvedValue({ id: 1 }),
+        // Default: ownership lookups resolve, and the preceding leg ends at ORIGIN
+        // so non-DEPART legs derive their start from it.
+        findFirst: jest.fn().mockResolvedValue({
+          id: 1,
+          route: { destinationSiteId: '00000000-0000-0000-0000-0000000000d1' },
+        }),
         create: jest.fn(),
         update: jest.fn(),
         delete: jest.fn(),
       },
+      site: { findFirst: jest.fn().mockResolvedValue({ type: 'POOL' }) },
     };
     routes = { resolveOrCreate: jest.fn().mockResolvedValue({ id: 2 }) };
     service = new TripTemplatesService(
@@ -63,10 +70,12 @@ describe('TripTemplatesService', () => {
   const TID5 = '00000000-0000-0000-0000-0000000000a5';
   const ORIGIN = '00000000-0000-0000-0000-0000000000d1';
   const DEST = '00000000-0000-0000-0000-0000000000d2';
+  const POOL = '00000000-0000-0000-0000-0000000000d0';
   const RID3 = '00000000-0000-0000-0000-0000000000b3';
+  // A non-DEPART leg supplies only its destination; the origin is derived from the
+  // preceding leg (mocked to end at ORIGIN above).
   const dto = {
     category: 'DISPOSAL' as const,
-    originSiteId: ORIGIN,
     destinationSiteId: DEST,
     targetTime: '06:30',
     fuelRequestedLiters: 20,
@@ -92,13 +101,37 @@ describe('TripTemplatesService', () => {
     await expect(service.create(SID, dto)).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('creates a template, resolving the route from category + start/end', async () => {
+  it('derives a non-DEPART leg origin from the preceding leg destination', async () => {
     prisma.tripTemplate.create.mockResolvedValue(buildRow());
     await expect(service.create(SID, dto)).resolves.toMatchObject({ routeId: 2 });
+    // Origin = previous leg's destination (ORIGIN), destination = the supplied DEST.
     expect(routes.resolveOrCreate).toHaveBeenCalledWith('DISPOSAL', ORIGIN, DEST);
     expect(prisma.tripTemplate.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ routeId: 2 }) }),
     );
+  });
+
+  it('records a DEPART_POOL leg as Pool→Pool from a single origin', async () => {
+    prisma.tripTemplate.create.mockResolvedValue(buildRow());
+    await service.create(SID, { category: 'DEPART_POOL', originSiteId: POOL, targetTime: '05:30' });
+    expect(prisma.site.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: POOL, deletedAt: null } }),
+    );
+    expect(routes.resolveOrCreate).toHaveBeenCalledWith('DEPART_POOL', POOL, POOL);
+  });
+
+  it('rejects a DEPART_POOL leg whose origin is not a Pool', async () => {
+    prisma.site.findFirst.mockResolvedValue({ type: 'TPS' });
+    await expect(
+      service.create(SID, { category: 'DEPART_POOL', originSiteId: POOL, targetTime: '05:30' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(routes.resolveOrCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-DEPART leg when no preceding leg exists', async () => {
+    prisma.tripTemplate.findFirst.mockResolvedValue(null);
+    await expect(service.create(SID, dto)).rejects.toBeInstanceOf(BadRequestException);
+    expect(routes.resolveOrCreate).not.toHaveBeenCalled();
   });
 
   it('404s updating/removing a template not under the schedule', async () => {
@@ -142,7 +175,7 @@ describe('TripTemplatesService', () => {
 
   it('removes an owned template', async () => {
     await expect(service.remove(SID, TID)).resolves.toEqual({
-      message: 'Template trayek telah dihapus.',
+      message: 'Template rute telah dihapus.',
     });
   });
 });

@@ -288,7 +288,7 @@ export default function ComponentsPage() {
         <Story title="Stepper">
           <Stepper
             current={1}
-            steps={[{ label: 'Pilih Trayek' }, { label: 'Catat' }, { label: 'Konfirmasi' }]}
+            steps={[{ label: 'Pilih Rute' }, { label: 'Catat' }, { label: 'Konfirmasi' }]}
           />
         </Story>
 

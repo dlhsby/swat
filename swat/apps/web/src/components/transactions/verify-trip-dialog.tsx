@@ -63,7 +63,7 @@ export function VerifyTripDialog({
     <Dialog open={trip !== null} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Verifikasi Trayek</DialogTitle>
+          <DialogTitle>Verifikasi Rute</DialogTitle>
           <DialogDescription>{trip?.name}</DialogDescription>
         </DialogHeader>
 

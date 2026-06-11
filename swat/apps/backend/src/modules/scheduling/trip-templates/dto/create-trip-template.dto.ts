@@ -7,24 +7,35 @@ const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /**
  * A planned trip leg is described the way the legacy planner did it — pick the
- * leg category, then its start and end location — instead of browsing the full
- * route catalogue. The service resolves (or creates) the matching Route from this
- * triple. REFUEL legs additionally carry the requested fuel volume.
+ * leg category, then only the location that matters for that category — instead of
+ * browsing the full route catalogue:
+ *  - "Berangkat" (DEPART_POOL): pick the Pool; the leg is recorded Pool→Pool, so
+ *    only `originSiteId` is supplied (no destination).
+ *  - every other leg (Isi BBM / Ambil Sampah / Buang Sampah / Kembali ke Pool):
+ *    the start is always the previous leg's destination, so only `destinationSiteId`
+ *    is supplied and the service derives the origin from the preceding leg.
+ * The service resolves (or creates) the matching Route from the resulting pair.
+ * REFUEL legs additionally carry the requested fuel volume.
  */
 export class CreateTripTemplateDto {
   @ApiProperty({ enum: RouteCategory, description: 'Leg category (drives the route)' })
-  @IsEnum(RouteCategory, { message: 'Kategori trayek tidak valid' })
+  @IsEnum(RouteCategory, { message: 'Kategori rute tidak valid' })
   category!: RouteCategory;
 
-  @ApiProperty({ format: 'uuid', description: 'Start location' })
+  @ApiPropertyOptional({ format: 'uuid', description: 'Start location — required for DEPART_POOL' })
+  @IsOptional()
   @IsString()
   @IsUUID()
-  originSiteId!: string;
+  originSiteId?: string;
 
-  @ApiProperty({ format: 'uuid', description: 'End location' })
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'End location — required for every leg except DEPART_POOL',
+  })
+  @IsOptional()
   @IsString()
   @IsUUID()
-  destinationSiteId!: string;
+  destinationSiteId?: string;
 
   @ApiProperty({ example: '06:30', description: 'Target time (HH:mm)' })
   @IsString()

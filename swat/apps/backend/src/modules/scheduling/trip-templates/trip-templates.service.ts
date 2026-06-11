@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { type Prisma } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { type Prisma, type SiteType } from '@prisma/client';
 
 import { formatTimeOnly, parseTimeOnly } from '../../../common/dates';
 import { RoutesService } from '../../geography/routes/routes.service';
@@ -15,8 +15,8 @@ const templateInclude = {
     select: {
       id: true,
       category: true,
-      originSite: { select: { name: true } },
-      destinationSite: { select: { name: true } },
+      originSite: { select: { id: true, name: true } },
+      destinationSite: { select: { id: true, name: true } },
     },
   },
 } satisfies Prisma.TripTemplateInclude;
@@ -29,6 +29,10 @@ export interface TripTemplateDto {
   readonly routeId: string;
   readonly routeCategory: string;
   readonly routeLabel: string;
+  readonly originSiteId: string;
+  readonly originSiteName: string;
+  readonly destinationSiteId: string;
+  readonly destinationSiteName: string;
   readonly targetTime: string;
   readonly fuelRequestedLiters: number | null;
   readonly createdAt: string;
@@ -42,6 +46,10 @@ function toDto(template: TemplateWithRoute): TripTemplateDto {
     routeId: template.routeId,
     routeCategory: template.route.category,
     routeLabel: `${template.route.originSite.name} → ${template.route.destinationSite.name}`,
+    originSiteId: template.route.originSite.id,
+    originSiteName: template.route.originSite.name,
+    destinationSiteId: template.route.destinationSite.id,
+    destinationSiteName: template.route.destinationSite.name,
     targetTime: formatTimeOnly(template.targetTime),
     fuelRequestedLiters:
       template.fuelRequestedLiters === null ? null : Number(template.fuelRequestedLiters),
@@ -79,13 +87,18 @@ export class TripTemplatesService {
 
   async create(scheduleTemplateId: string, dto: CreateTripTemplateDto): Promise<TripTemplateDto> {
     await this.assertScheduleExists(scheduleTemplateId);
-    // Resolve the (category, origin, destination) triple to a route, creating it
-    // if this start→end pairing has never been recorded (legacy planner behaviour).
-    const route = await this.routes.resolveOrCreate(
+    // Derive the leg's start/end from its category (Berangkat = Pool→Pool; every
+    // other leg starts where the previous one ended), then resolve the (category,
+    // origin, destination) triple to a route, creating it if this pairing has never
+    // been recorded (legacy planner behaviour).
+    const { originSiteId, destinationSiteId } = await this.resolveEndpoints(
+      scheduleTemplateId,
       dto.category,
+      dto.targetTime,
       dto.originSiteId,
       dto.destinationSiteId,
     );
+    const route = await this.routes.resolveOrCreate(dto.category, originSiteId, destinationSiteId);
     const row = await this.prisma.tripTemplate.create({
       data: {
         scheduleTemplateId,
@@ -138,7 +151,7 @@ export class TripTemplatesService {
   async remove(scheduleTemplateId: string, templateId: string): Promise<{ message: string }> {
     await this.findOwned(scheduleTemplateId, templateId);
     await this.prisma.tripTemplate.delete({ where: { id: templateId } });
-    return { message: 'Template trayek telah dihapus.' };
+    return { message: 'Template rute telah dihapus.' };
   }
 
   private async findOwned(scheduleTemplateId: string, templateId: string): Promise<void> {
@@ -147,7 +160,65 @@ export class TripTemplatesService {
       select: { id: true },
     });
     if (!template) {
-      throw new NotFoundException('Template trayek tidak ditemukan.');
+      throw new NotFoundException('Template rute tidak ditemukan.');
+    }
+  }
+
+  /**
+   * Map a leg's category to its concrete (origin, destination) sites:
+   *  - DEPART_POOL: only the Pool is supplied; the leg is Pool→Pool.
+   *  - any other leg: the start is the previous leg's destination, so only the
+   *    destination is supplied and the origin is derived from the preceding leg.
+   */
+  private async resolveEndpoints(
+    scheduleTemplateId: string,
+    category: CreateTripTemplateDto['category'],
+    targetTime: string,
+    originSiteId?: string,
+    destinationSiteId?: string,
+  ): Promise<{ originSiteId: string; destinationSiteId: string }> {
+    if (category === 'DEPART_POOL') {
+      if (!originSiteId) {
+        throw new BadRequestException('Lokasi pool wajib dipilih untuk leg berangkat.');
+      }
+      await this.assertSiteType(originSiteId, 'POOL');
+      return { originSiteId, destinationSiteId: originSiteId };
+    }
+    if (!destinationSiteId) {
+      throw new BadRequestException('Lokasi tujuan wajib dipilih.');
+    }
+    const previousDestinationId = await this.previousDestination(scheduleTemplateId, targetTime);
+    if (!previousDestinationId) {
+      throw new BadRequestException(
+        "Tambahkan leg 'Berangkat' dari pool terlebih dahulu sebelum leg lainnya.",
+      );
+    }
+    return { originSiteId: previousDestinationId, destinationSiteId };
+  }
+
+  /** The destination of the leg immediately preceding `targetTime`, if any. */
+  private async previousDestination(
+    scheduleTemplateId: string,
+    targetTime: string,
+  ): Promise<string | null> {
+    const previous = await this.prisma.tripTemplate.findFirst({
+      where: { scheduleTemplateId, targetTime: { lt: parseTimeOnly(targetTime) } },
+      orderBy: { targetTime: 'desc' },
+      select: { route: { select: { destinationSiteId: true } } },
+    });
+    return previous?.route.destinationSiteId ?? null;
+  }
+
+  private async assertSiteType(siteId: string, expected: SiteType): Promise<void> {
+    const site = await this.prisma.site.findFirst({
+      where: { id: siteId, deletedAt: null },
+      select: { type: true },
+    });
+    if (!site) {
+      throw new BadRequestException('Lokasi tidak ditemukan.');
+    }
+    if (site.type !== expected) {
+      throw new BadRequestException(`Lokasi asal harus bertipe ${expected}.`);
     }
   }
 }

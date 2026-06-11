@@ -43,13 +43,18 @@ export interface TripTemplatesSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Ordered the way a day is planned: leave the pool, refuel, collect, dump, return.
 const ROUTE_CATEGORIES: { value: RouteCategoryValue; label: string }[] = [
-  { value: 'DEPART_POOL', label: 'Berangkat Pool' },
-  { value: 'PICKUP', label: 'Ambil Sampah' },
-  { value: 'DISPOSAL', label: 'Buang ke TPA' },
+  { value: 'DEPART_POOL', label: 'Berangkat' },
   { value: 'REFUEL', label: 'Isi BBM' },
-  { value: 'RETURN_POOL', label: 'Kembali Pool' },
+  { value: 'PICKUP', label: 'Ambil Sampah' },
+  { value: 'DISPOSAL', label: 'Buang Sampah' },
+  { value: 'RETURN_POOL', label: 'Kembali ke Pool' },
 ];
+
+const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
+  ROUTE_CATEGORIES.map((c) => [c.value, c.label]),
+);
 
 const SITE_TYPE_LABEL: Record<SiteType, string> = {
   POOL: 'Pool',
@@ -59,10 +64,11 @@ const SITE_TYPE_LABEL: Record<SiteType, string> = {
 };
 
 /**
- * Per leg category, which site TYPE the start / end must be. Mirrors Lokasi & Rute:
- * "Berangkat" leaves a Pool, "Ambil Sampah" ends at a TPS, "Buang ke TPA" ends at a
- * TPA, "Isi BBM" ends at an SPBU, "Kembali" ends at a Pool. An undefined end is
- * unconstrained (searchable across all sites).
+ * Per leg category, which site TYPE the chosen location must be. "Berangkat" picks a
+ * Pool (recorded Pool→Pool, no destination); every other leg only picks its
+ * destination — the start is always the previous leg's destination — and that
+ * destination is type-constrained: "Isi BBM" → SPBU, "Ambil Sampah" → TPS,
+ * "Buang Sampah" → TPA, "Kembali ke Pool" → Pool.
  */
 const ROUTE_SITE_CONSTRAINTS: Record<
   RouteCategoryValue,
@@ -104,6 +110,7 @@ export function TripTemplatesSheet({
   const scheduleId = schedule?.id ?? null;
   const constraint = category ? ROUTE_SITE_CONSTRAINTS[category] : {};
   const isRefuel = category === 'REFUEL';
+  const isDepart = category === 'DEPART_POOL';
 
   const originOptions = useMemo(
     () => sites.filter((s) => !constraint.origin || s.type === constraint.origin).map(siteOption),
@@ -116,6 +123,17 @@ export function TripTemplatesSheet({
         .map(siteOption),
     [sites, constraint.destination],
   );
+
+  // For every leg except "Berangkat", the start is the previous leg's destination.
+  // `templates` is ordered by targetTime asc, so the preceding leg is the last one
+  // whose time is before the new leg's (or simply the latest, before a time is set).
+  const impliedOrigin = useMemo(() => {
+    if (isDepart) {
+      return null;
+    }
+    const earlier = targetTime ? templates.filter((t) => t.targetTime < targetTime) : templates;
+    return earlier.at(-1) ?? null;
+  }, [templates, isDepart, targetTime]);
 
   const resetForm = useCallback((): void => {
     setCategory('');
@@ -133,7 +151,7 @@ export function TripTemplatesSheet({
     try {
       setTemplates(await listTripTemplates(scheduleId));
     } catch (err) {
-      notify.error(err instanceof ApiError ? err.message : 'Gagal memuat trayek.');
+      notify.error(err instanceof ApiError ? err.message : 'Gagal memuat rute.');
     } finally {
       setLoading(false);
     }
@@ -146,33 +164,36 @@ export function TripTemplatesSheet({
     }
   }, [scheduleId, reload, resetForm]);
 
-  // Drop a selection the newly chosen category no longer allows.
+  // Switching category swaps which single location is relevant, so clear both
+  // selections (and any fuel) to avoid carrying a stale, now-hidden value.
   useEffect(() => {
-    if (originSiteId && constraint.origin) {
-      const s = sites.find((x) => x.id === originSiteId);
-      if (s && s.type !== constraint.origin) setOriginSiteId('');
-    }
-    if (destinationSiteId && constraint.destination) {
-      const s = sites.find((x) => x.id === destinationSiteId);
-      if (s && s.type !== constraint.destination) setDestinationSiteId('');
-    }
+    setOriginSiteId('');
+    setDestinationSiteId('');
     if (!isRefuel) setFuel('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
-  const canSubmit = Boolean(category && originSiteId && destinationSiteId && targetTime);
+  const canSubmit = Boolean(
+    category &&
+    targetTime &&
+    (isDepart ? originSiteId : destinationSiteId && impliedOrigin !== null),
+  );
 
   const onAdd = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    if (scheduleId === null || !category || !originSiteId || !destinationSiteId || !targetTime) {
+    if (scheduleId === null || !category || !targetTime) {
+      return;
+    }
+    if (isDepart ? !originSiteId : !destinationSiteId) {
       return;
     }
     setSaving(true);
     try {
       await createTripTemplate(scheduleId, {
         category,
-        originSiteId,
-        destinationSiteId,
+        // "Berangkat" sends only the Pool; every other leg sends only its
+        // destination and the backend derives the start from the previous leg.
+        ...(isDepart ? { originSiteId } : { destinationSiteId }),
         targetTime,
         fuelRequestedLiters: isRefuel && fuel ? Number(fuel) : undefined,
       });
@@ -180,7 +201,7 @@ export function TripTemplatesSheet({
       resetForm();
       await reload();
     } catch (err) {
-      notify.error(err instanceof ApiError ? err.message : 'Gagal menambah trayek.');
+      notify.error(err instanceof ApiError ? err.message : 'Gagal menambah rute.');
     } finally {
       setSaving(false);
     }
@@ -196,7 +217,7 @@ export function TripTemplatesSheet({
       setDeleteTarget(null);
       await reload();
     } catch (err) {
-      notify.error(err instanceof ApiError ? err.message : 'Gagal menghapus trayek.');
+      notify.error(err instanceof ApiError ? err.message : 'Gagal menghapus rute.');
     }
   };
 
@@ -212,7 +233,7 @@ export function TripTemplatesSheet({
           {loading ? (
             <Skeleton className="h-24" />
           ) : templates.length === 0 ? (
-            <EmptyState illustration="no-results" title="Belum ada trayek terencana" />
+            <EmptyState illustration="no-results" title="Belum ada rute terencana" />
           ) : (
             <ol className="space-y-2">
               {templates.map((tpl, i) => (
@@ -229,7 +250,9 @@ export function TripTemplatesSheet({
                         {tpl.routeLabel}
                       </p>
                       <p className="flex items-center gap-2 text-tiny text-neutral-500">
-                        <Badge appearance="count">{tpl.routeCategory}</Badge>
+                        <Badge appearance="count">
+                          {CATEGORY_LABEL[tpl.routeCategory] ?? tpl.routeCategory}
+                        </Badge>
                         <span>{formatTime(`1970-01-01T${tpl.targetTime}:00Z`)}</span>
                         {tpl.fuelRequestedLiters ? (
                           <span>· {tpl.fuelRequestedLiters} L</span>
@@ -242,7 +265,7 @@ export function TripTemplatesSheet({
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-danger-600"
-                      aria-label="Hapus trayek"
+                      aria-label="Hapus rute"
                       onClick={() => setDeleteTarget(tpl)}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden />
@@ -262,7 +285,7 @@ export function TripTemplatesSheet({
 
               <div className="space-y-1.5">
                 <Label htmlFor="tpl-category" required>
-                  Jenis Trayek
+                  Jenis Rute
                 </Label>
                 <Select
                   value={category || undefined}
@@ -281,43 +304,61 @@ export function TripTemplatesSheet({
                 </Select>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="tpl-origin" required>
-                  Lokasi Asal
-                </Label>
-                <Combobox
-                  options={originOptions}
-                  value={originSiteId}
-                  onValueChange={setOriginSiteId}
-                  placeholder="Pilih lokasi asal"
-                  searchPlaceholder="Cari lokasi…"
-                  disabled={!category}
-                />
-                {constraint.origin ? (
-                  <p className="text-tiny text-neutral-500">
-                    Hanya lokasi {SITE_TYPE_LABEL[constraint.origin]}
-                  </p>
-                ) : null}
-              </div>
+              {isDepart ? (
+                // "Berangkat": pick only the Pool — the leg is recorded Pool→Pool.
+                <div className="space-y-1.5">
+                  <Label htmlFor="tpl-origin" required>
+                    Lokasi Pool
+                  </Label>
+                  <Combobox
+                    options={originOptions}
+                    value={originSiteId}
+                    onValueChange={setOriginSiteId}
+                    placeholder="Pilih lokasi pool"
+                    searchPlaceholder="Cari lokasi…"
+                  />
+                  <p className="text-tiny text-neutral-500">Hanya lokasi Pool</p>
+                </div>
+              ) : category ? (
+                // Every other leg: the start is the previous leg's destination
+                // (shown read-only); operators only pick where this leg ends.
+                <>
+                  <div className="space-y-1.5">
+                    <Label>Lokasi Asal</Label>
+                    {impliedOrigin ? (
+                      <p className="rounded-md bg-neutral-50 px-3 py-2 text-body-sm text-neutral-700">
+                        {impliedOrigin.destinationSiteName}
+                        <span className="ml-1 text-tiny text-neutral-500">
+                          · otomatis dari trip sebelumnya
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="text-tiny text-danger-600">
+                        Tambahkan leg “Berangkat” dari pool terlebih dahulu.
+                      </p>
+                    )}
+                  </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="tpl-dest" required>
-                  Lokasi Tujuan
-                </Label>
-                <Combobox
-                  options={destinationOptions}
-                  value={destinationSiteId}
-                  onValueChange={setDestinationSiteId}
-                  placeholder="Pilih lokasi tujuan"
-                  searchPlaceholder="Cari lokasi…"
-                  disabled={!category}
-                />
-                {constraint.destination ? (
-                  <p className="text-tiny text-neutral-500">
-                    Hanya lokasi {SITE_TYPE_LABEL[constraint.destination]}
-                  </p>
-                ) : null}
-              </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="tpl-dest" required>
+                      Lokasi Tujuan
+                    </Label>
+                    <Combobox
+                      options={destinationOptions}
+                      value={destinationSiteId}
+                      onValueChange={setDestinationSiteId}
+                      placeholder="Pilih lokasi tujuan"
+                      searchPlaceholder="Cari lokasi…"
+                      disabled={impliedOrigin === null}
+                    />
+                    {constraint.destination ? (
+                      <p className="text-tiny text-neutral-500">
+                        Hanya lokasi {SITE_TYPE_LABEL[constraint.destination]}
+                      </p>
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -361,7 +402,7 @@ export function TripTemplatesSheet({
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
-        title="Hapus trayek ini?"
+        title="Hapus rute ini?"
         description="Template Trip terencana akan dihapus dari jadwal."
         confirmLabel="Hapus"
         onConfirm={() => void onDelete()}

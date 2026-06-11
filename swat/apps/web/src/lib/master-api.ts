@@ -155,6 +155,10 @@ export interface TripTemplateDto {
   routeId: string;
   routeCategory: string;
   routeLabel: string;
+  originSiteId: string;
+  originSiteName: string;
+  destinationSiteId: string;
+  destinationSiteName: string;
   targetTime: string;
   fuelRequestedLiters: number | null;
   createdAt: string;

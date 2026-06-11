@@ -61,7 +61,7 @@ export function TripSheet({
       <SheetContent side="right" className="w-[min(92vw,520px)]">
         <SheetHeader>
           <SheetTitle>
-            Trayek — {vehiclePlate} · {assignment?.driverName}
+            Rute — {vehiclePlate} · {assignment?.driverName}
           </SheetTitle>
         </SheetHeader>
         <SheetBody className="space-y-2">

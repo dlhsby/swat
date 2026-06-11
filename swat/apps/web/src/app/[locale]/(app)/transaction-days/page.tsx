@@ -61,7 +61,7 @@ export default function TransactionDaysPage(): JSX.Element {
       const result = await initializeToday();
       notify.success(
         result.created
-          ? `Hari transaksi dibuat: ${result.hauls} haul, ${result.trips} trayek.`
+          ? `Hari transaksi dibuat: ${result.hauls} haul, ${result.trips} rute.`
           : 'Hari transaksi hari ini sudah ada.',
       );
       setDate(todayWIB());

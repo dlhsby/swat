@@ -190,7 +190,7 @@ export default function DashboardPage(): JSX.Element {
               <div className="space-y-2">
                 {metrics.awaitingVerification > 0 ? (
                   <Alert variant="warning">
-                    {metrics.awaitingVerification} trayek menunggu verifikasi.
+                    {metrics.awaitingVerification} rute menunggu verifikasi.
                   </Alert>
                 ) : null}
                 {metrics.runningHauls > 0 ? (

@@ -116,7 +116,7 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
       <PageHead
         breadcrumb={[{ label: 'Hari Transaksi', href: '/transaction-days' }, { label: day.date }]}
         title={`Angkut Sampah · ${formatDateDisplay(day.date)}`}
-        description={`${verifiedCount}/${allTrips.length} trayek terverifikasi`}
+        description={`${verifiedCount}/${allTrips.length} rute terverifikasi`}
         actions={
           <div className="flex items-center gap-2">
             <StatusPill domain="day" value={day.status} />

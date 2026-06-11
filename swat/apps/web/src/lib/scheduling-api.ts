@@ -3,8 +3,10 @@ import { type RouteCategoryValue, type TripTemplateDto } from './master-api';
 
 export interface CreateTripTemplateBody {
   category: RouteCategoryValue;
-  originSiteId: string;
-  destinationSiteId: string;
+  /** Only the Pool for a DEPART_POOL leg; omitted otherwise (origin is derived). */
+  originSiteId?: string;
+  /** Required for every leg except DEPART_POOL. */
+  destinationSiteId?: string;
   targetTime: string;
   fuelRequestedLiters?: number;
 }

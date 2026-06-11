@@ -129,7 +129,7 @@ describe('Stepper', () => {
     render(
       <Stepper
         current={1}
-        steps={[{ label: 'Pilih Trayek' }, { label: 'Catat' }, { label: 'Konfirmasi' }]}
+        steps={[{ label: 'Pilih Rute' }, { label: 'Catat' }, { label: 'Konfirmasi' }]}
       />,
     );
     // active step exposes aria-current
@@ -166,12 +166,12 @@ describe('DescriptionList', () => {
     render(
       <DescriptionList
         items={[
-          { term: 'Trayek', value: 'TPS A → TPA B' },
+          { term: 'Rute', value: 'TPS A → TPA B' },
           { term: 'Berat', value: '4,2 ton', numeric: true },
         ]}
       />,
     );
-    expect(screen.getByText('Trayek')).toBeInTheDocument();
+    expect(screen.getByText('Rute')).toBeInTheDocument();
     expect(screen.getByText('4,2 ton')).toHaveClass('tnum');
   });
 });
