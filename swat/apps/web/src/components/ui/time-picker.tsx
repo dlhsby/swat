@@ -7,7 +7,10 @@ import { Input, type InputProps } from './input';
 
 const PRESETS = ['08:00', '12:00', '16:00'] as const;
 
-export interface TimePickerProps extends Omit<InputProps, 'type' | 'trailing' | 'onChange'> {
+export interface TimePickerProps extends Omit<
+  InputProps,
+  'type' | 'trailing' | 'onChange' | 'value'
+> {
   value?: string;
   onValueChange?: (value: string) => void;
   /** Render quick presets (Sekarang / 08:00 / 12:00 / 16:00). */
@@ -20,25 +23,48 @@ function nowHHmm(date: Date): string {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/** Pack typed digits into `HH:mm` as the user types (colon auto-inserted). */
+function formatLive(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 4);
+  return digits.length <= 2 ? digits : `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+/** Clamp to a valid 24-hour HH:mm on blur (hours 0–23, minutes 0–59). */
+function normalize(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 4);
+  if (!digits) {
+    return '';
+  }
+  const hh = Math.min(23, Number(digits.slice(0, 2).padEnd(2, '0')));
+  const minutePart = digits.slice(2);
+  const mm = minutePart ? Math.min(59, Number(minutePart.padEnd(2, '0'))) : 0;
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
 /**
- * TimePicker (design-system §3.7) — 24-hour HH:mm masked entry (native time
- * input) + clock icon + quick presets. WIB.
+ * TimePicker (design-system §3.7) — always 24-hour HH:mm. Implemented as a masked
+ * text field (not a native `<input type="time">`, whose AM/PM vs 24h display follows
+ * the OS/browser locale and ignores the `lang` attribute). WIB.
  */
 export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function TimePicker(
-  { className, value, onValueChange, presets = true, ...props },
+  { className, value, onValueChange, presets = true, onBlur, ...props },
   ref,
 ) {
   return (
     <div className="space-y-2">
       <Input
         ref={ref}
-        type="time"
-        // Force 24-hour HH:mm entry regardless of the OS locale: the native time
-        // input picks AM/PM vs 24h from the element's `lang`, so pin it to id-ID
-        // (Indonesian uses 24-hour clock) instead of inheriting en-US (12h + AM/PM).
-        lang="id-ID"
+        type="text"
+        inputMode="numeric"
+        placeholder="HH:mm"
+        maxLength={5}
+        autoComplete="off"
         value={value}
-        onChange={(e) => onValueChange?.(e.target.value)}
+        onChange={(e) => onValueChange?.(formatLive(e.target.value))}
+        onBlur={(e) => {
+          onValueChange?.(normalize(e.target.value));
+          onBlur?.(e);
+        }}
         className={cn('tnum', className)}
         {...props}
       />

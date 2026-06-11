@@ -1,7 +1,6 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -284,16 +283,14 @@ function RoutesTab(): JSX.Element {
   const columns = useMemo<ColumnDef<RouteDto, unknown>[]>(
     () => [
       {
-        id: 'route',
-        header: 'Rute',
-        meta: { label: 'Rute' },
-        cell: ({ row }) => (
-          <span className="flex items-center gap-1.5">
-            {row.original.originSiteName}
-            <ArrowRight className="h-3.5 w-3.5 text-neutral-400" aria-hidden />
-            {row.original.destinationSiteName}
-          </span>
-        ),
+        accessorKey: 'originSiteName',
+        header: 'Lokasi Asal',
+        meta: { label: 'Lokasi Asal' },
+      },
+      {
+        accessorKey: 'destinationSiteName',
+        header: 'Lokasi Tujuan',
+        meta: { label: 'Lokasi Tujuan' },
       },
       {
         accessorKey: 'category',

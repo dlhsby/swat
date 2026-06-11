@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -139,6 +140,26 @@ describe('TimePicker', () => {
     render(<TimePicker aria-label="jam" onValueChange={onValueChange} />);
     await userEvent.click(screen.getByRole('button', { name: 'Sekarang' }));
     expect(onValueChange).toHaveBeenCalledWith(expect.stringMatching(/^\d{2}:\d{2}$/));
+  });
+
+  it('masks typed digits into 24-hour HH:mm (no AM/PM)', async () => {
+    function Controlled(): JSX.Element {
+      const [v, setV] = useState('');
+      return <TimePicker aria-label="jam" value={v} onValueChange={setV} />;
+    }
+    render(<Controlled />);
+    const input = screen.getByRole('textbox', { name: 'jam' });
+    await userEvent.type(input, '1830');
+    expect(input).toHaveValue('18:30');
+  });
+
+  it('clamps an out-of-range time on blur', async () => {
+    const onValueChange = vi.fn();
+    render(<TimePicker aria-label="jam" value="99:99" onValueChange={onValueChange} />);
+    const input = screen.getByRole('textbox', { name: 'jam' });
+    input.focus();
+    await userEvent.tab();
+    expect(onValueChange).toHaveBeenLastCalledWith('23:59');
   });
 });
 

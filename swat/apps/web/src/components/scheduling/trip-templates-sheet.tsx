@@ -23,6 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
   Skeleton,
+  TimePicker,
   notify,
 } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
@@ -365,12 +366,11 @@ export function TripTemplatesSheet({
                   <Label htmlFor="tpl-time" required>
                     Target Waktu
                   </Label>
-                  <Input
+                  <TimePicker
                     id="tpl-time"
-                    type="time"
-                    lang="id-ID"
+                    presets={false}
                     value={targetTime}
-                    onChange={(e) => setTargetTime(e.target.value)}
+                    onValueChange={setTargetTime}
                   />
                 </div>
                 {isRefuel ? (
