@@ -96,7 +96,7 @@ row), and applies these specific, logged cleanses for known 13-year-old issues:
   SWAT enforces a unique plate, so the loader suffixes the legacy id
   (`B9552EQ#1048`, blank → `NOPOL#<id>`) and sets `needsPlateReview=true` — every
   vehicle survives + stays FK-resolvable; ops reconcile the flagged rows in-app.
-- **Duplicate `(vehicle, driver)` crew schedules:** deduped (keep first), trip
+- **Duplicate `(vehicle, driver)` schedule templates:** deduped (keep first), trip
   templates remapped to the kept schedule — same as the route dedupe.
 - **Duplicate `(vehicle, source)` junction rows / links to a dropped row:** skipped
   with a counted warning (soft many-to-many).

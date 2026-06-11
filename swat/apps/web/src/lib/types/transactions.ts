@@ -42,7 +42,7 @@ export interface HaulAssignmentDto {
   haulId: string;
   driverId: string;
   driverName: string;
-  crewScheduleId: string | null;
+  scheduleTemplateId: string | null;
   status: string;
   operationDate: string;
   departTargetOdometer: number;

@@ -10,14 +10,17 @@ import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
 import { ActorNamesService } from '../../audit/actor-names.service';
 
-import { CrewSchedulesRepository, type CrewScheduleWithRefs } from './crew-schedules.repository';
 import {
-  type CreateCrewScheduleDto,
-  type ListCrewSchedulesQueryDto,
-  type UpdateCrewScheduleDto,
-} from './dto/create-crew-schedule.dto';
+  type CreateScheduleTemplateDto,
+  type ListScheduleTemplatesQueryDto,
+  type UpdateScheduleTemplateDto,
+} from './dto/create-schedule-template.dto';
+import {
+  ScheduleTemplatesRepository,
+  type ScheduleTemplateWithRefs,
+} from './schedule-templates.repository';
 
-export interface CrewScheduleDto {
+export interface ScheduleTemplateDto {
   readonly id: string;
   readonly vehicleId: string;
   readonly vehiclePlate: string;
@@ -30,7 +33,7 @@ export interface CrewScheduleDto {
   readonly updatedAt: string;
 }
 
-function toDto(schedule: CrewScheduleWithRefs): CrewScheduleDto {
+function toDto(schedule: ScheduleTemplateWithRefs): ScheduleTemplateDto {
   return {
     id: schedule.id,
     vehicleId: schedule.vehicleId,
@@ -46,15 +49,15 @@ function toDto(schedule: CrewScheduleWithRefs): CrewScheduleDto {
 }
 
 @Injectable()
-export class CrewSchedulesService {
+export class ScheduleTemplatesService {
   constructor(
-    private readonly repo: CrewSchedulesRepository,
+    private readonly repo: ScheduleTemplatesRepository,
     private readonly actorNames: ActorNamesService,
   ) {}
 
   async list(
-    query: ListCrewSchedulesQueryDto,
-  ): Promise<{ data: CrewScheduleDto[]; meta: PaginationMeta }> {
+    query: ListScheduleTemplatesQueryDto,
+  ): Promise<{ data: ScheduleTemplateDto[]; meta: PaginationMeta }> {
     const { rows, total } = await this.repo.list({
       page: query.page,
       limit: query.limit,
@@ -64,7 +67,7 @@ export class CrewSchedulesService {
     return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }
 
-  async getById(id: string): Promise<CrewScheduleDto> {
+  async getById(id: string): Promise<ScheduleTemplateDto> {
     const schedule = await this.repo.findById(id);
     if (!schedule) {
       throw new NotFoundException('Jadwal kru tidak ditemukan.');
@@ -72,7 +75,7 @@ export class CrewSchedulesService {
     return toDto(schedule);
   }
 
-  async create(dto: CreateCrewScheduleDto): Promise<CrewScheduleDto> {
+  async create(dto: CreateScheduleTemplateDto): Promise<ScheduleTemplateDto> {
     this.assertTimeOrder(dto.departTime, dto.returnTime);
     await this.assertRefsExist(dto.vehicleId, dto.driverId);
     const duplicate = await this.repo.findByVehicleAndDriver(dto.vehicleId, dto.driverId);
@@ -89,7 +92,7 @@ export class CrewSchedulesService {
     return toDto(schedule);
   }
 
-  async update(id: string, dto: UpdateCrewScheduleDto): Promise<CrewScheduleDto> {
+  async update(id: string, dto: UpdateScheduleTemplateDto): Promise<ScheduleTemplateDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Jadwal kru tidak ditemukan.');

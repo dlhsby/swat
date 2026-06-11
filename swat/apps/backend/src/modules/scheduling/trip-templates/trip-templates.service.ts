@@ -24,7 +24,7 @@ type TemplateWithRoute = Prisma.TripTemplateGetPayload<{ include: typeof templat
 
 export interface TripTemplateDto {
   readonly id: string;
-  readonly crewScheduleId: string;
+  readonly scheduleTemplateId: string;
   readonly routeId: string;
   readonly routeCategory: string;
   readonly routeLabel: string;
@@ -37,7 +37,7 @@ export interface TripTemplateDto {
 function toDto(template: TemplateWithRoute): TripTemplateDto {
   return {
     id: template.id,
-    crewScheduleId: template.crewScheduleId,
+    scheduleTemplateId: template.scheduleTemplateId,
     routeId: template.routeId,
     routeCategory: template.route.category,
     routeLabel: `${template.route.originSite.name} → ${template.route.destinationSite.name}`,
@@ -53,9 +53,9 @@ function toDto(template: TemplateWithRoute): TripTemplateDto {
 export class TripTemplatesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async assertScheduleExists(crewScheduleId: string): Promise<void> {
-    const schedule = await this.prisma.crewSchedule.findUnique({
-      where: { id: crewScheduleId },
+  private async assertScheduleExists(scheduleTemplateId: string): Promise<void> {
+    const schedule = await this.prisma.scheduleTemplate.findUnique({
+      where: { id: scheduleTemplateId },
       select: { id: true },
     });
     if (!schedule) {
@@ -73,22 +73,22 @@ export class TripTemplatesService {
     }
   }
 
-  async list(crewScheduleId: string): Promise<TripTemplateDto[]> {
-    await this.assertScheduleExists(crewScheduleId);
+  async list(scheduleTemplateId: string): Promise<TripTemplateDto[]> {
+    await this.assertScheduleExists(scheduleTemplateId);
     const rows = await this.prisma.tripTemplate.findMany({
-      where: { crewScheduleId },
+      where: { scheduleTemplateId },
       include: templateInclude,
       orderBy: { targetTime: 'asc' },
     });
     return rows.map(toDto);
   }
 
-  async create(crewScheduleId: string, dto: CreateTripTemplateDto): Promise<TripTemplateDto> {
-    await this.assertScheduleExists(crewScheduleId);
+  async create(scheduleTemplateId: string, dto: CreateTripTemplateDto): Promise<TripTemplateDto> {
+    await this.assertScheduleExists(scheduleTemplateId);
     await this.assertRouteExists(dto.routeId);
     const row = await this.prisma.tripTemplate.create({
       data: {
-        crewScheduleId,
+        scheduleTemplateId,
         routeId: dto.routeId,
         targetTime: parseTimeOnly(dto.targetTime),
         ...(dto.fuelRequestedLiters !== undefined
@@ -101,11 +101,11 @@ export class TripTemplatesService {
   }
 
   async update(
-    crewScheduleId: string,
+    scheduleTemplateId: string,
     templateId: string,
     dto: UpdateTripTemplateDto,
   ): Promise<TripTemplateDto> {
-    await this.findOwned(crewScheduleId, templateId);
+    await this.findOwned(scheduleTemplateId, templateId);
     if (dto.routeId !== undefined) {
       await this.assertRouteExists(dto.routeId);
     }
@@ -123,15 +123,15 @@ export class TripTemplatesService {
     return toDto(row);
   }
 
-  async remove(crewScheduleId: string, templateId: string): Promise<{ message: string }> {
-    await this.findOwned(crewScheduleId, templateId);
+  async remove(scheduleTemplateId: string, templateId: string): Promise<{ message: string }> {
+    await this.findOwned(scheduleTemplateId, templateId);
     await this.prisma.tripTemplate.delete({ where: { id: templateId } });
     return { message: 'Template trayek telah dihapus.' };
   }
 
-  private async findOwned(crewScheduleId: string, templateId: string): Promise<void> {
+  private async findOwned(scheduleTemplateId: string, templateId: string): Promise<void> {
     const template = await this.prisma.tripTemplate.findFirst({
-      where: { id: templateId, crewScheduleId },
+      where: { id: templateId, scheduleTemplateId },
       select: { id: true },
     });
     if (!template) {

@@ -5,7 +5,7 @@ import { PaginationQueryDto } from '../../../../common/dto/pagination-query.dto'
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-export class CreateCrewScheduleDto {
+export class CreateScheduleTemplateDto {
   @ApiProperty({ format: 'uuid' })
   @IsString()
   @IsUUID()
@@ -27,9 +27,9 @@ export class CreateCrewScheduleDto {
   returnTime!: string;
 }
 
-export class UpdateCrewScheduleDto extends PartialType(CreateCrewScheduleDto) {}
+export class UpdateScheduleTemplateDto extends PartialType(CreateScheduleTemplateDto) {}
 
-export class ListCrewSchedulesQueryDto extends PaginationQueryDto {
+export class ListScheduleTemplatesQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ format: 'uuid' })
   @IsOptional()
   @IsString()

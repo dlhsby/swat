@@ -8,20 +8,22 @@ const crewInclude = {
   vehicle: { select: { id: true, plateNumber: true } },
   driver: { select: { id: true, name: true } },
   _count: { select: { tripTemplates: true } },
-} satisfies Prisma.CrewScheduleInclude;
+} satisfies Prisma.ScheduleTemplateInclude;
 
-export type CrewScheduleWithRefs = Prisma.CrewScheduleGetPayload<{ include: typeof crewInclude }>;
+export type ScheduleTemplateWithRefs = Prisma.ScheduleTemplateGetPayload<{
+  include: typeof crewInclude;
+}>;
 
-export interface ListCrewSchedulesFilter extends PageParams {
+export interface ListScheduleTemplatesFilter extends PageParams {
   readonly vehicleId?: string;
   readonly driverId?: string;
 }
 
 @Injectable()
-export class CrewSchedulesRepository {
+export class ScheduleTemplatesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private listWhere(filter: ListCrewSchedulesFilter): Prisma.CrewScheduleWhereInput {
+  private listWhere(filter: ListScheduleTemplatesFilter): Prisma.ScheduleTemplateWhereInput {
     return {
       ...(filter.vehicleId ? { vehicleId: filter.vehicleId } : {}),
       ...(filter.driverId ? { driverId: filter.driverId } : {}),
@@ -29,29 +31,29 @@ export class CrewSchedulesRepository {
   }
 
   async list(
-    filter: ListCrewSchedulesFilter,
-  ): Promise<{ rows: CrewScheduleWithRefs[]; total: number }> {
+    filter: ListScheduleTemplatesFilter,
+  ): Promise<{ rows: ScheduleTemplateWithRefs[]; total: number }> {
     const where = this.listWhere(filter);
     const { skip, take } = toSkipTake(filter);
     const [rows, total] = await this.prisma.$transaction([
-      this.prisma.crewSchedule.findMany({
+      this.prisma.scheduleTemplate.findMany({
         where,
         include: crewInclude,
         orderBy: { id: 'asc' },
         skip,
         take,
       }),
-      this.prisma.crewSchedule.count({ where }),
+      this.prisma.scheduleTemplate.count({ where }),
     ]);
     return { rows, total };
   }
 
-  findById(id: string): Promise<CrewScheduleWithRefs | null> {
-    return this.prisma.crewSchedule.findUnique({ where: { id }, include: crewInclude });
+  findById(id: string): Promise<ScheduleTemplateWithRefs | null> {
+    return this.prisma.scheduleTemplate.findUnique({ where: { id }, include: crewInclude });
   }
 
   findByVehicleAndDriver(vehicleId: string, driverId: string): Promise<{ id: string } | null> {
-    return this.prisma.crewSchedule.findUnique({
+    return this.prisma.scheduleTemplate.findUnique({
       where: { vehicleId_driverId: { vehicleId, driverId } },
       select: { id: true },
     });
@@ -65,15 +67,15 @@ export class CrewSchedulesRepository {
     return this.prisma.driver.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
-  create(data: Prisma.CrewScheduleCreateInput): Promise<CrewScheduleWithRefs> {
-    return this.prisma.crewSchedule.create({ data, include: crewInclude });
+  create(data: Prisma.ScheduleTemplateCreateInput): Promise<ScheduleTemplateWithRefs> {
+    return this.prisma.scheduleTemplate.create({ data, include: crewInclude });
   }
 
-  update(id: string, data: Prisma.CrewScheduleUpdateInput): Promise<CrewScheduleWithRefs> {
-    return this.prisma.crewSchedule.update({ where: { id }, data, include: crewInclude });
+  update(id: string, data: Prisma.ScheduleTemplateUpdateInput): Promise<ScheduleTemplateWithRefs> {
+    return this.prisma.scheduleTemplate.update({ where: { id }, data, include: crewInclude });
   }
 
   delete(id: string): Promise<{ id: string }> {
-    return this.prisma.crewSchedule.delete({ where: { id }, select: { id: true } });
+    return this.prisma.scheduleTemplate.delete({ where: { id }, select: { id: true } });
   }
 }

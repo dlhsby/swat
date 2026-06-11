@@ -136,7 +136,7 @@ export interface WasteSourceDto {
   updatedAt: string;
 }
 
-export interface CrewScheduleDto {
+export interface ScheduleTemplateDto {
   id: string;
   vehicleId: string;
   vehiclePlate: string;
@@ -151,7 +151,7 @@ export interface CrewScheduleDto {
 
 export interface TripTemplateDto {
   id: string;
-  crewScheduleId: string;
+  scheduleTemplateId: string;
   routeId: string;
   routeCategory: string;
   routeLabel: string;
@@ -187,5 +187,5 @@ export const driversApi = makeResourceApi<DriverDto>('/drivers');
 export const sitesApi = makeResourceApi<SiteDto>('/sites');
 export const routesApi = makeResourceApi<RouteDto>('/routes');
 export const wasteSourcesApi = makeResourceApi<WasteSourceDto>('/waste-sources');
-export const crewSchedulesApi = makeResourceApi<CrewScheduleDto>('/crew-schedules');
+export const scheduleTemplatesApi = makeResourceApi<ScheduleTemplateDto>('/schedule-templates');
 export const disposalPermitsApi = makeResourceApi<DisposalPermitDto>('/disposal-permits');

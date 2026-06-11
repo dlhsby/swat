@@ -22,7 +22,7 @@ export const AUDITED_MODELS: ReadonlySet<string> = new Set<string>([
   'LicenseClass',
   'Site',
   'Route',
-  'CrewSchedule',
+  'ScheduleTemplate',
   'TripTemplate',
   'DisposalPermit',
   'User',

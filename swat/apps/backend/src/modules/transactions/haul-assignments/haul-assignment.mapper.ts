@@ -16,7 +16,7 @@ export interface HaulAssignmentDto {
   readonly haulId: string;
   readonly driverId: string;
   readonly driverName: string;
-  readonly crewScheduleId: string | null;
+  readonly scheduleTemplateId: string | null;
   readonly status: string;
   readonly operationDate: string;
   readonly departTargetOdometer: number;
@@ -38,7 +38,7 @@ export function toHaulAssignmentDto(assignment: HaulAssignmentWithRefs): HaulAss
     haulId: assignment.haulId,
     driverId: assignment.driverId,
     driverName: assignment.driver.name,
-    crewScheduleId: assignment.crewScheduleId,
+    scheduleTemplateId: assignment.scheduleTemplateId,
     status: assignment.status,
     operationDate: assignment.operationDate.toISOString().slice(0, 10),
     departTargetOdometer: assignment.departTargetOdometer,

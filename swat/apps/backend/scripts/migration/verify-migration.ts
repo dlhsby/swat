@@ -61,7 +61,7 @@ async function reconcileCounts(): Promise<ReconcileRow[]> {
       reconcileRow('rute', await countRows(conn, 'rute'), await prisma.route.count(), 1, routeDrop),
     );
 
-    // Crew schedules are deduped on (vehicle, driver) — compute the expected drop
+    // Schedule templates are deduped on (vehicle, driver) — compute the expected drop
     // so the variance check is fair (same treatment as the route dedupe above).
     const crewDupRows = await query<{ extra: number }>(
       conn,
@@ -72,7 +72,7 @@ async function reconcileCounts(): Promise<ReconcileRow[]> {
       reconcileRow(
         'masterdetailtransaksiangkutsampah',
         await countRows(conn, 'masterdetailtransaksiangkutsampah'),
-        await prisma.crewSchedule.count(),
+        await prisma.scheduleTemplate.count(),
         1,
         crewDrop,
       ),

@@ -7,45 +7,45 @@ import { CreateTripTemplateDto, UpdateTripTemplateDto } from './dto/create-trip-
 import { type TripTemplateDto, TripTemplatesService } from './trip-templates.service';
 
 @ApiTags('trip-templates')
-@Controller('crew-schedules/:crewScheduleId/trip-templates')
+@Controller('schedule-templates/:scheduleTemplateId/trip-templates')
 export class TripTemplatesController {
   constructor(private readonly tripTemplates: TripTemplatesService) {}
 
   @Get()
   @RequirePermissions('trip-template:read')
-  @ApiOperation({ summary: 'List trip templates for a crew schedule' })
-  list(@Param('crewScheduleId') crewScheduleId: string): Promise<TripTemplateDto[]> {
-    return this.tripTemplates.list(crewScheduleId);
+  @ApiOperation({ summary: 'List trip templates for a schedule template' })
+  list(@Param('scheduleTemplateId') scheduleTemplateId: string): Promise<TripTemplateDto[]> {
+    return this.tripTemplates.list(scheduleTemplateId);
   }
 
   @Post()
   @RequirePermissions('trip-template:create')
-  @ApiOperation({ summary: 'Add a trip template to a crew schedule' })
+  @ApiOperation({ summary: 'Add a trip template to a schedule template' })
   create(
-    @Param('crewScheduleId') crewScheduleId: string,
+    @Param('scheduleTemplateId') scheduleTemplateId: string,
     @Body() dto: CreateTripTemplateDto,
   ): Promise<TripTemplateDto> {
-    return this.tripTemplates.create(crewScheduleId, dto);
+    return this.tripTemplates.create(scheduleTemplateId, dto);
   }
 
   @Patch(':templateId')
   @RequirePermissions('trip-template:update')
   @ApiOperation({ summary: 'Update a trip template' })
   update(
-    @Param('crewScheduleId') crewScheduleId: string,
+    @Param('scheduleTemplateId') scheduleTemplateId: string,
     @Param('templateId') templateId: string,
     @Body() dto: UpdateTripTemplateDto,
   ): Promise<TripTemplateDto> {
-    return this.tripTemplates.update(crewScheduleId, templateId, dto);
+    return this.tripTemplates.update(scheduleTemplateId, templateId, dto);
   }
 
   @Delete(':templateId')
   @RequirePermissions('trip-template:delete')
   @ApiOperation({ summary: 'Delete a trip template' })
   remove(
-    @Param('crewScheduleId') crewScheduleId: string,
+    @Param('scheduleTemplateId') scheduleTemplateId: string,
     @Param('templateId') templateId: string,
   ): Promise<{ message: string }> {
-    return this.tripTemplates.remove(crewScheduleId, templateId);
+    return this.tripTemplates.remove(scheduleTemplateId, templateId);
   }
 }

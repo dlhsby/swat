@@ -45,9 +45,9 @@ const PERMISSION_MAP: ReadonlyArray<readonly [string, readonly string[]]> = [
   [
     '/penjadwalan',
     [
-      'crew-schedule:read',
-      'crew-schedule:create',
-      'crew-schedule:update',
+      'schedule-template:read',
+      'schedule-template:create',
+      'schedule-template:update',
       'trip-template:read',
       'trip-template:create',
     ],

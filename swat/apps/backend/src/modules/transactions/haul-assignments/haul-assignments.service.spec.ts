@@ -18,7 +18,7 @@ function buildAssignment(overrides: Record<string, unknown> = {}): Record<string
     haulId: 'haul-100',
     driverId: 'driver-3',
     driver: { id: 'driver-3', name: 'Budi' },
-    crewScheduleId: 'schedule-1',
+    scheduleTemplateId: 'schedule-1',
     status: 'IN_PROGRESS',
     operationDate: new Date('2026-06-08T00:00:00Z'),
     departTargetOdometer: 12000,

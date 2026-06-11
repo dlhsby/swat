@@ -2,8 +2,8 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 
 import { type ActorNamesService } from '../../audit/actor-names.service';
 
-import { type CrewSchedulesRepository } from './crew-schedules.repository';
-import { CrewSchedulesService } from './crew-schedules.service';
+import { type ScheduleTemplatesRepository } from './schedule-templates.repository';
+import { ScheduleTemplatesService } from './schedule-templates.service';
 
 function buildSchedule(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -21,7 +21,7 @@ function buildSchedule(overrides: Record<string, unknown> = {}): Record<string, 
   };
 }
 
-describe('CrewSchedulesService', () => {
+describe('ScheduleTemplatesService', () => {
   let repo: {
     list: jest.Mock;
     findById: jest.Mock;
@@ -32,7 +32,7 @@ describe('CrewSchedulesService', () => {
     update: jest.Mock;
     delete: jest.Mock;
   };
-  let service: CrewSchedulesService;
+  let service: ScheduleTemplatesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -46,8 +46,8 @@ describe('CrewSchedulesService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
-    service = new CrewSchedulesService(
-      repo as unknown as CrewSchedulesRepository,
+    service = new ScheduleTemplatesService(
+      repo as unknown as ScheduleTemplatesRepository,
       {
         attach: async (_r: unknown, d: unknown[]) => d,
         resolve: async () => new Map<string, string>(),

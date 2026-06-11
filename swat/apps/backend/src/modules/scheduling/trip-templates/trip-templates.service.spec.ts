@@ -7,7 +7,7 @@ import { TripTemplatesService } from './trip-templates.service';
 function buildRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 1,
-    crewScheduleId: 1,
+    scheduleTemplateId: 1,
     routeId: 2,
     targetTime: new Date('1970-01-01T06:30:00Z'),
     fuelRequestedLiters: '20.00',
@@ -25,7 +25,7 @@ function buildRow(overrides: Record<string, unknown> = {}): Record<string, unkno
 
 describe('TripTemplatesService', () => {
   let prisma: {
-    crewSchedule: { findUnique: jest.Mock };
+    scheduleTemplate: { findUnique: jest.Mock };
     route: { findFirst: jest.Mock };
     tripTemplate: {
       findMany: jest.Mock;
@@ -40,7 +40,7 @@ describe('TripTemplatesService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma = {
-      crewSchedule: { findUnique: jest.fn().mockResolvedValue({ id: 1 }) },
+      scheduleTemplate: { findUnique: jest.fn().mockResolvedValue({ id: 1 }) },
       route: { findFirst: jest.fn().mockResolvedValue({ id: 2 }) },
       tripTemplate: {
         findMany: jest.fn(),
@@ -62,8 +62,8 @@ describe('TripTemplatesService', () => {
   const RID99 = '00000000-0000-0000-0000-0000000000c9';
   const dto = { routeId: RID2, targetTime: '06:30', fuelRequestedLiters: 20 };
 
-  it('404s for an unknown crew schedule', async () => {
-    prisma.crewSchedule.findUnique.mockResolvedValue(null);
+  it('404s for an unknown schedule template', async () => {
+    prisma.scheduleTemplate.findUnique.mockResolvedValue(null);
     await expect(service.list(SID9)).rejects.toBeInstanceOf(NotFoundException);
   });
 

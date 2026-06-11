@@ -332,7 +332,7 @@ model Vehicle {
   updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt          DateTime?            @map("deleted_at") @db.Timestamptz(6)
   hauls              Haul[]
-  crewSchedules      CrewSchedule[]
+  scheduleTemplates      ScheduleTemplate[]
   disposalPermits    DisposalPermit[]
   wasteSources       VehicleWasteSource[]
   maintenance        MaintenanceRecord[]
@@ -384,7 +384,7 @@ model Driver {
   updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt        DateTime?        @map("deleted_at") @db.Timestamptz(6)
   licenses         DriverLicense[]
-  crewSchedules    CrewSchedule[]
+  scheduleTemplates    ScheduleTemplate[]
   haulAssignments  HaulAssignment[]
 
   createdById String? @map("created_by_id") @db.Uuid
@@ -508,7 +508,7 @@ model VehicleWasteSource {
 // ===========================================================================
 // Scheduling
 // ===========================================================================
-model CrewSchedule {
+model ScheduleTemplate {
   id              String           @id @default(uuid(7)) @db.Uuid
   legacyId        Int?             @unique @map("legacy_id")
   vehicleId       String           @map("vehicle_id") @db.Uuid
@@ -528,14 +528,14 @@ model CrewSchedule {
   deletedById String?   @map("deleted_by_id") @db.Uuid
 
   @@unique([vehicleId, driverId])
-  @@map("crew_schedule")
+  @@map("schedule_template")
 }
 
 model TripTemplate {
   id                  String       @id @default(uuid(7)) @db.Uuid
   legacyId            Int?         @unique @map("legacy_id")
-  crewScheduleId      String       @map("crew_schedule_id") @db.Uuid
-  crewSchedule        CrewSchedule @relation(fields: [crewScheduleId], references: [id], onDelete: Cascade)
+  scheduleTemplateId      String       @map("schedule_template_id") @db.Uuid
+  scheduleTemplate        ScheduleTemplate @relation(fields: [scheduleTemplateId], references: [id], onDelete: Cascade)
   routeId             String       @map("route_id") @db.Uuid
   route               Route        @relation(fields: [routeId], references: [id])
   targetTime          DateTime     @map("target_time") @db.Time
@@ -627,8 +627,8 @@ model HaulAssignment {
   haul                 Haul          @relation(fields: [haulId], references: [id])
   driverId             String        @map("driver_id") @db.Uuid
   driver               Driver        @relation(fields: [driverId], references: [id])
-  crewScheduleId       String?       @map("crew_schedule_id") @db.Uuid
-  crewSchedule         CrewSchedule? @relation(fields: [crewScheduleId], references: [id])
+  scheduleTemplateId       String?       @map("schedule_template_id") @db.Uuid
+  scheduleTemplate         ScheduleTemplate? @relation(fields: [scheduleTemplateId], references: [id])
   operationDate        DateTime      @map("operation_date") @db.Date
   status               DayStatus     @default(IN_PROGRESS)
   departTargetOdometer Int           @default(0) @map("depart_target_odometer")

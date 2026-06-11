@@ -12,7 +12,7 @@
  *  6. Synthetic transactional data (a year of disposal + refuel trips, plus TPA
  *     weighbridge logs) so partition pruning and the Phase-2 monitoring
  *     dashboards (tonnage by source, BBM variance, TPA reconciliation) have data;
- *     plus one demo driver-license, crew-schedule, trip-template and two kitir
+ *     plus one demo driver-license, schedule-template, trip-template and two kitir
  *     (DisposalPermit) so the Phase-1 CRUD pages aren't empty.
  *     Items 5–6 are gated by SEED_SYNTHETIC (default true).
  *
@@ -116,10 +116,10 @@ const PERMISSION_KEYS: readonly string[] = [
   'waste-source:update',
   'waste-source:delete',
   // Scheduling
-  'crew-schedule:read',
-  'crew-schedule:create',
-  'crew-schedule:update',
-  'crew-schedule:delete',
+  'schedule-template:read',
+  'schedule-template:create',
+  'schedule-template:update',
+  'schedule-template:delete',
   'trip-template:read',
   'trip-template:create',
   'trip-template:update',
@@ -231,7 +231,7 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
   { name: 'Checker', patterns: ['vehicle:read', 'driver:read', 'trip:read', 'trip:verify'] },
   {
     name: 'Operator Pool',
-    patterns: ['vehicle:read', 'driver:read', 'crew-schedule:read', 'trip:read', 'trip:update'],
+    patterns: ['vehicle:read', 'driver:read', 'schedule-template:read', 'trip:read', 'trip:update'],
   },
   { name: 'Petugas TPA', patterns: ['site:read', 'trip:read', 'trip:record-disposal'] },
   {
@@ -825,7 +825,7 @@ async function seedSyntheticData(): Promise<void> {
     }));
 
   // --- Demo scheduling + permit rows so the Phase-1 CRUD pages (driver license,
-  // crew schedule, trip template, Jatah Kitir) have data in dev, not empty lists.
+  // schedule template, trip template, Jatah Kitir) have data in dev, not empty lists.
   const admin = await prisma.user.findUnique({
     where: { username: 'admin' },
     select: { id: true },
@@ -843,11 +843,11 @@ async function seedSyntheticData(): Promise<void> {
   }
 
   const timeOfDay = (h: number, m: number): Date => new Date(Date.UTC(1970, 0, 1, h, m));
-  const crewSchedule =
-    (await prisma.crewSchedule.findFirst({
+  const scheduleTemplate =
+    (await prisma.scheduleTemplate.findFirst({
       where: { vehicleId: vehicle.id, driverId: driver.id },
     })) ??
-    (await prisma.crewSchedule.create({
+    (await prisma.scheduleTemplate.create({
       data: {
         vehicleId: vehicle.id,
         driverId: driver.id,
@@ -858,12 +858,12 @@ async function seedSyntheticData(): Promise<void> {
 
   if (
     !(await prisma.tripTemplate.findFirst({
-      where: { crewScheduleId: crewSchedule.id, routeId: disposalRoute.id },
+      where: { scheduleTemplateId: scheduleTemplate.id, routeId: disposalRoute.id },
     }))
   ) {
     await prisma.tripTemplate.create({
       data: {
-        crewScheduleId: crewSchedule.id,
+        scheduleTemplateId: scheduleTemplate.id,
         routeId: disposalRoute.id,
         targetTime: timeOfDay(6, 0),
         fuelRequestedLiters: 50,

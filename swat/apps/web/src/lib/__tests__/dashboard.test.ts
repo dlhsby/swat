@@ -55,7 +55,7 @@ function day(trips: TripDto[], haulStatus = 'IN_PROGRESS'): TransactionDayDto {
             haulId: '00000000-0000-0000-0000-000000000001',
             driverId: '00000000-0000-0000-0000-000000000003',
             driverName: 'Budi',
-            crewScheduleId: '00000000-0000-0000-0000-000000000001',
+            scheduleTemplateId: '00000000-0000-0000-0000-000000000001',
             status: 'IN_PROGRESS',
             operationDate: '2026-06-08',
             departTargetOdometer: 0,

@@ -18,7 +18,7 @@ import { PrismaClient } from '@prisma/client';
 import { hash } from 'argon2';
 
 import type {
-  LegacyCrewSchedule,
+  LegacyScheduleTemplate,
   LegacyDriver,
   LegacyDriverLicense,
   LegacyFuel,
@@ -95,7 +95,7 @@ async function checkIdempotency(forceReset: boolean): Promise<void> {
   if (forceReset) {
     warn('Force reset: truncating migrated tables (CASCADE).');
     await prisma.$executeRawUnsafe(
-      `TRUNCATE TABLE "disposal_permit","trip_template","crew_schedule","driver_license","driver",
+      `TRUNCATE TABLE "disposal_permit","trip_template","schedule_template","driver_license","driver",
        "vehicle_waste_source","vehicle","vehicle_model","waste_source","route","site","fuel",
        "fuel_category","vehicle_type","license_class","daily_tonnage","levy","legacy_name_map"
        CASCADE`,
@@ -345,7 +345,7 @@ async function migrateScheduling(sysUser: string): Promise<void> {
     const siteMap = toLegacyMap(await prisma.site.findMany(ID_LEGACY));
     const routeMap = toLegacyMap(await prisma.route.findMany(ID_LEGACY));
 
-    const schedules = await query<LegacyCrewSchedule>(
+    const schedules = await query<LegacyScheduleTemplate>(
       conn,
       'SELECT * FROM masterdetailtransaksiangkutsampah',
     );
@@ -365,12 +365,12 @@ async function migrateScheduling(sysUser: string): Promise<void> {
           s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID,
           s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID,
         );
-        await prisma.crewSchedule.upsert({
+        await prisma.scheduleTemplate.upsert({
           where: { legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID },
           create: {
             legacyId: s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID,
-            vehicleId: resolveFk(vehicleMap, s.KENDARAAN_ID, 'crewSchedule.vehicleId'),
-            driverId: resolveFk(driverMap, s.PENGEMUDI_ID, 'crewSchedule.driverId'),
+            vehicleId: resolveFk(vehicleMap, s.KENDARAAN_ID, 'scheduleTemplate.vehicleId'),
+            driverId: resolveFk(driverMap, s.PENGEMUDI_ID, 'scheduleTemplate.driverId'),
             departTime:
               legacyTimeToDate(s.MASTERDETAILTRANSAKSIANGKUTSAMPAH_WAKTUBERANGKATKANDANG) ?? NOW,
             returnTime:
@@ -384,7 +384,7 @@ async function migrateScheduling(sysUser: string): Promise<void> {
       }
     }
     log(
-      `CrewSchedule: ${crewKeptByPair.size} kept, ${crewDropped} duplicate vehicle+driver dropped`,
+      `ScheduleTemplate: ${crewKeptByPair.size} kept, ${crewDropped} duplicate vehicle+driver dropped`,
     );
 
     // Build the route-dedupe remap so templates point at the kept route id. Same
@@ -401,7 +401,7 @@ async function migrateScheduling(sysUser: string): Promise<void> {
     }
 
     const scheduleByLegacy = new Map(
-      (await prisma.crewSchedule.findMany({ where: { legacyId: { not: null } } })).map((s) => [
+      (await prisma.scheduleTemplate.findMany({ where: { legacyId: { not: null } } })).map((s) => [
         s.legacyId,
         s.id,
       ]),
@@ -412,8 +412,8 @@ async function migrateScheduling(sysUser: string): Promise<void> {
       const keptScheduleLegacyId =
         scheduleRemap.get(t.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID) ??
         t.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID;
-      const crewScheduleId = scheduleByLegacy.get(keptScheduleLegacyId);
-      if (!crewScheduleId) {
+      const scheduleTemplateId = scheduleByLegacy.get(keptScheduleLegacyId);
+      if (!scheduleTemplateId) {
         continue;
       }
       const keptRouteLegacyId = routeRemap.get(t.RUTE_ID) ?? t.RUTE_ID;
@@ -421,7 +421,7 @@ async function migrateScheduling(sysUser: string): Promise<void> {
         where: { legacyId: t.MASTERTRAYEK_ID },
         create: {
           legacyId: t.MASTERTRAYEK_ID,
-          crewScheduleId,
+          scheduleTemplateId,
           routeId: resolveFk(routeMap, keptRouteLegacyId, 'tripTemplate.routeId'),
           targetTime: legacyTimeToDate(t.MASTERTRAYEK_WAKTUTARGET) ?? NOW,
           fuelRequestedLiters: nonNegativeOrNull(t.MASTERTRAYEK_JUMLAHISIBBMDIAJUKAN),

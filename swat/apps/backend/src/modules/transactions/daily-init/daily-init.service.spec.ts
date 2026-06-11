@@ -39,7 +39,7 @@ describe('DailyInitService', () => {
   };
   let prisma: {
     transactionDay: { findUnique: jest.Mock };
-    crewSchedule: { findMany: jest.Mock };
+    scheduleTemplate: { findMany: jest.Mock };
     $transaction: jest.Mock;
   };
   let service: DailyInitService;
@@ -53,7 +53,7 @@ describe('DailyInitService', () => {
     };
     prisma = {
       transactionDay: { findUnique: jest.fn().mockResolvedValue(null) },
-      crewSchedule: { findMany: jest.fn().mockResolvedValue([buildSchedule()]) },
+      scheduleTemplate: { findMany: jest.fn().mockResolvedValue([buildSchedule()]) },
       $transaction: jest.fn((cb: (t: typeof tx) => unknown) => cb(tx)),
     };
     service = new DailyInitService(prisma as unknown as PrismaService);
@@ -118,7 +118,7 @@ describe('DailyInitService', () => {
 
   it('excludes schedules whose vehicle or driver was soft-deleted', async () => {
     await service.initializeForDate(date);
-    expect(prisma.crewSchedule.findMany).toHaveBeenCalledWith(
+    expect(prisma.scheduleTemplate.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { vehicle: { deletedAt: null }, driver: { deletedAt: null } },
       }),
@@ -126,7 +126,7 @@ describe('DailyInitService', () => {
   });
 
   it('groups schedules sharing a vehicle into one haul with multiple assignments', async () => {
-    prisma.crewSchedule.findMany.mockResolvedValue([
+    prisma.scheduleTemplate.findMany.mockResolvedValue([
       buildSchedule({ id: 1, driverId: 3 }),
       buildSchedule({ id: 2, driverId: 4 }),
     ]);
@@ -146,7 +146,7 @@ describe('DailyInitService', () => {
   });
 
   it('forwards the configured fuel request when present', async () => {
-    prisma.crewSchedule.findMany.mockResolvedValue([
+    prisma.scheduleTemplate.findMany.mockResolvedValue([
       buildSchedule({
         tripTemplates: [
           {

@@ -16,10 +16,10 @@ import { Badge, DropdownMenuItem } from '@/components/ui';
 import { useOptions } from '@/hooks/use-options';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import {
-  type CrewScheduleDto,
+  type ScheduleTemplateDto,
   type DriverDto,
   type VehicleDto,
-  crewSchedulesApi,
+  scheduleTemplatesApi,
   driversApi,
   vehiclesApi,
 } from '@/lib/master-api';
@@ -38,7 +38,7 @@ const schema = z
   });
 type Values = z.infer<typeof schema>;
 const defaults: Values = { vehicleId: '', driverId: '', departTime: '', returnTime: '' };
-const toForm = (r: CrewScheduleDto): Values => ({
+const toForm = (r: ScheduleTemplateDto): Values => ({
   vehicleId: r.vehicleId,
   driverId: r.driverId,
   departTime: r.departTime,
@@ -47,14 +47,14 @@ const toForm = (r: CrewScheduleDto): Values => ({
 const vehicleOption = (v: VehicleDto): SelectOption => ({ value: v.id, label: v.plateNumber });
 const driverOption = (d: DriverDto): SelectOption => ({ value: d.id, label: d.name });
 
-export default function CrewSchedulesPage(): JSX.Element {
+export default function ScheduleTemplatesPage(): JSX.Element {
   const t = useTranslations('nav');
-  const manager = useResourceManager(crewSchedulesApi, (r) => r.id);
+  const manager = useResourceManager(scheduleTemplatesApi, (r) => r.id);
   const { options: vehicles } = useOptions(vehiclesApi.list, vehicleOption);
   const { options: drivers } = useOptions(driversApi.list, driverOption);
-  const [templatesFor, setTemplatesFor] = useState<CrewScheduleDto | null>(null);
+  const [templatesFor, setTemplatesFor] = useState<ScheduleTemplateDto | null>(null);
 
-  const columns = useMemo<ColumnDef<CrewScheduleDto, unknown>[]>(
+  const columns = useMemo<ColumnDef<ScheduleTemplateDto, unknown>[]>(
     () => [
       {
         accessorKey: 'vehiclePlate',
@@ -92,7 +92,7 @@ export default function CrewSchedulesPage(): JSX.Element {
         cell: ({ row }) => (
           <div className="text-right">
             <RowActions
-              resource="crew-schedule"
+              resource="schedule-template"
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
               extra={
@@ -114,7 +114,7 @@ export default function CrewSchedulesPage(): JSX.Element {
   return (
     <CrudListShell
       title={t('scheduleTemplates')}
-      resource="crew-schedule"
+      resource="schedule-template"
       manager={manager}
       columns={columns}
       searchPlaceholder="Cari kendaraan / pengemudi…"

@@ -111,9 +111,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       // edited within it). Labelled "Template Jadwal"; route slug unchanged.
       {
         key: 'scheduleTemplates',
-        href: '/crew-schedules',
+        href: '/schedule-templates',
         icon: CalendarClock,
-        permission: 'crew-schedule:read',
+        permission: 'schedule-template:read',
       },
     ],
   },

@@ -28,7 +28,7 @@ import { useResourceList } from '@/hooks/use-resource-list';
 import { ApiError } from '@/lib/api-error';
 import { formatTime } from '@/lib/format';
 import {
-  type CrewScheduleDto,
+  type ScheduleTemplateDto,
   type RouteDto,
   type TripTemplateDto,
   routesApi,
@@ -36,11 +36,11 @@ import {
 import { createTripTemplate, deleteTripTemplate, listTripTemplates } from '@/lib/scheduling-api';
 
 export interface TripTemplatesSheetProps {
-  schedule: CrewScheduleDto | null;
+  schedule: ScheduleTemplateDto | null;
   onOpenChange: (open: boolean) => void;
 }
 
-/** Manage the planned trips (Template Trip Terencana) for a crew schedule. */
+/** Manage the planned trips (Template Trip Terencana) for a schedule template. */
 export function TripTemplatesSheet({
   schedule,
   onOpenChange,

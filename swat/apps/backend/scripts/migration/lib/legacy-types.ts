@@ -121,7 +121,7 @@ export interface LegacyUser {
   PENGGUNA_USERNAME: string;
 }
 
-export interface LegacyCrewSchedule {
+export interface LegacyScheduleTemplate {
   MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID: number;
   KENDARAAN_ID: number;
   PENGEMUDI_ID: number;

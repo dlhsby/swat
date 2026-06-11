@@ -30,9 +30,9 @@ const scheduleInclude = {
     },
     orderBy: { targetTime: 'asc' },
   },
-} satisfies Prisma.CrewScheduleInclude;
+} satisfies Prisma.ScheduleTemplateInclude;
 
-type ScheduleForInit = Prisma.CrewScheduleGetPayload<{ include: typeof scheduleInclude }>;
+type ScheduleForInit = Prisma.ScheduleTemplateGetPayload<{ include: typeof scheduleInclude }>;
 type TemplateForInit = ScheduleForInit['tripTemplates'][number];
 
 /** Compose a human-readable trip name from its route (≤256 chars). */
@@ -43,7 +43,7 @@ function tripName(route: TemplateForInit['route']): string {
 
 /**
  * Daily transaction initialization (Epic 1.7, T-123). At 03:00 every day this
- * materializes the day's operational plan from the standing crew schedules:
+ * materializes the day's operational plan from the standing schedule templates:
  * one {@link Haul} per vehicle, a {@link HaulAssignment} per crew shift, and a
  * {@link Trip} per trip template. Idempotent — a second run for the same date is
  * a no-op (the day's `date` is unique). All writes set `operationDate` so they
@@ -86,7 +86,7 @@ export class DailyInitService {
 
     // Skip schedules whose vehicle or driver has since been soft-deleted —
     // a retired vehicle / resigned driver must not spawn daily work.
-    const schedules = await this.prisma.crewSchedule.findMany({
+    const schedules = await this.prisma.scheduleTemplate.findMany({
       where: { vehicle: { deletedAt: null }, driver: { deletedAt: null } },
       include: scheduleInclude,
     });
@@ -119,7 +119,7 @@ export class DailyInitService {
             data: {
               haulId: haul.id,
               driverId: schedule.driverId,
-              crewScheduleId: schedule.id,
+              scheduleTemplateId: schedule.id,
               operationDate: date,
               status: 'IN_PROGRESS',
               departTargetOdometer: group.currentOdometer,
