@@ -79,8 +79,8 @@ export default function CrewSchedulesPage(): JSX.Element {
       },
       {
         accessorKey: 'tripTemplateCount',
-        header: 'Trayek',
-        meta: { label: 'Trayek' },
+        header: 'Template Trip',
+        meta: { label: 'Template Trip' },
         cell: ({ row }) => <Badge appearance="count">{row.original.tripTemplateCount}</Badge>,
       },
       {
@@ -99,7 +99,7 @@ export default function CrewSchedulesPage(): JSX.Element {
                 <ProtectedAction permission="trip-template:read">
                   <DropdownMenuItem onSelect={() => setTemplatesFor(row.original)}>
                     <ListChecks aria-hidden />
-                    Kelola Trayek
+                    Kelola Template Trip
                   </DropdownMenuItem>
                 </ProtectedAction>
               }
@@ -113,7 +113,7 @@ export default function CrewSchedulesPage(): JSX.Element {
 
   return (
     <CrudListShell
-      title={t('crewSchedules')}
+      title={t('scheduleTemplates')}
       resource="crew-schedule"
       manager={manager}
       columns={columns}
@@ -124,7 +124,7 @@ export default function CrewSchedulesPage(): JSX.Element {
         schema={schema}
         defaults={defaults}
         toForm={toForm}
-        title={{ create: 'Tambah Jadwal Kru', edit: 'Ubah Jadwal Kru' }}
+        title={{ create: 'Tambah Template Jadwal', edit: 'Ubah Template Jadwal' }}
         className="max-w-[520px]"
       >
         <div className="grid gap-4">

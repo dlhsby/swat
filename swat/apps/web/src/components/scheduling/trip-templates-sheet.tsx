@@ -40,7 +40,7 @@ export interface TripTemplatesSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/** Manage the planned trips (Trayek Terencana) for a crew schedule. */
+/** Manage the planned trips (Template Trip Terencana) for a crew schedule. */
 export function TripTemplatesSheet({
   schedule,
   onOpenChange,
@@ -93,7 +93,7 @@ export function TripTemplatesSheet({
         targetTime,
         fuelRequestedLiters: fuel ? Number(fuel) : undefined,
       });
-      notify.success('Trayek ditambahkan.');
+      notify.success('Template Trip ditambahkan.');
       setRouteId('');
       setTargetTime('');
       setFuel('');
@@ -111,7 +111,7 @@ export function TripTemplatesSheet({
     }
     try {
       await deleteTripTemplate(scheduleId, deleteTarget.id);
-      notify.success('Trayek dihapus.');
+      notify.success('Template Trip dihapus.');
       setDeleteTarget(null);
       await reload();
     } catch (err) {
@@ -124,7 +124,7 @@ export function TripTemplatesSheet({
       <SheetContent side="right" className="w-[min(92vw,560px)]">
         <SheetHeader>
           <SheetTitle>
-            Trayek — {schedule?.vehiclePlate} · {schedule?.driverName}
+            Template Trip — {schedule?.vehiclePlate} · {schedule?.driverName}
           </SheetTitle>
         </SheetHeader>
         <SheetBody className="space-y-5">
@@ -177,7 +177,7 @@ export function TripTemplatesSheet({
               onSubmit={(e) => void onAdd(e)}
               className="space-y-3 rounded-lg border border-neutral-200 p-3"
             >
-              <p className="text-label font-semibold text-neutral-700">Tambah Trayek</p>
+              <p className="text-label font-semibold text-neutral-700">Tambah Template Trip</p>
               <div className="space-y-1.5">
                 <Label htmlFor="tpl-route" required>
                   Rute
@@ -221,7 +221,7 @@ export function TripTemplatesSheet({
               </div>
               <Button type="submit" loading={saving} disabled={!routeId || !targetTime}>
                 <ArrowRight className="h-4 w-4" aria-hidden />
-                Tambah Trayek
+                Tambah Template Trip
               </Button>
             </form>
           </ProtectedAction>
@@ -234,7 +234,7 @@ export function TripTemplatesSheet({
           if (!open) setDeleteTarget(null);
         }}
         title="Hapus trayek ini?"
-        description="Trayek terencana akan dihapus dari jadwal."
+        description="Template Trip terencana akan dihapus dari jadwal."
         confirmLabel="Hapus"
         onConfirm={() => void onDelete()}
       />

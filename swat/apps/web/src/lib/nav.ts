@@ -3,7 +3,6 @@ import {
   ArrowLeftRight,
   BarChart3,
   CalendarClock,
-  CalendarDays,
   ClipboardCheck,
   Database,
   FuelIcon,
@@ -108,30 +107,19 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: Trash2,
         permission: 'waste-source:read',
       },
-    ],
-  },
-  {
-    id: 'grp-sched',
-    key: 'scheduling',
-    icon: CalendarDays,
-    leaves: [
+      // Schedule Template (parent = vehicle+driver+times; its Trip Templates are
+      // edited within it). Labelled "Template Jadwal"; route slug unchanged.
       {
-        key: 'crewSchedules',
+        key: 'scheduleTemplates',
         href: '/crew-schedules',
         icon: CalendarClock,
         permission: 'crew-schedule:read',
-      },
-      {
-        key: 'disposalPermits',
-        href: '/disposal-permits',
-        icon: Ticket,
-        permission: 'disposal-permit:read',
       },
     ],
   },
   {
     id: 'grp-txn',
-    key: 'transactions',
+    key: 'pengangkutan',
     icon: ArrowLeftRight,
     leaves: [
       {
@@ -139,6 +127,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         href: '/transaction-days',
         icon: Gauge,
         permission: 'transaction-day:read',
+      },
+      {
+        key: 'disposalPermits',
+        href: '/disposal-permits',
+        icon: Ticket,
+        permission: 'disposal-permit:read',
       },
       {
         key: 'refuelLog',
