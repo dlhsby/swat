@@ -30,6 +30,14 @@ const EMPLOYMENT_OPTIONS: readonly SelectOption[] = [
   { value: 'HONORER', label: 'Honorer' },
 ];
 
+// K3 (occupational safety) training status — the two legacy values, SUDAH/BELUM.
+const K3_OPTIONS: readonly SelectOption[] = [
+  { value: 'SUDAH', label: 'Sudah' },
+  { value: 'BELUM', label: 'Belum' },
+];
+const k3Label = (v: string | null): string =>
+  K3_OPTIONS.find((o) => o.value === v)?.label ?? (v || '—');
+
 const schema = z.object({
   name: z.string().min(1, 'Nama wajib diisi').max(100),
   idCardNumber: z.string().regex(/^\d{16}$/, 'Nomor KTP harus 16 digit angka'),
@@ -145,7 +153,7 @@ export default function DriversPage(): JSX.Element {
         accessorKey: 'safetyTraining',
         header: 'Pelatihan K3',
         meta: { label: 'Pelatihan K3', defaultHidden: true },
-        cell: ({ row }) => <span>{row.original.safetyTraining || '—'}</span>,
+        cell: ({ row }) => <span>{k3Label(row.original.safetyTraining)}</span>,
       },
       {
         accessorKey: 'notes',
@@ -219,7 +227,12 @@ export default function DriversPage(): JSX.Element {
         <TextareaField name="originAddress" label="Alamat Asal" required />
         <TextareaField name="currentAddress" label="Alamat Saat Ini" required />
         <div className="grid gap-4">
-          <TextField name="safetyTraining" label="Pelatihan K3" placeholder="BELUM" />
+          <SelectField
+            name="safetyTraining"
+            label="Pelatihan K3"
+            options={K3_OPTIONS}
+            placeholder="Pilih status"
+          />
         </div>
         <TextareaField name="notes" label="Catatan" placeholder="Opsional" />
       </CrudFormDialog>
