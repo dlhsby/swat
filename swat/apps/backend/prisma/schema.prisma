@@ -431,6 +431,8 @@ model Site {
   deletedAt         DateTime?        @map("deleted_at") @db.Timestamptz(6)
   originRoutes      Route[]          @relation("RouteOrigin")
   destinationRoutes Route[]          @relation("RouteDestination")
+  originTripTemplates      TripTemplate[] @relation("TripTemplateOrigin")
+  destinationTripTemplates TripTemplate[] @relation("TripTemplateDestination")
   pooledVehicles    Vehicle[]        @relation("VehiclePool")
   pooledDrivers     Driver[]         @relation("DriverPool")
   disposalPermits   DisposalPermit[]
@@ -538,6 +540,13 @@ model TripTemplate {
   scheduleTemplate        ScheduleTemplate @relation(fields: [scheduleTemplateId], references: [id], onDelete: Cascade)
   routeId             String       @map("route_id") @db.Uuid
   route               Route        @relation(fields: [routeId], references: [id])
+  // Snapshot of the planned route, denormalized so a template survives a Route
+  // change/delete or a future switch to map-derived geometry (coords deferred).
+  routeCategory       RouteCategory @map("route_category")
+  originSiteId        String        @map("origin_site_id") @db.Uuid
+  originSite          Site          @relation("TripTemplateOrigin", fields: [originSiteId], references: [id])
+  destinationSiteId   String        @map("destination_site_id") @db.Uuid
+  destinationSite     Site          @relation("TripTemplateDestination", fields: [destinationSiteId], references: [id])
   targetTime          DateTime     @map("target_time") @db.Time
   fuelRequestedLiters Decimal?     @map("fuel_requested_liters") @db.Decimal(8, 2)
   createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)

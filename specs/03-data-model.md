@@ -361,6 +361,14 @@ model TripTemplate {
   crewSchedule        CrewSchedule @relation(fields: [crewScheduleId], references: [id], onDelete: Cascade)
   routeId             String
   route               Route        @relation(fields: [routeId], references: [id])
+  // Denormalized snapshot of the planned route, kept in lockstep with routeId on
+  // create/update. Lets a template stand on its own if the Route catalogue changes
+  // or is later replaced by map-derived geometry (origin/dest coords deferred).
+  routeCategory       RouteCategory
+  originSiteId        String
+  originSite          Site         @relation("TripTemplateOrigin", fields: [originSiteId], references: [id])
+  destinationSiteId   String
+  destinationSite     Site         @relation("TripTemplateDestination", fields: [destinationSiteId], references: [id])
   targetTime          DateTime     @db.Time
   fuelRequestedLiters Decimal?     @db.Decimal(8,2)
   createdAt           DateTime     @default(now()) @db.Timestamptz(6)

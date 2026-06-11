@@ -1,7 +1,7 @@
 'use client';
 
 import { Clock } from 'lucide-react';
-import { forwardRef, useState } from 'react';
+import { forwardRef, useRef, useState } from 'react';
 
 import { cn } from '@/lib/cn';
 
@@ -62,6 +62,12 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
   ref,
 ) {
   const [open, setOpen] = useState(false);
+  // The masked input is the popover Anchor, so opening on focus keeps focus on it
+  // — outside the Content. Without guarding the dismiss events, Radix treats that
+  // as a focus/interaction outside and closes immediately (the "blink").
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const insideAnchor = (target: EventTarget | null): boolean =>
+    target instanceof Node && (anchorRef.current?.contains(target) ?? false);
   const current = normalize(value ?? '');
   const curHour = current.slice(0, 2);
   const curMinute = current.slice(3, 5);
@@ -103,7 +109,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
     <div className="space-y-2">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverAnchor asChild>
-          <div className="relative">
+          <div ref={anchorRef} className="relative">
             <Input
               ref={ref}
               type="text"
@@ -113,6 +119,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
               autoComplete="off"
               disabled={disabled}
               value={value}
+              onFocus={() => setOpen(true)}
               onChange={(e) => onValueChange?.(formatLive(e.target.value))}
               onBlur={(e) => {
                 onValueChange?.(normalize(e.target.value));
@@ -137,6 +144,12 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
           align="start"
           className="w-[min(18rem,calc(100vw-2rem))] space-y-3 p-3"
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onFocusOutside={(e) => {
+            if (insideAnchor(e.target)) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (insideAnchor(e.target)) e.preventDefault();
+          }}
         >
           {grid(HOURS, curHour, setHour, 'Jam')}
           {grid(MINUTES, curMinute, setMinute, 'Menit')}

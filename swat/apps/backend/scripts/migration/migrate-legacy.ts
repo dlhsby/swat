@@ -406,6 +406,14 @@ async function migrateScheduling(sysUser: string): Promise<void> {
         s.id,
       ]),
     );
+    // Route detail (category + endpoints) to snapshot onto each trip template.
+    const routeDetail = new Map(
+      (
+        await prisma.route.findMany({
+          select: { id: true, category: true, originSiteId: true, destinationSiteId: true },
+        })
+      ).map((r) => [r.id, r]),
+    );
     const templates = await query<LegacyTripTemplate>(conn, 'SELECT * FROM mastertrayek');
     let tplCount = 0;
     for (const t of templates) {
@@ -417,12 +425,20 @@ async function migrateScheduling(sysUser: string): Promise<void> {
         continue;
       }
       const keptRouteLegacyId = routeRemap.get(t.RUTE_ID) ?? t.RUTE_ID;
+      const routeId = resolveFk(routeMap, keptRouteLegacyId, 'tripTemplate.routeId');
+      const detail = routeDetail.get(routeId);
+      if (!detail) {
+        continue;
+      }
       await prisma.tripTemplate.upsert({
         where: { legacyId: t.MASTERTRAYEK_ID },
         create: {
           legacyId: t.MASTERTRAYEK_ID,
           scheduleTemplateId,
-          routeId: resolveFk(routeMap, keptRouteLegacyId, 'tripTemplate.routeId'),
+          routeId,
+          routeCategory: detail.category,
+          originSiteId: detail.originSiteId,
+          destinationSiteId: detail.destinationSiteId,
           targetTime: legacyTimeToDate(t.MASTERTRAYEK_WAKTUTARGET) ?? NOW,
           fuelRequestedLiters: nonNegativeOrNull(t.MASTERTRAYEK_JUMLAHISIBBMDIAJUKAN),
         },

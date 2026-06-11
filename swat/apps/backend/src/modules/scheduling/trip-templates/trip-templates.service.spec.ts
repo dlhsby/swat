@@ -10,14 +10,11 @@ function buildRow(overrides: Record<string, unknown> = {}): Record<string, unkno
     id: 1,
     scheduleTemplateId: 1,
     routeId: 2,
+    routeCategory: 'DISPOSAL',
     targetTime: new Date('1970-01-01T06:30:00Z'),
     fuelRequestedLiters: '20.00',
-    route: {
-      id: 2,
-      category: 'DISPOSAL',
-      originSite: { name: 'TPS' },
-      destinationSite: { name: 'TPA' },
-    },
+    originSite: { id: 'd1', name: 'TPS' },
+    destinationSite: { id: 'd2', name: 'TPA' },
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
     ...overrides,
@@ -49,7 +46,7 @@ describe('TripTemplatesService', () => {
         // so non-DEPART legs derive their start from it.
         findFirst: jest.fn().mockResolvedValue({
           id: 1,
-          route: { destinationSiteId: '00000000-0000-0000-0000-0000000000d1' },
+          destinationSiteId: '00000000-0000-0000-0000-0000000000d1',
         }),
         create: jest.fn(),
         update: jest.fn(),
@@ -131,6 +128,13 @@ describe('TripTemplatesService', () => {
   it('rejects a non-DEPART leg when no preceding leg exists', async () => {
     prisma.tripTemplate.findFirst.mockResolvedValue(null);
     await expect(service.create(SID, dto)).rejects.toBeInstanceOf(BadRequestException);
+    expect(routes.resolveOrCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects an Isi BBM leg without requested litres', async () => {
+    await expect(
+      service.create(SID, { category: 'REFUEL', destinationSiteId: DEST, targetTime: '06:00' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(routes.resolveOrCreate).not.toHaveBeenCalled();
   });
 

@@ -180,7 +180,9 @@ export function TripTemplatesSheet({
   const canSubmit = Boolean(
     category &&
     targetTime &&
-    (isDepart ? originSiteId : destinationSiteId && impliedOrigin !== null),
+    (isDepart ? originSiteId : destinationSiteId && impliedOrigin !== null) &&
+    // "Isi BBM" must declare the requested litres.
+    (!isRefuel || (fuel && Number(fuel) > 0)),
   );
 
   const onAdd = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
@@ -189,6 +191,9 @@ export function TripTemplatesSheet({
       return;
     }
     if (isDepart ? !originSiteId : !destinationSiteId) {
+      return;
+    }
+    if (isRefuel && !(fuel && Number(fuel) > 0)) {
       return;
     }
     setSaving(true);
@@ -366,32 +371,32 @@ export function TripTemplatesSheet({
                 </>
               ) : null}
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="tpl-time" required>
+                  Target Waktu
+                </Label>
+                <TimePicker
+                  id="tpl-time"
+                  presets={false}
+                  value={targetTime}
+                  onValueChange={setTargetTime}
+                />
+              </div>
+              {isRefuel ? (
                 <div className="space-y-1.5">
-                  <Label htmlFor="tpl-time" required>
-                    Target Waktu
+                  <Label htmlFor="tpl-fuel" required>
+                    BBM Diajukan (L)
                   </Label>
-                  <TimePicker
-                    id="tpl-time"
-                    presets={false}
-                    value={targetTime}
-                    onValueChange={setTargetTime}
+                  <Input
+                    id="tpl-fuel"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={fuel}
+                    onChange={(e) => setFuel(e.target.value)}
                   />
                 </div>
-                {isRefuel ? (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="tpl-fuel">BBM Diajukan (L)</Label>
-                    <Input
-                      id="tpl-fuel"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={fuel}
-                      onChange={(e) => setFuel(e.target.value)}
-                    />
-                  </div>
-                ) : null}
-              </div>
+              ) : null}
 
               <Button type="submit" loading={saving} disabled={!canSubmit}>
                 <ArrowRight className="h-4 w-4" aria-hidden />

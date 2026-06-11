@@ -11,14 +11,10 @@ import {
 } from './dto/create-trip-template.dto';
 
 const templateInclude = {
-  route: {
-    select: {
-      id: true,
-      category: true,
-      originSite: { select: { id: true, name: true } },
-      destinationSite: { select: { id: true, name: true } },
-    },
-  },
+  // Read the denormalized snapshot (category lives on the row); only the site
+  // names are joined for display.
+  originSite: { select: { id: true, name: true } },
+  destinationSite: { select: { id: true, name: true } },
 } satisfies Prisma.TripTemplateInclude;
 
 type TemplateWithRoute = Prisma.TripTemplateGetPayload<{ include: typeof templateInclude }>;
@@ -44,12 +40,12 @@ function toDto(template: TemplateWithRoute): TripTemplateDto {
     id: template.id,
     scheduleTemplateId: template.scheduleTemplateId,
     routeId: template.routeId,
-    routeCategory: template.route.category,
-    routeLabel: `${template.route.originSite.name} → ${template.route.destinationSite.name}`,
-    originSiteId: template.route.originSite.id,
-    originSiteName: template.route.originSite.name,
-    destinationSiteId: template.route.destinationSite.id,
-    destinationSiteName: template.route.destinationSite.name,
+    routeCategory: template.routeCategory,
+    routeLabel: `${template.originSite.name} → ${template.destinationSite.name}`,
+    originSiteId: template.originSite.id,
+    originSiteName: template.originSite.name,
+    destinationSiteId: template.destinationSite.id,
+    destinationSiteName: template.destinationSite.name,
     targetTime: formatTimeOnly(template.targetTime),
     fuelRequestedLiters:
       template.fuelRequestedLiters === null ? null : Number(template.fuelRequestedLiters),
@@ -87,6 +83,13 @@ export class TripTemplatesService {
 
   async create(scheduleTemplateId: string, dto: CreateTripTemplateDto): Promise<TripTemplateDto> {
     await this.assertScheduleExists(scheduleTemplateId);
+    // "Isi BBM" must declare how many litres are requested.
+    if (
+      dto.category === 'REFUEL' &&
+      !(dto.fuelRequestedLiters !== undefined && dto.fuelRequestedLiters > 0)
+    ) {
+      throw new BadRequestException('BBM diajukan wajib diisi untuk leg Isi BBM.');
+    }
     // Derive the leg's start/end from its category (Berangkat = Pool→Pool; every
     // other leg starts where the previous one ended), then resolve the (category,
     // origin, destination) triple to a route, creating it if this pairing has never
@@ -103,6 +106,10 @@ export class TripTemplatesService {
       data: {
         scheduleTemplateId,
         routeId: route.id,
+        // Snapshot the resolved route alongside the FK.
+        routeCategory: dto.category,
+        originSiteId,
+        destinationSiteId,
         targetTime: parseTimeOnly(dto.targetTime),
         ...(dto.fuelRequestedLiters !== undefined
           ? { fuelRequestedLiters: dto.fuelRequestedLiters }
@@ -121,7 +128,9 @@ export class TripTemplatesService {
     await this.findOwned(scheduleTemplateId, templateId);
     // A route change requires the full triple (category + start + end); partial
     // edits (time / fuel only) leave the existing route untouched.
-    let routeId: string | undefined;
+    let routeChange:
+      | { routeId: string; originSiteId: string; destinationSiteId: string }
+      | undefined;
     if (
       dto.category !== undefined &&
       dto.originSiteId !== undefined &&
@@ -132,12 +141,24 @@ export class TripTemplatesService {
         dto.originSiteId,
         dto.destinationSiteId,
       );
-      routeId = route.id;
+      routeChange = {
+        routeId: route.id,
+        originSiteId: dto.originSiteId,
+        destinationSiteId: dto.destinationSiteId,
+      };
     }
     const row = await this.prisma.tripTemplate.update({
       where: { id: templateId },
       data: {
-        ...(routeId !== undefined ? { routeId } : {}),
+        // Keep the FK and its snapshot in lockstep on a route change.
+        ...(routeChange !== undefined
+          ? {
+              routeId: routeChange.routeId,
+              routeCategory: dto.category,
+              originSiteId: routeChange.originSiteId,
+              destinationSiteId: routeChange.destinationSiteId,
+            }
+          : {}),
         ...(dto.targetTime !== undefined ? { targetTime: parseTimeOnly(dto.targetTime) } : {}),
         ...(dto.fuelRequestedLiters !== undefined
           ? { fuelRequestedLiters: dto.fuelRequestedLiters }
@@ -204,9 +225,9 @@ export class TripTemplatesService {
     const previous = await this.prisma.tripTemplate.findFirst({
       where: { scheduleTemplateId, targetTime: { lt: parseTimeOnly(targetTime) } },
       orderBy: { targetTime: 'desc' },
-      select: { route: { select: { destinationSiteId: true } } },
+      select: { destinationSiteId: true },
     });
-    return previous?.route.destinationSiteId ?? null;
+    return previous?.destinationSiteId ?? null;
   }
 
   private async assertSiteType(siteId: string, expected: SiteType): Promise<void> {

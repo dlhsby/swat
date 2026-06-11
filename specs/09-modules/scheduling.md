@@ -44,18 +44,24 @@ The Scheduling module defines how standing crew assignments (vehicle + driver + 
 | `legacyId` | Int? | — | For migration traceability (unique) |
 | `crewScheduleId` | Int | FK | Parent CrewSchedule |
 | `routeId` | Int | FK | Route (Rute) |
+| `routeCategory` | RouteCategory | ✓ | Snapshot of the route's category (see below) |
+| `originSiteId` | Int | FK | Snapshot of the leg's start site |
+| `destinationSiteId` | Int | FK | Snapshot of the leg's end site |
 | `targetTime` | Time (HH:mm) | ✓ | Planned time-of-day for this leg |
-| `fuelRequestedLiters` | Decimal(8,2)? | — | Liters to request (only for REFUEL routes; max 99999.99) |
+| `fuelRequestedLiters` | Decimal(8,2)? | cond. | Liters to request; **mandatory (> 0) for REFUEL legs**, omitted otherwise (max 99999.99) |
 | `createdAt` | Timestamptz | — | UTC timestamp |
 | `updatedAt` | Timestamptz | — | UTC timestamp |
 
 **Constraints:**
-- Foreign key to `Route` (enforces valid origin/destination).
+- Foreign key to `Route` (enforces valid origin/destination); `routeId` is retained alongside the snapshot.
+- The `(routeCategory, originSiteId, destinationSiteId)` snapshot is written in lockstep with `routeId` on create/update.
 - `targetTime` must be within the `CrewSchedule.departTime` to `returnTime` range (warn if out of order).
 - Ordering defined by query ordering or by insertion order (client manages UI sequencing via drag-and-drop); no explicit sequence column.
 
 **Business rules:**
-- TripTemplates are ordered within a schedule (typically by RouteCategory: DEPART_POOL → REFUEL → PICKUP → DISPOSAL → RETURN_POOL).
+- **Route snapshot:** each leg denormalizes its route's category + origin + destination so the template stands on its own if the Route catalogue changes or is later replaced by map-derived geometry (origin/dest coordinates deferred to a future iteration).
+- TripTemplates are ordered within a schedule by RouteCategory: DEPART_POOL → REFUEL → PICKUP → DISPOSAL → RETURN_POOL (the UI labels these *Berangkat / Isi BBM / Ambil Sampah / Buang Sampah / Kembali ke Pool*; "Rute" is the operator term for a leg).
+- **Endpoint derivation (server-side):** for a **DEPART_POOL** leg only the Pool is chosen and it is recorded Pool→Pool (origin must be a `POOL` site). Every other leg supplies only its destination — the origin is auto-derived from the **previous leg's destination**; a non-DEPART leg added before any DEPART_POOL leg is rejected.
 - Each TripTemplate maps to a `Trip` at daily init with `targetTime` and `targetOdometer` pre-populated.
 - Operators record actual values during the day.
 
