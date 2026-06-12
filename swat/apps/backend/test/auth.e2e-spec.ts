@@ -102,4 +102,49 @@ describe('Auth & RBAC (e2e)', () => {
     await request(server).post('/api/v1/auth/logout').set('Cookie', cookie).expect(200);
     await request(server).get('/api/v1/auth/me').set('Cookie', cookie).expect(401);
   });
+
+  describe('native-client bearer tokens', () => {
+    it('exchanges admin credentials for a bearer + refresh token pair', async () => {
+      const res = await request(server).post('/api/v1/auth/token').send(ADMIN).expect(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toMatchObject({ tokenType: 'Bearer', expiresIn: 900 });
+      expect(typeof res.body.data.accessToken).toBe('string');
+      expect(typeof res.body.data.refreshToken).toBe('string');
+    });
+
+    it('authenticates /auth/me with a bearer token (same principal as the cookie)', async () => {
+      const grant = await request(server).post('/api/v1/auth/token').send(ADMIN).expect(200);
+      const res = await request(server)
+        .get('/api/v1/auth/me')
+        .set('Authorization', `Bearer ${grant.body.data.accessToken}`)
+        .expect(200);
+      expect(res.body.data.username).toBe('admin');
+      expect(res.body.data.permissions).toContain('user:read');
+    });
+
+    it('rotates a refresh token and rejects reuse of the old one', async () => {
+      const grant = await request(server).post('/api/v1/auth/token').send(ADMIN).expect(200);
+      const first = grant.body.data.refreshToken as string;
+
+      const rotated = await request(server)
+        .post('/api/v1/auth/token/refresh')
+        .send({ refreshToken: first })
+        .expect(200);
+      expect(rotated.body.data.refreshToken).not.toBe(first);
+
+      // Replaying the superseded token is reuse → 401.
+      await request(server)
+        .post('/api/v1/auth/token/refresh')
+        .send({ refreshToken: first })
+        .expect(401);
+    });
+
+    it('refuses to issue tokens for a forced-reset account (web-only change)', async () => {
+      const res = await request(server)
+        .post('/api/v1/auth/token')
+        .send({ username: 'adminreset', password: 'Password123!' })
+        .expect(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+  });
 });

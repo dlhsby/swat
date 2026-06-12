@@ -4,6 +4,8 @@ export interface PermissionDto {
   id: string;
   key: string;
   description: string;
+  /** Resource prefix (segment before `:`) — groups permissions in the editor. */
+  group: string;
 }
 
 export interface RoleDto {

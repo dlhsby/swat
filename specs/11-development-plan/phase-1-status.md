@@ -502,6 +502,32 @@ joined the infra-exclusion list alongside repositories/session; `cache.service.t
 14. **CSP at the Nginx layer, not helmet** — the API serves JSON + Swagger UI (a
     default CSP would block Swagger's inline assets); CSP belongs on the HTML the
     web app returns, so it's set on the Nginx `/` location.
+15. **Native-client bearer tokens pulled into Phase 1** — the OAuth2 password-grant
+    token endpoint for the .NET clients (originally parked for "after Phase 2") is
+    implemented now: `/auth/token` + `/token/refresh` + `/token/logout`, short-lived
+    HS256 access JWTs, Redis-backed refresh rotation with **reuse-detection** (family
+    revoke), and a dual-mode guard (`req.session?.user ?? req.user`). Forced password
+    change stays web-only (token issue 403s on `mustChangePassword`). See
+    [`06-auth-rbac.md`](../06-auth-rbac.md) §1.7. (`@nestjs/jwt` added.)
+16. **Permission catalog single source of truth + boot-time sync** — the keys,
+    descriptions, group, and wildcard expansion moved out of `seed.ts` into
+    `common/auth/permission-catalog.ts`; a `@Global PermissionsModule` reconciles the
+    `permission` table on boot (idempotent upsert, never deletes / never touches
+    grants), with `POST /permissions/sync` (`permission:manage`) as a manual trigger.
+    `GET /permissions` now returns `group`. See §2.7.
+
+## Auth/RBAC follow-up (post-Phase-1 review)
+
+A focused Auth & RBAC review closed three gaps the operator hit, all on `main`
+under the same green gates (backend 493 unit tests incl. token-service +
+catalog-sync + bearer-middleware specs; web incl. an Accordion + roles-page spec):
+
+| Item | Change |
+|------|--------|
+| **Native-app login** | OAuth2 token endpoint + refresh rotation/reuse-detection + dual-mode guard (deviation #15). |
+| **Permission sync** | Catalog SoT module + boot-time reconcile + admin sync endpoint (deviation #16). |
+| **Roles UI — no "add role"** | `Hak Akses` gains full role CRUD: **Tambah Peran** (create), rename, delete (409-aware when users are assigned). The backend `POST/PATCH/DELETE /roles` already existed; only the UI was missing. |
+| **Roles UI — list too long** | Permission editor is now **collapsible groups** (new `Accordion` primitive) with a per-group **n/total count badge** and a tri-state **select-all** checkbox. |
 
 ---
 

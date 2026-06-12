@@ -1,16 +1,47 @@
 'use client';
 
-import { ShieldCheck } from 'lucide-react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
+import { TextField } from '@/components/crud/fields';
 import { PageHead } from '@/components/shell/page-head';
-import { Alert, Button, Card, CardContent, Skeleton, Switch, notify } from '@/components/ui';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  Alert,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  ConfirmDialog,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Form,
+  Skeleton,
+  Switch,
+  notify,
+} from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { ApiError } from '@/lib/api-error';
 import { cn } from '@/lib/cn';
-import { type PermissionDto, permissionsApi, rolesApi } from '@/lib/roles-api';
+import { type PermissionDto, type RoleDto, permissionsApi, rolesApi } from '@/lib/roles-api';
+
+const roleSchema = z.object({
+  name: z.string().min(1, 'Nama peran wajib diisi').max(100),
+});
+type RoleValues = z.infer<typeof roleSchema>;
 
 export default function RolesPage(): JSX.Element {
   const t = useTranslations('nav');
@@ -22,12 +53,29 @@ export default function RolesPage(): JSX.Element {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<RoleDto | null>(null);
+  const [savingRole, setSavingRole] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<RoleDto | null>(null);
+
+  const form = useForm<RoleValues>({
+    resolver: zodResolver(roleSchema),
+    defaultValues: { name: '' },
+  });
+
   // Default to the first role once loaded.
   useEffect(() => {
     if (selectedId === null && roles.length > 0) {
       setSelectedId(roles[0]?.id ?? null);
     }
   }, [roles, selectedId]);
+
+  useEffect(() => {
+    if (roleDialogOpen) {
+      form.reset({ name: editingRole?.name ?? '' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleDialogOpen, editingRole]);
 
   const loadDetail = useCallback(async (id: string): Promise<void> => {
     setLoadingDetail(true);
@@ -50,7 +98,7 @@ export default function RolesPage(): JSX.Element {
   const groups = useMemo(() => {
     const map = new Map<string, PermissionDto[]>();
     for (const p of [...permissions].sort((a, b) => a.key.localeCompare(b.key))) {
-      const resource = p.key.split(':')[0] ?? p.key;
+      const resource = p.group || p.key.split(':')[0] || p.key;
       const list = map.get(resource);
       if (list) {
         list.push(p);
@@ -73,6 +121,20 @@ export default function RolesPage(): JSX.Element {
     });
   };
 
+  const toggleGroup = (perms: PermissionDto[], allOn: boolean): void => {
+    setEnabled((prev) => {
+      const next = new Set(prev);
+      for (const p of perms) {
+        if (allOn) {
+          next.delete(p.id);
+        } else {
+          next.add(p.id);
+        }
+      }
+      return next;
+    });
+  };
+
   const onSave = async (): Promise<void> => {
     if (selectedId === null) {
       return;
@@ -89,16 +151,67 @@ export default function RolesPage(): JSX.Element {
     }
   };
 
+  const onSubmitRole = async (values: RoleValues): Promise<void> => {
+    setSavingRole(true);
+    try {
+      if (editingRole) {
+        await rolesApi.update(editingRole.id, { name: values.name });
+        notify.success('Nama peran diperbarui.');
+      } else {
+        const created = await rolesApi.create({ name: values.name, permissionIds: [] });
+        notify.success('Peran dibuat.');
+        setSelectedId(created.id);
+      }
+      setRoleDialogOpen(false);
+      await reloadRoles();
+    } catch (err) {
+      notify.error(err instanceof ApiError ? err.message : 'Gagal menyimpan peran.');
+    } finally {
+      setSavingRole(false);
+    }
+  };
+
+  const onConfirmDelete = async (): Promise<void> => {
+    if (!deleteTarget) {
+      return;
+    }
+    try {
+      await rolesApi.remove(deleteTarget.id);
+      notify.success('Peran dihapus.');
+      if (selectedId === deleteTarget.id) {
+        setSelectedId(null);
+      }
+      setDeleteTarget(null);
+      await reloadRoles();
+    } catch (err) {
+      notify.error(err instanceof ApiError ? err.message : 'Gagal menghapus peran.');
+    }
+  };
+
   const selectedRole = roles.find((r) => r.id === selectedId) ?? null;
+
+  const addButton = (
+    <ProtectedAction permission="role:create">
+      <Button
+        onClick={() => {
+          setEditingRole(null);
+          setRoleDialogOpen(true);
+        }}
+      >
+        <Plus className="h-4 w-4" aria-hidden />
+        Tambah Peran
+      </Button>
+    </ProtectedAction>
+  );
 
   return (
     <>
-      <PageHead title={t('roles')} description="Kelola izin per peran." />
+      <PageHead title={t('roles')} description="Kelola izin per peran." actions={addButton} />
 
       <div className="grid gap-[18px] lg:grid-cols-[320px_1fr]">
         {/* Role list (hi-fi `.hf-rolelist`). */}
         <div className="overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0">
-          <div className="border-b border-neutral-200 px-4 py-[13px]">
+          <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-[13px]">
             <b className="text-[13px] font-bold text-neutral-900">Peran</b>
           </div>
           {roles.length === 0 ? (
@@ -146,15 +259,42 @@ export default function RolesPage(): JSX.Element {
               <h2 className="text-h3 font-semibold text-neutral-900">
                 {selectedRole?.name ?? '—'}
               </h2>
-              <ProtectedAction permission="role:update">
-                <Button
-                  onClick={() => void onSave()}
-                  loading={saving}
-                  disabled={selectedId === null}
-                >
-                  Simpan Izin
-                </Button>
-              </ProtectedAction>
+              <div className="flex items-center gap-2">
+                <ProtectedAction permission="role:update">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Ubah nama peran"
+                    disabled={selectedRole === null}
+                    onClick={() => {
+                      setEditingRole(selectedRole);
+                      setRoleDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" aria-hidden />
+                  </Button>
+                </ProtectedAction>
+                <ProtectedAction permission="role:delete">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Hapus peran"
+                    disabled={selectedRole === null}
+                    onClick={() => selectedRole && setDeleteTarget(selectedRole)}
+                  >
+                    <Trash2 className="h-4 w-4 text-danger-600" aria-hidden />
+                  </Button>
+                </ProtectedAction>
+                <ProtectedAction permission="role:update">
+                  <Button
+                    onClick={() => void onSave()}
+                    loading={saving}
+                    disabled={selectedId === null}
+                  >
+                    Simpan Izin
+                  </Button>
+                </ProtectedAction>
+              </div>
             </div>
 
             <Alert variant="info">
@@ -164,41 +304,99 @@ export default function RolesPage(): JSX.Element {
             {loadingDetail ? (
               <Skeleton className="h-64" />
             ) : (
-              <div className="space-y-5">
-                {groups.map(([resource, perms]) => (
-                  <div key={resource}>
-                    <p className="mb-2 text-tiny font-semibold uppercase tracking-wide text-neutral-400">
-                      {resource}
-                    </p>
-                    <div className="flex flex-col gap-3">
-                      {perms.map((p) => (
-                        <label
-                          key={p.id}
-                          className="flex cursor-pointer items-center justify-between gap-2.5"
-                        >
-                          <span className="flex min-w-0 flex-col">
-                            <span className="truncate text-body-sm font-medium text-neutral-900">
-                              {p.description}
+              <Accordion type="multiple" className="rounded-base border border-neutral-200 px-3">
+                {groups.map(([resource, perms]) => {
+                  const onCount = perms.filter((p) => enabled.has(p.id)).length;
+                  const allOn = onCount === perms.length;
+                  const checkedState =
+                    onCount === 0 ? false : allOn ? true : ('indeterminate' as const);
+                  return (
+                    <AccordionItem key={resource} value={resource}>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={checkedState}
+                          aria-label={`Pilih semua izin ${resource}`}
+                          onClick={(e) => e.stopPropagation()}
+                          onCheckedChange={() => toggleGroup(perms, allOn)}
+                        />
+                        <AccordionTrigger className="flex-1">
+                          <span className="flex flex-1 items-center justify-between gap-2 pr-2">
+                            <span className="uppercase tracking-wide text-neutral-700">
+                              {resource}
                             </span>
-                            <span className="truncate font-mono text-[11.5px] text-neutral-400">
-                              {p.key}
-                            </span>
+                            <Badge appearance="count">{`${onCount}/${perms.length}`}</Badge>
                           </span>
-                          <Switch
-                            checked={enabled.has(p.id)}
-                            onCheckedChange={() => toggle(p.id)}
-                            aria-label={p.key}
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        </AccordionTrigger>
+                      </div>
+                      <AccordionContent>
+                        <div className="flex flex-col gap-3">
+                          {perms.map((p) => (
+                            <label
+                              key={p.id}
+                              className="flex cursor-pointer items-center justify-between gap-2.5"
+                            >
+                              <span className="flex min-w-0 flex-col">
+                                <span className="truncate text-body-sm font-medium text-neutral-900">
+                                  {p.description}
+                                </span>
+                                <span className="truncate font-mono text-[11.5px] text-neutral-400">
+                                  {p.key}
+                                </span>
+                              </span>
+                              <Switch
+                                checked={enabled.has(p.id)}
+                                onCheckedChange={() => toggle(p.id)}
+                                aria-label={p.key}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Create / rename role */}
+      <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
+        <DialogContent className="max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>{editingRole ? 'Ubah Nama Peran' : 'Tambah Peran'}</DialogTitle>
+            <DialogDescription className="sr-only">Formulir peran</DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmitRole)} className="space-y-4">
+              {!editingRole ? (
+                <Alert variant="info">
+                  Peran baru dibuat tanpa izin. Pilih izin lalu simpan setelah peran dibuat.
+                </Alert>
+              ) : null}
+              <TextField name="name" label="Nama Peran" required />
+              <DialogFooter>
+                <Button type="button" variant="secondary" onClick={() => setRoleDialogOpen(false)}>
+                  Batal
+                </Button>
+                <Button type="submit" loading={savingRole}>
+                  Simpan
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Hapus peran?"
+        description={`Peran "${deleteTarget?.name ?? ''}" akan dihapus. Peran yang masih dipakai pengguna tidak dapat dihapus.`}
+        confirmLabel="Hapus"
+        onConfirm={() => void onConfirmDelete()}
+      />
     </>
   );
 }

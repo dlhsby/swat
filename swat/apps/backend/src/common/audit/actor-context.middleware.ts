@@ -12,7 +12,8 @@ import { runWithActor } from './actor-context';
 @Injectable()
 export class ActorContextMiddleware implements NestMiddleware {
   use(req: Request, _res: Response, next: NextFunction): void {
-    const user = req.session?.user;
+    // Cookie session or bearer principal (attached by TokenBearerMiddleware).
+    const user = req.session?.user ?? req.user;
     runWithActor({ id: user?.id ?? null, name: user?.username ?? 'system' }, () => next());
   }
 }

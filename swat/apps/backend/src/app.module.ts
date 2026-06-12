@@ -13,11 +13,13 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ArchivingModule } from './modules/archiving/archiving.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { TokenBearerMiddleware } from './modules/auth/token-bearer.middleware';
 import { CacheModule } from './modules/cache/cache.module';
 import { FleetModule } from './modules/fleet/fleet.module';
 import { GeographyModule } from './modules/geography/geography.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { OperationsModule } from './modules/operations/operations.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PersonnelModule } from './modules/personnel/personnel.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { RolesModule } from './modules/roles/roles.module';
@@ -48,6 +50,7 @@ import { SessionModule } from './session.module';
     HealthModule,
     StorageModule,
     AnalyticsModule,
+    PermissionsModule,
     AuthModule,
     UsersModule,
     RolesModule,
@@ -68,9 +71,11 @@ import { SessionModule } from './session.module';
   ],
 })
 export class AppModule implements NestModule {
-  // Establish the per-request actor context (from the session) for every route,
-  // so the Prisma audit middleware can stamp who created/updated/deleted.
+  // Resolve a bearer token into `req.user` BEFORE the actor context reads it, so
+  // native-client requests get the same audit stamping as cookie sessions; then
+  // establish the per-request actor context for every route so the Prisma audit
+  // middleware can stamp who created/updated/deleted.
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(ActorContextMiddleware).forRoutes('*');
+    consumer.apply(TokenBearerMiddleware, ActorContextMiddleware).forRoutes('*');
   }
 }

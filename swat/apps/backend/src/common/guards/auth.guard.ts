@@ -29,7 +29,8 @@ export class AuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<Request>();
-    if (!request.session?.user) {
+    // Cookie session OR bearer token (native clients) — both resolve a principal.
+    if (!request.session?.user && !request.user) {
       throw new UnauthorizedException('Sesi tidak valid atau telah berakhir.');
     }
     return true;

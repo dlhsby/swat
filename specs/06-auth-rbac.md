@@ -193,6 +193,49 @@ await this.auditLog.create({
 
 **Retention:** Keep audit logs for **2 years** (government compliance); older logs can be archived or deleted.
 
+### 1.7 Native-client bearer tokens (OAuth2 password grant)
+
+The web app uses cookie sessions (§1.2). The **native Windows .NET clients** (TPA
+weighbridge capture, kitir printing) instead authenticate per-user with **bearer
+tokens** — same user table, same RBAC catalog, same audit trail. Implemented in
+Phase 1 (`modules/auth/token.service.ts` + `token.controller.ts`).
+
+```
+POST /api/v1/auth/token          {username, password} → {accessToken, refreshToken, tokenType:"Bearer", expiresIn}
+POST /api/v1/auth/token/refresh  {refreshToken}        → rotated {accessToken, refreshToken, …}
+POST /api/v1/auth/token/logout   (Authorization: Bearer …) → revokes the session
+<api calls>                      Authorization: Bearer <accessToken>
+```
+
+- **Access token** — short-lived signed **JWT (HS256, ~15 min)** carrying
+  `{sub:userId, username, roleId, fam:familyId}`, signed with `JWT_SECRET`.
+  Verification **pins `algorithms:['HS256']`** (an `alg:none` or foreign-signed
+  token is rejected), and `/token/logout` verifies the signature — ignoring only
+  expiry — before revoking a family, so a forged `fam` can't revoke a victim.
+- **Refresh token** — opaque `"<id>:<secret>"` handle; the record lives in Redis
+  (`oauth:refresh:<id>` = `{userId, familyId, sha256(secret)}`, ~30 d) and is
+  **rotated on every refresh**. A per-login **family pointer**
+  (`oauth:family:<familyId>`) tracks the one currently-valid token; presenting a
+  superseded token (**reuse**) or a wrong secret **revokes the whole family**
+  (reuse-detection). The access JWT carries the family id, so a revoke/logout
+  takes effect within the access TTL (`oauth:family:<familyId>:revoked` tombstone)
+  rather than waiting for expiry.
+- **Dual-mode guard** — a `TokenBearerMiddleware` verifies the bearer token and
+  attaches the principal to `req.user`; `AuthGuard`, `PermissionsGuard`,
+  `@CurrentUser`, and the audit actor-context all resolve
+  `req.session?.user ?? req.user`, so cookie and bearer requests converge on the
+  same RBAC + audit path. A live cookie session always takes precedence.
+- **Forced password change is web-only** — `POST /auth/token` **refuses** (403,
+  `error:"mustChangePassword"`) to issue tokens to a `mustChangePassword=true`
+  account; the user must complete the change in the web app first (native clients
+  have no change-password screen). This is a deliberate security boundary.
+- **Disabled/deleted accounts** are re-checked on every refresh (the rotation
+  reloads the user with `deletedAt: null`), and the family is revoked if gone.
+- **Rejected** (per the design): static machine API keys (no per-user identity)
+  and browser-held JWTs for the web app (XSS/revocation — sessions are safer).
+  OAuth2 Authorization Code + PKCE / full OIDC remains a future upgrade path if
+  SSO or third-party clients appear.
+
 ## 2. Authorization — permission-based RBAC
 
 ### 2.1 Permission key convention
@@ -455,6 +498,30 @@ The complete migration algorithm is in [`04-migration.md`](./04-migration.md) §
 4. **INSERT RolePermission** rows for each (role, permission) pair derived.
 
 **Critical:** No legacy MD5 password hashes are copied to the new system (see [`04-migration.md`](./04-migration.md) §5). All migrated users have `mustChangePassword = true` and must reset on first login.
+
+## 2.7 Permission catalog: single source of truth & sync
+
+The permission keys (§2.2), their descriptions, the resource **group** (segment
+before `:`, used by the role editor's collapsible groups), and the wildcard
+pattern expansion all live in **one module**:
+`apps/backend/src/common/auth/permission-catalog.ts`. The seed, the runtime
+sync, and the `GET /permissions` API all consume it — there is no second copy.
+
+**Adding a permission for a new screen:**
+1. Add the `<resource>:<action>` key(s) to `permission-catalog.ts`.
+2. Guard the endpoint with `@RequirePermissions(...)` and gate the nav leaf
+   (`apps/web/src/lib/nav.ts`) on the `:read` key.
+3. The catalog is reconciled into the DB automatically — `PermissionsModule`
+   runs an **idempotent boot-time sync** (`PermissionsSyncService.syncCatalog()`)
+   that upserts missing `permission` rows + refreshes descriptions and **never
+   deletes rows or touches `role_permission`** (safe for custom roles). It can
+   also be triggered on demand via `POST /api/v1/permissions/sync` (gated
+   `permission:manage`) or a full `prisma db seed`.
+
+**Mapping to roles:** seeded roles defined with wildcard patterns (`*:*`,
+`*:read`, `resource:*`) gain the new key automatically. **Custom roles** created
+in the UI hold explicit grants, so an admin assigns the new permission to them in
+the role editor (Hak Akses) — which is why that screen supports full role CRUD.
 
 ## 3. Security checklist
 

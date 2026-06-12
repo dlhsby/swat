@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { permissionGroup } from '../../common/auth/permission-catalog';
 import { RolePermissionsService } from '../../common/auth/role-permissions.service';
 import { type AuditActor, AuditService } from '../audit/audit.service';
 
@@ -45,7 +46,12 @@ export class RolesService {
     const permissions = await this.repo.permissionsForRole(id);
     return {
       ...toRoleDto(role),
-      permissions: permissions.map((p) => ({ id: p.id, key: p.key, description: p.description })),
+      permissions: permissions.map((p) => ({
+        id: p.id,
+        key: p.key,
+        description: p.description,
+        group: permissionGroup(p.key),
+      })),
     };
   }
 

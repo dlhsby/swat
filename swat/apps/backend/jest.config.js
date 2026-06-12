@@ -16,6 +16,7 @@ module.exports = {
   // testable logic.
   collectCoverageFrom: [
     '**/*.(t|j)s',
+    '!**/*.d.ts',
     '!**/*.module.ts',
     '!**/*.dto.ts',
     '!**/*.types.ts',

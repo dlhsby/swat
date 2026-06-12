@@ -2,6 +2,8 @@ export interface PermissionDto {
   readonly id: string;
   readonly key: string;
   readonly description: string;
+  /** Resource prefix (segment before `:`) — groups permissions in the role editor. */
+  readonly group: string;
 }
 
 export interface RoleDto {

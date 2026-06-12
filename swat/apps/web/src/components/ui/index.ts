@@ -2,6 +2,7 @@
 // screens import from a single, stable path: `@/components/ui`.
 
 // Primitives (T-132a)
+export * from './accordion';
 export * from './alert';
 export * from './avatar';
 export * from './badge';

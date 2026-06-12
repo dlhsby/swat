@@ -33,6 +33,12 @@ import {
 import { hash } from 'argon2';
 
 import {
+  PERMISSION_CATALOG,
+  describePermission,
+  expandPatterns,
+} from '../src/common/auth/permission-catalog';
+
+import {
   LEGACY_DRIVER_LICENSES,
   LEGACY_DRIVERS,
   LEGACY_ROUTES,
@@ -58,157 +64,10 @@ const ARGON2_OPTIONS = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// 1. Permission catalog
+// 1. Permission catalog — the keys/descriptions/expansion live in the shared
+//    source of truth (src/common/auth/permission-catalog.ts) so the seed, the
+//    boot-time reconcile, and the API stay in lockstep.
 // ---------------------------------------------------------------------------
-const PERMISSION_KEYS: readonly string[] = [
-  // User & Auth
-  'user:read',
-  'user:create',
-  'user:update',
-  'user:delete',
-  'user:manage',
-  'role:read',
-  'role:create',
-  'role:update',
-  'role:delete',
-  'permission:read',
-  'permission:manage',
-  // Fleet
-  'vehicle:read',
-  'vehicle:create',
-  'vehicle:update',
-  'vehicle:delete',
-  'vehicle-model:read',
-  'vehicle-model:create',
-  'vehicle-model:update',
-  'vehicle-model:delete',
-  'vehicle-type:read',
-  'vehicle-type:create',
-  'vehicle-type:update',
-  'vehicle-type:delete',
-  'fuel:read',
-  'fuel:create',
-  'fuel:update',
-  'fuel:delete',
-  'fuel-category:read',
-  'fuel-category:create',
-  'fuel-category:update',
-  'fuel-category:delete',
-  // Personnel
-  'driver:read',
-  'driver:create',
-  'driver:update',
-  'driver:delete',
-  'license:read',
-  'license:create',
-  'license:update',
-  'license:delete',
-  // Geography
-  'site:read',
-  'site:create',
-  'site:update',
-  'site:delete',
-  'route:read',
-  'route:create',
-  'route:update',
-  'route:delete',
-  // Waste
-  'waste-source:read',
-  'waste-source:create',
-  'waste-source:update',
-  'waste-source:delete',
-  // Scheduling
-  'schedule-template:read',
-  'schedule-template:create',
-  'schedule-template:update',
-  'schedule-template:delete',
-  'trip-template:read',
-  'trip-template:create',
-  'trip-template:update',
-  'trip-template:delete',
-  'disposal-permit:read',
-  'disposal-permit:create',
-  'disposal-permit:update',
-  'disposal-permit:delete',
-  // Transactions
-  'transaction-day:read',
-  'transaction-day:manage',
-  'haul:read',
-  'haul:create',
-  'haul:update',
-  'trip:read',
-  'trip:create',
-  'trip:update',
-  'trip:record-pickup',
-  'trip:record-disposal',
-  'trip:record-fuel',
-  'trip:verify',
-  // Approve a fuel amount above what was requested.
-  'fuel:approve',
-  // Edit a trip after it has been verified (locked) — supervisory override.
-  'trip:override',
-  // Vehicle operations
-  'inspection:read',
-  'inspection:create',
-  'inspection:update',
-  'inspection:delete',
-  'maintenance:read',
-  'maintenance:create',
-  'maintenance:update',
-  'maintenance:delete',
-  'maintenance:approve',
-  // Monitoring & Reporting
-  'monitoring:read',
-  'report:read',
-  'report:generate',
-  'report:export',
-  'levy:read',
-  'levy:create',
-  'levy:update',
-  'levy:delete',
-  // Archiving (Phase 2, Epic 2.5) — admin-only partition lifecycle.
-  'archive:read',
-  'archive:manage',
-];
-
-const ACTION_LABELS: Readonly<Record<string, string>> = {
-  read: 'view',
-  create: 'create',
-  update: 'update',
-  delete: 'delete',
-  manage: 'administer',
-  verify: 'verify',
-  override: 'override verification for',
-  export: 'export',
-  generate: 'generate',
-  approve: 'approve',
-  'record-pickup': 'record pickup for',
-  'record-disposal': 'record disposal for',
-  'record-fuel': 'record fuel for',
-};
-
-function describePermission(key: string): string {
-  const [resource, action] = key.split(':');
-  const verb = ACTION_LABELS[action ?? ''] ?? action ?? 'access';
-  return `Permission to ${verb} ${resource?.replace(/-/g, ' ')}`;
-}
-
-/** Expand wildcard patterns (`*:*`, `resource:*`, `*:action`) into concrete keys. */
-function expandPatterns(patterns: readonly string[]): string[] {
-  const expanded = new Set<string>();
-  for (const pattern of patterns) {
-    const [pResource, pAction] = pattern.split(':');
-    for (const key of PERMISSION_KEYS) {
-      const [kResource, kAction] = key.split(':');
-      const resourceMatch = pResource === '*' || pResource === kResource;
-      const actionMatch = pAction === '*' || pAction === kAction;
-      if (resourceMatch && actionMatch) {
-        expanded.add(key);
-      }
-    }
-  }
-  return [...expanded];
-}
 
 // ---------------------------------------------------------------------------
 // 2. Roles (names + permission patterns) — specs/06-auth-rbac.md §2.3
@@ -244,7 +103,7 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
 
 async function seedPermissions(): Promise<Map<string, string>> {
   const idByKey = new Map<string, string>();
-  for (const key of PERMISSION_KEYS) {
+  for (const { key } of PERMISSION_CATALOG) {
     const permission = await prisma.permission.upsert({
       where: { key },
       update: { description: describePermission(key) },

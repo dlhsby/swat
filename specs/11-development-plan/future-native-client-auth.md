@@ -1,8 +1,13 @@
-# Future phase (PENDING) — Native-client auth for .NET apps
+# Native-client auth for .NET apps — IMPLEMENTED (Phase 1)
 
-> **Status:** Parked — to be planned/scheduled **after Phase 2 verification**. This
-> is a placeholder capturing the agreed design so it isn't lost. When picked up,
-> slot it as its own phase and renumber downstream phases accordingly.
+> **Status:** ✅ **Implemented in Phase 1** (pulled forward from "after Phase 2").
+> The token endpoint, refresh rotation + reuse-detection, and the dual-mode
+> (cookie OR bearer) guard now ship in the backend. Canonical reference is now
+> [`06-auth-rbac.md`](../06-auth-rbac.md) §1.7; this file is retained for the
+> design rationale. Code: `apps/backend/src/modules/auth/token.service.ts`,
+> `token.controller.ts`, `token-bearer.middleware.ts`. The OAuth2 Authorization
+> Code + PKCE / OIDC upgrade remains the only deferred item (future, if SSO or
+> third-party clients appear).
 
 ## Context
 The kitir-printing and TPA-CCTV-capture apps are **native Windows apps (C# .NET)**

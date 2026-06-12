@@ -35,7 +35,7 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest<Request>();
-    const user = request.session?.user;
+    const user = request.session?.user ?? request.user;
     if (!user) {
       throw new UnauthorizedException('Sesi tidak valid atau telah berakhir.');
     }

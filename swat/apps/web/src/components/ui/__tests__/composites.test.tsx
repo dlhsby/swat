@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../accordion';
 import { ConfirmDialog } from '../alert-dialog';
 import { DescriptionList } from '../description-list';
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '../dialog';
@@ -19,6 +20,24 @@ import { Progress } from '../progress';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '../sheet';
 import { Stepper } from '../stepper';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../tabs';
+
+describe('Accordion', () => {
+  it('expands and collapses a section on trigger click', async () => {
+    render(
+      <Accordion type="multiple">
+        <AccordionItem value="a">
+          <AccordionTrigger>Bagian A</AccordionTrigger>
+          <AccordionContent>Isi A</AccordionContent>
+        </AccordionItem>
+      </Accordion>,
+    );
+    expect(screen.queryByText('Isi A')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Bagian A/ }));
+    expect(screen.getByText('Isi A')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: /Bagian A/ }));
+    expect(screen.queryByText('Isi A')).not.toBeInTheDocument();
+  });
+});
 
 describe('Dialog', () => {
   it('opens on trigger and closes via the ✕', async () => {
