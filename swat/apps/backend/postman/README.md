@@ -1,8 +1,26 @@
 # SWAT API — Postman collection
 
 Importable Postman collection + environment for manual testing of the SWAT
-backend. Covers Phase 1 **M1** (auth, users, roles, permissions) and **M2**
-(geography, waste sources, fleet, personnel, scheduling).
+backend. Covers the unauthenticated **System** health checks, plus Phase 1 **M1**
+(auth, users, roles, permissions) and **M2** (geography, waste sources, fleet,
+personnel, scheduling).
+
+## URL variables
+
+The request URL is composed from parts so you can retarget the whole collection
+(e.g. point at a staging host or switch to `https`) by editing one variable:
+
+| Variable    | Default                     | Notes                                          |
+| ----------- | --------------------------- | ---------------------------------------------- |
+| `protocol`  | `http`                      | `http` / `https`                               |
+| `host`      | `localhost:3000`            | host (+ port)                                  |
+| `apiPrefix` | `api/v1`                    | API version prefix                             |
+| `rootUrl`   | `{{protocol}}://{{host}}`   | server root — used by **System** health checks |
+| `baseUrl`   | `{{rootUrl}}/{{apiPrefix}}` | API base — used by every `/api/v1` request     |
+
+Postman resolves nested variables recursively, so changing `protocol`/`host`
+updates both `rootUrl` and `baseUrl`. Health endpoints (`/health`,
+`/health/ready`) sit at the root and use `{{rootUrl}}`, not `{{baseUrl}}`.
 
 ## Files
 

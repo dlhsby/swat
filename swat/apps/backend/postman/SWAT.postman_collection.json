@@ -7,6 +7,58 @@
   },
   "item": [
     {
+      "name": "System",
+      "description": "Unauthenticated health checks. These sit at the server root, **not** under the `/api/v1` prefix, so they use `{{rootUrl}}` instead of `{{baseUrl}}`.",
+      "item": [
+        {
+          "name": "Health (liveness)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('alive', () => pm.expect(pm.response.code).to.equal(200));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{rootUrl}}/health",
+              "host": ["{{rootUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Liveness probe — returns { success:true, data:{ status:\"ok\" } }. Unguarded; not under api/v1."
+          }
+        },
+        {
+          "name": "Readiness",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ready or 503', () => pm.expect(pm.response.code).to.be.oneOf([200, 503]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{rootUrl}}/health/ready",
+              "host": ["{{rootUrl}}"],
+              "path": ["health", "ready"]
+            },
+            "description": "Readiness probe — checks the database. 200 when ready, 503 when a dependency is down."
+          }
+        }
+      ]
+    },
+    {
       "name": "Auth",
       "description": "Run **Login** first to obtain the session cookie.",
       "item": [

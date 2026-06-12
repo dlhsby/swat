@@ -27,6 +27,23 @@ function req(name, method, path, opts = {}) {
 // ---------------------------------------------------------------------------
 const GROUPS = [
   {
+    name: 'System',
+    description:
+      'Unauthenticated health checks. These sit at the server root, **not** under the `/api/v1` prefix, so they use `{{rootUrl}}` instead of `{{baseUrl}}`.',
+    items: [
+      req('Health (liveness)', 'GET', '/health', {
+        base: 'rootUrl',
+        note: 'Liveness probe — returns { success:true, data:{ status:"ok" } }. Unguarded; not under api/v1.',
+        test: "pm.test('alive', () => pm.expect(pm.response.code).to.equal(200));",
+      }),
+      req('Readiness', 'GET', '/health/ready', {
+        base: 'rootUrl',
+        note: 'Readiness probe — checks the database. 200 when ready, 503 when a dependency is down.',
+        test: "pm.test('ready or 503', () => pm.expect(pm.response.code).to.be.oneOf([200, 503]));",
+      }),
+    ],
+  },
+  {
     name: 'Auth',
     description: 'Run **Login** first to obtain the session cookie.',
     items: [
@@ -369,10 +386,11 @@ function defaultTest(item) {
 }
 
 function toRequest(item) {
+  const base = item.base ?? 'baseUrl';
   const segments = item.path.replace(/^\//, '').split('/');
   const url = {
-    raw: `{{baseUrl}}${item.path}`,
-    host: ['{{baseUrl}}'],
+    raw: `{{${base}}}${item.path}`,
+    host: [`{{${base}}}`],
     path: segments,
   };
   if (item.query) {
@@ -421,8 +439,14 @@ const collection = {
   })),
 };
 
+// URL is composed from parts so you can flip protocol/host/version in one place.
+// Postman resolves nested {{vars}} recursively, so `baseUrl`/`rootUrl` stay in sync.
 const ENV_VARS = [
-  ['baseUrl', 'http://localhost:3000/api/v1'],
+  ['protocol', 'http'],
+  ['host', 'localhost:3000'],
+  ['apiPrefix', 'api/v1'],
+  ['rootUrl', '{{protocol}}://{{host}}'],
+  ['baseUrl', '{{rootUrl}}/{{apiPrefix}}'],
   ['adminUsername', 'admin'],
   ['adminPassword', 'ChangeMe!2026'],
   'userId',
