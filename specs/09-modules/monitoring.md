@@ -164,22 +164,26 @@ The Monitoring module provides real-time operational dashboards for management a
 
 ---
 
-### Dashboard 6: Levy Summary (Retribusi)
+### Dashboard 6: Levy (Retribusi)
 
-**Layout:** KPI + monthly trend chart + category table
+The Retribusi page lives under Monitoring but is **two tabs**: **Ringkasan** (read-only stats +
+charts) and **Data** (full CRUD over levy records, using the standardized master-data DataTable).
+Transaction-count and average-per-transaction stats were dropped — levy records carry no transaction
+count, so those KPIs were misleading.
 
-- **KPI Cards:**
-  - Total levy YTD (rupiah, formatted)
-  - Total levy current month
-  - Avg levy per category
+**Ringkasan tab** — date-range control + one KPI + two charts:
 
-- **Chart:** Line chart (Recharts)
-  - X-axis: month (this year)
-  - Y-axis: rupiah
-  - Trend line overlay
+- **KPI Card:** Total Retribusi for the selected range (rupiah, formatted). *(No Transaksi count, no
+  Rata-rata/transaksi.)*
+- **Bar chart** (Recharts): total levy **by category** — fed by `GET /monitoring/levy-summary`.
+- **Area chart** (Recharts): total levy **per month** (trend) — fed by `GET /monitoring/levy-trend`.
 
-- **Table:** Levy by category (current month)
-  - Columns: Category | Amount | Avg per day | Count of transactions
+**Data tab** — standardized CRUD (`CrudListShell` + `CrudFormDialog`), gated by `levy:*`:
+
+- Columns: Tanggal | Kategori | Jumlah (IDR) | Catatan (hidden by default) | Aksi.
+- Create / edit / delete a levy record (date, categoryName, amount, notes). Records are sourced from
+  the legacy `retribusi` table via the migration (`mapLevy`); the list surfaces whatever is in the
+  `levy` table. Backed by the `/levies` CRUD API (see [`07-api-spec.md`](../07-api-spec.md) §2.9).
 
 ---
 
@@ -200,7 +204,11 @@ See [`07-api-spec.md`](../07-api-spec.md) for endpoint paths and response format
 | GET | `/api/v1/monitoring/routes-active` | `monitoring:read` | List of routes with ≥1 trip today |
 | GET | `/api/v1/monitoring/trip-summary` | `monitoring:read` | Paginated trip list, filterable by date/status/route |
 | GET | `/api/v1/monitoring/levy-summary` | `monitoring:read` | Σ levy by category, date range |
+| GET | `/api/v1/monitoring/levy-trend` | `monitoring:read` | Σ levy per calendar month, date range |
 | GET | `/api/v1/monitoring/kpi-overview` | `monitoring:read` | Combined KPI object: 5-day tonnage, monthly trend, fuel, active vehicles, completed hauls |
+
+> Levy **CRUD** (create/edit/delete records) is a separate resource — `/levies`, gated by `levy:*` —
+> not part of the read-only monitoring API. See [`07-api-spec.md`](../07-api-spec.md) §2.9.
 
 **Query params (all endpoints accept):**
 - `?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD` — filter by date range (required for most)

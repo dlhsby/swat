@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { type FuelConsumptionRow, type TonnageBySourceRow } from '../monitoring-api';
+import {
+  type FuelConsumptionRow,
+  type LevySummaryRow,
+  type LevyTrendRow,
+  type TonnageBySourceRow,
+} from '../monitoring-api';
 import {
   datePresets,
   fuelBars,
   kgToTon,
+  levyByCategory,
+  levyTrendPoints,
   shortDateLabel,
+  shortMonthLabel,
   sourceComposition,
   tonnageTrend,
 } from '../monitoring-charts';
@@ -19,6 +27,45 @@ describe('kgToTon / shortDateLabel', () => {
   it('renders a short Indonesian date label', () => {
     expect(shortDateLabel('2026-06-08')).toBe('8 Jun');
     expect(shortDateLabel('2026-01-15')).toBe('15 Jan');
+  });
+
+  it('renders a short Indonesian month label', () => {
+    expect(shortMonthLabel('2026-06')).toBe('Jun 26');
+    expect(shortMonthLabel('2025-12')).toBe('Des 25');
+  });
+});
+
+describe('levyByCategory / levyTrendPoints', () => {
+  it('maps category summary rows to bars, preserving order and amount', () => {
+    const rows: LevySummaryRow[] = [
+      {
+        categoryName: 'Komersial',
+        totalAmount: 28_000_000,
+        transactionCount: 11,
+        avgPerTransaction: 2_545_454,
+      },
+      {
+        categoryName: 'Rumah Tangga',
+        totalAmount: 15_000_000,
+        transactionCount: 12,
+        avgPerTransaction: 1_250_000,
+      },
+    ];
+    expect(levyByCategory(rows)).toEqual([
+      { name: 'Komersial', amount: 28_000_000 },
+      { name: 'Rumah Tangga', amount: 15_000_000 },
+    ]);
+  });
+
+  it('maps monthly trend rows to labelled points', () => {
+    const rows: LevyTrendRow[] = [
+      { month: '2026-05', totalAmount: 4_000_000 },
+      { month: '2026-06', totalAmount: 6_000_000 },
+    ];
+    expect(levyTrendPoints(rows)).toEqual([
+      { label: 'Mei 26', month: '2026-05', amount: 4_000_000 },
+      { label: 'Jun 26', month: '2026-06', amount: 6_000_000 },
+    ]);
   });
 });
 

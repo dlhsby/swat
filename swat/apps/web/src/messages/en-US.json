@@ -254,16 +254,25 @@
     },
     "levy": {
       "title": "Levy",
-      "subtitle": "Levy recap by category.",
+      "subtitle": "Levy overview and record management.",
+      "tabSummary": "Overview",
+      "tabData": "Data",
       "kpiTotal": "Total Levy",
-      "kpiCount": "Transactions",
-      "kpiAvg": "Average per Transaction",
-      "tableTitle": "Levy by Category",
-      "note": "Levy data is loaded from the legacy migration; empty until live data is available.",
+      "chartByCategory": "Levy by Category",
+      "chartTrend": "Monthly Levy Trend",
+      "emptyData": "No levy data yet",
+      "colDate": "Date",
       "colCategory": "Category",
       "colTotal": "Amount",
-      "colCount": "Transactions",
-      "colAvg": "Average"
+      "colNotes": "Notes",
+      "searchPlaceholder": "Search category…",
+      "createLabel": "Add Levy",
+      "createTitle": "Add Levy",
+      "editTitle": "Edit Levy",
+      "fieldCategory": "Category",
+      "fieldDate": "Date",
+      "fieldAmount": "Amount",
+      "fieldNotes": "Notes"
     }
   },
   "crud": {

@@ -65,6 +65,12 @@ export interface LevySummaryRow {
   readonly avgPerTransaction: number;
 }
 
+export interface LevyTrendRow {
+  /** Calendar month as `YYYY-MM`. */
+  readonly month: string;
+  readonly totalAmount: number;
+}
+
 export interface KpiOverview {
   readonly totalTonnageKg: number;
   readonly haulsCompleted: number;
@@ -107,6 +113,9 @@ export const monitoringApi = {
 
   levySummary: (range: DateRange): Promise<LevySummaryRow[]> =>
     apiClient.get(`/monitoring/levy-summary?${monitoringQuery(range)}`),
+
+  levyTrend: (range: DateRange): Promise<LevyTrendRow[]> =>
+    apiClient.get(`/monitoring/levy-trend?${monitoringQuery(range)}`),
 
   kpiOverview: (range: DateRange): Promise<KpiOverview> =>
     apiClient.get(`/monitoring/kpi-overview?${monitoringQuery(range)}`),

@@ -60,3 +60,10 @@ export function useLevySummary(range: DateRange) {
     queryFn: () => monitoringApi.levySummary(range),
   });
 }
+
+export function useLevyTrend(range: DateRange) {
+  return useQuery({
+    queryKey: [KEY, 'levy-trend', range],
+    queryFn: () => monitoringApi.levyTrend(range),
+  });
+}

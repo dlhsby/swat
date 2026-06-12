@@ -17,6 +17,7 @@ import { TokenBearerMiddleware } from './modules/auth/token-bearer.middleware';
 import { CacheModule } from './modules/cache/cache.module';
 import { FleetModule } from './modules/fleet/fleet.module';
 import { GeographyModule } from './modules/geography/geography.module';
+import { LevyModule } from './modules/levy/levy.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { OperationsModule } from './modules/operations/operations.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
@@ -61,6 +62,7 @@ import { SessionModule } from './session.module';
     SchedulingModule,
     TransactionsModule,
     OperationsModule,
+    LevyModule,
     MonitoringModule,
     ArchivingModule,
   ],

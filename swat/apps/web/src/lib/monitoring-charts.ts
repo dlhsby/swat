@@ -1,6 +1,8 @@
 import {
   type DailyTonnageRow,
   type FuelConsumptionRow,
+  type LevySummaryRow,
+  type LevyTrendRow,
   type TonnageBySourceRow,
 } from './monitoring-api';
 
@@ -43,6 +45,37 @@ export function kgToTon(kg: number): number {
 export function shortDateLabel(iso: string): string {
   const [, month, day] = iso.split('-').map(Number);
   return `${day} ${ID_MONTHS_SHORT[(month ?? 1) - 1]}`;
+}
+
+/** Short `MMM YY` label for a `YYYY-MM` month (Indonesian months). */
+export function shortMonthLabel(yearMonth: string): string {
+  const [year, month] = yearMonth.split('-').map(Number);
+  return `${ID_MONTHS_SHORT[(month ?? 1) - 1]} ${String(year ?? '').slice(2)}`;
+}
+
+export interface LevyCategoryBar {
+  readonly name: string;
+  readonly amount: number;
+}
+
+/** Levy-by-category rows → bar data (integer IDR), preserving the API's desc order. */
+export function levyByCategory(rows: readonly LevySummaryRow[]): LevyCategoryBar[] {
+  return rows.map((row) => ({ name: row.categoryName, amount: row.totalAmount }));
+}
+
+export interface LevyTrendPoint {
+  readonly label: string;
+  readonly month: string;
+  readonly amount: number;
+}
+
+/** Monthly levy rows → trend points (integer IDR), oldest first. */
+export function levyTrendPoints(rows: readonly LevyTrendRow[]): LevyTrendPoint[] {
+  return rows.map((row) => ({
+    label: shortMonthLabel(row.month),
+    month: row.month,
+    amount: row.totalAmount,
+  }));
 }
 
 export interface TonnagePoint {

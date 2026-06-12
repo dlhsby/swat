@@ -254,16 +254,25 @@
     },
     "levy": {
       "title": "Retribusi",
-      "subtitle": "Rekapitulasi retribusi per kategori.",
+      "subtitle": "Ringkasan dan pengelolaan data retribusi.",
+      "tabSummary": "Ringkasan",
+      "tabData": "Data",
       "kpiTotal": "Total Retribusi",
-      "kpiCount": "Transaksi",
-      "kpiAvg": "Rata-rata per Transaksi",
-      "tableTitle": "Retribusi per Kategori",
-      "note": "Data retribusi dimuat dari migrasi data lama; kosong hingga data live tersedia.",
+      "chartByCategory": "Retribusi per Kategori",
+      "chartTrend": "Tren Retribusi Bulanan",
+      "emptyData": "Belum ada data retribusi",
+      "colDate": "Tanggal",
       "colCategory": "Kategori",
       "colTotal": "Jumlah",
-      "colCount": "Transaksi",
-      "colAvg": "Rata-rata"
+      "colNotes": "Catatan",
+      "searchPlaceholder": "Cari kategori…",
+      "createLabel": "Tambah Retribusi",
+      "createTitle": "Tambah Retribusi",
+      "editTitle": "Ubah Retribusi",
+      "fieldCategory": "Kategori",
+      "fieldDate": "Tanggal",
+      "fieldAmount": "Jumlah",
+      "fieldNotes": "Catatan"
     }
   },
   "crud": {

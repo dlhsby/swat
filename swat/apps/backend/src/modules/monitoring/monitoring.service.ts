@@ -16,6 +16,7 @@ import {
   type FuelConsumptionRow,
   type KpiOverview,
   type LevySummaryRow,
+  type LevyTrendRow,
   type MonthlyTonnageRow,
   type RouteActivityRow,
   type TonnageBySiteRow,
@@ -124,6 +125,13 @@ export class MonitoringService {
         avgPerTransaction: averagePerTransaction(row.totalAmount, row.transactionCount),
       }));
     });
+  }
+
+  async levyTrend(query: DateRangeQueryDto): Promise<LevyTrendRow[]> {
+    const { from, to } = this.range(query);
+    return this.cached(this.key('levy-trend', query), TTL_LEVY, () =>
+      this.repo.levyTrend(from, to),
+    );
   }
 
   async tripSummary(query: TripSummaryQueryDto): Promise<{

@@ -324,6 +324,22 @@ export class MonitoringRepository {
     }));
   }
 
+  /** Levy totals per calendar month within `[from, to]` (integer IDR), oldest first. */
+  async levyTrend(from: Date, to: Date): Promise<Array<{ month: string; totalAmount: number }>> {
+    const rows = await this.prisma.$queryRaw<Array<{ month: Date; total: bigint }>>`
+      SELECT date_trunc('month', "date")::date AS "month",
+             COALESCE(SUM("amount"), 0)::bigint AS "total"
+      FROM "levy"
+      WHERE "date" >= ${from}::date AND "date" <= ${to}::date
+      GROUP BY date_trunc('month', "date")
+      ORDER BY "month" ASC
+    `;
+    return rows.map((row) => ({
+      month: row.month.toISOString().slice(0, 7),
+      totalAmount: Number(row.total),
+    }));
+  }
+
   /** Paginated trip rows from the partitioned Trip table, pruned by operationDate. */
   async tripSummary(args: {
     from: Date;

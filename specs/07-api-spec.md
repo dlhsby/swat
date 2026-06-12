@@ -478,7 +478,7 @@ Response 200:
 | GET | `/levies` | `levy:read` | List levies (filter: date range, categoryName; paginated) |
 | GET | `/levies/:id` | `levy:read` | Get levy detail |
 | POST | `/levies` | `levy:create` | Create levy entry (date, categoryName, amount, notes) |
-| PATCH | `/levies/:id` | `levy:update` | Update levy (categoryName, amount, notes) |
+| PATCH | `/levies/:id` | `levy:update` | Update levy (date, categoryName, amount, notes) |
 | DELETE | `/levies/:id` | `levy:delete` | Delete levy entry |
 
 **Example — GET /levies?dateFrom=2026-01-01&dateTo=2026-06-05&page=1&limit=20:**
@@ -487,7 +487,7 @@ Response 200:
   "success": true,
   "data": [
     {
-      "id": 1001,
+      "id": "019eb2ab-74fe-7ed3-99b9-0020bb7ed283",
       "categoryName": "Retribusi Sampah",
       "date": "2026-06-05",
       "amount": 5000000,
@@ -496,7 +496,7 @@ Response 200:
       "updatedAt": "2026-06-05T08:00:00Z"
     }
   ],
-  "meta": { "total": 156, "page": 1, "limit": 20, "pages": 8 }
+  "meta": { "total": 156, "page": 1, "limit": 20 }
 }
 ```
 
@@ -513,7 +513,7 @@ Response 200:
 {
   "success": true,
   "data": {
-    "id": 1001,
+    "id": "019eb2ab-74fe-7ed3-99b9-0020bb7ed283",
     "categoryName": "Retribusi Sampah",
     "date": "2026-06-05",
     "amount": 5000000,
@@ -537,6 +537,7 @@ Response 200:
 | GET | `/monitoring/routes-active` | `monitoring:read` | List of routes with ≥1 trip today |
 | GET | `/monitoring/trip-summary` | `monitoring:read` | Paginated trip list, filterable by date/status/route (query: `?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD&status=DONE&page=1&limit=20`) |
 | GET | `/monitoring/levy-summary` | `monitoring:read` | Σ levy by categoryName, date range |
+| GET | `/monitoring/levy-trend` | `monitoring:read` | Σ levy per calendar month (`{month:"YYYY-MM", totalAmount}`), date range |
 | GET | `/monitoring/kpi-overview` | `monitoring:read` | Combined KPI object: 5-day tonnage, monthly trend, fuel, active vehicles, completed hauls |
 
 **Example — GET /monitoring/tonnage-5day:**

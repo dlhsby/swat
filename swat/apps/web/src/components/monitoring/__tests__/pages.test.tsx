@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
   fuelConsumption: vi.fn(),
   routesActive: vi.fn(),
   levySummary: vi.fn(),
+  levyTrend: vi.fn(),
   kpiOverview: vi.fn(),
 }));
 
@@ -107,7 +108,7 @@ describe('RoutesPage', () => {
 });
 
 describe('LevyPage', () => {
-  it('renders the levy category table in IDR and the legacy-data note', async () => {
+  it('Ringkasan tab shows the total KPI + both chart cards, with no transaksi stat', async () => {
     api.levySummary.mockResolvedValue([
       {
         categoryName: 'Rumah Tangga',
@@ -115,13 +116,31 @@ describe('LevyPage', () => {
         transactionCount: 17,
         avgPerTransaction: 500000,
       },
+      {
+        categoryName: 'Komersial',
+        totalAmount: 1500000,
+        transactionCount: 3,
+        avgPerTransaction: 500000,
+      },
+    ]);
+    api.levyTrend.mockResolvedValue([
+      { month: '2026-05', totalAmount: 4000000 },
+      { month: '2026-06', totalAmount: 6000000 },
     ]);
 
     renderWithProviders(<LevyPage />);
 
-    expect((await screen.findAllByText('Rumah Tangga')).length).toBeGreaterThan(0);
-    // formatRupiah renders the dotted-thousands IDR form (KPI card + table cell).
-    expect(screen.getAllByText(/Rp\s?8\.500\.000/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/migrasi data lama/i)).toBeInTheDocument();
+    // Total Retribusi KPI = sum of category totals (8.5jt + 1.5jt = 10jt).
+    expect(screen.getByText('Total Retribusi')).toBeInTheDocument();
+    expect(await screen.findByText(/Rp\s?10\.000\.000/)).toBeInTheDocument();
+
+    // Both chart cards render; the dropped transaction stat is gone.
+    expect(screen.getByText('Retribusi per Kategori')).toBeInTheDocument();
+    expect(screen.getByText('Tren Retribusi Bulanan')).toBeInTheDocument();
+    expect(screen.queryByText('Transaksi')).not.toBeInTheDocument();
+
+    // Tabs expose Ringkasan + Data.
+    expect(screen.getByRole('tab', { name: /ringkasan/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /data/i })).toBeInTheDocument();
   });
 });

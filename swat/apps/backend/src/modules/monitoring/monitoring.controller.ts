@@ -15,6 +15,7 @@ import {
   type FuelConsumptionRow,
   type KpiOverview,
   type LevySummaryRow,
+  type LevyTrendRow,
   type MonthlyTonnageRow,
   type RouteActivityRow,
   type TonnageBySiteRow,
@@ -93,5 +94,11 @@ export class MonitoringController {
   @ApiOperation({ summary: 'Levy (retribusi) totals by category' })
   levySummary(@Query() query: DateRangeQueryDto): Promise<LevySummaryRow[]> {
     return this.monitoring.levySummary(query);
+  }
+
+  @Get('levy-trend')
+  @ApiOperation({ summary: 'Levy (retribusi) totals per calendar month' })
+  levyTrend(@Query() query: DateRangeQueryDto): Promise<LevyTrendRow[]> {
+    return this.monitoring.levyTrend(query);
   }
 }
