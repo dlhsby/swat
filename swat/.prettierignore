@@ -7,3 +7,7 @@ pnpm-lock.yaml
 *.min.css
 apps/backend/prisma/migrations/
 public/service-worker.js
+
+# Generated artifacts (not hand-maintained source)
+apps/web/test-results/
+apps/backend/scripts/migration/reports/
