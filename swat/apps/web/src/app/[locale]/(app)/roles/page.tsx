@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -36,6 +36,12 @@ import {
 import { useResourceList } from '@/hooks/use-resource-list';
 import { ApiError } from '@/lib/api-error';
 import { cn } from '@/lib/cn';
+import {
+  OTHER_CATEGORY,
+  PERMISSION_CATEGORIES,
+  permissionLabel,
+  resourceLabel,
+} from '@/lib/permission-grouping';
 import { type PermissionDto, type RoleDto, permissionsApi, rolesApi } from '@/lib/roles-api';
 
 const roleSchema = z.object({
@@ -95,19 +101,48 @@ export default function RolesPage(): JSX.Element {
     }
   }, [selectedId, loadDetail]);
 
-  const groups = useMemo(() => {
-    const map = new Map<string, PermissionDto[]>();
+  // Organise the flat permission list into functional categories (Master Data,
+  // Pengangkutan, …), each holding its resource sub-groups, in catalogue order.
+  const categories = useMemo(() => {
+    const byResource = new Map<string, PermissionDto[]>();
     for (const p of [...permissions].sort((a, b) => a.key.localeCompare(b.key))) {
       const resource = p.group || p.key.split(':')[0] || p.key;
-      const list = map.get(resource);
+      const list = byResource.get(resource);
       if (list) {
         list.push(p);
       } else {
-        map.set(resource, [p]);
+        byResource.set(resource, [p]);
       }
     }
-    return [...map.entries()];
+    const used = new Set<string>();
+    const known = PERMISSION_CATEGORIES.map((category) => {
+      const resources = category.resources
+        .filter((r) => byResource.has(r))
+        .map((resource) => {
+          used.add(resource);
+          return { resource, perms: byResource.get(resource) as PermissionDto[] };
+        });
+      return { category, resources };
+    }).filter((c) => c.resources.length > 0);
+    const leftover = [...byResource.entries()]
+      .filter(([resource]) => !used.has(resource))
+      .map(([resource, perms]) => ({ resource, perms }));
+    return leftover.length > 0
+      ? [...known, { category: OTHER_CATEGORY, resources: leftover }]
+      : known;
   }, [permissions]);
+
+  // Controlled accordion: open the first category once the catalog loads (a
+  // `defaultValue` would lock to the empty initial render and never open).
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
+  const didInitOpen = useRef(false);
+  useEffect(() => {
+    const first = categories[0]?.category.id;
+    if (!didInitOpen.current && first !== undefined) {
+      didInitOpen.current = true;
+      setOpenCategories([first]);
+    }
+  }, [categories]);
 
   const toggle = (id: string): void => {
     setEnabled((prev) => {
@@ -304,52 +339,87 @@ export default function RolesPage(): JSX.Element {
             {loadingDetail ? (
               <Skeleton className="h-64" />
             ) : (
-              <Accordion type="multiple" className="rounded-base border border-neutral-200 px-3">
-                {groups.map(([resource, perms]) => {
-                  const onCount = perms.filter((p) => enabled.has(p.id)).length;
-                  const allOn = onCount === perms.length;
-                  const checkedState =
-                    onCount === 0 ? false : allOn ? true : ('indeterminate' as const);
+              <Accordion
+                type="multiple"
+                value={openCategories}
+                onValueChange={setOpenCategories}
+                className="flex flex-col gap-3"
+              >
+                {categories.map(({ category, resources }) => {
+                  const catPerms = resources.flatMap((r) => r.perms);
+                  const catOn = catPerms.filter((p) => enabled.has(p.id)).length;
+                  const catAllOn = catOn === catPerms.length;
+                  const catChecked =
+                    catOn === 0 ? false : catAllOn ? true : ('indeterminate' as const);
+                  const Icon = category.icon;
                   return (
-                    <AccordionItem key={resource} value={resource}>
+                    <AccordionItem
+                      key={category.id}
+                      value={category.id}
+                      className="rounded-base border border-neutral-200 px-3"
+                    >
                       <div className="flex items-center gap-3">
                         <Checkbox
-                          checked={checkedState}
-                          aria-label={`Pilih semua izin ${resource}`}
+                          checked={catChecked}
+                          aria-label={`Pilih semua izin ${category.label}`}
                           onClick={(e) => e.stopPropagation()}
-                          onCheckedChange={() => toggleGroup(perms, allOn)}
+                          onCheckedChange={() => toggleGroup(catPerms, catAllOn)}
                         />
                         <AccordionTrigger className="flex-1">
                           <span className="flex flex-1 items-center justify-between gap-2 pr-2">
-                            <span className="uppercase tracking-wide text-neutral-700">
-                              {resource}
+                            <span className="flex items-center gap-2 font-semibold text-neutral-900">
+                              <Icon className="h-4 w-4 text-neutral-400" aria-hidden />
+                              {category.label}
                             </span>
-                            <Badge appearance="count">{`${onCount}/${perms.length}`}</Badge>
+                            <Badge appearance="count">{`${catOn}/${catPerms.length}`}</Badge>
                           </span>
                         </AccordionTrigger>
                       </div>
                       <AccordionContent>
                         <div className="flex flex-col gap-3">
-                          {perms.map((p) => (
-                            <label
-                              key={p.id}
-                              className="flex cursor-pointer items-center justify-between gap-2.5"
-                            >
-                              <span className="flex min-w-0 flex-col">
-                                <span className="truncate text-body-sm font-medium text-neutral-900">
-                                  {p.description}
-                                </span>
-                                <span className="truncate font-mono text-[11.5px] text-neutral-400">
-                                  {p.key}
-                                </span>
-                              </span>
-                              <Switch
-                                checked={enabled.has(p.id)}
-                                onCheckedChange={() => toggle(p.id)}
-                                aria-label={p.key}
-                              />
-                            </label>
-                          ))}
+                          {resources.map(({ resource, perms }) => {
+                            const onCount = perms.filter((p) => enabled.has(p.id)).length;
+                            const allOn = onCount === perms.length;
+                            const checkedState =
+                              onCount === 0 ? false : allOn ? true : ('indeterminate' as const);
+                            return (
+                              <div key={resource} className="rounded-base bg-neutral-50 p-3">
+                                <div className="mb-2.5 flex items-center gap-2.5">
+                                  <Checkbox
+                                    checked={checkedState}
+                                    aria-label={`Pilih semua izin ${resourceLabel(resource)}`}
+                                    onCheckedChange={() => toggleGroup(perms, allOn)}
+                                  />
+                                  <span className="text-tiny font-semibold uppercase tracking-wide text-neutral-500">
+                                    {resourceLabel(resource)}
+                                  </span>
+                                  <Badge appearance="count">{`${onCount}/${perms.length}`}</Badge>
+                                </div>
+                                <div className="flex flex-col gap-2.5 pl-[26px]">
+                                  {perms.map((p) => (
+                                    <label
+                                      key={p.id}
+                                      className="flex cursor-pointer items-center justify-between gap-2.5"
+                                    >
+                                      <span className="flex min-w-0 flex-col">
+                                        <span className="truncate text-body-sm font-medium text-neutral-900">
+                                          {permissionLabel(p.key)}
+                                        </span>
+                                        <span className="truncate font-mono text-[11.5px] text-neutral-400">
+                                          {p.key}
+                                        </span>
+                                      </span>
+                                      <Switch
+                                        checked={enabled.has(p.id)}
+                                        onCheckedChange={() => toggle(p.id)}
+                                        aria-label={p.key}
+                                      />
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </AccordionContent>
                     </AccordionItem>

@@ -38,9 +38,14 @@ vi.mock('@/components/ui', async (importOriginal) => ({
 }));
 
 const PERMISSIONS = [
-  { id: 'p1', key: 'vehicle:read', description: 'Lihat kendaraan', group: 'vehicle' },
-  { id: 'p2', key: 'vehicle:create', description: 'Buat kendaraan', group: 'vehicle' },
-  { id: 'p3', key: 'driver:read', description: 'Lihat pengemudi', group: 'driver' },
+  { id: 'p1', key: 'vehicle:read', description: 'Permission to view vehicle', group: 'vehicle' },
+  {
+    id: 'p2',
+    key: 'vehicle:create',
+    description: 'Permission to create vehicle',
+    group: 'vehicle',
+  },
+  { id: 'p3', key: 'driver:read', description: 'Permission to view driver', group: 'driver' },
 ];
 const ROLE = {
   id: 'r1',
@@ -84,15 +89,20 @@ describe('RolesPage', () => {
     );
   });
 
-  it('groups permissions and toggles a whole group with select-all', async () => {
+  it('groups permissions by functional category, in Indonesian, with select-all', async () => {
     render(renderPage());
-    // Group headers render with a per-group count badge (1 of 2 vehicle perms on).
-    const vehicleHeader = await screen.findByRole('button', { name: /vehicle/i });
-    expect(within(vehicleHeader).getByText('1/2')).toBeInTheDocument();
+    // Master Data category header (open by default) shows the overall count (1 of 3).
+    const masterHeader = await screen.findByRole('button', { name: /Master Data/i });
+    expect(within(masterHeader).getByText('1/3')).toBeInTheDocument();
 
-    // Select-all for the vehicle group flips both perms on → badge shows 2/2.
-    await userEvent.click(screen.getByRole('checkbox', { name: /Pilih semua izin vehicle/ }));
-    await waitFor(() => expect(within(vehicleHeader).getByText('2/2')).toBeInTheDocument());
+    // Permissions render with Indonesian labels, not the English DB description.
+    expect(screen.getByText('Lihat Kendaraan')).toBeInTheDocument();
+    expect(screen.queryByText('Permission to view vehicle')).toBeNull();
+
+    // Select-all for the Kendaraan (vehicle) sub-group flips both vehicle perms on
+    // → the Master Data category count rises 1/3 → 2/3.
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Pilih semua izin Kendaraan' }));
+    await waitFor(() => expect(within(masterHeader).getByText('2/3')).toBeInTheDocument());
   });
 
   it('deletes the selected role after confirmation', async () => {

@@ -528,6 +528,7 @@ catalog-sync + bearer-middleware specs; web incl. an Accordion + roles-page spec
 | **Permission sync** | Catalog SoT module + boot-time reconcile + admin sync endpoint (deviation #16). |
 | **Roles UI — no "add role"** | `Hak Akses` gains full role CRUD: **Tambah Peran** (create), rename, delete (409-aware when users are assigned). The backend `POST/PATCH/DELETE /roles` already existed; only the UI was missing. |
 | **Roles UI — list too long** | Permission editor is now **collapsible groups** (new `Accordion` primitive) with a per-group **n/total count badge** and a tri-state **select-all** checkbox. |
+| **Roles UI — grouping & language** | Permissions are grouped into **functional categories** (Master Data, Pengangkutan & Operasional, Monitoring & Laporan, Pengguna & Akses, Sistem — mirroring the sidebar IA) with a resource sub-block under each, and every permission renders with an **Indonesian label** derived from its key (`apps/web/src/lib/permission-grouping.ts`). The DB keeps English descriptions; localisation is a frontend concern per CLAUDE.md. |
 
 ---
 
