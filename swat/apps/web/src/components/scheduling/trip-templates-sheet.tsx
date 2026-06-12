@@ -5,6 +5,13 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react
 
 import { ProtectedAction } from '@/components/auth/protected-action';
 import {
+  ALL_FILTER,
+  FilterSelect,
+  LoadMoreButton,
+  SheetFilterBar,
+  useWindowedList,
+} from '@/components/crud/sheet-list';
+import {
   Badge,
   Button,
   Combobox,
@@ -28,7 +35,7 @@ import {
 } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { ApiError } from '@/lib/api-error';
-import { formatTime } from '@/lib/format';
+import { formatNumber, formatTime } from '@/lib/format';
 import {
   type ScheduleTemplateDto,
   type RouteCategoryValue,
@@ -98,6 +105,7 @@ export function TripTemplatesSheet({
   const [templates, setTemplates] = useState<TripTemplateDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TripTemplateDto | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>(ALL_FILTER);
 
   // Sites (not the full route catalogue) drive the picker: operators choose a leg
   // category, then a start and end location, and the backend resolves/creates the
@@ -164,9 +172,22 @@ export function TripTemplatesSheet({
   useEffect(() => {
     if (scheduleId !== null) {
       resetForm();
+      setCategoryFilter(ALL_FILTER);
       void reload();
     }
   }, [scheduleId, reload, resetForm]);
+
+  // Number every leg by its position in the full ordered sequence, then filter by
+  // category — so a filtered view still shows each leg's true step number.
+  const numbered = useMemo(() => templates.map((tpl, i) => ({ tpl, legNo: i + 1 })), [templates]);
+  const filtered = useMemo(
+    () =>
+      categoryFilter === ALL_FILTER
+        ? numbered
+        : numbered.filter((n) => n.tpl.routeCategory === categoryFilter),
+    [numbered, categoryFilter],
+  );
+  const { windowed, remaining, loadMore } = useWindowedList(filtered, categoryFilter, 12);
 
   // Switching category swaps which single location is relevant, so clear both
   // selections (and any fuel) to avoid carrying a stale, now-hidden value.
@@ -241,50 +262,71 @@ export function TripTemplatesSheet({
           </SheetTitle>
         </SheetHeader>
         <SheetBody className="space-y-5">
+          {templates.length > 0 ? (
+            <SheetFilterBar summary={`${formatNumber(filtered.length)} rute terencana`}>
+              <FilterSelect
+                value={categoryFilter}
+                onValueChange={setCategoryFilter}
+                allLabel="Semua Jenis"
+                options={ROUTE_CATEGORIES}
+                className="h-9 w-[170px]"
+              />
+            </SheetFilterBar>
+          ) : null}
+
           {loading ? (
             <Skeleton className="h-24" />
-          ) : templates.length === 0 ? (
-            <EmptyState illustration="no-results" title="Belum ada rute terencana" />
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              illustration="no-results"
+              title={templates.length === 0 ? 'Belum ada rute terencana' : 'Tidak ada hasil'}
+              description={
+                templates.length === 0 ? undefined : 'Tidak ada rute yang cocok dengan filter.'
+              }
+            />
           ) : (
-            <ol className="space-y-2">
-              {templates.map((tpl, i) => (
-                <li
-                  key={tpl.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-100 text-tiny font-semibold text-neutral-600">
-                      {i + 1}
-                    </span>
-                    <div>
-                      <p className="flex items-center gap-1.5 text-body-sm font-medium text-neutral-900">
-                        {tpl.routeLabel}
-                      </p>
-                      <p className="flex items-center gap-2 text-tiny text-neutral-500">
-                        <Badge appearance="count">
-                          {CATEGORY_LABEL[tpl.routeCategory] ?? tpl.routeCategory}
-                        </Badge>
-                        <span>{formatTime(`1970-01-01T${tpl.targetTime}:00Z`)}</span>
-                        {tpl.fuelRequestedLiters ? (
-                          <span>· {tpl.fuelRequestedLiters} L</span>
-                        ) : null}
-                      </p>
+            <div className="space-y-3">
+              <ul className="space-y-2">
+                {windowed.map(({ tpl, legNo }) => (
+                  <li
+                    key={tpl.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-100 text-tiny font-semibold text-neutral-600">
+                        {legNo}
+                      </span>
+                      <div>
+                        <p className="flex items-center gap-1.5 text-body-sm font-medium text-neutral-900">
+                          {tpl.routeLabel}
+                        </p>
+                        <p className="flex items-center gap-2 text-tiny text-neutral-500">
+                          <Badge appearance="count">
+                            {CATEGORY_LABEL[tpl.routeCategory] ?? tpl.routeCategory}
+                          </Badge>
+                          <span>{formatTime(`1970-01-01T${tpl.targetTime}:00Z`)}</span>
+                          {tpl.fuelRequestedLiters ? (
+                            <span>· {tpl.fuelRequestedLiters} L</span>
+                          ) : null}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <ProtectedAction permission="trip-template:delete">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-danger-600"
-                      aria-label="Hapus rute"
-                      onClick={() => setDeleteTarget(tpl)}
-                    >
-                      <Trash2 className="h-4 w-4" aria-hidden />
-                    </Button>
-                  </ProtectedAction>
-                </li>
-              ))}
-            </ol>
+                    <ProtectedAction permission="trip-template:delete">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-danger-600"
+                        aria-label="Hapus rute"
+                        onClick={() => setDeleteTarget(tpl)}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </ProtectedAction>
+                  </li>
+                ))}
+              </ul>
+              <LoadMoreButton remaining={remaining} onClick={loadMore} />
+            </div>
           )}
 
           <ProtectedAction permission="trip-template:create">

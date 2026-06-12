@@ -3,7 +3,6 @@ import {
   ArrowLeftRight,
   BarChart3,
   CalendarClock,
-  ClipboardCheck,
   Database,
   FuelIcon,
   Gauge,
@@ -16,7 +15,6 @@ import {
   Truck,
   UserCog,
   Users,
-  Wrench,
 } from 'lucide-react';
 
 /** A single sidebar leaf link. */
@@ -139,18 +137,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         href: '/refuel-log',
         icon: FuelIcon,
         permission: 'trip:read',
-      },
-      {
-        key: 'inspections',
-        href: '/inspections',
-        icon: ClipboardCheck,
-        permission: 'inspection:read',
-      },
-      {
-        key: 'maintenance',
-        href: '/maintenance',
-        icon: Wrench,
-        permission: 'maintenance:read',
       },
     ],
   },

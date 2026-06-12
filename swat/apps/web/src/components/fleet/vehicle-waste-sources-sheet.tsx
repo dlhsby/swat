@@ -4,11 +4,13 @@ import { Plus, Trash2 } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
+import { LoadMoreButton, SheetFilterBar, useWindowedList } from '@/components/crud/sheet-list';
 import {
   Badge,
   Button,
   ConfirmDialog,
   EmptyState,
+  Input,
   Label,
   Select,
   SelectContent,
@@ -31,7 +33,10 @@ import {
   listVehicleWasteSources,
   removeVehicleWasteSource,
 } from '@/lib/fleet-api';
+import { formatNumber } from '@/lib/format';
 import { type VehicleDto, type WasteSourceDto, wasteSourcesApi } from '@/lib/master-api';
+
+const PAGE_SIZE = 12;
 
 export interface VehicleWasteSourcesSheetProps {
   vehicle: VehicleDto | null;
@@ -51,6 +56,7 @@ export function VehicleWasteSourcesSheet({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pick, setPick] = useState('');
+  const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<VehicleWasteSourceDto | null>(null);
 
   const { rows: allSources } = useResourceList<WasteSourceDto>(wasteSourcesApi.list);
@@ -73,6 +79,7 @@ export function VehicleWasteSourcesSheet({
   useEffect(() => {
     if (vehicleId !== null) {
       setPick('');
+      setSearch('');
       void reload();
     }
   }, [vehicleId, reload]);
@@ -82,6 +89,19 @@ export function VehicleWasteSourcesSheet({
     const linked = new Set(links.map((l) => l.wasteSourceId));
     return allSources.filter((s) => !linked.has(s.id));
   }, [allSources, links]);
+
+  // Filter the linked list by code/name; window long lists.
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) {
+      return links;
+    }
+    return links.filter(
+      (l) => l.code.toLowerCase().includes(q) || l.name.toLowerCase().includes(q),
+    );
+  }, [links, search]);
+
+  const { windowed, remaining, loadMore } = useWindowedList(filtered, search, PAGE_SIZE);
 
   const onAdd = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -122,39 +142,56 @@ export function VehicleWasteSourcesSheet({
           <SheetTitle>Sumber Sampah — {vehicle?.plateNumber}</SheetTitle>
         </SheetHeader>
         <SheetBody className="space-y-5">
+          {links.length > 0 ? (
+            <SheetFilterBar summary={`${formatNumber(filtered.length)} sumber sampah`}>
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari kode / nama sumber…"
+              />
+            </SheetFilterBar>
+          ) : null}
+
           {loading ? (
             <Skeleton className="h-24" />
-          ) : links.length === 0 ? (
+          ) : filtered.length === 0 ? (
             <EmptyState
               illustration="no-results"
-              title="Belum ada sumber sampah terhubung"
-              description="Kendaraan ini belum melayani sumber sampah mana pun."
+              title={links.length === 0 ? 'Belum ada sumber sampah terhubung' : 'Tidak ada hasil'}
+              description={
+                links.length === 0
+                  ? 'Kendaraan ini belum melayani sumber sampah mana pun.'
+                  : 'Tidak ada sumber sampah yang cocok dengan pencarian.'
+              }
             />
           ) : (
-            <ul className="space-y-2">
-              {links.map((link) => (
-                <li
-                  key={link.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 p-3"
-                >
-                  <span className="flex items-center gap-2 text-body-sm font-medium text-neutral-900">
-                    <Badge appearance="count">{link.code}</Badge>
-                    {link.name}
-                  </span>
-                  <ProtectedAction permission="vehicle:update">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-danger-600"
-                      aria-label={`Lepas ${link.name}`}
-                      onClick={() => setDeleteTarget(link)}
-                    >
-                      <Trash2 className="h-4 w-4" aria-hidden />
-                    </Button>
-                  </ProtectedAction>
-                </li>
-              ))}
-            </ul>
+            <div className="space-y-3">
+              <ul className="space-y-2">
+                {windowed.map((link) => (
+                  <li
+                    key={link.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 p-3"
+                  >
+                    <span className="flex items-center gap-2 text-body-sm font-medium text-neutral-900">
+                      <Badge appearance="count">{link.code}</Badge>
+                      {link.name}
+                    </span>
+                    <ProtectedAction permission="vehicle:update">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-danger-600"
+                        aria-label={`Lepas ${link.name}`}
+                        onClick={() => setDeleteTarget(link)}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </ProtectedAction>
+                  </li>
+                ))}
+              </ul>
+              <LoadMoreButton remaining={remaining} onClick={loadMore} />
+            </div>
           )}
 
           <ProtectedAction permission="vehicle:update">

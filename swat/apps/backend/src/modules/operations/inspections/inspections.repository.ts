@@ -58,11 +58,17 @@ export class InspectionsRepository {
     return this.prisma.vehicle.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
-  create(data: Prisma.VehicleInspectionCreateInput): Promise<InspectionWithRefs> {
+  // Unchecked input (scalar FKs): the audit middleware stamps the scalar
+  // createdById/updatedById, which relation-style (checked) input would reject
+  // because VehicleInspection declares createdBy/updatedBy relations.
+  create(data: Prisma.VehicleInspectionUncheckedCreateInput): Promise<InspectionWithRefs> {
     return this.prisma.vehicleInspection.create({ data, include: inspectionInclude });
   }
 
-  update(id: string, data: Prisma.VehicleInspectionUpdateInput): Promise<InspectionWithRefs> {
+  update(
+    id: string,
+    data: Prisma.VehicleInspectionUncheckedUpdateInput,
+  ): Promise<InspectionWithRefs> {
     return this.prisma.vehicleInspection.update({
       where: { id },
       data,

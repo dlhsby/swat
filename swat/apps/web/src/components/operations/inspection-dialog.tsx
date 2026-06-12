@@ -76,6 +76,8 @@ export interface InspectionDialogProps {
   /** The inspection being edited, or null when creating. */
   editing: InspectionDto | null;
   vehicleOptions: SelectOption[];
+  /** When set, a new inspection is pre-locked to this vehicle (select disabled). */
+  lockedVehicleId?: string;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }
@@ -85,6 +87,7 @@ export function InspectionDialog({
   open,
   editing,
   vehicleOptions,
+  lockedVehicleId,
   onOpenChange,
   onSaved,
 }: InspectionDialogProps): JSX.Element {
@@ -104,12 +107,12 @@ export function InspectionDialog({
       setNotes(editing.notes ?? '');
       setItems(editing.items.map((i) => ({ label: i.label, status: i.status })));
     } else {
-      setVehicleId(null);
+      setVehicleId(lockedVehicleId ?? null);
       setDate('');
       setNotes('');
       setItems(defaultItems());
     }
-  }, [open, editing]);
+  }, [open, editing, lockedVehicleId]);
 
   const result = deriveResult(items);
   const passed = items.filter((i) => i.status === 'OK').length;
@@ -124,8 +127,9 @@ export function InspectionDialog({
       return;
     }
     setSaving(true);
+    // The vehicle is immutable on edit (the select is disabled), and the update
+    // DTO rejects it — so vehicleId is sent only when creating.
     const payload = {
-      vehicleId,
       date,
       ...(notes ? { notes } : {}),
       items: items.map((i) => ({ label: i.label, status: i.status })),
@@ -135,7 +139,7 @@ export function InspectionDialog({
         await inspectionsApi.update(editing.id, payload);
         notify.success('Pemeriksaan diperbarui.');
       } else {
-        await inspectionsApi.create(payload);
+        await inspectionsApi.create({ vehicleId, ...payload });
         notify.success('Pemeriksaan dicatat.');
       }
       onOpenChange(false);
@@ -164,7 +168,7 @@ export function InspectionDialog({
               <Select
                 value={vehicleId ?? undefined}
                 onValueChange={(v) => setVehicleId(v)}
-                disabled={editing !== null}
+                disabled={editing !== null || lockedVehicleId !== undefined}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih kendaraan" />

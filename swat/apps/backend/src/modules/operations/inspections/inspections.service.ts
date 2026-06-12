@@ -120,7 +120,7 @@ export class InspectionsService {
     return toDto(inspection);
   }
 
-  async create(dto: CreateInspectionDto, userId: string): Promise<InspectionDto> {
+  async create(dto: CreateInspectionDto): Promise<InspectionDto> {
     const vehicle = await this.repo.vehicleExists(dto.vehicleId);
     if (!vehicle) {
       throw new BadRequestException('Kendaraan tidak ditemukan.');
@@ -134,9 +134,9 @@ export class InspectionsService {
       result: derived.result,
       passedCount: derived.passedCount,
       totalCount: derived.totalCount,
-      vehicle: { connect: { id: dto.vehicleId } },
-      ...(dto.inspectorId !== undefined ? { inspector: { connect: { id: dto.inspectorId } } } : {}),
-      createdBy: { connect: { id: userId } },
+      // Scalar FKs + audit middleware stamps createdById/updatedById (see repo).
+      vehicleId: dto.vehicleId,
+      ...(dto.inspectorId !== undefined ? { inspectorId: dto.inspectorId } : {}),
       items: { create: items.map(toItemCreate) },
     });
     return toDto(inspection);
@@ -148,10 +148,11 @@ export class InspectionsService {
       throw new NotFoundException('Pemeriksaan tidak ditemukan.');
     }
 
-    const data: Prisma.VehicleInspectionUpdateInput = {
+    // Scalar/unchecked input — the audit middleware stamps updatedById (see repo).
+    const data: Prisma.VehicleInspectionUncheckedUpdateInput = {
       ...(dto.date !== undefined ? { date: parseDateOnly(dto.date) } : {}),
       ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
-      ...(dto.inspectorId !== undefined ? { inspector: { connect: { id: dto.inspectorId } } } : {}),
+      ...(dto.inspectorId !== undefined ? { inspectorId: dto.inspectorId } : {}),
     };
 
     // Replacing the checklist re-derives the result + counts server-side.

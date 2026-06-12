@@ -1,7 +1,7 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { Recycle } from 'lucide-react';
+import { ClipboardCheck, Recycle, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { z } from 'zod';
@@ -18,6 +18,8 @@ import {
   TextField,
 } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
+import { VehicleInspectionsSheet } from '@/components/fleet/vehicle-inspections-sheet';
+import { VehicleMaintenanceSheet } from '@/components/fleet/vehicle-maintenance-sheet';
 import { VehicleWasteSourcesSheet } from '@/components/fleet/vehicle-waste-sources-sheet';
 import { DropdownMenuItem, StatusPill } from '@/components/ui';
 import { useOptions } from '@/hooks/use-options';
@@ -193,6 +195,8 @@ export function VehiclesTab(): JSX.Element {
   const { options: types } = useOptions(vehicleTypesApi.list, typeOption);
   const { options: pools } = useOptions(sitesApi.list, poolOption);
   const [sourcesFor, setSourcesFor] = useState<VehicleDto | null>(null);
+  const [inspectFor, setInspectFor] = useState<VehicleDto | null>(null);
+  const [maintainFor, setMaintainFor] = useState<VehicleDto | null>(null);
 
   const columns = useMemo<ColumnDef<VehicleDto, unknown>[]>(
     () => [
@@ -295,12 +299,26 @@ export function VehiclesTab(): JSX.Element {
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
               extra={
-                <ProtectedAction permission="vehicle:read">
-                  <DropdownMenuItem onSelect={() => setSourcesFor(row.original)}>
-                    <Recycle aria-hidden />
-                    Kelola Sumber Sampah
-                  </DropdownMenuItem>
-                </ProtectedAction>
+                <>
+                  <ProtectedAction permission="vehicle:read">
+                    <DropdownMenuItem onSelect={() => setSourcesFor(row.original)}>
+                      <Recycle aria-hidden />
+                      Kelola Sumber Sampah
+                    </DropdownMenuItem>
+                  </ProtectedAction>
+                  <ProtectedAction permission="inspection:read">
+                    <DropdownMenuItem onSelect={() => setInspectFor(row.original)}>
+                      <ClipboardCheck aria-hidden />
+                      Pemeriksaan Kendaraan
+                    </DropdownMenuItem>
+                  </ProtectedAction>
+                  <ProtectedAction permission="maintenance:read">
+                    <DropdownMenuItem onSelect={() => setMaintainFor(row.original)}>
+                      <Wrench aria-hidden />
+                      Perawatan Kendaraan
+                    </DropdownMenuItem>
+                  </ProtectedAction>
+                </>
               }
             />
           </div>
@@ -363,6 +381,14 @@ export function VehiclesTab(): JSX.Element {
       <VehicleWasteSourcesSheet
         vehicle={sourcesFor}
         onOpenChange={(open) => !open && setSourcesFor(null)}
+      />
+      <VehicleInspectionsSheet
+        vehicle={inspectFor}
+        onOpenChange={(open) => !open && setInspectFor(null)}
+      />
+      <VehicleMaintenanceSheet
+        vehicle={maintainFor}
+        onOpenChange={(open) => !open && setMaintainFor(null)}
       />
     </CrudListShell>
   );

@@ -83,28 +83,35 @@ describe('MaintenanceService', () => {
 
   it('rejects a missing vehicle', async () => {
     repo.vehicleExists.mockResolvedValue(null);
-    await expect(service.create(dto, 'user-7')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('computes totalCost from items and generates a monthly code', async () => {
     repo.countByCodePrefix.mockResolvedValue(41);
-    await service.create(dto, 'user-7');
+    await service.create(dto);
     const arg = repo.create.mock.calls[0][0];
     expect(arg.totalCost).toBe(150000);
     expect(arg.code).toBe('PRW-202606-0042');
     expect(arg.items.create[0]).toMatchObject({ name: 'Oli', totalPrice: 100000 });
+    // Scalar FK (no relation connect) so the audit middleware can stamp the actor.
+    expect(arg.vehicleId).toBe('vehicle-1');
+    expect(arg.vehicle).toBeUndefined();
+    expect(arg.createdBy).toBeUndefined();
   });
 
   it('handles a record with no items (totalCost 0)', async () => {
-    await service.create({ ...dto, items: [] }, 'user-7');
+    await service.create({ ...dto, items: [] });
     expect(repo.create.mock.calls[0][0].totalCost).toBe(0);
   });
 
   it('passes through optional header fields on create', async () => {
-    await service.create(
-      { ...dto, odometer: 12000, workshop: 'Bengkel A', description: 'Servis', notes: 'catatan' },
-      'user-7',
-    );
+    await service.create({
+      ...dto,
+      odometer: 12000,
+      workshop: 'Bengkel A',
+      description: 'Servis',
+      notes: 'catatan',
+    });
     expect(repo.create.mock.calls[0][0]).toMatchObject({
       odometer: 12000,
       workshop: 'Bengkel A',
@@ -115,11 +122,10 @@ describe('MaintenanceService', () => {
 
   it('updates header fields without touching items when items omitted', async () => {
     repo.findById.mockResolvedValue(buildRecord());
-    await service.update(
-      '550e8400-e29b-41d4-a716-446655440000',
-      { workshop: 'Bengkel B', odometer: 13000 },
-      'user-7',
-    );
+    await service.update('550e8400-e29b-41d4-a716-446655440000', {
+      workshop: 'Bengkel B',
+      odometer: 13000,
+    });
     const arg = repo.update.mock.calls[0][1];
     expect(arg).toMatchObject({ workshop: 'Bengkel B', odometer: 13000 });
     expect(arg.items).toBeUndefined();
@@ -153,11 +159,9 @@ describe('MaintenanceService', () => {
 
   it('recomputes totalCost when items change on update', async () => {
     repo.findById.mockResolvedValue(buildRecord());
-    await service.update(
-      '550e8400-e29b-41d4-a716-446655440000',
-      { items: [{ name: 'Ban', qty: 4, unitPrice: 600000 }] },
-      'user-7',
-    );
+    await service.update('550e8400-e29b-41d4-a716-446655440000', {
+      items: [{ name: 'Ban', qty: 4, unitPrice: 600000 }],
+    });
     const arg = repo.update.mock.calls[0][1];
     expect(arg.totalCost).toBe(2400000);
     expect(arg.items.deleteMany).toEqual({});
@@ -166,7 +170,7 @@ describe('MaintenanceService', () => {
   it('blocks updating an approved record', async () => {
     repo.findById.mockResolvedValue(buildRecord({ status: MaintenanceStatus.APPROVED }));
     await expect(
-      service.update('550e8400-e29b-41d4-a716-446655440000', { notes: 'x' }, 'user-7'),
+      service.update('550e8400-e29b-41d4-a716-446655440000', { notes: 'x' }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 

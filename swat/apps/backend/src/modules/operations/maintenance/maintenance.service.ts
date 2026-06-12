@@ -111,7 +111,7 @@ export class MaintenanceService {
     return toDto(record);
   }
 
-  async create(dto: CreateMaintenanceDto, userId: string): Promise<MaintenanceDto> {
+  async create(dto: CreateMaintenanceDto): Promise<MaintenanceDto> {
     const vehicle = await this.repo.vehicleExists(dto.vehicleId);
     if (!vehicle) {
       throw new BadRequestException('Kendaraan tidak ditemukan.');
@@ -128,14 +128,14 @@ export class MaintenanceService {
       ...(dto.workshop !== undefined ? { workshop: dto.workshop } : {}),
       ...(dto.description !== undefined ? { description: dto.description } : {}),
       ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
-      vehicle: { connect: { id: dto.vehicleId } },
-      createdBy: { connect: { id: userId } },
+      // Scalar FK + audit middleware stamps createdById/updatedById (see repo).
+      vehicleId: dto.vehicleId,
       items: { create: rows },
     });
     return toDto(record);
   }
 
-  async update(id: string, dto: UpdateMaintenanceDto, userId: string): Promise<MaintenanceDto> {
+  async update(id: string, dto: UpdateMaintenanceDto): Promise<MaintenanceDto> {
     const existing = await this.repo.findById(id);
     if (!existing) {
       throw new NotFoundException('Perawatan tidak ditemukan.');
@@ -144,14 +144,14 @@ export class MaintenanceService {
       throw new BadRequestException('Perawatan yang sudah disetujui tidak dapat diubah.');
     }
 
-    const data: Prisma.MaintenanceRecordUpdateInput = {
+    // Scalar/unchecked input — the audit middleware stamps updatedById (see repo).
+    const data: Prisma.MaintenanceRecordUncheckedUpdateInput = {
       ...(dto.type !== undefined ? { type: dto.type } : {}),
       ...(dto.date !== undefined ? { date: parseDateOnly(dto.date) } : {}),
       ...(dto.odometer !== undefined ? { odometer: dto.odometer } : {}),
       ...(dto.workshop !== undefined ? { workshop: dto.workshop } : {}),
       ...(dto.description !== undefined ? { description: dto.description } : {}),
       ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
-      updatedBy: { connect: { id: userId } },
     };
     if (dto.items !== undefined) {
       const { rows, totalCost } = priceItems(dto.items);
@@ -173,7 +173,6 @@ export class MaintenanceService {
     }
     const record = await this.repo.update(id, {
       status: MaintenanceStatus.APPROVED,
-      updatedBy: { connect: { id: actor.id } },
     });
     await this.audit.record({
       actor,

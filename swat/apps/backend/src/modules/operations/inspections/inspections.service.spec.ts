@@ -81,11 +81,11 @@ describe('InspectionsService', () => {
 
   it('rejects a missing vehicle', async () => {
     repo.vehicleExists.mockResolvedValue(null);
-    await expect(service.create(dto, 'user-1')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('materializes the 12-item template when no items are supplied', async () => {
-    await service.create(dto, 'user-1');
+    await service.create(dto);
     const arg = repo.create.mock.calls[0][0];
     expect(arg.items.create).toHaveLength(12);
     expect(arg.totalCount).toBe(12);
@@ -93,20 +93,21 @@ describe('InspectionsService', () => {
   });
 
   it('derives FAIL from supplied items', async () => {
-    await service.create(
-      { ...dto, items: [{ label: 'Rem', status: InspectionItemStatus.FAIL }] },
-      'user-1',
-    );
+    await service.create({ ...dto, items: [{ label: 'Rem', status: InspectionItemStatus.FAIL }] });
     const arg = repo.create.mock.calls[0][0];
     expect(arg.result).toBe(InspectionResult.FAIL);
     expect(arg.passedCount).toBe(0);
   });
 
-  it('passes through notes + inspector on create', async () => {
-    await service.create({ ...dto, inspectorId: 'user-3', notes: 'periksa ulang' }, 'user-1');
+  it('passes scalar FKs (no relation connect) + notes on create', async () => {
+    await service.create({ ...dto, inspectorId: 'user-3', notes: 'periksa ulang' });
     const arg = repo.create.mock.calls[0][0];
     expect(arg.notes).toBe('periksa ulang');
-    expect(arg.inspector).toEqual({ connect: { id: 'user-3' } });
+    // Scalar FKs so the audit middleware can stamp createdById/updatedById.
+    expect(arg.vehicleId).toBe('vehicle-1');
+    expect(arg.inspectorId).toBe('user-3');
+    expect(arg.vehicle).toBeUndefined();
+    expect(arg.createdBy).toBeUndefined();
   });
 
   it('serializes ids to strings on read', async () => {

@@ -1,9 +1,16 @@
 'use client';
 
 import { Trash2 } from 'lucide-react';
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
+import {
+  ALL_FILTER,
+  FilterSelect,
+  LoadMoreButton,
+  SheetFilterBar,
+  useWindowedList,
+} from '@/components/crud/sheet-list';
 import {
   Button,
   ConfirmDialog,
@@ -25,7 +32,7 @@ import {
   notify,
 } from '@/components/ui';
 import { ApiError } from '@/lib/api-error';
-import { formatDateDisplay } from '@/lib/format';
+import { formatDateDisplay, formatNumber } from '@/lib/format';
 import { type DriverDto, type DriverLicenseDto, type LicenseClassDto } from '@/lib/master-api';
 import {
   createDriverLicense,
@@ -33,6 +40,12 @@ import {
   listDriverLicenses,
   revokeDriverLicense,
 } from '@/lib/personnel-api';
+
+const STATUS_OPTIONS = [
+  { value: 'VALID', label: 'Berlaku' },
+  { value: 'EXPIRING', label: 'Akan Kadaluarsa' },
+  { value: 'EXPIRED', label: 'Kadaluarsa' },
+];
 
 /** Derive the license status enum for the pill from the expiry date. */
 function licenseStatus(license: DriverLicenseDto): string {
@@ -63,6 +76,9 @@ export function DriverLicensesSheet({
   const [expiry, setExpiry] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [statusFilter, setStatusFilter] = useState<string>(ALL_FILTER);
+  const [classFilter, setClassFilter] = useState<string>(ALL_FILTER);
+
   const driverId = driver?.id ?? null;
 
   const reload = useCallback(async (): Promise<void> => {
@@ -89,9 +105,35 @@ export function DriverLicensesSheet({
       setClassId('');
       setNumber('');
       setExpiry('');
+      setStatusFilter(ALL_FILTER);
+      setClassFilter(ALL_FILTER);
       void reload();
     }
   }, [driverId, reload]);
+
+  // Golongan present on this driver's SIMs, for the class picker.
+  const classOptions = useMemo(
+    () =>
+      [...new Set(licenses.map((l) => l.licenseClassName))]
+        .sort((a, b) => a.localeCompare(b))
+        .map((c) => ({ value: c, label: c })),
+    [licenses],
+  );
+
+  const filtered = useMemo(
+    () =>
+      licenses.filter(
+        (l) =>
+          (statusFilter === ALL_FILTER || licenseStatus(l) === statusFilter) &&
+          (classFilter === ALL_FILTER || l.licenseClassName === classFilter),
+      ),
+    [licenses, statusFilter, classFilter],
+  );
+
+  const { windowed, remaining, loadMore } = useWindowedList(
+    filtered,
+    `${statusFilter}|${classFilter}`,
+  );
 
   const onAdd = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
@@ -138,40 +180,67 @@ export function DriverLicensesSheet({
           <SheetTitle>SIM — {driver?.name}</SheetTitle>
         </SheetHeader>
         <SheetBody className="space-y-5">
+          {licenses.length > 0 ? (
+            <SheetFilterBar summary={`${formatNumber(filtered.length)} SIM`}>
+              <FilterSelect
+                value={statusFilter}
+                onValueChange={setStatusFilter}
+                allLabel="Semua Status"
+                options={STATUS_OPTIONS}
+                className="h-9 w-[170px]"
+              />
+              <FilterSelect
+                value={classFilter}
+                onValueChange={setClassFilter}
+                allLabel="Semua Golongan"
+                options={classOptions}
+              />
+            </SheetFilterBar>
+          ) : null}
+
           {loading ? (
             <Skeleton className="h-24" />
-          ) : licenses.length === 0 ? (
-            <EmptyState illustration="no-results" title="Belum ada SIM" />
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              illustration="no-results"
+              title={licenses.length === 0 ? 'Belum ada SIM' : 'Tidak ada hasil'}
+              description={
+                licenses.length === 0 ? undefined : 'Tidak ada SIM yang cocok dengan filter.'
+              }
+            />
           ) : (
-            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200">
-              {licenses.map((license) => (
-                <li key={license.id} className="flex items-center justify-between gap-3 p-3">
-                  <div>
-                    <p className="text-body-sm font-medium text-neutral-900">
-                      {license.licenseClassName} ·{' '}
-                      <span className="font-mono">{license.licenseNumber}</span>
-                    </p>
-                    <p className="text-tiny text-neutral-500">
-                      Berlaku s.d. {formatDateDisplay(license.expiry)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <StatusPill domain="license" value={licenseStatus(license)} />
-                    <ProtectedAction permission="license:delete">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-danger-600"
-                        aria-label="Cabut SIM"
-                        onClick={() => setRevokeTarget(license)}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden />
-                      </Button>
-                    </ProtectedAction>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="space-y-3">
+              <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200">
+                {windowed.map((license) => (
+                  <li key={license.id} className="flex items-center justify-between gap-3 p-3">
+                    <div>
+                      <p className="text-body-sm font-medium text-neutral-900">
+                        {license.licenseClassName} ·{' '}
+                        <span className="font-mono">{license.licenseNumber}</span>
+                      </p>
+                      <p className="text-tiny text-neutral-500">
+                        Berlaku s.d. {formatDateDisplay(license.expiry)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <StatusPill domain="license" value={licenseStatus(license)} />
+                      <ProtectedAction permission="license:delete">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-danger-600"
+                          aria-label="Cabut SIM"
+                          onClick={() => setRevokeTarget(license)}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </ProtectedAction>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <LoadMoreButton remaining={remaining} onClick={loadMore} />
+            </div>
           )}
 
           <ProtectedAction permission="license:create">

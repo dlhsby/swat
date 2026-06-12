@@ -83,11 +83,17 @@ export class MaintenanceRepository {
     return result._sum.totalCost ?? 0;
   }
 
-  create(data: Prisma.MaintenanceRecordCreateInput): Promise<MaintenanceWithRefs> {
+  // Unchecked input (scalar FKs): the audit middleware stamps the scalar
+  // createdById/updatedById, which relation-style (checked) input would reject
+  // because MaintenanceRecord declares createdBy/updatedBy relations.
+  create(data: Prisma.MaintenanceRecordUncheckedCreateInput): Promise<MaintenanceWithRefs> {
     return this.prisma.maintenanceRecord.create({ data, include: recordInclude });
   }
 
-  update(id: string, data: Prisma.MaintenanceRecordUpdateInput): Promise<MaintenanceWithRefs> {
+  update(
+    id: string,
+    data: Prisma.MaintenanceRecordUncheckedUpdateInput,
+  ): Promise<MaintenanceWithRefs> {
     return this.prisma.maintenanceRecord.update({ where: { id }, data, include: recordInclude });
   }
 

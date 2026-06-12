@@ -1,8 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { type SessionUser } from '../../../common/auth/session.types';
-import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { type PaginationMeta } from '../../../common/types/api-response';
 
@@ -35,11 +33,8 @@ export class InspectionsController {
   @Post()
   @RequirePermissions('inspection:create')
   @ApiOperation({ summary: 'Record a vehicle inspection (result derived server-side)' })
-  create(
-    @Body() dto: CreateInspectionDto,
-    @CurrentUser() user: SessionUser,
-  ): Promise<InspectionDto> {
-    return this.inspections.create(dto, user.id);
+  create(@Body() dto: CreateInspectionDto): Promise<InspectionDto> {
+    return this.inspections.create(dto);
   }
 
   @Patch(':id')

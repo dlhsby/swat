@@ -35,22 +35,15 @@ export class MaintenanceController {
   @Post()
   @RequirePermissions('maintenance:create')
   @ApiOperation({ summary: 'Record a maintenance job (totalCost derived server-side)' })
-  create(
-    @Body() dto: CreateMaintenanceDto,
-    @CurrentUser() user: SessionUser,
-  ): Promise<MaintenanceDto> {
-    return this.maintenance.create(dto, user.id);
+  create(@Body() dto: CreateMaintenanceDto): Promise<MaintenanceDto> {
+    return this.maintenance.create(dto);
   }
 
   @Patch(':id')
   @RequirePermissions('maintenance:update')
   @ApiOperation({ summary: 'Update a maintenance record (blocked once approved)' })
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateMaintenanceDto,
-    @CurrentUser() user: SessionUser,
-  ): Promise<MaintenanceDto> {
-    return this.maintenance.update(id, dto, user.id);
+  update(@Param('id') id: string, @Body() dto: UpdateMaintenanceDto): Promise<MaintenanceDto> {
+    return this.maintenance.update(id, dto);
   }
 
   @Patch(':id/approve')

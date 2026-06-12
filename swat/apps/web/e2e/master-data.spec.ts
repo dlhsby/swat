@@ -34,6 +34,21 @@ test.describe('Master data — vehicles', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByText(plate)).toHaveCount(0);
   });
+
+  test('vehicle row opens the Pemeriksaan Kendaraan sub-action sheet', async ({ page }) => {
+    await page.goto('/id-ID/vehicles');
+    await expectAppShell(page);
+
+    // Pemeriksaan & Perawatan moved off the Pengangkutan nav into per-vehicle row
+    // sub-actions (like Kelola Sumber Sampah). Open the first row's "⋮" menu and
+    // launch the inspection sheet, scoped to that vehicle.
+    await page.getByRole('button', { name: 'Aksi' }).first().click();
+    await page.getByRole('menuitem', { name: /pemeriksaan kendaraan/i }).click();
+
+    // The right-side sheet (a dialog) opens titled "Pemeriksaan Kendaraan — <nopol>".
+    await expect(page.getByRole('dialog', { name: /pemeriksaan kendaraan/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /periksa kendaraan/i })).toBeVisible();
+  });
 });
 
 test.describe('Master data — driver + license', () => {
