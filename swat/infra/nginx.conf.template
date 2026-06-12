@@ -1,15 +1,20 @@
 # Reverse proxy for the SWAT stack.
-# `/api` and `/health` and the Swagger docs → NestJS backend (:3000).
-# everything else → Next.js frontend (:3001).
+# `/api` and `/health` and the Swagger docs → NestJS backend.
+# everything else → Next.js frontend.
 # Uses host.docker.internal so the proxy can reach apps run with `pnpm dev`
 # on the host. (In a fully containerised deploy, swap these for service names.)
+#
+# Upstream ports come from ${BACKEND_PORT}/${WEB_PORT}, substituted at container
+# start by the nginx image's envsubst step (defaults 3000/3001, see
+# docker-compose.yml + infra/docker-compose.env). Only those two vars are
+# substituted (NGINX_ENVSUBST_FILTER), so nginx's own $host/$scheme survive.
 
 upstream swat_backend {
-  server host.docker.internal:3000;
+  server host.docker.internal:${BACKEND_PORT};
 }
 
 upstream swat_web {
-  server host.docker.internal:3001;
+  server host.docker.internal:${WEB_PORT};
 }
 
 server {
