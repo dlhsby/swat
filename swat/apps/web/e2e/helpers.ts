@@ -18,8 +18,14 @@ export async function login(page: Page, user = ADMIN_USER, pass = ADMIN_PASS): P
   await page.goto('/id-ID/login');
   await page.locator('#username').fill(user);
   await page.locator('#password').fill(pass);
-  await page.getByRole('button', { name: /masuk/i }).click();
-  await page.waitForURL(/\/(dashboard|change-password)/);
+  const submit = page.getByRole('button', { name: /masuk/i });
+  // Wait for hydration before clicking: in Next dev the HTML can arrive before
+  // the React bundle attaches the submit handler, and an early click triggers a
+  // native GET form submit (creds land in the query string, no login). Gating on
+  // the button being enabled ensures the client handler is live, then we race the
+  // click with the navigation so we never miss a fast redirect.
+  await expect(submit).toBeEnabled();
+  await Promise.all([page.waitForURL(/\/(dashboard|change-password)/), submit.click()]);
 }
 
 /** Assert the app shell rendered (topbar brand + sidebar present). */
