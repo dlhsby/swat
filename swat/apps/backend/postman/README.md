@@ -32,10 +32,15 @@ requests seed an id from the first row (e.g. **List License Classes** sets
 
 Suggested smoke order: Login → create Site (Pool) + Site (TPA) → Route →
 Application → Fuel Category → Fuel → Vehicle Model → Vehicle → Driver →
-Crew Schedule → Trip Template → Fuel Quota.
+Crew Schedule → Trip Template → Disposal Permit (Kitir).
 
-Auth is cookie-based; there is no bearer token to set. If you get `401`, re-run
-**Login** (the session has an 8h idle timeout).
+**Web auth** is cookie-based — run **Login** and the `swat.sid` session is reused
+automatically; if you get `401`, re-run it (8h idle timeout). **Native-client
+auth** (the .NET apps) uses bearer tokens: run **Auth → Get Token (native
+client)**, which captures `accessToken` + `refreshToken` into the environment so
+the **Me (Bearer)** / **Token Logout** requests (and any `Authorization: Bearer
+{{accessToken}}` call) work. **Refresh Token** rotates the pair; replaying an old
+refresh token returns `401` (reuse-detection).
 
 ## Updating as the API grows
 

@@ -25,9 +25,14 @@ async function bootstrap(): Promise<void> {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('SWAT API')
-    .setDescription('Fleet & waste-transport operations API')
+    .setDescription(
+      'Fleet & waste-transport operations API. The web app authenticates with the ' +
+        '`swat.sid` cookie session; native .NET clients use a Bearer access token from ' +
+        '`POST /auth/token` (see auth §1.7). Guarded routes accept either.',
+    )
     .setVersion('0.1.0')
     .addCookieAuth('swat.sid')
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'bearer')
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document, {

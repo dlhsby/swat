@@ -2,7 +2,7 @@
   "info": {
     "name": "SWAT API",
     "_postman_id": "swat-api-collection",
-    "description": "SWAT backend — auth, RBAC, and master data (Phase 1 M1–M2). Cookie-based session auth: run Auth → Login first. Regenerate with `node apps/backend/postman/generate.mjs`.",
+    "description": "SWAT backend — auth, RBAC, and master data. The web flow uses cookie session auth: run Auth → Login first. Native .NET clients use bearer tokens: run Auth → Get Token (native client), which captures accessToken + refreshToken for the Bearer requests. Regenerate with `node apps/backend/postman/generate.mjs`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -142,6 +142,130 @@
               "host": ["{{baseUrl}}"],
               "path": ["auth", "logout"]
             }
+          }
+        },
+        {
+          "name": "Get Token (native client)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('got tokens', () => pm.expect(pm.response.code).to.equal(200)); const d = pm.response.json().data; pm.environment.set('accessToken', d.accessToken); pm.environment.set('refreshToken', d.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "token"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "OAuth2 password grant for the .NET clients. Captures accessToken + refreshToken into the environment. Forced-reset accounts get 403 (change password via web first)."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('rotated', () => pm.expect(pm.response.code).to.equal(200)); const d = pm.response.json().data; pm.environment.set('accessToken', d.accessToken); pm.environment.set('refreshToken', d.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/token/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "token", "refresh"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "description": "Rotates the refresh token. Reusing an old/superseded token returns 401 (reuse-detection)."
+          }
+        },
+        {
+          "name": "Me (Bearer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Same principal as the cookie session, authenticated by the bearer token."
+          }
+        },
+        {
+          "name": "Token Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/token/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "token", "logout"]
+            },
+            "description": "Revokes the bearer session (token family)."
           }
         }
       ]
@@ -458,6 +582,30 @@
               "host": ["{{baseUrl}}"],
               "path": ["permissions"]
             }
+          }
+        },
+        {
+          "name": "Sync Permissions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/permissions/sync",
+              "host": ["{{baseUrl}}"],
+              "path": ["permissions", "sync"]
+            },
+            "description": "Reconciles the permission table against the code catalog (permission:manage). Idempotent; never deletes rows or touches grants."
           }
         }
       ]
@@ -964,7 +1112,7 @@
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['0']?.['id'];",
-                  "if (value !== undefined && value !== null) { pm.environment.set('applicationId', value); }"
+                  "if (value !== undefined && value !== null) { pm.environment.set('vehicleTypeId', value); }"
                 ]
               }
             }
@@ -973,9 +1121,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/vehicle-applications",
+              "raw": "{{baseUrl}}/vehicle-types",
               "host": ["{{baseUrl}}"],
-              "path": ["vehicle-applications"]
+              "path": ["vehicle-types"]
             }
           }
         },
@@ -991,7 +1139,7 @@
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
-                  "if (value !== undefined && value !== null) { pm.environment.set('applicationId', value); }"
+                  "if (value !== undefined && value !== null) { pm.environment.set('vehicleTypeId', value); }"
                 ]
               }
             }
@@ -1005,9 +1153,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/vehicle-applications",
+              "raw": "{{baseUrl}}/vehicle-types",
               "host": ["{{baseUrl}}"],
-              "path": ["vehicle-applications"]
+              "path": ["vehicle-types"]
             },
             "body": {
               "mode": "raw",
@@ -1037,9 +1185,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/vehicle-applications/{{applicationId}}",
+              "raw": "{{baseUrl}}/vehicle-types/{{vehicleTypeId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["vehicle-applications", "{{applicationId}}"]
+              "path": ["vehicle-types", "{{vehicleTypeId}}"]
             },
             "body": {
               "mode": "raw",
@@ -1064,9 +1212,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/vehicle-applications/{{applicationId}}",
+              "raw": "{{baseUrl}}/vehicle-types/{{vehicleTypeId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["vehicle-applications", "{{applicationId}}"]
+              "path": ["vehicle-types", "{{vehicleTypeId}}"]
             }
           }
         },
@@ -1287,7 +1435,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"applicationId\": \"{{applicationId}}\",\n  \"fuelId\": \"{{fuelId}}\",\n  \"brand\": \"Hino Uji\",\n  \"fuelTankCapacity\": 200,\n  \"normalTareWeight\": 8000,\n  \"wheelCount\": 6\n}"
+              "raw": "{\n  \"vehicleTypeId\": \"{{vehicleTypeId}}\",\n  \"fuelId\": \"{{fuelId}}\",\n  \"brand\": \"Hino Uji\",\n  \"fuelTankCapacity\": 200,\n  \"normalTareWeight\": 8000,\n  \"wheelCount\": 6\n}"
             }
           }
         },
@@ -2086,7 +2234,7 @@
           }
         },
         {
-          "name": "List Fuel Quotas",
+          "name": "List Disposal Permits",
           "event": [
             {
               "listen": "test",
@@ -2102,9 +2250,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/fuel-quotas?page=1&limit=20",
+              "raw": "{{baseUrl}}/disposal-permits?page=1&limit=20",
               "host": ["{{baseUrl}}"],
-              "path": ["fuel-quotas"],
+              "path": ["disposal-permits"],
               "query": [
                 {
                   "key": "page",
@@ -2119,7 +2267,7 @@
           }
         },
         {
-          "name": "Get Fuel Quota",
+          "name": "Get Disposal Permit",
           "event": [
             {
               "listen": "test",
@@ -2135,14 +2283,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/fuel-quotas/{{fuelQuotaId}}",
+              "raw": "{{baseUrl}}/disposal-permits/{{disposalPermitId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["fuel-quotas", "{{fuelQuotaId}}"]
+              "path": ["disposal-permits", "{{disposalPermitId}}"]
             }
           }
         },
         {
-          "name": "Create Fuel Quota",
+          "name": "Create Disposal Permit (Kitir)",
           "event": [
             {
               "listen": "test",
@@ -2153,7 +2301,7 @@
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
-                  "if (value !== undefined && value !== null) { pm.environment.set('fuelQuotaId', String(value)); }"
+                  "if (value !== undefined && value !== null) { pm.environment.set('disposalPermitId', String(value)); }"
                 ]
               }
             }
@@ -2167,9 +2315,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/fuel-quotas",
+              "raw": "{{baseUrl}}/disposal-permits",
               "host": ["{{baseUrl}}"],
-              "path": ["fuel-quotas"]
+              "path": ["disposal-permits"]
             },
             "body": {
               "mode": "raw",
@@ -2178,7 +2326,40 @@
           }
         },
         {
-          "name": "Update Fuel Quota (revoke)",
+          "name": "Bulk Import Disposal Permits",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/disposal-permits/bulk-import",
+              "host": ["{{baseUrl}}"],
+              "path": ["disposal-permits", "bulk-import"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"strategy\": \"UPSERT\",\n  \"rows\": [\n    {\n      \"legacyId\": 900001,\n      \"code\": \"KT-IMP-0001\",\n      \"vehicleId\": \"{{vehicleId}}\",\n      \"siteId\": \"{{destinationSiteId}}\",\n      \"issuedAt\": \"2026-06-01\",\n      \"validFrom\": \"2026-06-01\",\n      \"validTo\": \"2026-06-30\"\n    }\n  ]\n}"
+            },
+            "description": "Impor Massal — upsert by legacyId; per-row validation. Frontend parses the CSV/Excel and posts structured rows."
+          }
+        },
+        {
+          "name": "Update Disposal Permit (revoke)",
           "event": [
             {
               "listen": "test",
@@ -2199,9 +2380,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/fuel-quotas/{{fuelQuotaId}}",
+              "raw": "{{baseUrl}}/disposal-permits/{{disposalPermitId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["fuel-quotas", "{{fuelQuotaId}}"]
+              "path": ["disposal-permits", "{{disposalPermitId}}"]
             },
             "body": {
               "mode": "raw",

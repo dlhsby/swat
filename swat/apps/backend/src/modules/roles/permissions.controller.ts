@@ -1,5 +1,5 @@
 import { Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { permissionGroup } from '../../common/auth/permission-catalog';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -38,6 +38,7 @@ export class PermissionsController {
   @HttpCode(HttpStatus.OK)
   @RequirePermissions('permission:manage')
   @ApiOperation({ summary: 'Reconcile the permission catalog from the code source of truth' })
+  @ApiOkResponse({ schema: { example: { message: 'Sinkronisasi izin selesai (96).', count: 96 } } })
   async syncCatalog(): Promise<{ message: string; count: number }> {
     const count = await this.sync.syncCatalog();
     return { message: `Sinkronisasi izin selesai (${count}).`, count };

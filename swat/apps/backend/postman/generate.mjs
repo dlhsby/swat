@@ -48,6 +48,32 @@ const GROUPS = [
         note: 'Issues a temporary password for {{userId}} and forces a change.',
       }),
       req('Logout', 'POST', '/auth/logout'),
+      req('Get Token (native client)', 'POST', '/auth/token', {
+        body: { username: '{{adminUsername}}', password: '{{adminPassword}}' },
+        note: 'OAuth2 password grant for the .NET clients. Captures accessToken + refreshToken into the environment. Forced-reset accounts get 403 (change password via web first).',
+        test:
+          "pm.test('got tokens', () => pm.expect(pm.response.code).to.equal(200)); " +
+          'const d = pm.response.json().data; ' +
+          "pm.environment.set('accessToken', d.accessToken); " +
+          "pm.environment.set('refreshToken', d.refreshToken);",
+      }),
+      req('Refresh Token', 'POST', '/auth/token/refresh', {
+        body: { refreshToken: '{{refreshToken}}' },
+        note: 'Rotates the refresh token. Reusing an old/superseded token returns 401 (reuse-detection).',
+        test:
+          "pm.test('rotated', () => pm.expect(pm.response.code).to.equal(200)); " +
+          'const d = pm.response.json().data; ' +
+          "pm.environment.set('accessToken', d.accessToken); " +
+          "pm.environment.set('refreshToken', d.refreshToken);",
+      }),
+      req('Me (Bearer)', 'GET', '/auth/me', {
+        headers: [{ key: 'Authorization', value: 'Bearer {{accessToken}}' }],
+        note: 'Same principal as the cookie session, authenticated by the bearer token.',
+      }),
+      req('Token Logout', 'POST', '/auth/token/logout', {
+        headers: [{ key: 'Authorization', value: 'Bearer {{accessToken}}' }],
+        note: 'Revokes the bearer session (token family).',
+      }),
     ],
   },
   {
@@ -70,6 +96,9 @@ const GROUPS = [
       req('Update Role', 'PATCH', '/roles/{{roleId}}', { body: { permissionIds: [1, 2] } }),
       req('Delete Role', 'DELETE', '/roles/{{roleId}}'),
       req('List Permissions', 'GET', '/permissions'),
+      req('Sync Permissions', 'POST', '/permissions/sync', {
+        note: 'Reconciles the permission table against the code catalog (permission:manage). Idempotent; never deletes rows or touches grants.',
+      }),
     ],
   },
   {
@@ -273,9 +302,11 @@ const GROUPS = [
         'DELETE',
         '/crew-schedules/{{crewScheduleId}}/trip-templates/{{tripTemplateId}}',
       ),
-      req('List Fuel Quotas', 'GET', '/fuel-quotas', { query: { page: '1', limit: '20' } }),
-      req('Get Fuel Quota', 'GET', '/fuel-quotas/{{fuelQuotaId}}'),
-      req('Create Fuel Quota', 'POST', '/fuel-quotas', {
+      req('List Disposal Permits', 'GET', '/disposal-permits', {
+        query: { page: '1', limit: '20' },
+      }),
+      req('Get Disposal Permit', 'GET', '/disposal-permits/{{disposalPermitId}}'),
+      req('Create Disposal Permit (Kitir)', 'POST', '/disposal-permits', {
         body: {
           code: 'KT-UJI-0001',
           vehicleId: '{{vehicleId}}',
@@ -284,10 +315,27 @@ const GROUPS = [
           validFrom: '2026-06-01',
           validTo: '2026-06-30',
         },
-        capture: 'fuelQuotaId',
+        capture: 'disposalPermitId',
         captureString: true,
       }),
-      req('Update Fuel Quota (revoke)', 'PATCH', '/fuel-quotas/{{fuelQuotaId}}', {
+      req('Bulk Import Disposal Permits', 'POST', '/disposal-permits/bulk-import', {
+        body: {
+          strategy: 'UPSERT',
+          rows: [
+            {
+              legacyId: 900001,
+              code: 'KT-IMP-0001',
+              vehicleId: '{{vehicleId}}',
+              siteId: '{{destinationSiteId}}',
+              issuedAt: '2026-06-01',
+              validFrom: '2026-06-01',
+              validTo: '2026-06-30',
+            },
+          ],
+        },
+        note: 'Impor Massal — upsert by legacyId; per-row validation. Frontend parses the CSV/Excel and posts structured rows.',
+      }),
+      req('Update Disposal Permit (revoke)', 'PATCH', '/disposal-permits/{{disposalPermitId}}', {
         body: { status: 'INACTIVE' },
       }),
     ],
@@ -339,6 +387,10 @@ function toRequest(item) {
     request.header.push({ key: 'Content-Type', value: 'application/json' });
     request.body = { mode: 'raw', raw: JSON.stringify(item.body, null, 2) };
   }
+  if (item.headers) {
+    // Extra request headers (e.g. Authorization: Bearer for native-client calls).
+    request.header.push(...item.headers);
+  }
   if (item.note) {
     request.description = item.note;
   }
@@ -359,7 +411,7 @@ const collection = {
     name: 'SWAT API',
     _postman_id: 'swat-api-collection',
     description:
-      'SWAT backend — auth, RBAC, and master data (Phase 1 M1–M2). Cookie-based session auth: run Auth → Login first. Regenerate with `node apps/backend/postman/generate.mjs`.',
+      'SWAT backend — auth, RBAC, and master data. The web flow uses cookie session auth: run Auth → Login first. Native .NET clients use bearer tokens: run Auth → Get Token (native client), which captures accessToken + refreshToken for the Bearer requests. Regenerate with `node apps/backend/postman/generate.mjs`.',
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   item: GROUPS.map((group) => ({
@@ -389,7 +441,9 @@ const ENV_VARS = [
   'licenseId',
   'crewScheduleId',
   'tripTemplateId',
-  'fuelQuotaId',
+  'disposalPermitId',
+  'accessToken',
+  'refreshToken',
 ];
 
 const environment = {

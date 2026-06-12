@@ -8,7 +8,7 @@ import {
   Post,
   Req,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type Request } from 'express';
 
 import { Public } from '../../common/decorators/public.decorator';
@@ -17,6 +17,7 @@ import { AuthService } from './auth.service';
 import { type AuthContext } from './auth.types';
 import { LoginDto } from './dto/login.dto';
 import { TokenRefreshDto } from './dto/token-refresh.dto';
+import { TokenResponseDto } from './dto/token-response.dto';
 import { type TokenPair, TokenService } from './token.service';
 
 function contextOf(req: Request): AuthContext {
@@ -50,6 +51,11 @@ export class TokenController {
   @Post('token')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Native client: exchange credentials for bearer tokens' })
+  @ApiOkResponse({ type: TokenResponseDto })
+  @ApiForbiddenResponse({
+    description:
+      'Account must change its password in the web app first (error: mustChangePassword).',
+  })
   async token(@Body() dto: LoginDto, @Req() req: Request): Promise<TokenPair> {
     // Reuse the session login path: throttle + Argon2id verify + AuthAuditLog.
     const result = await this.auth.login(dto, contextOf(req));
@@ -68,6 +74,7 @@ export class TokenController {
   @Post('token/refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Native client: rotate a refresh token' })
+  @ApiOkResponse({ type: TokenResponseDto })
   refresh(@Body() dto: TokenRefreshDto): Promise<TokenPair> {
     return this.tokens.rotateRefreshToken(dto.refreshToken);
   }
