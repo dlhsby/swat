@@ -11,11 +11,12 @@
  * The pure transforms/mappers/enums are unit-tested (scripts/migration/lib/*.spec.ts);
  * the end-to-end run is the operator's step (Docker unavailable in dev).
  */
-import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'argon2';
+
+import { PERMISSION_CATALOG } from '../../src/common/auth/permission-catalog';
 
 import type {
   LegacyScheduleTemplate,
@@ -72,6 +73,14 @@ import {
 const prisma = new PrismaClient();
 const NOW = new Date();
 
+/**
+ * Dev/test password set on the bootstrap `admin` AND every migrated legacy user
+ * (override with `LEGACY_SEED_PASSWORD`). Legacy users get it with a forced
+ * first-login reset; the bootstrap admin is ready to use. Not a production
+ * secret — the legacy track is for staging/test loads.
+ */
+const SEED_PASSWORD = process.env.LEGACY_SEED_PASSWORD ?? 'Password123!';
+
 // `findMany` selection that feeds toLegacyMap (legacy id → new UUID).
 const ID_LEGACY = { select: { id: true, legacyId: true } } as const;
 
@@ -105,13 +114,53 @@ async function checkIdempotency(forceReset: boolean): Promise<void> {
   }
 }
 
-/** Resolve the system user id used for createdById attribution on migrated rows. */
-async function systemUserId(): Promise<string> {
-  const admin = await prisma.user.findFirst({ where: { username: 'admin' }, select: { id: true } });
-  if (admin) {
-    return admin.id;
+/**
+ * Make the legacy track self-sufficient: ensure the permission catalog, a
+ * full-access `Administrator` role, and the bootstrap `admin` user all exist —
+ * so `seed:legacy` needs no prior `seed:auth` (no demo data). Returns the admin
+ * id used for `createdById` attribution on migrated rows. Idempotent.
+ */
+async function ensureAuthBootstrap(): Promise<string> {
+  // 1. Permission catalog (the app reconciles these at boot too; upsert here so a
+  //    standalone legacy load still has grant targets).
+  for (const { key, description } of PERMISSION_CATALOG) {
+    await prisma.permission.upsert({
+      where: { key },
+      update: { description },
+      create: { key, description },
+    });
   }
-  throw new Error('No admin user found — run prisma:seed before migrating (system attribution).');
+  const permIds = (await prisma.permission.findMany({ select: { id: true } })).map((p) => p.id);
+
+  // 2. Administrator = the full-access bootstrap role (its concrete grants are a
+  //    superset of whatever the legacy "Administrator" menu maps to). Other roles
+  //    stay pure-legacy.
+  const adminRole = await prisma.role.upsert({
+    where: { name: 'Administrator' },
+    update: {},
+    create: { name: 'Administrator' },
+  });
+  await prisma.rolePermission.createMany({
+    data: permIds.map((permissionId) => ({ roleId: adminRole.id, permissionId })),
+    skipDuplicates: true,
+  });
+
+  // 3. Bootstrap admin — ready to use (no forced reset). Re-seedable: restores the
+  //    credential + role even if a prior run changed them.
+  const passwordHash = await hash(SEED_PASSWORD);
+  const admin = await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: { passwordHash, mustChangePassword: false, roleId: adminRole.id },
+    create: {
+      username: 'admin',
+      name: 'Administrator',
+      passwordHash,
+      roleId: adminRole.id,
+      mustChangePassword: false,
+    },
+  });
+  log(`Auth bootstrap: ${permIds.length} permissions, Administrator role, admin user ready.`);
+  return admin.id;
 }
 
 async function migrateMasterData(): Promise<void> {
@@ -318,6 +367,11 @@ async function migrateAuth(): Promise<void> {
       ),
     );
     const users = await query<LegacyUser>(conn, 'SELECT * FROM pengguna');
+    // Legacy passwords (MD5) are NEVER copied. Every migrated user gets the shared
+    // SEED_PASSWORD with a forced first-login reset, so they can sign in to test
+    // their mapped RBAC and are made to set a real password. Hash once (argon2 is
+    // costly) and reuse.
+    const sharedHash = await hash(SEED_PASSWORD);
     let migrated = 0;
     let preserved = 0;
     for (const lu of users) {
@@ -330,7 +384,6 @@ async function migrateAuth(): Promise<void> {
       if (username !== (lu.PENGGUNA_USERNAME?.trim() || `legacy_${lu.PENGGUNA_ID}`)) {
         preserved += 1;
       }
-      const tempHash = await hash(randomUUID());
       await prisma.user.upsert({
         where: { username },
         create: {
@@ -338,16 +391,16 @@ async function migrateAuth(): Promise<void> {
           roleId,
           name: lu.PENGGUNA_NAMA || 'Legacy User',
           username,
-          passwordHash: tempHash,
+          passwordHash: sharedHash,
           mustChangePassword: true,
         },
-        update: { legacyId: lu.PENGGUNA_ID, roleId, mustChangePassword: true },
+        update: { legacyId: lu.PENGGUNA_ID, roleId, passwordHash: sharedHash, mustChangePassword: true }, // prettier-ignore
       });
       migrated += 1;
     }
     log(
-      `User: ${migrated} migrated (all mustChangePassword=true, no MD5 copied)` +
-        (preserved ? `; ${preserved} suffixed to protect a demo/seed login` : ''),
+      `User: ${migrated} migrated (password=SEED_PASSWORD, forced reset; no MD5 copied)` +
+        (preserved ? `; ${preserved} suffixed to protect the bootstrap admin login` : ''),
     );
   } finally {
     await conn.end();
@@ -511,7 +564,7 @@ async function main(): Promise<void> {
   );
 
   await checkIdempotency(flags.forceReset);
-  const sysUser = await systemUserId();
+  const sysUser = await ensureAuthBootstrap();
 
   await migrateMasterData();
   await migrateAuth();

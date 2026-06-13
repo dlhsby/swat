@@ -68,30 +68,35 @@ hours, tiny volume).
 Seeding is split into independent, re-runnable tracks so you can test against
 dummy data, real legacy data, or **both at once**:
 
-| Command                                        | What it adds                                                                                                                        |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm db:seed` / `pnpm db:seed:demo` (default) | Auth bootstrap + **dummy/demo** data (admin + per-role demo logins, demo master + synthetic transactions) — for exercising the app. |
-| `pnpm db:seed:auth`                            | Auth bootstrap **only** (permissions, roles, `admin`) — the clean base for a legacy-only load.                                      |
-| `pnpm db:seed:legacy`                          | The **legacy** dataset (`migrate:legacy` under the hood).                                                                           |
+| Command                                        | What it adds                                                                                                                                                                                                                           |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm db:seed` / `pnpm db:seed:demo` (default) | **Dummy/demo** data: permissions + roles + `admin` + per-role demo logins (RBAC inspired by the legacy roles) + demo master/synthetic transactions — for exercising the app.                                                           |
+| `pnpm db:seed:auth`                            | Auth bootstrap **only** — permissions + `admin` + the Administrator role (no `adminreset`, no per-role demo logins).                                                                                                                   |
+| `pnpm db:seed:legacy`                          | The **legacy** dataset (`migrate:legacy`): real users + their permission mapping + master/aggregate data. **No demo data.** Self-sufficient — bootstraps permissions + a full-access `admin` itself, so it needs no prior `seed:auth`. |
 
-- **Additive, no duplicates.** Demo rows carry no `legacyId`; legacy rows are keyed
-  by `legacyId` with `skipDuplicates`. Run `db:seed:demo` then `db:seed:legacy` (in
-  either order) and both datasets coexist. Re-running either is a safe no-op on what
-  already exists (the legacy "already applied" guard now warns + proceeds instead of
-  erroring; use `--force-reset` for a clean truncate+reload).
-- **Demo logins are protected.** A legacy user whose username collides with a
-  seeded/demo account (`admin`, `adminreset`, the per-role logins) is imported under
-  a suffixed name (`admin` → `admin_legacy70`) so the demo login is never clobbered
-  (`resolveLegacyUsername`, unit-tested in `lib/transforms.spec.ts`).
+- **Two distinct RBACs.** `seed:demo` assigns each role a hand-authored permission set
+  (`ROLES` in `prisma/seed.ts`, modelled on the legacy roles). `seed:legacy` instead
+  derives each role's grants from the real legacy `hakaksesmenu` menu tree
+  (`derivePermissionKeys`), so legacy roles carry exactly their legacy permissions —
+  no demo patterns leak in (run it on a clean DB, not on top of `seed:demo`).
+- **Legacy logins.** Legacy MD5 is never copied: every migrated user gets
+  `LEGACY_SEED_PASSWORD` (default `Password123!`) **with a forced first-login reset**,
+  so they can sign in (web) to test their mapped RBAC and must then set a real password.
+  The bootstrap `admin / Password123!` is ready to use (full access).
+- **Additive, no duplicates, demo login protected.** Demo rows carry no `legacyId`;
+  legacy rows are keyed by `legacyId` with `skipDuplicates`. Re-running is a safe no-op
+  on what exists (the "already applied" guard warns + proceeds; `--force-reset`
+  truncates + reloads). A legacy user colliding with `admin` is imported as
+  `admin_legacy70` (`resolveLegacyUsername`, unit-tested) so the bootstrap admin survives.
 
 ## Run order (operator — legacy-only / production cutover)
 
 ```bash
-# 0. Target schema + the AUTH bootstrap only — all master/reference data comes
-#    from legacy, so seeding reference rows here would collide on unique business
-#    keys (e.g. waste-source `code`) and silently drop the legacy rows.
+# 0. Target schema only. The legacy loader bootstraps its own permissions + admin,
+#    so no auth seed is required (a separate `db:seed:auth` is optional). Do NOT run
+#    the demo seed here — its reference rows would collide on unique business keys
+#    (e.g. waste-source `code`) and silently drop the legacy rows.
 pnpm --filter @swat/backend prisma:deploy
-SEED_AUTH_ONLY=true pnpm --filter @swat/backend prisma:seed
 
 # 1. Profile the (staging) DB (read-only) — drives partition/archive decisions.
 pnpm --filter @swat/backend run migrate:discovery

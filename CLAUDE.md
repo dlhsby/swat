@@ -64,11 +64,15 @@ From inner `swat/`:
 - Build: `pnpm build` · Dev: `pnpm dev` · Lint: `pnpm lint` (`pnpm lint:fix`) · Types: `pnpm typecheck`
 - Test: `pnpm test` · Format: `pnpm format` / `pnpm format:check`
 - DB: `pnpm db:generate` · `pnpm db:migrate` (= prisma **deploy**) · `pnpm db:seed`
-- Seeding is two additive, idempotent tracks (run either/both, no dupes): `pnpm db:seed:demo`
-  (= `db:seed`, dummy data — the default for testing) · `pnpm db:seed:legacy` (legacy data via
-  `migrate:legacy`) · `pnpm db:seed:auth` (auth bootstrap only). Legacy load **preserves demo
-  logins** — a colliding legacy username is suffixed (`admin` → `admin_legacy70`), never clobbered.
-  Needs `DATABASE_URL` + `LEGACY_DB_*` env (legacy MySQL `dkp_swat` on host `:13306`).
+- Seeding is two independent, idempotent tracks (no dupes): **`pnpm db:seed:demo`** (= `db:seed`,
+  default) seeds dummy data — demo users + hand-authored per-role permissions (modelled on legacy) +
+  demo master/transactions, for testing. **`pnpm db:seed:legacy`** loads the real legacy dataset via
+  `migrate:legacy`: real users + permissions derived from the legacy menu tree (`derivePermissionKeys`),
+  **no demo data**. It's self-sufficient (bootstraps permissions + a full-access `admin / Password123!`
+  itself — no `db:seed:auth` needed). Legacy users get `LEGACY_SEED_PASSWORD` (default `Password123!`)
+  with a **forced first-login reset**; a legacy username colliding with `admin` is imported as
+  `admin_legacy70`. Needs `DATABASE_URL` + `LEGACY_DB_*` env (legacy MySQL `dkp_swat` on host `:13306`,
+  user `AdminDKP`). For a clean legacy-only DB: `prisma migrate reset --force --skip-seed` then `db:seed:legacy`.
 - Scope one package: `pnpm --filter @swat/backend run <script>`
 
 ## Gotchas
