@@ -64,15 +64,29 @@ From inner `swat/`:
 - Build: `pnpm build` · Dev: `pnpm dev` · Lint: `pnpm lint` (`pnpm lint:fix`) · Types: `pnpm typecheck`
 - Test: `pnpm test` · Format: `pnpm format` / `pnpm format:check`
 - DB: `pnpm db:generate` · `pnpm db:migrate` (= prisma **deploy**) · `pnpm db:seed`
-- Seeding is two independent, idempotent tracks (no dupes): **`pnpm db:seed:demo`** (= `db:seed`,
-  default) seeds dummy data — demo users + hand-authored per-role permissions (modelled on legacy) +
-  demo master/transactions, for testing. **`pnpm db:seed:legacy`** loads the real legacy dataset via
-  `migrate:legacy`: real users + permissions derived from the legacy menu tree (`derivePermissionKeys`),
-  **no demo data**. It's self-sufficient (bootstraps permissions + a full-access `admin / Password123!`
-  itself — no `db:seed:auth` needed). Legacy users get `LEGACY_SEED_PASSWORD` (default `Password123!`)
-  with a **forced first-login reset**; a legacy username colliding with `admin` is imported as
-  `admin_legacy70`. Needs `DATABASE_URL` + `LEGACY_DB_*` env (legacy MySQL `dkp_swat` on host `:13306`,
-  user `AdminDKP`). For a clean legacy-only DB: `prisma migrate reset --force --skip-seed` then `db:seed:legacy`.
+- Seeding is **four** independent, idempotent tracks (all from inner `swat/`, scope with
+  `--filter @swat/backend`):
+  - **`seed:demo`** (= `db:seed`, default) — fully synthetic dev/demo data: demo users + per-role
+    permissions + a **slim curated master subset** (`prisma/demo-fixtures.ts`, ~15 vehicles/22 sites/
+    39 routes, derived from the legacy snapshot by `scripts/build-demo-fixtures.ts`) + a year of
+    synthetic transactions across the whole demo fleet + 24 months of levies + inspections/maintenance/
+    photos. **Auto-runs the rollup backfill** at the end, so every monitoring dashboard works from one
+    command (no separate `rollup:backfill`). No MySQL needed.
+  - **`seed:legacy`** — full legacy load from MySQL via `migrate:legacy`: master + auth + scheduling +
+    aggregates, **no transactions, no synthetic data**. For local pre-UAT testing on real masters.
+  - **`seed:staging`** — same engine **+ transactional history** (`--include-transactions`:
+    haritransaksi→TransactionDay, transaksiangkutsampah→Haul, detail→HaulAssignment, trayek→Trip,
+    sampahmasuktpa→TpaInboundLog, keyset-batched + watermarked). Targets the staging DB via
+    `SEED_ENV=staging` → loads `apps/backend/.env.staging`. For UAT.
+  - **`seed:production`** — same as staging but `SEED_ENV=production` (`.env.production`) and requires
+    `--confirm-production` (the engine refuses a production run without it). The real cutover.
+  - `seed:auth` (`SEED_AUTH_ONLY=true`) stays as an internal bootstrap utility (permissions + roles +
+    admin only). Legacy users get `LEGACY_SEED_PASSWORD` (default `Password123!`) with a forced
+    first-login reset; a legacy username colliding with `admin` is suffixed. Legacy tracks need
+    `DATABASE_URL` + `LEGACY_DB_*` (legacy MySQL `dkp_swat` on host `:13306`, user `AdminDKP`) — for
+    staging/production these live in the gitignored `.env.staging`/`.env.production` (see the committed
+    `.example` templates). For a clean legacy-only DB: `prisma migrate reset --force --skip-seed` then
+    the chosen legacy track.
 - Scope one package: `pnpm --filter @swat/backend run <script>`
 
 ## Gotchas

@@ -20,6 +20,33 @@ export function fixDate(value: string | Date | null | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+/**
+ * Parse a legacy `DD-MM-YYYY` label (e.g. the `sampahmasuktpa.tgltitle` weighing
+ * date) into a UTC midnight Date. Returns null for empty/zero/malformed values —
+ * `fixDate`'s `new Date(...)` mis-parses or rejects this day-first format.
+ */
+export function parseDmyDate(value: string | null | undefined): Date | null {
+  if (value == null) {
+    return null;
+  }
+  const m = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(value.trim());
+  if (!m) {
+    return null;
+  }
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  const year = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
+    return null;
+  }
+  const date = new Date(Date.UTC(year, month - 1, day));
+  // Reject overflow (e.g. 31-02 rolling into March).
+  if (date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return null;
+  }
+  return date;
+}
+
 /** Bogus manufacture years (e.g. 1900) → NULL; valid range is 1960..currentYear+1. */
 export function fixYear(value: number | string | null | undefined, now: Date): number | null {
   const year = typeof value === 'string' ? Number(value) : value;

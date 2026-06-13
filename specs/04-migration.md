@@ -18,6 +18,12 @@
 > partitioning/archiving design in [`12-scalability-archiving.md`](./12-scalability-archiving.md).
 > The row counts elsewhere in this doc come from the snapshot and are placeholders for master data
 > only.
+>
+> **Status:** the §3.1 streamed transactional loader is now implemented behind
+> `migrate-legacy.ts --include-transactions` (run by the `seed:staging` / `seed:production` tracks):
+> `haritransaksi`→TransactionDay, `transaksiangkutsampah`→Haul, `detailtransaksiangkutsampah`→
+> HaulAssignment, `trayek`→Trip, `sampahmasuktpa`→TpaInboundLog — keyset-batched, watermarked
+> (`--resume`), idempotent by `legacyId`. See `scripts/migration/README.md` §T-155.
 
 ## 0. Migration discovery (do this FIRST)
 

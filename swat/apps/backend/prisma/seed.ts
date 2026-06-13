@@ -1,34 +1,43 @@
 /**
- * Database seed.
+ * Database seed (demo track — `pnpm db:seed` / `seed:demo`).
  *
  * Populates:
  *  1. Permission catalog (specs/06-auth-rbac.md §2.2).
  *  2. Roles + role→permission grants (specs/06-auth-rbac.md §2.3).
  *  3. Admin user (Argon2id hash; no forced reset) + a dev-only `adminreset`
- *     demo account with mustChangePassword=true.
+ *     demo account with mustChangePassword=true, plus one demo user per role.
  *  4. Reference/lookup data (specs/01-glossary.md §4): LicenseClass,
- *     FuelCategory, Fuel, VehicleType, WasteSource.
- *  5. Demo levy/retribusi rows (monthly, by category) for the Retribusi dashboard.
- *  6. Synthetic transactional data (a year of disposal + refuel trips, plus TPA
- *     weighbridge logs) so partition pruning and the Phase-2 monitoring
- *     dashboards (tonnage by source, BBM variance, TPA reconciliation) have data;
- *     plus one demo driver-license, schedule-template, trip-template and two kitir
- *     (DisposalPermit) so the Phase-1 CRUD pages aren't empty.
- *     Items 5–6 are gated by SEED_SYNTHETIC (default true).
+ *     FuelCategory, Fuel, VehicleType, WasteSource — and the SLIM curated demo
+ *     master subset (sites, routes, vehicles, drivers, licenses, schedule/trip
+ *     templates) from `demo-fixtures.ts` (derived from the legacy snapshot by
+ *     scripts/build-demo-fixtures.ts).
+ *  5. Demo levy/retribusi rows (24 months, by category) for the Retribusi dashboard.
+ *  6. Synthetic transactional data across the ~15 curated demo vehicles (a year of
+ *     disposal + refuel trips, TPA weighbridge logs, vehicle↔waste-source links,
+ *     kitir) so partition pruning and every Phase-2 monitoring dashboard (tonnage
+ *     by day/source/site, BBM variance, route activity, TPA reconciliation) has
+ *     multi-dimensional data.
+ *  7. Demo vehicle inspections + maintenance (with items) and placeholder photos
+ *     so the operations CRUD pages aren't empty.
+ *  8. Auto rollup backfill over the seeded range — the monitoring aggregates are
+ *     populated in the same run (no separate `rollup:backfill` step needed).
+ *     Items 5–8 are gated by SEED_SYNTHETIC (default true).
  *
- * Idempotent: every write is an upsert or guarded create; re-running is safe and
- * back-fills refuel/TPA onto days an earlier run created (no wipe needed). Run
- * the rollup backfill (`pnpm rollup:backfill`) afterwards to populate the
- * aggregate tables the dashboards read.
+ * Idempotent: every write is an upsert or guarded create; re-running is safe.
+ * The legacy/staging/production tracks load from MySQL via `migrate:legacy` and
+ * never touch this synthetic data.
  */
 import {
   type DayStatus,
-  EmploymentStatus,
+  type InspectionItemStatus,
+  type InspectionResult,
+  type MaintenanceStatus,
+  type MaintenanceType,
+  Prisma,
   PrismaClient,
   RouteCategory,
   SiteType,
   TripStatus,
-  VehicleStatus,
 } from '@prisma/client';
 import { hash } from 'argon2';
 
@@ -37,17 +46,20 @@ import {
   describePermission,
   expandPatterns,
 } from '../src/common/auth/permission-catalog';
+import { RollupRepository } from '../src/modules/analytics/rollup.repository';
+import { RollupService } from '../src/modules/analytics/rollup.service';
+import { type PrismaService } from '../src/modules/prisma/prisma.service';
 
 import {
-  LEGACY_DRIVER_LICENSES,
-  LEGACY_DRIVERS,
-  LEGACY_ROUTES,
-  LEGACY_SCHEDULE_TEMPLATES,
-  LEGACY_SITES,
-  LEGACY_TRIP_TEMPLATES,
-  LEGACY_VEHICLES,
-} from './legacy-fixtures';
-import { LEGACY_VEHICLE_MODELS } from './legacy-vehicle-models';
+  DEMO_DRIVER_LICENSES,
+  DEMO_DRIVERS,
+  DEMO_ROUTES,
+  DEMO_SCHEDULE_TEMPLATES,
+  DEMO_SITES,
+  DEMO_TRIP_TEMPLATES,
+  DEMO_VEHICLE_MODELS,
+  DEMO_VEHICLES,
+} from './demo-fixtures';
 
 const prisma = new PrismaClient();
 
@@ -278,8 +290,8 @@ async function seedReferenceData(): Promise<void> {
     vehicleTypeIdByLegacy.set(vehicleType.legacyId, record.id);
   }
 
-  // Legacy vehicle models (kategorikendaraan): resolve the vehicle-type FK by
-  // legacyId and the fuel FK by the legacy bahanbakar id → SWAT fuel name.
+  // Demo vehicle models (subset of legacy `kategorikendaraan`): resolve the
+  // vehicle-type FK by legacyId and the fuel FK by the legacy bahanbakar id.
   const FUEL_NAME_BY_LEGACY: Record<number, string> = {
     1: 'Premium',
     2: 'Pertamax',
@@ -289,7 +301,7 @@ async function seedReferenceData(): Promise<void> {
     6: 'Dexlite',
   };
   const modelIdByLegacy = new Map<number, string>();
-  for (const model of LEGACY_VEHICLE_MODELS) {
+  for (const model of DEMO_VEHICLE_MODELS) {
     const vehicleTypeId = vehicleTypeIdByLegacy.get(model.appLegacyId);
     const fuelId = fuelIdByName.get(FUEL_NAME_BY_LEGACY[model.fuelLegacyId] ?? '');
     if (vehicleTypeId === undefined || fuelId === undefined) {
@@ -314,18 +326,18 @@ async function seedReferenceData(): Promise<void> {
     modelIdByLegacy.set(model.legacyId, record.id);
   }
 
-  // Legacy operational master data (spot → site, rute → route, kendaraan →
-  // vehicle), inserted in FK order. Each is idempotent via skipDuplicates on the
-  // unique legacyId; rows whose FKs don't resolve are skipped and counted.
-  const siteIdByLegacy = await seedLegacySites();
-  const routeIdByLegacy = await seedLegacyRoutes(siteIdByLegacy);
-  const vehicleIdByLegacy = await seedLegacyVehicles(siteIdByLegacy, modelIdByLegacy);
-  const driverIdByLegacy = await seedLegacyDrivers(siteIdByLegacy);
-  await seedLegacyDriverLicenses(driverIdByLegacy);
+  // Curated demo master data (spot → site, rute → route, kendaraan → vehicle),
+  // inserted in FK order. Each is idempotent via skipDuplicates on the unique
+  // legacyId; rows whose FKs don't resolve are skipped and counted.
+  const siteIdByLegacy = await seedDemoSites();
+  const routeIdByLegacy = await seedDemoRoutes(siteIdByLegacy);
+  const vehicleIdByLegacy = await seedDemoVehicles(siteIdByLegacy, modelIdByLegacy);
+  const driverIdByLegacy = await seedDemoDrivers(siteIdByLegacy);
+  await seedDemoDriverLicenses(driverIdByLegacy);
   // Scheduling templates depend on vehicles + drivers; trip templates additionally
   // on routes + sites (snapshot). Mirror the legacy planner verbatim.
-  const scheduleIdByLegacy = await seedLegacyScheduleTemplates(vehicleIdByLegacy, driverIdByLegacy);
-  await seedLegacyTripTemplates(scheduleIdByLegacy, routeIdByLegacy, siteIdByLegacy);
+  const scheduleIdByLegacy = await seedDemoScheduleTemplates(vehicleIdByLegacy, driverIdByLegacy);
+  await seedDemoTripTemplates(scheduleIdByLegacy, routeIdByLegacy, siteIdByLegacy);
 
   for (const source of WASTE_SOURCES) {
     await prisma.wasteSource.upsert({
@@ -336,10 +348,10 @@ async function seedReferenceData(): Promise<void> {
   }
 }
 
-/** Legacy sites (spot). Returns the legacyId → uuid map for routes/vehicles. */
-async function seedLegacySites(): Promise<Map<number, string>> {
+/** Demo sites (spot). Returns the legacyId → uuid map for routes/vehicles. */
+async function seedDemoSites(): Promise<Map<number, string>> {
   await prisma.site.createMany({
-    data: LEGACY_SITES.map((s) => ({
+    data: DEMO_SITES.map((s) => ({
       legacyId: s.legacyId,
       type: s.type,
       name: s.name,
@@ -358,15 +370,15 @@ async function seedLegacySites(): Promise<Map<number, string>> {
     if (r.legacyId !== null) map.set(r.legacyId, r.id);
   }
   // eslint-disable-next-line no-console
-  console.log(`Legacy sites: ${LEGACY_SITES.length} loaded`);
+  console.log(`Demo sites: ${DEMO_SITES.length} loaded`);
   return map;
 }
 
-/** Legacy routes (rute) — origin/destination resolved via the site map.
+/** Demo routes (rute) — origin/destination resolved via the site map.
  * Returns the legacyId → uuid map for trip-template snapshots. */
-async function seedLegacyRoutes(siteIdByLegacy: Map<number, string>): Promise<Map<number, string>> {
+async function seedDemoRoutes(siteIdByLegacy: Map<number, string>): Promise<Map<number, string>> {
   let skipped = 0;
-  const data = LEGACY_ROUTES.flatMap((r) => {
+  const data = DEMO_ROUTES.flatMap((r) => {
     const originSiteId = siteIdByLegacy.get(r.originLegacyId);
     const destinationSiteId = siteIdByLegacy.get(r.destinationLegacyId);
     if (originSiteId === undefined || destinationSiteId === undefined) {
@@ -394,19 +406,19 @@ async function seedLegacyRoutes(siteIdByLegacy: Map<number, string>): Promise<Ma
   }
   // eslint-disable-next-line no-console
   console.log(
-    `Legacy routes: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved site)` : ''}`,
+    `Demo routes: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved site)` : ''}`,
   );
   return map;
 }
 
-/** Legacy vehicles (kendaraan) — pool + model resolved via maps; 0000 dates → fallback. */
-async function seedLegacyVehicles(
+/** Demo vehicles (kendaraan) — pool + model resolved via maps; 0000 dates → fallback. */
+async function seedDemoVehicles(
   siteIdByLegacy: Map<number, string>,
   modelIdByLegacy: Map<number, string>,
 ): Promise<Map<number, string>> {
   const FALLBACK_DATE = new Date('2020-01-01T00:00:00.000Z');
   let skipped = 0;
-  const data = LEGACY_VEHICLES.flatMap((v) => {
+  const data = DEMO_VEHICLES.flatMap((v) => {
     const poolSiteId = siteIdByLegacy.get(v.poolLegacyId);
     const modelId = modelIdByLegacy.get(v.modelLegacyId);
     if (poolSiteId === undefined || modelId === undefined) {
@@ -433,9 +445,8 @@ async function seedLegacyVehicles(
       },
     ];
   });
-  // Upsert (not createMany) so re-seeding UPDATES existing rows — e.g. the 999
-  // placeholder normalization lands on a DB seeded before that cleanup. Chunked
-  // to bound concurrency against the connection pool.
+  // Upsert (not createMany) so re-seeding UPDATES existing rows. Chunked to bound
+  // concurrency against the connection pool.
   const CHUNK = 25;
   for (let i = 0; i < data.length; i += CHUNK) {
     await Promise.all(
@@ -458,19 +469,17 @@ async function seedLegacyVehicles(
   }
   // eslint-disable-next-line no-console
   console.log(
-    `Legacy vehicles: ${data.length} upserted${skipped ? `, ${skipped} skipped (unresolved pool/model)` : ''}`,
+    `Demo vehicles: ${data.length} upserted${skipped ? `, ${skipped} skipped (unresolved pool/model)` : ''}`,
   );
   return map;
 }
 
-/** Legacy drivers (pengemudi) — pool resolved via the site map. Returns the
+/** Demo drivers (pengemudi) — pool resolved via the site map. Returns the
  * legacyId → uuid map for licenses. */
-async function seedLegacyDrivers(
-  siteIdByLegacy: Map<number, string>,
-): Promise<Map<number, string>> {
+async function seedDemoDrivers(siteIdByLegacy: Map<number, string>): Promise<Map<number, string>> {
   const FALLBACK_BIRTH = new Date('1970-01-01T00:00:00.000Z');
   let skipped = 0;
-  const data = LEGACY_DRIVERS.flatMap((d) => {
+  const data = DEMO_DRIVERS.flatMap((d) => {
     const poolSiteId = siteIdByLegacy.get(d.poolLegacyId);
     if (poolSiteId === undefined) {
       skipped += 1;
@@ -502,17 +511,17 @@ async function seedLegacyDrivers(
     if (r.legacyId !== null) map.set(r.legacyId, r.id);
   }
   // eslint-disable-next-line no-console
-  console.log(`Legacy drivers: ${data.length} loaded${skipped ? `, ${skipped} skipped` : ''}`);
+  console.log(`Demo drivers: ${data.length} loaded${skipped ? `, ${skipped} skipped` : ''}`);
   return map;
 }
 
-/** Legacy driver licenses (kepemilikansim) — driver via map, class by name. */
-async function seedLegacyDriverLicenses(driverIdByLegacy: Map<number, string>): Promise<void> {
+/** Demo driver licenses (kepemilikansim) — driver via map, class by name. */
+async function seedDemoDriverLicenses(driverIdByLegacy: Map<number, string>): Promise<void> {
   const FALLBACK_EXPIRY = new Date('2020-01-01T00:00:00.000Z');
   const classes = await prisma.licenseClass.findMany({ select: { id: true, name: true } });
   const classIdByName = new Map(classes.map((c) => [c.name, c.id]));
   let skipped = 0;
-  const data = LEGACY_DRIVER_LICENSES.flatMap((l) => {
+  const data = DEMO_DRIVER_LICENSES.flatMap((l) => {
     const driverId = driverIdByLegacy.get(l.driverLegacyId);
     const licenseClassId = classIdByName.get(l.licenseClassName);
     if (driverId === undefined || licenseClassId === undefined) {
@@ -531,10 +540,10 @@ async function seedLegacyDriverLicenses(driverIdByLegacy: Map<number, string>): 
   });
   await prisma.driverLicense.createMany({ data, skipDuplicates: true });
   // eslint-disable-next-line no-console
-  console.log(`Legacy licenses: ${data.length} loaded${skipped ? `, ${skipped} skipped` : ''}`);
+  console.log(`Demo licenses: ${data.length} loaded${skipped ? `, ${skipped} skipped` : ''}`);
 }
 
-/** "HH:mm:ss" → a 1970-01-01 UTC time (Prisma @db.Time); null → 05:30 fallback. */
+/** "HH:mm:ss" → a 1970-01-01 UTC time (Prisma @db.Time); null → fallback hour. */
 function legacyTime(value: string | null, fallbackHour: number): Date {
   const m = value ? /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value) : null;
   if (!m) {
@@ -543,14 +552,14 @@ function legacyTime(value: string | null, fallbackHour: number): Date {
   return new Date(Date.UTC(1970, 0, 1, Number(m[1]), Number(m[2]), Number(m[3] ?? '0')));
 }
 
-/** Legacy schedule templates (masterdetailtransaksiangkutsampah) — vehicle + driver
+/** Demo schedule templates (masterdetailtransaksiangkutsampah) — vehicle + driver
  * resolved via maps. Returns the legacyId → uuid map for trip templates. */
-async function seedLegacyScheduleTemplates(
+async function seedDemoScheduleTemplates(
   vehicleIdByLegacy: Map<number, string>,
   driverIdByLegacy: Map<number, string>,
 ): Promise<Map<number, string>> {
   let skipped = 0;
-  const data = LEGACY_SCHEDULE_TEMPLATES.flatMap((s) => {
+  const data = DEMO_SCHEDULE_TEMPLATES.flatMap((s) => {
     const vehicleId = vehicleIdByLegacy.get(s.vehicleLegacyId);
     const driverId = driverIdByLegacy.get(s.driverLegacyId);
     if (vehicleId === undefined || driverId === undefined) {
@@ -578,20 +587,20 @@ async function seedLegacyScheduleTemplates(
   }
   // eslint-disable-next-line no-console
   console.log(
-    `Legacy schedule templates: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved vehicle/driver)` : ''}`,
+    `Demo schedule templates: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved vehicle/driver)` : ''}`,
   );
   return map;
 }
 
-/** Legacy trip templates (mastertrayek) — parent schedule + route + snapshot
+/** Demo trip templates (mastertrayek) — parent schedule + route + snapshot
  * sites resolved via maps. Keeps the route_id FK and its denormalized snapshot. */
-async function seedLegacyTripTemplates(
+async function seedDemoTripTemplates(
   scheduleIdByLegacy: Map<number, string>,
   routeIdByLegacy: Map<number, string>,
   siteIdByLegacy: Map<number, string>,
 ): Promise<void> {
   let skipped = 0;
-  const data = LEGACY_TRIP_TEMPLATES.flatMap((t) => {
+  const data = DEMO_TRIP_TEMPLATES.flatMap((t) => {
     const scheduleTemplateId = scheduleIdByLegacy.get(t.scheduleLegacyId);
     const routeId = routeIdByLegacy.get(t.routeLegacyId);
     const originSiteId = siteIdByLegacy.get(t.originLegacyId);
@@ -618,20 +627,19 @@ async function seedLegacyTripTemplates(
       },
     ];
   });
-  // Chunked createMany to bound the payload against the connection pool.
   const CHUNK = 500;
   for (let i = 0; i < data.length; i += CHUNK) {
     await prisma.tripTemplate.createMany({ data: data.slice(i, i + CHUNK), skipDuplicates: true });
   }
   // eslint-disable-next-line no-console
   console.log(
-    `Legacy trip templates: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved fk)` : ''}`,
+    `Demo trip templates: ${data.length} loaded${skipped ? `, ${skipped} skipped (unresolved fk)` : ''}`,
   );
 }
 
 // ---------------------------------------------------------------------------
 // 5. Levy / retribusi (monthly, by category) — feeds the Retribusi dashboard.
-//    Read-only in-app until live legacy levy data lands; this is dev demo data.
+//    24 monthly anchors so the trend charts span two years.
 // ---------------------------------------------------------------------------
 const LEVY_CATEGORIES: ReadonlyArray<{ name: string; baseAmount: number }> = [
   { name: 'Rumah Tangga', baseAmount: 15_000_000 },
@@ -641,12 +649,14 @@ const LEVY_CATEGORIES: ReadonlyArray<{ name: string; baseAmount: number }> = [
   { name: 'Hotel & Restoran', baseAmount: 22_000_000 },
 ];
 
+const LEVY_MONTHS = 24;
+
 async function seedLevies(): Promise<void> {
   const rng = makeRng(20260610);
   const admin = await prisma.user.findUnique({ where: { username: 'admin' } });
-  // 12 monthly anchors (first-of-month) from 2025-07 to 2026-06.
-  for (let m = 0; m < 12; m += 1) {
-    const date = dateOnly(2025, 6 + m, 1);
+  // 24 monthly anchors (first-of-month) ending 2026-06, i.e. 2024-07 … 2026-06.
+  for (let m = 0; m < LEVY_MONTHS; m += 1) {
+    const date = dateOnly(2024, 6 + m, 1);
     for (const category of LEVY_CATEGORIES) {
       const existing = await prisma.levy.findFirst({
         where: { categoryName: category.name, date },
@@ -669,7 +679,7 @@ async function seedLevies(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Synthetic transactional data (for partition-pruning verification)
+// 6. Synthetic transactional data across the curated demo fleet
 // ---------------------------------------------------------------------------
 
 /** Deterministic pseudo-random generator (no Math.random — reproducible seeds). */
@@ -685,195 +695,97 @@ function dateOnly(year: number, monthIndex: number, day: number): Date {
   return new Date(Date.UTC(year, monthIndex, day));
 }
 
-async function seedSyntheticData(): Promise<void> {
-  const rng = makeRng(20260608);
+const SYNTHETIC_DAYS = 365;
+const SYNTHETIC_END = dateOnly(2026, 5, 8); // project "today"
 
-  // Minimal master chain needed to attach trips.
-  const pool = await upsertSiteByName('Pool Pusat', SiteType.POOL);
-  const tps = await upsertSiteByName('TPS Demo', SiteType.TPS);
-  const tpa = await upsertSiteByName('TPA Demo', SiteType.TPA);
+interface DemoVehicleRef {
+  id: string;
+  plateNumber: string;
+  tareWeight: number;
+}
 
-  const application = (await prisma.vehicleType.findFirst({
-    where: { name: 'Dump Truck' },
-  }))!;
-  const fuel = (await prisma.fuel.findFirst({ where: { name: 'Solar' } }))!;
+interface DemoFleet {
+  vehicles: DemoVehicleRef[];
+  driverIds: string[];
+  disposalRouteIds: string[];
+  refuelRouteIds: string[];
+}
 
-  const model =
-    (await prisma.vehicleModel.findFirst({ where: { brand: 'Hino Demo' } })) ??
-    (await prisma.vehicleModel.create({
-      data: {
-        brand: 'Hino Demo',
-        vehicleTypeId: application.id,
-        fuelId: fuel.id,
-        fuelTankCapacity: 200,
-        normalTareWeight: 8000,
-        wheelCount: 6,
-        normalFuelRatio: 1,
-      },
-    }));
-
-  const vehicle =
-    (await prisma.vehicle.findFirst({ where: { plateNumber: 'L 0001 SW' } })) ??
-    (await prisma.vehicle.create({
-      data: {
-        plateNumber: 'L 0001 SW',
-        poolSiteId: pool.id,
-        modelId: model.id,
-        status: VehicleStatus.GOOD,
-        chassisNumber: 'DEMO-CHASSIS-0001',
-        engineNumber: 'DEMO-ENGINE-0001',
-        currentTareWeight: 8000,
-        currentOdometer: 100000,
-        registrationExpiry: dateOnly(2027, 0, 1),
-        taxExpiry: dateOnly(2027, 0, 1),
-      },
-    }));
-
-  const vehicle2 =
-    (await prisma.vehicle.findFirst({ where: { plateNumber: 'L 0002 SW' } })) ??
-    (await prisma.vehicle.create({
-      data: {
-        plateNumber: 'L 0002 SW',
-        poolSiteId: pool.id,
-        modelId: model.id,
-        status: VehicleStatus.GOOD,
-        chassisNumber: 'DEMO-CHASSIS-0002',
-        engineNumber: 'DEMO-ENGINE-0002',
-        currentTareWeight: 8000,
-        currentOdometer: 90000,
-        registrationExpiry: dateOnly(2027, 0, 1),
-        taxExpiry: dateOnly(2027, 0, 1),
-      },
-    }));
-
-  // Link each demo vehicle to a waste source so the monitoring by-source
-  // breakdown and the Semua / Non-Swasta / Swasta toggle have data in dev:
-  // vehicle 1 → Dinas (non-Swasta), vehicle 2 → Swasta. Idempotent on the pair.
-  const dinas = (await prisma.wasteSource.findUnique({ where: { code: 'D' } }))!;
-  const swasta = (await prisma.wasteSource.findUnique({ where: { code: 'S' } }))!;
-  for (const [linkVehicle, source] of [
-    [vehicle, dinas],
-    [vehicle2, swasta],
-  ] as const) {
-    await prisma.vehicleWasteSource.upsert({
-      where: { vehicleId_wasteSourceId: { vehicleId: linkVehicle.id, wasteSourceId: source.id } },
-      update: {},
-      create: { vehicleId: linkVehicle.id, wasteSourceId: source.id },
-    });
-  }
-
-  const driver =
-    (await prisma.driver.findFirst({ where: { idCardNumber: '3500000000000001' } })) ??
-    (await prisma.driver.create({
-      data: {
-        name: 'Pengemudi Demo',
-        poolSiteId: pool.id,
-        employmentStatus: EmploymentStatus.SATGAS,
-        idCardNumber: '3500000000000001',
-        originAddress: 'Surabaya',
-        currentAddress: 'Surabaya',
-        birthDate: dateOnly(1990, 0, 1),
-        contact: '0800000000',
-      },
-    }));
-
-  const disposalRoute =
-    (await prisma.route.findFirst({
-      where: { originSiteId: tps.id, destinationSiteId: tpa.id, category: RouteCategory.DISPOSAL },
-    })) ??
-    (await prisma.route.create({
-      data: {
-        category: RouteCategory.DISPOSAL,
-        originSiteId: tps.id,
-        destinationSiteId: tpa.id,
-        distanceKm: 25,
-      },
-    }));
-
-  // REFUEL route (pool → pool) so the BBM dashboard + DailyFuelByVehicle rollup
-  // have data in dev — one refuel leg per operational day.
-  const refuelRoute =
-    (await prisma.route.findFirst({
-      where: { originSiteId: pool.id, destinationSiteId: pool.id, category: RouteCategory.REFUEL },
-    })) ??
-    (await prisma.route.create({
-      data: {
-        category: RouteCategory.REFUEL,
-        originSiteId: pool.id,
-        destinationSiteId: pool.id,
-        distanceKm: 5,
-      },
-    }));
-
-  // --- Demo scheduling + permit rows so the Phase-1 CRUD pages (driver license,
-  // schedule template, trip template, Jatah Kitir) have data in dev, not empty lists.
-  const admin = await prisma.user.findUnique({
-    where: { username: 'admin' },
+/** Load the curated demo fleet (vehicles, drivers, disposal/refuel routes) the
+ * synthetic loop attaches transactions to. */
+async function loadDemoFleet(): Promise<DemoFleet> {
+  const vehicleRows = await prisma.vehicle.findMany({
+    where: { legacyId: { not: null } },
+    orderBy: { legacyId: 'asc' },
+    take: 15,
+    include: { model: { select: { normalTareWeight: true } } },
+  });
+  const vehicles = vehicleRows.map((v) => ({
+    id: v.id,
+    plateNumber: v.plateNumber,
+    tareWeight: v.currentTareWeight || v.model?.normalTareWeight || 8000,
+  }));
+  const drivers = await prisma.driver.findMany({
+    where: { legacyId: { not: null } },
+    orderBy: { legacyId: 'asc' },
+    take: 15,
     select: { id: true },
   });
-  const truckLicense = (await prisma.licenseClass.findFirst({ where: { name: 'BII Umum' } }))!;
-  if (!(await prisma.driverLicense.findFirst({ where: { driverId: driver.id } }))) {
-    await prisma.driverLicense.create({
-      data: {
-        driverId: driver.id,
-        licenseClassId: truckLicense.id,
-        licenseNumber: 'SIMDEMO00001',
-        expiry: dateOnly(2027, 11, 31),
-      },
+  const disposal = await prisma.route.findMany({
+    where: { category: RouteCategory.DISPOSAL },
+    orderBy: { legacyId: 'asc' },
+    select: { id: true },
+  });
+  const refuel = await prisma.route.findMany({
+    where: { category: RouteCategory.REFUEL },
+    orderBy: { legacyId: 'asc' },
+    select: { id: true },
+  });
+  return {
+    vehicles,
+    driverIds: drivers.map((d) => d.id),
+    disposalRouteIds: disposal.map((r) => r.id),
+    refuelRouteIds: refuel.map((r) => r.id),
+  };
+}
+
+/** Link each demo vehicle to a waste source (round-robin across all six) so the
+ * by-source breakdown + Semua/Non-Swasta/Swasta toggle have multi-source data. */
+async function linkDemoWasteSources(vehicles: DemoVehicleRef[]): Promise<void> {
+  const sources = await prisma.wasteSource.findMany({
+    orderBy: { code: 'asc' },
+    select: { id: true },
+  });
+  if (sources.length === 0) return;
+  for (let i = 0; i < vehicles.length; i += 1) {
+    const vehicle = vehicles[i];
+    const source = sources[i % sources.length];
+    if (!vehicle || !source) continue;
+    await prisma.vehicleWasteSource.upsert({
+      where: { vehicleId_wasteSourceId: { vehicleId: vehicle.id, wasteSourceId: source.id } },
+      update: {},
+      create: { vehicleId: vehicle.id, wasteSourceId: source.id },
     });
   }
+}
 
-  const timeOfDay = (h: number, m: number): Date => new Date(Date.UTC(1970, 0, 1, h, m));
-  const scheduleTemplate =
-    (await prisma.scheduleTemplate.findFirst({
-      where: { vehicleId: vehicle.id, driverId: driver.id },
-    })) ??
-    (await prisma.scheduleTemplate.create({
-      data: {
-        vehicleId: vehicle.id,
-        driverId: driver.id,
-        departTime: timeOfDay(5, 0),
-        returnTime: timeOfDay(14, 0),
-      },
-    }));
-
-  if (
-    !(await prisma.tripTemplate.findFirst({
-      where: { scheduleTemplateId: scheduleTemplate.id, routeId: disposalRoute.id },
-    }))
-  ) {
-    await prisma.tripTemplate.create({
-      data: {
-        scheduleTemplateId: scheduleTemplate.id,
-        routeId: disposalRoute.id,
-        routeCategory: disposalRoute.category,
-        originSiteId: disposalRoute.originSiteId,
-        destinationSiteId: disposalRoute.destinationSiteId,
-        targetTime: timeOfDay(6, 0),
-        fuelRequestedLiters: 50,
-      },
-    });
-  }
-
-  // Two kitir: an ACTIVE permit for vehicle 1 and an INACTIVE (expired) one for
-  // vehicle 2, so the Jatah Kitir list exercises both status pills.
-  const demoPermits = [
-    {
-      code: 'KITIR-DEMO-01',
-      vehicleId: vehicle.id,
-      status: 'ACTIVE' as const,
-      from: dateOnly(2026, 0, 1),
-      to: dateOnly(2026, 11, 31),
-    },
-    {
-      code: 'KITIR-DEMO-02',
-      vehicleId: vehicle2.id,
-      status: 'INACTIVE' as const,
-      from: dateOnly(2025, 0, 1),
-      to: dateOnly(2025, 11, 31),
-    },
-  ];
-  for (const permit of demoPermits) {
+/** A few demo kitir (DisposalPermit) so the Jatah Kitir page exercises both
+ * status pills. Idempotent on the permit code. */
+async function seedDemoPermits(vehicles: DemoVehicleRef[], adminId: string | null): Promise<void> {
+  const tpa = await prisma.site.findFirst({
+    where: { type: SiteType.TPA },
+    orderBy: { legacyId: 'asc' },
+    select: { id: true },
+  });
+  if (!tpa || vehicles.length === 0) return;
+  const permits = vehicles.slice(0, 3).map((v, i) => ({
+    code: `KITIR-DEMO-${String(i + 1).padStart(2, '0')}`,
+    vehicleId: v.id,
+    status: i === 2 ? ('INACTIVE' as const) : ('ACTIVE' as const),
+    from: i === 2 ? dateOnly(2025, 0, 1) : dateOnly(2026, 0, 1),
+    to: i === 2 ? dateOnly(2025, 11, 31) : dateOnly(2026, 11, 31),
+  }));
+  for (const permit of permits) {
     if (await prisma.disposalPermit.findFirst({ where: { code: permit.code } })) {
       continue;
     }
@@ -886,140 +798,264 @@ async function seedSyntheticData(): Promise<void> {
         issuedAt: permit.from,
         validFrom: permit.from,
         validTo: permit.to,
-        createdById: admin?.id ?? null,
+        createdById: adminId,
       },
     });
   }
+}
 
-  // One year of operational days ending 2026-06-08 (the project "today").
-  const totalDays = 365;
-  const end = dateOnly(2026, 5, 8);
+/** A year of operational days across the whole demo fleet. Returns the seeded
+ * date range for the rollup backfill. Idempotent: a day that already has hauls
+ * is left untouched. */
+async function seedDemoTransactions(fleet: DemoFleet): Promise<{ from: Date; to: Date } | null> {
+  const { vehicles, driverIds, disposalRouteIds, refuelRouteIds } = fleet;
+  if (vehicles.length === 0 || disposalRouteIds.length === 0 || driverIds.length === 0) {
+    // eslint-disable-next-line no-console
+    console.warn('Demo transactions skipped — missing curated vehicles/drivers/disposal routes.');
+    return null;
+  }
+  const rng = makeRng(20260608);
+  const status: TripStatus = TripStatus.DONE;
   const dayStatus: DayStatus = 'DONE';
 
-  for (let offset = totalDays - 1; offset >= 0; offset -= 1) {
-    const opDate = new Date(end);
-    opDate.setUTCDate(end.getUTCDate() - offset);
+  for (let offset = SYNTHETIC_DAYS - 1; offset >= 0; offset -= 1) {
+    const opDate = new Date(SYNTHETIC_END);
+    opDate.setUTCDate(SYNTHETIC_END.getUTCDate() - offset);
 
-    // Find-or-create the day skeleton (day → haul → assignment) so this pass also
-    // enriches days seeded by an earlier run (adds refuel + TPA without a wipe).
-    // Alternate the vehicle per day so tonnage splits across Dinas vs Swasta.
-    const dayVehicle = offset % 2 === 0 ? vehicle : vehicle2;
     const day =
       (await prisma.transactionDay.findUnique({ where: { date: opDate } })) ??
       (await prisma.transactionDay.create({ data: { date: opDate, status: dayStatus } }));
-    const haul =
-      (await prisma.haul.findFirst({
-        where: { operationDate: opDate, vehicleId: dayVehicle.id },
-      })) ??
-      (await prisma.haul.create({
-        data: {
-          transactionDayId: day.id,
-          vehicleId: dayVehicle.id,
-          operationDate: opDate,
-          status: dayStatus,
-        },
-      }));
-    const assignment =
-      (await prisma.haulAssignment.findFirst({
-        where: { operationDate: opDate, haulId: haul.id },
-      })) ??
-      (await prisma.haulAssignment.create({
-        data: { haulId: haul.id, driverId: driver.id, operationDate: opDate, status: dayStatus },
-      }));
 
-    // Disposal trips — only when the day has none yet (preserves an earlier seed).
-    const disposalCount = await prisma.trip.count({
-      where: { operationDate: opDate, routeId: disposalRoute.id },
-    });
-    if (disposalCount === 0) {
-      const tripCount = 10 + Math.floor(rng() * 11); // 10..20
-      const trips = Array.from({ length: tripCount }, (_, i) => {
-        const netWeight = 2000 + Math.floor(rng() * 6000); // 2..8 ton
-        const tareWeight = 8000;
-        return {
-          haulAssignmentId: assignment.id,
-          routeId: disposalRoute.id,
-          operationDate: opDate,
-          status: TripStatus.DONE,
-          name: `Pembuangan #${i + 1}`,
-          tareWeight,
-          grossWeight: tareWeight + netWeight,
-          netWeight,
-          wasteVolume: 6 + Math.floor(rng() * 6),
-        };
-      });
-      await prisma.trip.createMany({ data: trips });
+    // Skip days an earlier run already populated (preserves prior seed).
+    if ((await prisma.haul.count({ where: { operationDate: opDate } })) > 0) {
+      continue;
     }
 
-    // Refuel trip — one per day. Approved falls 10% short on every 5th day so the
-    // BBM variance view (red when approved < requested − 5%) has signal.
-    const refuelExists = await prisma.trip.findFirst({
-      where: { operationDate: opDate, routeId: refuelRoute.id },
-      select: { id: true },
+    // One haul + assignment per vehicle for the day.
+    await prisma.haul.createMany({
+      data: vehicles.map((v) => ({
+        transactionDayId: day.id,
+        vehicleId: v.id,
+        operationDate: opDate,
+        status: dayStatus,
+      })),
     });
-    if (!refuelExists) {
-      const requested = 40 + Math.floor(rng() * 21); // 40..60 L
-      // vehicle2 (Swasta) is chronically under-approved (~−12%) so the BBM
-      // variance view shows a RED vehicle; vehicle1 stays mostly OK (10% short
-      // every 5th day, averaging within the −5% threshold).
-      const approved =
-        dayVehicle.id === vehicle2.id
-          ? Math.round(requested * 0.88)
-          : offset % 5 === 0
-            ? Math.round(requested * 0.9)
-            : requested;
-      await prisma.trip.create({
-        data: {
-          haulAssignmentId: assignment.id,
-          routeId: refuelRoute.id,
+    const hauls = await prisma.haul.findMany({
+      where: { operationDate: opDate },
+      select: { id: true, vehicleId: true },
+    });
+    const haulIdByVehicle = new Map(hauls.map((h) => [h.vehicleId, h.id]));
+    await prisma.haulAssignment.createMany({
+      data: hauls.map((h, i) => ({
+        haulId: h.id,
+        driverId: driverIds[i % driverIds.length]!,
+        operationDate: opDate,
+        status: dayStatus,
+      })),
+    });
+    const assignments = await prisma.haulAssignment.findMany({
+      where: { operationDate: opDate },
+      select: { id: true, haulId: true },
+    });
+    const assignmentIdByHaul = new Map(assignments.map((a) => [a.haulId, a.id]));
+
+    const trips: Prisma.TripCreateManyInput[] = [];
+    const tpaRows: Array<{ plate: string; net: number; tare: number }> = [];
+
+    for (let vi = 0; vi < vehicles.length; vi += 1) {
+      const v = vehicles[vi];
+      if (!v) continue;
+      const haulId = haulIdByVehicle.get(v.id);
+      if (haulId === undefined) continue;
+      const assignmentId = assignmentIdByHaul.get(haulId);
+      if (assignmentId === undefined) continue;
+
+      // Rotate the disposal route per (vehicle, day) for route-activity spread.
+      const disposalRouteId = disposalRouteIds[(vi + offset) % disposalRouteIds.length]!;
+      const tripCount = 3 + Math.floor(rng() * 5); // 3..7
+      let vehicleNet = 0;
+      for (let i = 0; i < tripCount; i += 1) {
+        const netWeight = 2000 + Math.floor(rng() * 6000); // 2..8 ton
+        vehicleNet += netWeight;
+        trips.push({
+          haulAssignmentId: assignmentId,
+          routeId: disposalRouteId,
           operationDate: opDate,
-          status: TripStatus.DONE,
+          status,
+          name: `Pembuangan #${i + 1}`,
+          tareWeight: v.tareWeight,
+          grossWeight: v.tareWeight + netWeight,
+          netWeight,
+          wasteVolume: 6 + Math.floor(rng() * 6),
+        });
+      }
+
+      // Refuel leg (every other vehicle-day) — vehicles where vi % 3 === 0 are
+      // chronically under-approved (~−12%, RED in BBM variance); the rest stay
+      // mostly OK (10% short every 5th day, within the −5% threshold).
+      if ((vi + offset) % 2 === 0 && refuelRouteIds.length > 0) {
+        const requested = 40 + Math.floor(rng() * 21); // 40..60 L
+        const approved =
+          vi % 3 === 0
+            ? Math.round(requested * 0.88)
+            : offset % 5 === 0
+              ? Math.round(requested * 0.9)
+              : requested;
+        trips.push({
+          haulAssignmentId: assignmentId,
+          routeId: refuelRouteIds[vi % refuelRouteIds.length]!,
+          operationDate: opDate,
+          status,
           name: 'Pengisian BBM',
           fuelRequestedLiters: requested,
           fuelApprovedLiters: approved,
-        },
-      });
+        });
+      }
+
+      tpaRows.push({ plate: v.plateNumber, net: vehicleNet, tare: v.tareWeight });
     }
 
-    // TPA weighbridge log — reconciled against the day's disposal tonnage:
-    // every 12th day PENDING (no row), the next DISCREPANCY (−20%), the rest
-    // MATCHED (±2%). operation_date is the partition key (not on the Prisma model),
-    // so insert via raw SQL with operation_date = date. `id` is supplied by the
-    // table's gen_random_uuid() default (see the partition migration).
-    const alreadyLogged = await prisma.tpaInboundLog.count({ where: { date: opDate } });
-    if (alreadyLogged === 0) {
-      const bucket = offset % 12;
-      if (bucket !== 0) {
-        const dayNet =
-          (
-            await prisma.trip.aggregate({
-              _sum: { netWeight: true },
-              where: { operationDate: opDate, routeId: disposalRoute.id },
-            })
-          )._sum.netWeight ?? 0;
-        const factor = bucket === 1 ? 0.8 : 0.98 + rng() * 0.04;
-        const tpaNet = Math.round(dayNet * factor);
-        const tareWeight = 8000;
-        // `updatedAt` is app-managed (@updatedAt) with no DB default, so a raw
-        // insert must set it explicitly alongside the partition key.
+    await prisma.trip.createMany({ data: trips });
+
+    // TPA weighbridge logs (one per vehicle) reconciled against the day's
+    // disposal tonnage: every 12th day PENDING (no rows), the next DISCREPANCY
+    // (−20%), the rest MATCHED (±2%). operation_date is the partition key (not
+    // on the Prisma model) → raw multi-row insert; `updated_at` has no DB default.
+    const bucket = offset % 12;
+    if (bucket !== 0) {
+      const factor = bucket === 1 ? 0.8 : 0.98 + rng() * 0.04;
+      const values = tpaRows
+        .filter((r) => r.net > 0)
+        .map((r) => {
+          const net = Math.round(r.net * factor);
+          return Prisma.sql`(${opDate}::date, ${opDate}::date, ${r.plate}, ${r.tare + net}, ${r.tare}, ${net}, now())`;
+        });
+      if (values.length > 0) {
         await prisma.$executeRaw`
           INSERT INTO "tpa_inbound_log"
             ("operation_date", "date", "plate_number", "gross_weight", "tare_weight", "net_weight", "updated_at")
-          VALUES
-            (${opDate}::date, ${opDate}::date, ${dayVehicle.plateNumber},
-             ${tareWeight + tpaNet}, ${tareWeight}, ${tpaNet}, now())
+          VALUES ${Prisma.join(values)}
         `;
       }
     }
   }
+
+  const from = new Date(SYNTHETIC_END);
+  from.setUTCDate(SYNTHETIC_END.getUTCDate() - (SYNTHETIC_DAYS - 1));
+  return { from, to: SYNTHETIC_END };
 }
 
-async function upsertSiteByName(name: string, type: SiteType): Promise<{ id: string }> {
-  const existing = await prisma.site.findFirst({ where: { name } });
-  if (existing) {
-    return existing;
+// ---------------------------------------------------------------------------
+// 7. Demo inspections + maintenance + photos (operations CRUD pages)
+// ---------------------------------------------------------------------------
+const INSPECTION_LABELS = ['Rem', 'Lampu', 'Ban', 'Mesin', 'Bodi'];
+
+async function seedInspections(vehicles: DemoVehicleRef[], adminId: string | null): Promise<void> {
+  const rng = makeRng(31415);
+  for (let vi = 0; vi < vehicles.length; vi += 1) {
+    const v = vehicles[vi];
+    if (!v) continue;
+    if ((await prisma.vehicleInspection.count({ where: { vehicleId: v.id } })) > 0) {
+      continue;
+    }
+    const count = 2 + (vi % 2); // 2..3
+    for (let i = 0; i < count; i += 1) {
+      const date = new Date(SYNTHETIC_END);
+      date.setUTCMonth(date.getUTCMonth() - (i + 1) * 3);
+      const items = INSPECTION_LABELS.map((label) => {
+        const r = rng();
+        const itemStatus: InspectionItemStatus = r > 0.9 ? 'FAIL' : r > 0.75 ? 'ATTENTION' : 'OK';
+        return {
+          label,
+          status: itemStatus,
+          notes: itemStatus === 'OK' ? null : 'Perlu perhatian',
+        };
+      });
+      const failed = items.filter((it) => it.status === 'FAIL').length;
+      const attention = items.filter((it) => it.status === 'ATTENTION').length;
+      const passed = items.filter((it) => it.status === 'OK').length;
+      const result: InspectionResult = failed > 0 ? 'FAIL' : attention > 0 ? 'ATTENTION' : 'PASS';
+      await prisma.vehicleInspection.create({
+        data: {
+          vehicleId: v.id,
+          date,
+          result,
+          passedCount: passed,
+          totalCount: items.length,
+          inspectorId: adminId,
+          createdById: adminId,
+          items: { create: items },
+        },
+      });
+    }
   }
-  return prisma.site.create({ data: { name, type, address: name } });
+}
+
+async function seedMaintenance(vehicles: DemoVehicleRef[], adminId: string | null): Promise<void> {
+  for (let vi = 0; vi < vehicles.length; vi += 1) {
+    const v = vehicles[vi];
+    if (!v) continue;
+    if ((await prisma.maintenanceRecord.count({ where: { vehicleId: v.id } })) > 0) {
+      continue;
+    }
+    const count = 2 + (vi % 2); // 2..3
+    for (let i = 0; i < count; i += 1) {
+      const date = new Date(SYNTHETIC_END);
+      date.setUTCMonth(date.getUTCMonth() - (i + 1) * 4);
+      const type: MaintenanceType = i % 2 === 0 ? 'SERVICE' : 'REPAIR';
+      const recordStatus: MaintenanceStatus = i === 0 ? 'PENDING_APPROVAL' : 'APPROVED';
+      const items = [
+        { name: 'Oli mesin', qty: 4, unitPrice: 60_000 },
+        { name: 'Filter', qty: 1, unitPrice: 120_000 },
+      ].map((it) => ({ ...it, totalPrice: it.qty * it.unitPrice }));
+      const totalCost = items.reduce((sum, it) => sum + it.totalPrice, 0);
+      await prisma.maintenanceRecord.create({
+        data: {
+          vehicleId: v.id,
+          type,
+          status: recordStatus,
+          date,
+          odometer: 100_000 + vi * 1_000 + i * 500,
+          workshop: 'Bengkel DKP',
+          description: type === 'SERVICE' ? 'Servis berkala' : 'Perbaikan',
+          totalCost,
+          createdById: adminId,
+          items: { create: items },
+        },
+      });
+    }
+  }
+}
+
+/** Placeholder Photo rows (URL/key only, no real upload) attached to a sample of
+ * trips, inspections, and maintenance so the photo galleries aren't empty. */
+async function seedDemoPhotos(): Promise<void> {
+  if ((await prisma.photo.count({ where: { objectKey: { startsWith: 'demo/' } } })) > 0) {
+    return;
+  }
+  const [trips, inspections, maintenance] = await Promise.all([
+    prisma.trip.findMany({ take: 10, orderBy: { operationDate: 'desc' }, select: { id: true } }),
+    prisma.vehicleInspection.findMany({ take: 10, select: { id: true } }),
+    prisma.maintenanceRecord.findMany({ take: 10, select: { id: true } }),
+  ]);
+  const refs = [
+    ...trips.map((t) => ({ ownerType: 'TRIP', ownerId: t.id })),
+    ...inspections.map((t) => ({ ownerType: 'VEHICLE_INSPECTION', ownerId: t.id })),
+    ...maintenance.map((t) => ({ ownerType: 'MAINTENANCE_RECORD', ownerId: t.id })),
+  ];
+  if (refs.length === 0) return;
+  await prisma.photo.createMany({
+    data: refs.map((r, idx) => ({
+      objectKey: `demo/${r.ownerType.toLowerCase()}/${r.ownerId}.jpg`,
+      contentType: 'image/jpeg',
+      sizeBytes: 102_400,
+      width: 800,
+      height: 600,
+      checksum: `demo-${idx}`,
+      ownerType: r.ownerType,
+      ownerId: r.ownerId,
+    })),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1061,6 +1097,15 @@ async function seedDemoRoleUsers(roleIdByName: Map<string, string>): Promise<voi
   }
 }
 
+/** Recompute the monitoring rollups over the seeded range so the dashboards work
+ * straight after `seed:demo` with no separate `rollup:backfill` step. */
+async function backfillRollups(range: { from: Date; to: Date }): Promise<void> {
+  const service = new RollupService(new RollupRepository(prisma as unknown as PrismaService));
+  const { days, months } = await service.backfill(range.from, range.to);
+  // eslint-disable-next-line no-console
+  console.log(`Rollup backfill: ${days} hari + ${months} bulan diperbarui.`);
+}
+
 async function main(): Promise<void> {
   const permissionIdByKey = await seedPermissions();
   const roleIdByName = await seedRoles(permissionIdByKey);
@@ -1074,9 +1119,7 @@ async function main(): Promise<void> {
   // Legacy-migration target: seed ONLY the auth bootstrap (permissions, roles,
   // admin). All reference + master + transactional data comes from the legacy DB
   // via `migrate:legacy`; seeding reference rows here would collide with the
-  // migrated ones on unique business keys (e.g. waste-source `code`) and force
-  // `createMany({skipDuplicates})` to drop the legacy rows. The per-role demo
-  // logins are dummy data too, so they're skipped here (kept only for the demo seed).
+  // migrated ones on unique business keys (e.g. waste-source `code`).
   const authOnly = process.env.SEED_AUTH_ONLY === 'true';
   if (authOnly) {
     // eslint-disable-next-line no-console
@@ -1088,7 +1131,22 @@ async function main(): Promise<void> {
     await seedReferenceData();
     if (process.env.SEED_SYNTHETIC !== 'false') {
       await seedLevies();
-      await seedSyntheticData();
+      const admin = await prisma.user.findUnique({
+        where: { username: 'admin' },
+        select: { id: true },
+      });
+      const adminId = admin?.id ?? null;
+
+      const fleet = await loadDemoFleet();
+      await linkDemoWasteSources(fleet.vehicles);
+      await seedDemoPermits(fleet.vehicles, adminId);
+      const range = await seedDemoTransactions(fleet);
+      await seedInspections(fleet.vehicles, adminId);
+      await seedMaintenance(fleet.vehicles, adminId);
+      await seedDemoPhotos();
+      if (range) {
+        await backfillRollups(range);
+      }
     }
   }
 

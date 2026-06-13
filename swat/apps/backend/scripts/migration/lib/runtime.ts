@@ -64,6 +64,10 @@ export interface Flags {
   resume: boolean;
   forceReset: boolean;
   batchSize: number;
+  /** Load the high-volume transactional history (staging/production only). */
+  includeTransactions: boolean;
+  /** Required acknowledgement for the production target (guards seed:production). */
+  confirmProduction: boolean;
 }
 
 export function parseFlags(argv: readonly string[]): Flags {
@@ -72,6 +76,8 @@ export function parseFlags(argv: readonly string[]): Flags {
     resume: argv.includes('--resume'),
     forceReset: argv.includes('--force-reset'),
     batchSize: batchArg ? Math.max(1, Number(batchArg.split('=')[1])) : 10_000,
+    includeTransactions: argv.includes('--include-transactions'),
+    confirmProduction: argv.includes('--confirm-production'),
   };
 }
 

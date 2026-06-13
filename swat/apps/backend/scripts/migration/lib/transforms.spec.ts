@@ -6,6 +6,7 @@ import {
   fixYear,
   legacyTimeToDate,
   nonNegativeOrNull,
+  parseDmyDate,
   resolveLegacyUsername,
   routeDedupeKey,
   trimOrNull,
@@ -27,6 +28,23 @@ describe('fixDate', () => {
     const d = new Date('2020-01-01T00:00:00Z');
     expect(fixDate(d)).toBe(d);
     expect(fixDate(new Date('nope'))).toBeNull();
+  });
+});
+
+describe('parseDmyDate', () => {
+  it('parses a DD-MM-YYYY weighing label to a UTC date', () => {
+    expect(parseDmyDate('01-01-2018')?.toISOString().slice(0, 10)).toBe('2018-01-01');
+    // Day-first: 31-01 is 31 Jan, NOT an invalid month (where new Date() fails).
+    expect(parseDmyDate('31-01-2018')?.toISOString().slice(0, 10)).toBe('2018-01-31');
+    expect(parseDmyDate('5-9-2019')?.toISOString().slice(0, 10)).toBe('2019-09-05');
+  });
+  it('nulls empty, malformed, and overflowing values', () => {
+    expect(parseDmyDate(null)).toBeNull();
+    expect(parseDmyDate('')).toBeNull();
+    expect(parseDmyDate('2018-01-01')).toBeNull(); // ISO, not DMY
+    expect(parseDmyDate('31-02-2018')).toBeNull(); // Feb 31 overflow
+    expect(parseDmyDate('00-01-2018')).toBeNull();
+    expect(parseDmyDate('not a date')).toBeNull();
   });
 });
 

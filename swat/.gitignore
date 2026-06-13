@@ -17,6 +17,12 @@ coverage/
 .env
 .env.local
 .env.*.local
+# Per-target migration env (seed:staging / seed:production) — real files hold
+# DATABASE_URL + LEGACY_DB_* secrets; only the *.example templates are committed.
+.env.staging
+.env.production
+!.env.staging.example
+!.env.production.example
 apps/backend/prisma/.env
 infra/docker-compose.env
 

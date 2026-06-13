@@ -20,8 +20,15 @@ filesystem) into the new PostgreSQL schema. Spec: [`specs/04-migration.md`](../.
   passes — 1463 vehicles, 934 sites, 4897 routes, 316 drivers, 67 users, 1396 crew
   schedules, 2128 trip templates, 364 tonnage rows; FK integrity ✓, all row counts
   within tolerance (every drop an accounted-for dedupe).
-- ⏳ **Deferred:** the multi-TB **transactional history** stream (T-155) and the
-  **image corpus** (needs the on-prem upload filesystem) — see below.
+- ✅ **Transactional history** (T-155, the `--include-transactions` phase) — runs
+  green end-to-end against the live legacy MySQL: `haritransaksi`→TransactionDay
+  (4394), `transaksiangkutsampah`→Haul, `detailtransaksiangkutsampah`→HaulAssignment,
+  `trayek`→Trip, `sampahmasuktpa`→TpaInboundLog (**11171 rows**, Jan-2018, into the
+  monthly partitions). Keyset-batched + watermarked (`--resume`); idempotent (a
+  re-run skips every already-loaded row). The trip/haul tables are ~empty in the
+  current snapshot but the code path + FK chain are exercised; full-volume validation
+  happens against a populated production DB.
+- ⏳ **Deferred:** the **image corpus** (needs the on-prem upload filesystem) — see below.
 
 ## Scripts
 
@@ -63,16 +70,17 @@ connecting to the operational MySQL:
 Live-connect is reserved for the final **`delta-sync`** near cutover (freshest few
 hours, tiny volume).
 
-## Two data tracks: demo vs legacy (both additive, idempotent)
+## Four seed tracks (all additive, idempotent)
 
-Seeding is split into independent, re-runnable tracks so you can test against
-dummy data, real legacy data, or **both at once**:
+Seeding is split into independent, re-runnable tracks:
 
-| Command                                        | What it adds                                                                                                                                                                                                                           |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm db:seed` / `pnpm db:seed:demo` (default) | **Dummy/demo** data: permissions + roles + `admin` + per-role demo logins (RBAC inspired by the legacy roles) + demo master/synthetic transactions — for exercising the app.                                                           |
-| `pnpm db:seed:auth`                            | Auth bootstrap **only** — permissions + `admin` + the Administrator role (no `adminreset`, no per-role demo logins).                                                                                                                   |
-| `pnpm db:seed:legacy`                          | The **legacy** dataset (`migrate:legacy`): real users + their permission mapping + master/aggregate data. **No demo data.** Self-sufficient — bootstraps permissions + a full-access `admin` itself, so it needs no prior `seed:auth`. |
+| Command               | Source       | What it adds                                                                                                                                                                                                                |
+| --------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `seed:demo` (default) | synthetic    | Demo users + per-role logins + a **slim curated master subset** (`prisma/demo-fixtures.ts`) + a year of synthetic transactions + 24-mo levies + inspections/maintenance/photos, then an **auto rollup backfill**. No MySQL. |
+| `seed:legacy`         | legacy MySQL | Full master + auth + scheduling + aggregates. **No transactions, no synthetic.** Local pre-UAT testing on real masters. Self-sufficient (bootstraps its own permissions + `admin`).                                         |
+| `seed:staging`        | legacy MySQL | Same engine **+ transactional history** (`--include-transactions`). Targets the staging DB via `SEED_ENV=staging` (`.env.staging`). For UAT.                                                                                |
+| `seed:production`     | legacy MySQL | Same as staging but `SEED_ENV=production` (`.env.production`) + requires `--confirm-production` (the engine refuses otherwise). The real cutover.                                                                           |
+| `seed:auth`           | —            | Internal bootstrap utility: permissions + `admin` + the Administrator role only.                                                                                                                                            |
 
 - **Two distinct RBACs.** `seed:demo` assigns each role a hand-authored permission set
   (`ROLES` in `prisma/seed.ts`, modelled on the legacy roles). `seed:legacy` instead
@@ -102,8 +110,13 @@ pnpm --filter @swat/backend prisma:deploy
 pnpm --filter @swat/backend run migrate:discovery
 
 # 2. Load master + auth + scheduling + aggregates (idempotent; re-run safe).
-pnpm --filter @swat/backend run migrate:legacy
-#    Re-run after a failure:        … run migrate:legacy --resume
+#    Local pre-UAT (no transactions):
+pnpm --filter @swat/backend run seed:legacy
+#    Staging/UAT (+ transactional history), env from .env.staging:
+pnpm --filter @swat/backend run seed:staging
+#    Production cutover (+ transactions, guarded), env from .env.production:
+pnpm --filter @swat/backend run seed:production
+#    Re-run after a failure:        … run migrate:legacy --include-transactions --resume
 #    Wipe & re-load (dev/test):     … run migrate:legacy --force-reset
 
 # 3. Migrate the image corpus.
@@ -141,31 +154,32 @@ row), and applies these specific, logged cleanses for known 13-year-old issues:
 - **Passwords:** legacy MD5 hashes are **never** copied — every migrated user gets
   a random Argon2id hash + `mustChangePassword=true`; temp credentials are
   distributed out-of-band.
-- **Transactional history** (`trayek`/`transaksiangkutsampah`/…) is empty in the
-  sample snapshot and is the live-only heavy path: stream it with
-  `keysetBatches` + a resumable watermark when running against production.
+- **Transactional history** is loaded by the `--include-transactions` phase
+  (`migrateTransactions`, staging/production only) — see below.
 
-## Deferred — T-155 transactional bulk load (revisit with live data)
+## T-155 transactional history — implemented (`--include-transactions`)
 
-The transactional history loader is **intentionally not implemented yet**: those
-tables are empty in the master-data-only snapshot, so it cannot be written or
-verified against real data in this environment. The reusable building blocks are
-already in place and unit-tested — `keysetBatches` + `readWatermark`/`writeWatermark`
-(`lib/pagination.ts`), the `mapTripStatus`/`mapDayStatus` enum maps, and the
-`legacyId → UUID` FK-resolution helpers (`toLegacyMap`/`resolveFk`). See the
-`TODO(T-155 …)` block in `migrate-legacy.ts`.
+The transactional phase runs only for `seed:staging` / `seed:production` (the
+`--include-transactions` flag); `seed:legacy` skips it. In FK order:
 
-**When the live DB is available, implement under a `--include-transactions` flag:**
+| Legacy table                  | → SWAT table     | Notes                                                                                                                                                                                                                        |
+| ----------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `haritransaksi`               | `TransactionDay` | keyset-batched + watermarked (`transaction_day`)                                                                                                                                                                             |
+| `transaksiangkutsampah`       | `Haul`           | `operationDate` denormalized from the day; `legacyId`-idempotent                                                                                                                                                             |
+| `detailtransaksiangkutsampah` | `HaulAssignment` | driver + odometer/time rekap; schedule-template FK optional                                                                                                                                                                  |
+| `trayek`                      | `Trip`           | route FK optional; weights/fuel/odometer mapped                                                                                                                                                                              |
+| `sampahmasuktpa`              | `TpaInboundLog`  | keyset-batched **raw insert** (the `operation_date` partition key is absent from the Prisma model); `DD-MM-YYYY` label parsed via `parseDmyDate`; chunked to stay under PG's 32767 bind-var cap; watermark `tpa_inbound_log` |
 
-1. `trayek → Trip`, `transaksiangkutsampah → Haul`,
-   `detailtransaksiangkutsampah → HaulAssignment`, `sampahmasuktpa → TpaInboundLog`.
-2. Stream **oldest → newest** (`ORDER BY` the operation date) in 10k-row keyset
-   batches into the **pre-created monthly partitions**; **denormalize
-   `operationDate`** onto Haul/HaulAssignment/Trip from the owning
-   `TransactionDay.date`.
-3. Persist a per-table watermark so `--resume` continues after an interruption;
-   `legacyId` guard keeps it idempotent.
-4. Build indexes / `ANALYZE` per partition after the bulk load; add **per-year**
-   reconciliation rows to `verify-migration.ts` (not just per-table).
+- **Idempotent + resumable:** each table skips rows already present (by `legacyId`);
+  `--resume` continues the two big streams (`haritransaksi`, `sampahmasuktpa`) from
+  their watermark. Verified locally: 4394 days + 11171 TPA rows load, a re-run inserts 0.
+- **Reusable building blocks:** `keysetBatches` + `readWatermark`/`writeWatermark`
+  (`lib/pagination.ts`), the `mapTripStatus`/`mapDayStatus` enum maps, `parseDmyDate`
+  (`lib/transforms.ts`), and the `legacyId → UUID` helpers (`toLegacyMap`/`resolveFk`).
+- **Note:** `trayek`/`transaksiangkutsampah`/`detailtransaksiangkutsampah` are ~empty
+  in the current snapshot (0/1/1 rows) — the code path is exercised but full-volume
+  validation happens against a populated production DB. Follow-up: build indexes /
+  `ANALYZE` per partition after a large load; add **per-year** reconciliation rows to
+  `verify-migration.ts`.
 
 Spec: [`specs/04-migration.md`](../../../../specs/04-migration.md) §3.1.

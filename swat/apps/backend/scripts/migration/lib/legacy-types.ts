@@ -177,3 +177,62 @@ export interface LegacyTpaInbound {
   bkosong: number | null;
   bbersih: number | null;
 }
+
+// --- Transactional history (the `--include-transactions` phase) ------------
+
+/** `haritransaksi` → TransactionDay. */
+export interface LegacyTransactionDay {
+  HARITRANSAKSI_ID: number;
+  STATUSHARITRANSAKSI_ID: number | null;
+  HARITRANSAKSI_TANGGAL: string | null;
+}
+
+/** `transaksiangkutsampah` → Haul (one vehicle's haul on a transaction day). */
+export interface LegacyHaul {
+  TRANSAKSIANGKUTSAMPAH_ID: number;
+  HARITRANSAKSI_ID: number;
+  KENDARAAN_ID: number;
+  STATUSTRANSAKSIANGKUTSAMPAH_ID: number | null;
+  TRANSAKSIANGKUTSAMPAH_KETERANGAN: string | null;
+}
+
+/** `detailtransaksiangkutsampah` → HaulAssignment (driver + odometer/time rekap). */
+export interface LegacyHaulAssignment {
+  DETAILTRANSAKSIANGKUTSAMPAH_ID: number;
+  PENGEMUDI_ID: number;
+  MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID: number | null;
+  STATUSDETAILTRANSAKSIANGKUTSAMPAH_ID: number | null;
+  TRANSAKSIANGKUTSAMPAH_ID: number;
+  DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMTARGETBERANGKATKANDANG: number | null;
+  DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMREALISASIBERANGKATKANDANG: number | null;
+  DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMTARGETKEMBALIKANDANG: number | null;
+  DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMREALISASIKEMBALIKANDANG: number | null;
+  DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUTARGETBERANGKATKANDANG: string | null;
+  DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUREALISASIBERANGKATKANDANG: string | null;
+  DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUTARGETKEMBALIKANDANG: string | null;
+  DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUREALISASIKEMBALIKANDANG: string | null;
+  DETAILTRANSAKSIANGKUTSAMPAH_KETERANGAN: string | null;
+}
+
+/** `trayek` → Trip (a single leg: pickup / refuel / disposal). */
+export interface LegacyTrip {
+  TRAYEK_ID: number;
+  STATUSTRAYEK_ID: number | null;
+  DETAILTRANSAKSIANGKUTSAMPAH_ID: number;
+  PENGGUNA_ID: number | null;
+  RUTE_ID: number | null;
+  TRAYEK_NAMA: string | null;
+  TRAYEK_WAKTUTARGET: string | null;
+  TRAYEK_WAKTUREALISASI: string | null;
+  TRAYEK_KMTARGET: number | null;
+  TRAYEK_KMREALISASI: number | null;
+  TRAYEK_BERATKOSONGKENDARAAN: number | null;
+  TRAYEK_KETERANGAN: string | null;
+  TRAYEK_BERATKOTORTIMBANGAN: number | null;
+  TRAYEK_BERATBERSIHSAMPAH: number | null;
+  TRAYEK_VOLUMESAMPAH: number | null;
+  TRAYEK_JUMLAHISIBBMDIAJUKAN: number | null;
+  TRAYEK_JUMLAHISIBBMDISETUJUI: number | null;
+  TRAYEK_WAKTUENTRIPENJADWALAN: string | null;
+  TRAYEK_WAKTUENTRIREALISASI: string | null;
+}

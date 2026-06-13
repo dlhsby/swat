@@ -29,7 +29,9 @@
     "prisma:studio": "prisma studio",
     "seed:demo": "prisma db seed",
     "seed:auth": "SEED_AUTH_ONLY=true prisma db seed",
-    "seed:legacy": "pnpm run migrate:legacy"
+    "seed:legacy": "pnpm run migrate:legacy",
+    "seed:staging": "SEED_ENV=staging pnpm run migrate:legacy -- --include-transactions",
+    "seed:production": "SEED_ENV=production pnpm run migrate:legacy -- --include-transactions --confirm-production"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
