@@ -140,14 +140,15 @@ async function seedRoles(permissionIdByKey: Map<string, string>): Promise<Map<st
 async function seedAdminUser(adminRoleId: string): Promise<void> {
   const passwordHash = await hash(ADMIN_DEFAULT_PASSWORD, ARGON2_OPTIONS);
   const isProd = process.env.NODE_ENV === 'production';
+  const authOnly = process.env.SEED_AUTH_ONLY === 'true';
 
   // Primary admin — ready to use, no forced reset. Outside production, re-seeding
-  // restores the documented bootstrap credential (admin / Password123!) even if
-  // it was changed, keeping local/CI runs repeatable; in production we never
-  // clobber a real admin.
+  // restores the documented bootstrap credential (admin / Password123!) AND its
+  // Administrator role even if a prior legacy load reassigned it (re-seedable),
+  // keeping local/CI runs repeatable; in production we never clobber a real admin.
   await prisma.user.upsert({
     where: { username: 'admin' },
-    update: isProd ? {} : { passwordHash, mustChangePassword: false },
+    update: isProd ? {} : { passwordHash, mustChangePassword: false, roleId: adminRoleId },
     create: {
       username: 'admin',
       name: 'Administrator',
@@ -158,9 +159,10 @@ async function seedAdminUser(adminRoleId: string): Promise<void> {
   });
 
   // Dev/CI-only demo account for exercising the forced first-login password
-  // change (adminreset / Password123!, mustChangePassword=true). Never created
-  // in production so it can't become a stray privileged account.
-  if (!isProd) {
+  // change (adminreset / Password123!, mustChangePassword=true). Skipped in
+  // production AND in auth-only mode (the clean base for a legacy-only load), so
+  // it can't become a stray privileged account.
+  if (!isProd && !authOnly) {
     await prisma.user.upsert({
       where: { username: 'adminreset' },
       update: { passwordHash, mustChangePassword: true },
@@ -1068,13 +1070,13 @@ async function main(): Promise<void> {
     throw new Error('Administrator role was not created');
   }
   await seedAdminUser(adminRoleId);
-  await seedDemoRoleUsers(roleIdByName);
 
   // Legacy-migration target: seed ONLY the auth bootstrap (permissions, roles,
   // admin). All reference + master + transactional data comes from the legacy DB
   // via `migrate:legacy`; seeding reference rows here would collide with the
   // migrated ones on unique business keys (e.g. waste-source `code`) and force
-  // `createMany({skipDuplicates})` to drop the legacy rows.
+  // `createMany({skipDuplicates})` to drop the legacy rows. The per-role demo
+  // logins are dummy data too, so they're skipped here (kept only for the demo seed).
   const authOnly = process.env.SEED_AUTH_ONLY === 'true';
   if (authOnly) {
     // eslint-disable-next-line no-console
@@ -1082,6 +1084,7 @@ async function main(): Promise<void> {
       'SEED_AUTH_ONLY: seeded permissions + roles + admin only (master data via migrate:legacy).',
     );
   } else {
+    await seedDemoRoleUsers(roleIdByName);
     await seedReferenceData();
     if (process.env.SEED_SYNTHETIC !== 'false') {
       await seedLevies();
@@ -1091,7 +1094,7 @@ async function main(): Promise<void> {
 
   // eslint-disable-next-line no-console
   console.log('Seed complete. Admin login: admin / ' + ADMIN_DEFAULT_PASSWORD);
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && !authOnly) {
     // eslint-disable-next-line no-console
     console.log('Forced-reset demo: adminreset / ' + ADMIN_DEFAULT_PASSWORD);
     // eslint-disable-next-line no-console
