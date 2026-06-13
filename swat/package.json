@@ -18,7 +18,10 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "db:generate": "pnpm --filter @swat/backend run prisma:generate",
     "db:migrate": "pnpm --filter @swat/backend run prisma:deploy",
-    "db:seed": "pnpm --filter @swat/backend run prisma:seed",
+    "db:seed": "pnpm --filter @swat/backend run seed:demo",
+    "db:seed:demo": "pnpm --filter @swat/backend run seed:demo",
+    "db:seed:auth": "pnpm --filter @swat/backend run seed:auth",
+    "db:seed:legacy": "pnpm --filter @swat/backend run seed:legacy",
     "prepare": "husky",
     "postinstall": "pnpm --filter @swat/backend run prisma:generate || true"
   },

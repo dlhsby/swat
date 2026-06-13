@@ -3,6 +3,7 @@
 Concise orientation so sessions don't re-explore. Global directives live in `~/.claude/CLAUDE.md`.
 
 ## Layout
+
 - **Monorepo lives in the inner `swat/` dir** (`projects/swat/swat/`), NOT the project root.
   Run all package-manager commands from there.
 - **Git repo root is the outer `projects/swat/`** → `.github/workflows/` sits at the outer root
@@ -10,6 +11,7 @@ Concise orientation so sessions don't re-explore. Global directives live in `~/.
 - Project root also holds `specs/`, `designs/`, `old_swat/` (legacy CI app), `prompts/`.
 
 ## Stack
+
 pnpm + Turborepo · NestJS 10 + Prisma 5 + Postgres 15 · Next 14 + Tailwind 3 + next-intl 3.
 Packages: `@swat/{schemas,prisma-client,eslint-config,tsconfig}`; backend = `@swat/backend`.
 Admin seed login: `admin / Password123!` (no forced reset). Dev/CI seed also creates
@@ -19,6 +21,7 @@ change, plus one ready-to-use demo user per non-admin role for RBAC testing —
 None of these dev/CI accounts are created in production.
 
 ## Frontend conventions (`apps/web`)
+
 - **Routes use English slugs** under `[locale]` (e.g. `/id-ID/dashboard`, `/vehicles`,
   `/transaction-days`, `/monitoring/fuel`); **UI labels stay localized** via next-intl. IA lives in
   `src/lib/nav.ts`.
@@ -44,7 +47,7 @@ None of these dev/CI accounts are created in production.
   language (id-ID/en-US, via `router.replace(pathname, {locale})`).
 - **`cn()` must know the custom font sizes** (`src/lib/cn.ts` uses `extendTailwindMerge` to register
   `text-{h1,h2,h3,body-lg,body,body-sm,label,tiny}` as `font-size`). Without it, tailwind-merge
-  mistakes a named `text-body*` for a text *color* and **strips a real color** like `text-white`
+  mistakes a named `text-body*` for a text _color_ and **strips a real color** like `text-white`
   that precedes it — buttons render green-bg with inherited dark text. Keep this list in sync when
   adding a `fontSize` token; a `cn` regression test guards it.
 - **Selected/active contrast (dark mode):** the `.dark` primary ramp is non-monotonic (only
@@ -55,13 +58,21 @@ None of these dev/CI accounts are created in production.
   wins — see `designs/INDEX.md`.
 
 ## Package manager: pnpm (NOT npm)
+
 From inner `swat/`:
+
 - Build: `pnpm build` · Dev: `pnpm dev` · Lint: `pnpm lint` (`pnpm lint:fix`) · Types: `pnpm typecheck`
 - Test: `pnpm test` · Format: `pnpm format` / `pnpm format:check`
 - DB: `pnpm db:generate` · `pnpm db:migrate` (= prisma **deploy**) · `pnpm db:seed`
+- Seeding is two additive, idempotent tracks (run either/both, no dupes): `pnpm db:seed:demo`
+  (= `db:seed`, dummy data — the default for testing) · `pnpm db:seed:legacy` (legacy data via
+  `migrate:legacy`) · `pnpm db:seed:auth` (auth bootstrap only). Legacy load **preserves demo
+  logins** — a colliding legacy username is suffixed (`admin` → `admin_legacy70`), never clobbered.
+  Needs `DATABASE_URL` + `LEGACY_DB_*` env (legacy MySQL `dkp_swat` on host `:13306`).
 - Scope one package: `pnpm --filter @swat/backend run <script>`
 
 ## Gotchas
+
 - **Schema foundations:** All tables and columns use snake_case via Prisma `@@map`/`@map`; model names are
   PascalCase, field names are camelCase. All primary keys are **UUID v7** (`String @id @db.Uuid @default(uuid(7))`).
   `legacyId` (Int/BigInt, indexed, unique) is the numeric bridge for legacy data migration.
@@ -72,12 +83,14 @@ From inner `swat/`:
   monthly RANGE partitions by a raw-SQL migration (`*_partition_transactions`). PKs are UUIDs (strings);
   `legacyId` is a plain index. These are **migration-managed** — use `prisma migrate deploy`,
   **never `migrate dev`**, or Prisma reports drift.
-- **Docker is NOT available** in this WSL distro. Phase 0 = "scaffold-all, defer live infra":
-  code/lint/typecheck/build/test/prisma-validate verified locally; `docker compose`,
-  `migrate deploy`, `db seed`, partition-pruning, MinIO/Redis live checks are the user's to run
-  after enabling Docker.
+- **Docker is now running** the full live stack: `swat-postgres` (`:5432`), `swat-redis` (`:6379`),
+  `swat-minio` (`:9000/9001`), `swat-nginx` (`:8088`), plus the legacy MySQL `dkp_swat` in
+  `infra-db-1` (`:13306`) for migration. Dev servers run on `:4020` (backend) / `:4021` (web).
+  Live `migrate deploy` / `db:seed` / partition-pruning / MinIO/Redis checks are runnable.
+  (Historical: Phase 0 deferred all live infra because Docker was unavailable in this WSL distro.)
 
 ## Git / GitHub
+
 - Remote: `git@github-personal:dlhsby/swat.git` (private). The `github-personal` SSH alias maps to
   the **`wahyutrip`** account (admin of `dlhsby` org). For any `dlhsby/*` git or `gh` work:
   `gh auth switch --user wahyutrip`. The `wahyutrip-gdp` account cannot push to org repos.

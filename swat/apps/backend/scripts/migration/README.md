@@ -63,7 +63,28 @@ connecting to the operational MySQL:
 Live-connect is reserved for the final **`delta-sync`** near cutover (freshest few
 hours, tiny volume).
 
-## Run order (operator)
+## Two data tracks: demo vs legacy (both additive, idempotent)
+
+Seeding is split into independent, re-runnable tracks so you can test against
+dummy data, real legacy data, or **both at once**:
+
+| Command                                        | What it adds                                                                                                                        |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm db:seed` / `pnpm db:seed:demo` (default) | Auth bootstrap + **dummy/demo** data (admin + per-role demo logins, demo master + synthetic transactions) — for exercising the app. |
+| `pnpm db:seed:auth`                            | Auth bootstrap **only** (permissions, roles, `admin`) — the clean base for a legacy-only load.                                      |
+| `pnpm db:seed:legacy`                          | The **legacy** dataset (`migrate:legacy` under the hood).                                                                           |
+
+- **Additive, no duplicates.** Demo rows carry no `legacyId`; legacy rows are keyed
+  by `legacyId` with `skipDuplicates`. Run `db:seed:demo` then `db:seed:legacy` (in
+  either order) and both datasets coexist. Re-running either is a safe no-op on what
+  already exists (the legacy "already applied" guard now warns + proceeds instead of
+  erroring; use `--force-reset` for a clean truncate+reload).
+- **Demo logins are protected.** A legacy user whose username collides with a
+  seeded/demo account (`admin`, `adminreset`, the per-role logins) is imported under
+  a suffixed name (`admin` → `admin_legacy70`) so the demo login is never clobbered
+  (`resolveLegacyUsername`, unit-tested in `lib/transforms.spec.ts`).
+
+## Run order (operator — legacy-only / production cutover)
 
 ```bash
 # 0. Target schema + the AUTH bootstrap only — all master/reference data comes

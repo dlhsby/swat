@@ -99,6 +99,25 @@ export function routeDedupeKey(
 }
 
 /**
+ * Resolve the username a legacy user is loaded under, preserving the demo/seed
+ * accounts. The demo seeder creates bootstrap users (`admin`, `adminreset`, the
+ * per-role demo logins) with no `legacyId`; a legacy user whose username collides
+ * with one of those would otherwise clobber it on the unique-username upsert
+ * (stealing the `admin` login). When `reserved` already holds the raw username we
+ * suffix the legacy one (`admin` → `admin_legacy70`) so BOTH survive — the demo
+ * login stays usable and the legacy user is still imported + FK-resolvable.
+ * Idempotent: the suffix is derived from the stable legacy id.
+ */
+export function resolveLegacyUsername(
+  rawUsername: string,
+  legacyId: number,
+  reserved: ReadonlySet<string>,
+): string {
+  const username = rawUsername.trim() || `legacy_${legacyId}`;
+  return reserved.has(username) ? `${username}_legacy${legacyId}` : username;
+}
+
+/**
  * Dedupe legacy routes by (origin, destination, category). Returns the kept rows
  * (first occurrence wins) and the dropped duplicates for the migration report.
  */

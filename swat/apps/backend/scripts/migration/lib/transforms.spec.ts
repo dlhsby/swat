@@ -6,6 +6,7 @@ import {
   fixYear,
   legacyTimeToDate,
   nonNegativeOrNull,
+  resolveLegacyUsername,
   routeDedupeKey,
   trimOrNull,
 } from './transforms';
@@ -94,5 +95,29 @@ describe('dedupeRoutes', () => {
     const { kept, dropped } = dedupeRoutes(rows, (r) => routeDedupeKey(r.o, r.d, r.c));
     expect(kept.map((r) => r.id)).toEqual([1, 3]);
     expect(dropped.map((r) => r.id)).toEqual([2]);
+  });
+});
+
+describe('resolveLegacyUsername', () => {
+  const reserved = new Set(['admin', 'adminreset', 'operator', 'supervisor']);
+
+  it('passes through a non-reserved username untouched', () => {
+    expect(resolveLegacyUsername('budi', 42, reserved)).toBe('budi');
+  });
+
+  it('suffixes a legacy user colliding with a demo/seed login so it cannot clobber it', () => {
+    expect(resolveLegacyUsername('admin', 70, reserved)).toBe('admin_legacy70');
+    expect(resolveLegacyUsername('operator', 5, reserved)).toBe('operator_legacy5');
+  });
+
+  it('falls back to a legacy_<id> name for a blank username', () => {
+    expect(resolveLegacyUsername('', 99, reserved)).toBe('legacy_99');
+    expect(resolveLegacyUsername('  ', 99, reserved)).toBe('legacy_99');
+  });
+
+  it('is deterministic/idempotent for the same legacy id', () => {
+    expect(resolveLegacyUsername('admin', 70, reserved)).toBe(
+      resolveLegacyUsername('admin', 70, reserved),
+    );
   });
 });

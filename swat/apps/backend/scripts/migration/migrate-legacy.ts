@@ -65,6 +65,7 @@ import {
   dedupeRoutes,
   legacyTimeToDate,
   nonNegativeOrNull,
+  resolveLegacyUsername,
   routeDedupeKey,
 } from './lib/transforms';
 
@@ -88,9 +89,10 @@ const ROLE_NAME_MAP: Record<string, string> = {
 async function checkIdempotency(forceReset: boolean): Promise<void> {
   const existing = await prisma.user.findFirst({ where: { legacyId: { not: null } } });
   if (existing && !forceReset) {
-    throw new Error(
-      'Migration already applied. Re-run with --force-reset to truncate & re-migrate.',
-    );
+    // Already applied. Every write is skipDuplicates/upsert, so a re-run just adds
+    // what's missing (e.g. levy after the mapper landed) and refreshes nothing it
+    // shouldn't — additive, no duplicates. Use --force-reset for a clean reload.
+    warn('Migration already applied — re-running idempotently (skipDuplicates). No truncate.');
   }
   if (forceReset) {
     warn('Force reset: truncating migrated tables (CASCADE).');
@@ -306,23 +308,36 @@ async function migrateAuth(): Promise<void> {
     }
     log(`RolePermission grants applied: ${grantCount}`);
 
-    // Users — NEVER migrate MD5; random unusable hash + forced reset.
+    // Users — NEVER migrate MD5; random unusable hash + forced reset. Demo/seed
+    // accounts (no legacyId — `admin`, `adminreset`, the per-role demo logins) are
+    // protected: a legacy user that shares one of those usernames is loaded under a
+    // suffixed name so the demo login is never clobbered (see resolveLegacyUsername).
+    const reserved = new Set(
+      (await prisma.user.findMany({ where: { legacyId: null }, select: { username: true } })).map(
+        (u) => u.username,
+      ),
+    );
     const users = await query<LegacyUser>(conn, 'SELECT * FROM pengguna');
     let migrated = 0;
+    let preserved = 0;
     for (const lu of users) {
       const roleId = roleByLegacy.get(lu.HAKAKSES_ID);
       if (!roleId) {
         warn(`No role for legacy user ${lu.PENGGUNA_ID}; skipping.`);
         continue;
       }
+      const username = resolveLegacyUsername(lu.PENGGUNA_USERNAME ?? '', lu.PENGGUNA_ID, reserved);
+      if (username !== (lu.PENGGUNA_USERNAME?.trim() || `legacy_${lu.PENGGUNA_ID}`)) {
+        preserved += 1;
+      }
       const tempHash = await hash(randomUUID());
       await prisma.user.upsert({
-        where: { username: lu.PENGGUNA_USERNAME || `legacy_${lu.PENGGUNA_ID}` },
+        where: { username },
         create: {
           legacyId: lu.PENGGUNA_ID,
           roleId,
           name: lu.PENGGUNA_NAMA || 'Legacy User',
-          username: lu.PENGGUNA_USERNAME || `legacy_${lu.PENGGUNA_ID}`,
+          username,
           passwordHash: tempHash,
           mustChangePassword: true,
         },
@@ -330,7 +345,10 @@ async function migrateAuth(): Promise<void> {
       });
       migrated += 1;
     }
-    log(`User: ${migrated} migrated (all mustChangePassword=true, no MD5 copied)`);
+    log(
+      `User: ${migrated} migrated (all mustChangePassword=true, no MD5 copied)` +
+        (preserved ? `; ${preserved} suffixed to protect a demo/seed login` : ''),
+    );
   } finally {
     await conn.end();
   }
