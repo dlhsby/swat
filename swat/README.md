@@ -55,7 +55,7 @@ Two helper scripts in [`scripts/`](./scripts/) wrap the whole flow:
 ./scripts/start.sh
 #   Backend  http://localhost:3000  (GET /health · Swagger /api/docs)
 #   Frontend http://localhost:3001  (redirects to /id-ID)
-#   Admin login → admin / Password123!  (mustChangePassword)
+#   Admin login → admin / Password123!  (ready to use; `adminreset` exercises forced reset)
 ```
 
 `setup.sh` is idempotent — re-run it anytime. Flags: `--synthetic` (seed synthetic dataset),
@@ -78,9 +78,10 @@ docker compose --env-file infra/docker-compose.env up -d
 #   Postgres :5432 · Adminer :8080 · Redis :6379 · MinIO :9000 (console :9001) · nginx :8088
 #   The minio-init job creates buckets: swat-photos, swat-thumbnails, swat-reports
 
-# 4. Apply migrations + seed (partitions, RBAC, admin, lookup [+ synthetic] data)
+# 4. Apply migrations, then seed. Seeding is two independent, idempotent tracks:
 pnpm db:migrate
-pnpm db:seed                    # SEED_SYNTHETIC=1 pnpm db:seed  for synthetic trips
+pnpm db:seed                    # = db:seed:demo — dummy data for testing (SEED_SYNTHETIC=1 → ~365d of trips)
+#   pnpm db:seed:legacy         # real legacy data instead (self-sufficient; needs LEGACY_DB_* env)
 
 # 5. Run both apps
 pnpm dev
@@ -110,7 +111,9 @@ If you change `POSTGRES_PORT`, `REDIS_PORT`, or `MINIO_API_PORT`, update the mat
 | `pnpm format` / `pnpm format:check` | Prettier write / check           |
 | `pnpm db:generate`                  | `prisma generate`                |
 | `pnpm db:migrate`                   | `prisma migrate deploy`          |
-| `pnpm db:seed`                      | Seed reference + synthetic data  |
+| `pnpm db:seed` / `db:seed:demo`     | Seed dummy/demo data (default)   |
+| `pnpm db:seed:legacy`               | Load real legacy data (no demo)  |
+| `pnpm db:seed:auth`                 | Auth bootstrap only (admin)      |
 
 ## Production deployment
 
@@ -133,9 +136,15 @@ cookie first-party, enabling a true server-side route guard. Front it with TLS.
 Scripts in [`apps/backend/scripts/migration/`](./apps/backend/scripts/migration/)
 (`migrate:discovery` · `migrate:legacy` · `migrate:images` · `migrate:verify` ·
 `migrate:delta-sync`). Pure transform/mapper logic is unit-tested; the end-to-end
-run against the live DB + image filesystem is the operator's on-prem step. See that
-folder's README (incl. the deferred **T-155** transactional bulk load — revisit with
-live data).
+run against the live DB + image filesystem is the operator's on-prem step.
+
+`migrate:legacy` (= `pnpm db:seed:legacy`) is **self-sufficient and demo-free**: it
+bootstraps the permission catalog + a full-access `admin / Password123!`, loads the
+real legacy users (each `Password123!` with a forced first-login reset; legacy MD5 is
+never copied) and their permissions derived from the legacy menu tree, plus master +
+aggregate data. Run it on a clean DB (`prisma migrate reset --force --skip-seed`), not
+on top of `db:seed:demo`. See that folder's README "Two data tracks" section (incl. the
+deferred **T-155** transactional bulk load — revisit with live data).
 
 ## Cutover & operations docs
 

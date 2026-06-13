@@ -265,7 +265,7 @@ const fixEncoding = (s: string) => iconv.decode(Buffer.from(s, 'latin1'), 'utf-8
 Legacy `pengguna` table has 67 users with plaintext MD5 hashes in `PENGGUNA_PASSWORD`.
 **Action:** DO NOT copy these.
 
-**Migration reality:** Users migrated with forced password reset (`mustChangePassword = true`). On first login, they must change their password via `/auth/change-password`. For user activation, admin distributes temporary passwords **out-of-band** (secure channel, never in logs). See [`06-auth-rbac.md`](./06-auth-rbac.md) §1.5.1 for the complete password reset and forced-reset flow.
+**Migration reality (implemented in `scripts/migration/migrate-legacy.ts`):** MD5 is never copied. Every migrated user gets a shared seed password — `LEGACY_SEED_PASSWORD` (default `Password123!`) — with `mustChangePassword = true`, so they can sign in (web) to validate their mapped RBAC and are forced to set a real password via `/auth/change-password` (the bearer/native endpoint refuses them until they do). The loader is self-sufficient: `ensureAuthBootstrap()` also seeds the permission catalog + a full-access, ready-to-use `admin / Password123!`, and users are **upserted by username** with any collision against the bootstrap admin suffixed (`admin` → `admin_legacy70`, via `resolveLegacyUsername`). For a real production cutover, override `LEGACY_SEED_PASSWORD` and distribute per-user temporary passwords out-of-band (never in logs). See [`06-auth-rbac.md`](./06-auth-rbac.md) §1.5.1 for the forced-reset flow.
 
 ### New user creation
 Role mapping from legacy to new system (see [`06-auth-rbac.md`](./06-auth-rbac.md) for the complete role model):
@@ -288,24 +288,29 @@ async function migrateUsers() {
       continue
     }
     
-    // 3. Set a random unusable hash (force password reset on first login)
-    const tempHash = await hashPassword(randomUUID())
-    
-    // 4. Create user (without photo; photos are migrated separately via §10 image migration script)
-    await prisma.user.create({
-      data: {
+    // 3. Hash the shared SEED_PASSWORD ONCE (argon2 is costly), reused for every user.
+    //    Forces a reset on first login; MD5 is never copied.
+    const sharedHash = await hashPassword(SEED_PASSWORD) // outside the loop
+
+    // 4. Upsert by username (idempotent) — suffix a username that collides with the
+    //    bootstrap admin so the demo/bootstrap login is never clobbered.
+    const username = resolveLegacyUsername(lu.PENGGUNA_USERNAME, lu.PENGGUNA_ID, reservedUsernames)
+    await prisma.user.upsert({
+      where: { username },
+      create: {
         legacyId: lu.PENGGUNA_ID,
         roleId: role.id,
         name: lu.PENGGUNA_NAMA || 'Legacy User',
-        username: lu.PENGGUNA_USERNAME || `legacy_${lu.PENGGUNA_ID}`,
-        passwordHash: tempHash,
+        username,
+        passwordHash: sharedHash,
         mustChangePassword: true,  // CRITICAL: force reset
-      }
+      },
+      update: { legacyId: lu.PENGGUNA_ID, roleId: role.id, passwordHash: sharedHash, mustChangePassword: true },
     })
   }
-  
-  // 5. Out-of-band communication: DLH IT staff contact users with temporary
-  //    credentials (per the auth spec). NO credentials in logs, code, or email.
+
+  // 5. For a production cutover (override LEGACY_SEED_PASSWORD), DLH IT staff contact
+  //    users with temporary credentials out-of-band. NO credentials in logs/code/email.
 }
 ```
 
@@ -320,11 +325,24 @@ Legacy model:
 - `hakaksesmenu` table: (role, menu) grants.
 - Goal: map to new `Permission`/`RolePermission` model (see [`06-auth-rbac.md`](./06-auth-rbac.md)).
 
-### Steps
-1. **Enumerate legacy menu entries:** each menu item → extract action code (e.g. `vehicle:create` from
-   `/master/vehicles/create`).
-2. **Create Permission rows:** one per unique action.
-3. **For each role & hakaksesmenu grant:** insert RolePermission row.
+### Steps (implemented in `scripts/migration/lib/permission-map.ts`)
+
+The legacy `menu` tree keys screens under section prefixes — `crud/<entity>` and
+`masterdata/<entity>` (the same master entities under two menus), `transaksi/<…>`,
+`analisadata/<…>`, and `home/<section>` — **not** the new app's `/master/...` routes, so a
+naïve prefix map matches nothing. The real algorithm:
+
+1. **Normalise** each `MENU_URI`: lowercase, then collapse `crud/` and `masterdata/` into one
+   `master/<entity>` namespace.
+2. **Longest-prefix match** the normalised URI against `PERMISSION_MAP` → permission keys
+   (`derivePermissionKeys`). Unmapped menus contribute nothing (logged); every emitted key is
+   guarded against the permission catalog by a unit test.
+3. **Upsert** the catalog permissions, then for each legacy `hakaksesmenu` grant upsert a
+   `RolePermission` for the mapped role × keys.
+
+On the real `dkp_swat` snapshot: 188 legacy grants → **557 `RolePermission` rows** across 17
+roles. `Administrator` is granted all permissions (bootstrap superuser); every other role carries
+exactly its legacy-derived grants.
 
 ```typescript
 async function migrateRBACGrants() {
@@ -335,14 +353,18 @@ async function migrateRBACGrants() {
     JOIN menu m ON hm.MENU_ID = m.MENU_ID
   `)
   
-  // 2. Derive permission keys from menu URIs (hardcoded mapping)
+  // 2. Derive permission keys by longest-prefix match on the NORMALISED URI
+  //    (crud/* and masterdata/* → master/*). Keyed on the real legacy menu URIs:
   const permissionMap = {
-    '/master/vehicles': ['vehicle:read', 'vehicle:create', 'vehicle:update', 'vehicle:delete'],
-    '/master/drivers': ['driver:read', 'driver:create', 'driver:update', 'driver:delete'],
-    '/master/spot': ['site:read', 'site:create', 'site:update', 'site:delete'],
-    '/transaksi/pengambilan': ['trip:create', 'trip:update'],
-    '/transaksi/pembuangan': ['trip:create', 'trip:verify'],
-    // ... per module
+    'master/kendaraan': ['vehicle:read', 'vehicle:create', 'vehicle:update', 'vehicle:delete'],
+    'master/spot': ['site:read', 'site:create', 'site:update', 'site:delete'],
+    'transaksi/pemeriksaankendaraan': ['inspection:read', 'inspection:create', /* … */],
+    'transaksi/pengambilansampah': ['trip:read', 'trip:record-pickup', 'trip:update'],
+    'transaksi/pembuangansampah': ['trip:read', 'trip:record-disposal', 'trip:verify'],
+    'transaksi/retribusi': ['levy:read', 'levy:create', 'levy:update', 'levy:delete'],
+    'home/laporan': ['report:read', 'report:generate', 'report:export'],
+    'analisadata': ['monitoring:read'], 'home/monitoring': ['monitoring:read'],
+    // ... see lib/permission-map.ts for the full table
   }
   
   // 3. Create/fetch permissions
@@ -364,7 +386,7 @@ async function migrateRBACGrants() {
     })
     if (!role) continue
     
-    const perms = permissionMap[extractURI(grant.MENU_LINK)] || []
+    const perms = derivePermissionKeys(grant.MENU_URI) // normalise + longest-prefix match
     for (const perm of perms) {
       const permission = permissions.find(p => p.key === perm)
       if (permission) {
