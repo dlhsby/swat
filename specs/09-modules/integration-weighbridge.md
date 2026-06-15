@@ -2,9 +2,23 @@
 
 ## Overview
 
+> **Implementation status (2026-06-15): ✅ built.** As built, authentication is
+> **dual, OAuth2-primary**: interactive endpoints require a logged-in operator via
+> the per-user OAuth2 bearer (new `weighbridge:*` permissions, role **Petugas
+> Timbang**) and stamp `Trip.recordedById`; a single `WeighbridgeGuard` **also**
+> accepts a `ServiceAccount` API key (role **Integrasi Timbang**) for unattended
+> paths. Rate-limit (per-principal, 60s window) and IP-allowlist (service accounts)
+> apply to both. All ids are **UUID v7**; the kitir entity is `DisposalPermit`.
+> Net weight is computed server-side. Endpoints live under `/api/v1/weighbridge/*`;
+> service-account admin under `/api/v1/admin/service-accounts`; the API audit trail
+> under `/api/v1/admin/api-audit-logs`. See `docs/WEIGHBRIDGE-API.md`. The §2 code
+> samples below are illustrative pseudocode from the original draft (Int ids /
+> `quota` naming) — the real implementation uses UUIDs + `DisposalPermit`.
+
 **PHASE 4 — FUTURE IMPLEMENTATION** (not Phase 1). This document specifies the contract for integrating the TPA (Tempat Pembuangan Akhir / final landfill) weighbridge desktop application with the SWAT backend.
 
 **Context:**
+
 - The TPA operates a separate desktop app ("Jembatan Timbang" / Weighbridge) that captures CCTV footage and scale weight readings.
 - Operator scans (or manually enters) the vehicle's **kitir code** (or plate number).
 - System resolves the kitir to verify vehicle authorization and fetch expected tare weight.
@@ -15,6 +29,7 @@
 **Vendor:** PT. Surveyor Indonesia (landfill operations contractor) operates the TPA and the weighbridge desktop app.
 
 **New in Phase 4:**
+
 - Replace legacy SOAP-based endpoints with a RESTful API.
 - Explicit contract for kitir resolution, weighing POST, and legacy name mapping.
 - `TpaInboundLog` ingestion for reconciliation (Phase 2 reporting).
@@ -24,14 +39,14 @@
 The legacy `Soapservers.php` (NuSOAP) exposed these methods; every one maps to a modern REST endpoint
 or an existing flow — **none is dropped silently**:
 
-| Legacy SOAP method | Purpose | New REST equivalent |
-|---|---|---|
-| `getKitir` / `getBkosong` / `getNomorPolisiKendaraan` (read helpers) | Resolve kitir + tare + plate | `POST /api/v1/weighbridge/resolve-kitir` (§1.1) |
-| `insertDB` | Submit a weighing/disposal row | `POST /api/v1/weighbridge/post-weighing` (§1.2) |
-| `insertPenimbanganTerverifikasi` | Submit a **verified** weighing | `POST /api/v1/weighbridge/post-weighing` with `verified:true` (sets Trip → VERIFIED) + `TpaInboundLog` |
-| `updatePembuanganTerverifikasi` | Update a disposal with net weight after verification | `PATCH /api/v1/weighbridge/weighings/:tripId` (idempotent update of the DISPOSAL Trip + log) |
-| `insertJatahKitir` | TPA-side kitir push | `POST /api/v1/disposal-permits` (service-account auth) — see `disposal-permits.md` §4 |
-| `getpembuangansampahbyfilter` | Query disposals by filter | `GET /api/v1/weighbridge/weighings?date=&plateNumber=&siteId=` (paginated; reads `TpaInboundLog`/`Trip`) |
+| Legacy SOAP method                                                   | Purpose                                              | New REST equivalent                                                                                      |
+| -------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `getKitir` / `getBkosong` / `getNomorPolisiKendaraan` (read helpers) | Resolve kitir + tare + plate                         | `POST /api/v1/weighbridge/resolve-kitir` (§1.1)                                                          |
+| `insertDB`                                                           | Submit a weighing/disposal row                       | `POST /api/v1/weighbridge/post-weighing` (§1.2)                                                          |
+| `insertPenimbanganTerverifikasi`                                     | Submit a **verified** weighing                       | `POST /api/v1/weighbridge/post-weighing` with `verified:true` (sets Trip → VERIFIED) + `TpaInboundLog`   |
+| `updatePembuanganTerverifikasi`                                      | Update a disposal with net weight after verification | `PATCH /api/v1/weighbridge/weighings/:tripId` (idempotent update of the DISPOSAL Trip + log)             |
+| `insertJatahKitir`                                                   | TPA-side kitir push                                  | `POST /api/v1/disposal-permits` (service-account auth) — see `disposal-permits.md` §4                    |
+| `getpembuangansampahbyfilter`                                        | Query disposals by filter                            | `GET /api/v1/weighbridge/weighings?date=&plateNumber=&siteId=` (paginated; reads `TpaInboundLog`/`Trip`) |
 
 **Unit/name conversion (parity G14):** the legacy `konversi_si_swat` table (SI ↔ SWAT unit/name
 conversion used by the Excel weighing import) is handled here alongside `LegacyNameMap` (§3.2). Model
@@ -52,13 +67,16 @@ where resolvable) using these conversions — distinct from the Phase-1 **kitir*
 **Purpose:** Desktop app queries SWAT to verify vehicle authorization and fetch details before accepting waste.
 
 **Request:**
+
 ```json
 {
   "code": "KT-202606-0042",
   "date": "2026-06-05"
 }
 ```
+
 OR
+
 ```json
 {
   "plateNumber": "L-1234-AB",
@@ -67,6 +85,7 @@ OR
 ```
 
 **Response 200 (kitir found, active, within validity date):**
+
 ```json
 {
   "success": true,
@@ -91,6 +110,7 @@ OR
 ```
 
 **Response 404 (kitir not found, inactive, or expired):**
+
 ```json
 {
   "success": false,
@@ -102,25 +122,26 @@ OR
 ```
 
 **Response 400 (invalid request):**
+
 ```json
 {
   "success": false,
   "error": {
     "code": "INVALID_INPUT",
     "message": "Harus menyediakan code atau plateNumber",
-    "details": [
-      { "field": "code", "issue": "Format tidak valid" }
-    ]
+    "details": [{ "field": "code", "issue": "Format tidak valid" }]
   }
 }
 ```
 
 **Authentication:**
+
 - API key (service account) issued to PT. Surveyor Indonesia desktop app.
 - Header: `Authorization: Bearer <api_key>` or `X-API-Key: <api_key>`.
 - No session cookie required (server-to-server communication).
 
 **Rate limiting:**
+
 - 1,000 requests per minute per API key.
 - Return 429 (Too Many Requests) if exceeded.
 
@@ -131,6 +152,7 @@ OR
 **Purpose:** Desktop app records the final weighing result (CCTV + scale) and links it to the DISPOSAL trip.
 
 **Request:**
+
 ```json
 {
   "kitirId": 5001,
@@ -146,6 +168,7 @@ OR
 ```
 
 **Response 201 (recorded successfully):**
+
 ```json
 {
   "success": true,
@@ -161,6 +184,7 @@ OR
 ```
 
 **Response 404 (kitir or vehicle not found):**
+
 ```json
 {
   "success": false,
@@ -172,6 +196,7 @@ OR
 ```
 
 **Response 409 (conflict — e.g., vehicle/date mismatch or quota exceeded):**
+
 ```json
 {
   "success": false,
@@ -183,15 +208,14 @@ OR
 ```
 
 **Response 422 (validation failure):**
+
 ```json
 {
   "success": false,
   "error": {
     "code": "INVALID_INPUT",
     "message": "Berat kotor tidak boleh lebih kecil dari berat kosong",
-    "details": [
-      { "field": "grossWeight", "issue": "Harus >= tareWeight" }
-    ]
+    "details": [{ "field": "grossWeight", "issue": "Harus >= tareWeight" }]
   }
 }
 ```
@@ -201,6 +225,7 @@ OR
 **Rate limiting:** 1,000 requests per minute per API key.
 
 **Idempotency:**
+
 - Optional header: `Idempotency-Key: <UUID>`.
 - If provided, server caches response for 24 hours; retry with same key returns same 201 + ID.
 
@@ -215,11 +240,11 @@ OR
 export async function resolveKitir(
   code?: string,
   plateNumber?: string,
-  date: string  // YYYY-MM-DD
+  date: string, // YYYY-MM-DD
 ): Promise<KitirResolution> {
   // Validate input
   if (!code && !plateNumber) {
-    throw new ValidationError('code atau plateNumber harus disediakan');
+    throw new ValidationError("code atau plateNumber harus disediakan");
   }
 
   // Find DisposalPermit by code or vehicle plate
@@ -229,7 +254,7 @@ export async function resolveKitir(
     permit = await db.disposalPermit.findFirst({
       where: {
         code: code,
-        status: 'ACTIVE',
+        status: "ACTIVE",
         validFrom: { lte: new Date(date) },
         validTo: { gte: new Date(date) },
       },
@@ -240,13 +265,13 @@ export async function resolveKitir(
       where: { plateNumber },
       include: { model: true },
     });
-    if (!vehicle) throw new NotFoundError('Kendaraan tidak ditemukan');
+    if (!vehicle) throw new NotFoundError("Kendaraan tidak ditemukan");
 
     permit = await db.disposalPermit.findFirst({
       where: {
         vehicleId: vehicle.id,
-        site: { type: 'TPA' },  // Filter to TPA sites only
-        status: 'ACTIVE',
+        site: { type: "TPA" }, // Filter to TPA sites only
+        status: "ACTIVE",
         validFrom: { lte: new Date(date) },
         validTo: { gte: new Date(date) },
       },
@@ -255,12 +280,12 @@ export async function resolveKitir(
   }
 
   if (!permit) {
-    throw new NotFoundError('Kitir tidak ditemukan atau sudah kadaluarsa');
+    throw new NotFoundError("Kitir tidak ditemukan atau sudah kadaluarsa");
   }
 
   // Check vehicle is operational
-  if (permit.vehicle.status !== 'GOOD') {
-    throw new NotFoundError('Kendaraan tidak dalam kondisi layak operasi');
+  if (permit.vehicle.status !== "GOOD") {
+    throw new NotFoundError("Kendaraan tidak dalam kondisi layak operasi");
   }
 
   // Return resolution with vehicle specs
@@ -289,7 +314,7 @@ export async function resolveKitir(
 ```typescript
 // POST /api/v1/weighbridge/post-weighing
 export async function postWeighing(
-  kitirId: String,  // UUID
+  kitirId: String, // UUID
   plateNumber: string,
   date: string,
   timestamp: string,
@@ -297,7 +322,7 @@ export async function postWeighing(
   tareWeight: number,
   wasteVolume?: number,
   cctvReference: string,
-  notes?: string
+  notes?: string,
 ): Promise<WeighingResult> {
   // 1. Validate kitir exists and is active
   const permit = await db.disposalPermit.findUnique({
@@ -305,18 +330,20 @@ export async function postWeighing(
     include: { vehicle: true, site: true },
   });
 
-  if (!quota || quota.status !== 'ACTIVE') {
-    throw new NotFoundError('Kitir tidak valid');
+  if (!quota || quota.status !== "ACTIVE") {
+    throw new NotFoundError("Kitir tidak valid");
   }
 
   // 2. Verify plate matches quota vehicle
   if (quota.vehicle.plateNumber !== plateNumber) {
-    throw new ConflictError('Nomor polisi tidak sesuai dengan kitir');
+    throw new ConflictError("Nomor polisi tidak sesuai dengan kitir");
   }
 
   // 3. Validate weights
   if (grossWeight < tareWeight) {
-    throw new ValidationError('Berat kotor tidak boleh lebih kecil dari berat kosong');
+    throw new ValidationError(
+      "Berat kotor tidak boleh lebih kecil dari berat kosong",
+    );
   }
 
   const netWeight = grossWeight - tareWeight;
@@ -327,7 +354,7 @@ export async function postWeighing(
   });
 
   if (!transactionDay) {
-    throw new NotFoundError('Hari transaksi tidak ditemukan');
+    throw new NotFoundError("Hari transaksi tidak ditemukan");
   }
 
   const haul = await db.haul.findFirst({
@@ -335,28 +362,32 @@ export async function postWeighing(
       transactionDayId: transactionDay.id,
       vehicleId: quota.vehicle.id,
     },
-    include: { assignments: { include: { trips: { include: { route: true } } } } },
+    include: {
+      assignments: { include: { trips: { include: { route: true } } } },
+    },
   });
 
   if (!haul) {
-    throw new ConflictError('Haul tidak ditemukan untuk kendaraan dan tanggal ini');
+    throw new ConflictError(
+      "Haul tidak ditemukan untuk kendaraan dan tanggal ini",
+    );
   }
 
   // 5. Find the DISPOSAL trip (by route category) that is not yet VERIFIED
   let disposalTrip = haul.assignments
-    .flatMap(a => a.trips)
-    .find(t => t.route?.category === 'DISPOSAL' && t.status !== 'VERIFIED');
+    .flatMap((a) => a.trips)
+    .find((t) => t.route?.category === "DISPOSAL" && t.status !== "VERIFIED");
 
   if (!disposalTrip) {
     // Fallback: Create ad-hoc DISPOSAL trip if not found (trip was not pre-created from template)
     // This is acceptable for organic TPA arrivals not in the daily plan
-    const assignment = haul.assignments[0];  // Primary driver
+    const assignment = haul.assignments[0]; // Primary driver
     const tpaRoute = await db.route.findFirst({
-      where: { destinationSiteId: quota.site.id, category: 'DISPOSAL' },
+      where: { destinationSiteId: quota.site.id, category: "DISPOSAL" },
     });
 
     if (!tpaRoute) {
-      throw new NotFoundError('Route DISPOSAL untuk TPA tidak ditemukan');
+      throw new NotFoundError("Route DISPOSAL untuk TPA tidak ditemukan");
     }
 
     disposalTrip = await db.trip.create({
@@ -364,17 +395,17 @@ export async function postWeighing(
         haulAssignmentId: assignment.id,
         routeId: tpaRoute.id,
         name: `Pembuangan ke ${quota.site.name}`,
-        operationDate: new Date(date),  // Denormalized for partitioning
-        status: 'IN_PROGRESS',
+        operationDate: new Date(date), // Denormalized for partitioning
+        status: "IN_PROGRESS",
         tareWeight: tareWeight,
         grossWeight: grossWeight,
         netWeight: netWeight,
         wasteVolume: wasteVolume || 0,
         actualTime: new Date(timestamp),
-        actualOdometer: 0,  // May be updated from subsequent trip or manual entry
-        recordedById: null,  // System record; sourced from weighbridge API
+        actualOdometer: 0, // May be updated from subsequent trip or manual entry
+        recordedById: null, // System record; sourced from weighbridge API
         realizationEntryAt: new Date(),
-        notes: `[Weighbridge API] ${notes || cctvReference}`,  // Mark origin
+        notes: `[Weighbridge API] ${notes || cctvReference}`, // Mark origin
       },
     });
   } else {
@@ -387,7 +418,7 @@ export async function postWeighing(
         netWeight: netWeight,
         wasteVolume: wasteVolume || 0,
         actualTime: new Date(timestamp),
-        status: 'DONE',
+        status: "DONE",
         notes: notes || cctvReference,
       },
     });
@@ -399,13 +430,13 @@ export async function postWeighing(
       dateLabel: date,
       date: new Date(date),
       plateNumber: plateNumber,
-      depot: haul.vehicle.poolSite?.name || 'Unknown',
+      depot: haul.vehicle.poolSite?.name || "Unknown",
       sourceTruck: plateNumber,
       grossWeight: grossWeight,
       tareWeight: tareWeight,
       netWeight: netWeight,
       cctvReference: cctvReference,
-      tripId: disposalTrip.id,  // Link back to the Trip for reconciliation
+      tripId: disposalTrip.id, // Link back to the Trip for reconciliation
       createdAt: new Date(),
     },
   });
@@ -430,22 +461,23 @@ export async function postWeighing(
 
 Enhanced for weighbridge integration:
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `id` | Int | PK |
-| `dateLabel` | String(50)? | Original date string (for legacy import) |
-| `date` | Date? | Parsed date; used for reconciliation |
-| `plateNumber` | String(20)? | Vehicle plate |
-| `depot` | String(200)? | Pool/origin (pool name) |
-| `sourceTruck` | String(200)? | Vehicle identifier (legacy field) |
-| `grossWeight` | Int? | kg |
-| `tareWeight` | Int? | kg |
-| `netWeight` | Int? | kg; computed from weighing, not input |
-| `cctvReference` | String? | CCTV footage reference (Phase 4+) |
-| `tripId` | BigInt? | FK to Trip (created by post-weighing endpoint) |
-| `createdAt` | Timestamptz? | When this inbound log was recorded |
+| Field           | Type         | Purpose                                        |
+| --------------- | ------------ | ---------------------------------------------- |
+| `id`            | Int          | PK                                             |
+| `dateLabel`     | String(50)?  | Original date string (for legacy import)       |
+| `date`          | Date?        | Parsed date; used for reconciliation           |
+| `plateNumber`   | String(20)?  | Vehicle plate                                  |
+| `depot`         | String(200)? | Pool/origin (pool name)                        |
+| `sourceTruck`   | String(200)? | Vehicle identifier (legacy field)              |
+| `grossWeight`   | Int?         | kg                                             |
+| `tareWeight`    | Int?         | kg                                             |
+| `netWeight`     | Int?         | kg; computed from weighing, not input          |
+| `cctvReference` | String?      | CCTV footage reference (Phase 4+)              |
+| `tripId`        | BigInt?      | FK to Trip (created by post-weighing endpoint) |
+| `createdAt`     | Timestamptz? | When this inbound log was recorded             |
 
 **Indexes:**
+
 - `(date)` — reconciliation queries (critical for reporting).
 - `(plateNumber)` — vehicle-specific reports.
 - `(tripId)` — link to actual Trip transaction.
@@ -455,13 +487,14 @@ Enhanced for weighbridge integration:
 
 ### 3.2 LegacyNameMap (Existing Entity)
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `id` | Int | PK |
-| `si` | String(250)? | Legacy "SI" (Sistem Informasi?) name |
-| `swat` | String(250)? | New SWAT name |
+| Field  | Type         | Purpose                              |
+| ------ | ------------ | ------------------------------------ |
+| `id`   | Int          | PK                                   |
+| `si`   | String(250)? | Legacy "SI" (Sistem Informasi?) name |
+| `swat` | String(250)? | New SWAT name                        |
 
 **Use case:** TPA desktop app may use legacy naming conventions (e.g., "POOL WONOKROMO" vs "Pool Wonokromo"). Mapping table translates:
+
 - Vehicle pool name: `LegacyNameMap.si` (SI) → `LegacyNameMap.swat` (SWAT) → Site.name lookup.
 - Waste source: SI name → SWAT WasteSource code.
 
@@ -542,18 +575,18 @@ SWAT Database
 
 ## 6. Error Handling & Edge Cases
 
-| Scenario | Response | Action |
-|----------|----------|--------|
-| Invalid kitir code | 404 | Operator retries or escalates to supervisor |
-| Expired quota (validTo < today) | 404 | Operator denies entry; supervisor reissues quota |
-| Inactive quota (status ≠ ACTIVE) | 404 | Same as expired |
-| Vehicle status not GOOD | 404 | Operator denies entry; vehicle pulled from service |
-| Plate mismatch (kitir ≠ vehicle) | 409 Conflict | Operator re-scans; possible fraud alert; logged for audit |
-| Gross < tare | 422 Unprocessable Entity | Operator rechecks scale calibration, retries |
-| No TransactionDay (date not initialized) | 404 | Server-side: daily init job not run; contact admin |
-| No matching DISPOSAL trip (create ad-hoc) | 201 Created | Trip auto-created with inferred DISPOSAL route; logged with system comment |
-| Network timeout | Retry logic (client-side) | Desktop app retries up to 3 times with exponential backoff; manual offline fallback (§7.2 future) |
-| Offline mode (Phase 4+) | Local SQLite queue | Desktop app queues weighings locally; syncs batch on reconnect |
+| Scenario                                  | Response                  | Action                                                                                            |
+| ----------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------- |
+| Invalid kitir code                        | 404                       | Operator retries or escalates to supervisor                                                       |
+| Expired quota (validTo < today)           | 404                       | Operator denies entry; supervisor reissues quota                                                  |
+| Inactive quota (status ≠ ACTIVE)          | 404                       | Same as expired                                                                                   |
+| Vehicle status not GOOD                   | 404                       | Operator denies entry; vehicle pulled from service                                                |
+| Plate mismatch (kitir ≠ vehicle)          | 409 Conflict              | Operator re-scans; possible fraud alert; logged for audit                                         |
+| Gross < tare                              | 422 Unprocessable Entity  | Operator rechecks scale calibration, retries                                                      |
+| No TransactionDay (date not initialized)  | 404                       | Server-side: daily init job not run; contact admin                                                |
+| No matching DISPOSAL trip (create ad-hoc) | 201 Created               | Trip auto-created with inferred DISPOSAL route; logged with system comment                        |
+| Network timeout                           | Retry logic (client-side) | Desktop app retries up to 3 times with exponential backoff; manual offline fallback (§7.2 future) |
+| Offline mode (Phase 4+)                   | Local SQLite queue        | Desktop app queues weighings locally; syncs batch on reconnect                                    |
 
 ---
 
@@ -562,12 +595,14 @@ SWAT Database
 ### 7.1 TpaInboundLog Ingestion
 
 Two sources:
+
 1. **Legacy system export:** Bulk import of historical `sampahmasuktpa` table (3+ years of data).
 2. **Live weighbridge API:** Each weighing posted via `/weighbridge/post-weighing` auto-creates `TpaInboundLog` record.
 
 ### 7.2 Reconciliation Logic
 
 Daily job (end-of-day):
+
 1. For each TransactionDay, sum `DISPOSAL` trips → `Trip.netWeight` total.
 2. Sum `TpaInboundLog` → `TpaInboundLog.netWeight` total.
 3. Compare; flag discrepancies:
@@ -596,13 +631,16 @@ Daily job (end-of-day):
 ## 9. API Key Management Screens (Phase 1 Admin UI)
 
 ### 9.1 Service Accounts List
+
 **Path:** `/admin/service-accounts`
 
 - Table: Name, API key (masked), Active, Rate limit, IP whitelist, Last used, Actions.
 - Button: + Create new service account, Revoke, View audit log.
 
 ### 9.2 Create Service Account
+
 **Form:**
+
 1. Name (e.g., "TPA Jembatan Timbang").
 2. Rate limit (requests per minute; default 500).
 3. IP whitelist (comma-separated; optional).
@@ -612,7 +650,9 @@ Daily job (end-of-day):
 **Output:** Display auto-generated API key (one-time display; warn user to copy).
 
 ### 9.3 Audit Log (API calls)
+
 **Table:** Timestamp, API key, Endpoint, Request/response summary, Status code, IP, User agent.
+
 - Filter: Date range, API key, status, endpoint.
 
 ---

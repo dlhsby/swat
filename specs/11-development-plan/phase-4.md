@@ -1,5 +1,36 @@
 # Phase 4 — Weighbridge Integration
 
+> **Implementation status (built 2026-06-15):** ✅ **Complete.** Decisions taken
+> during build that supersede the original draft below:
+>
+> - **Auth is dual, OAuth2-primary.** Interactive endpoints (resolve-kitir,
+>   post-weighing, PATCH, GET-list, import-excel) accept a logged-in **operator**
+>   via the Phase-1 per-user OAuth2 bearer (new `weighbridge:*` permissions; role
+>   **Petugas Timbang**) — the operator's id is stamped on `Trip.recordedById`. A
+>   single `WeighbridgeGuard` **also** accepts a `ServiceAccount` API key (role
+>   **Integrasi Timbang**) for unattended paths. Rate-limit + IP-allowlist apply to
+>   both principal types. ServiceAccount + API key are implemented exactly as T-401–403.
+> - **UUID v7 PKs everywhere** (the draft's Int ids / `quota` naming are obsolete;
+>   the entity is `DisposalPermit`, the kitir).
+> - **Migrations are hand-authored SQL** applied via `migrate deploy` (`migrate dev`
+>   is never run on this repo): `20260615000000_add_weighbridge_integration` adds
+>   `service_account`, `api_audit_log`, `konversi_si_swat` + the `ApiPrincipalType` enum.
+> - **Module layout:** `modules/service-accounts/` (CRUD) and `modules/integrations/`
+>   (guard, rate-limit, api-audit, `weighbridge/` services + controller). Web admin
+>   UI at `/service-accounts` (+ `/service-accounts/audit-log`).
+> - **Scope = everything:** core endpoints + SOAP parity (PATCH update, GET list,
+>   Excel bulk upload + `konversi_si_swat`) + design docs (`docs/WEIGHBRIDGE-API.md`,
+>   `WEIGHBRIDGE-OFFLINE-QUEUE.md`, `RECONCILIATION-DESIGN.md`,
+>   `WEIGHBRIDGE-STAGING-TEST-PLAN.md`). T-416 (vendor staging run) remains a doc/plan.
+> - **Deploy note:** `trust proxy` is enabled so `req.ip` is the real client behind
+>   nginx (the IP allowlist + audit IPs depend on it). New permissions are granted to
+>   the **Administrator** role automatically on boot (`PermissionsSyncService`), so an
+>   existing DB needs **no** reseed; a fresh `seed:demo`/`seed:auth` creates the new
+>   roles + the demo service account.
+> - **Tests:** unit specs per service + `test/weighbridge.e2e-spec.ts` (11) and
+>   `test/service-accounts.e2e-spec.ts` (3), green against the live stack. Full
+>   verification: [`PHASE-4-VERIFICATION.md`](./PHASE-4-VERIFICATION.md).
+
 ## Overview
 
 Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via RESTful API. Replace legacy SOAP endpoints. Enable automatic posting of weighing results from the TPA scale system, with server-side validation, idempotency, and reconciliation against daily trip data.
@@ -14,6 +45,7 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
 > (G14) — distinct from the Phase-1 kitir bulk import.
 
 **Key deliverables:**
+
 - Service account / API key authentication for the TPA desktop client.
 - Resolve-kitir endpoint (by code or plate) → vehicle details, tare weight, authorization.
 - Post-weighing endpoint → create/update DISPOSAL trip, compute net weight server-side, idempotent.
@@ -42,7 +74,7 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
   2. **Service:** `createServiceAccount(name, rateLimit?, allowedIPs?)` → generate random 64-char API key, hash with bcrypt, store hash + metadata, return plaintext key **once** to caller.
   3. `validateApiKey(key)` → hash input, compare to stored hash, return ServiceAccount or null.
   4. `revokeServiceAccount(id)` → set revokedAt = now, mark inactive.
-  5. **Tests (TDD):** 
+  5. **Tests (TDD):**
      - Generate key is random, non-empty.
      - Hash is different from plaintext.
      - Validation succeeds with correct key, fails with wrong key.
@@ -487,6 +519,7 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
 **Phase 4 is complete when ALL of the following are verified:**
 
 ### Functional Requirements
+
 - [ ] **Service account management:** Create, list, update, revoke service accounts via admin UI.
 - [ ] **API key authentication:** Valid API key required for `/weighbridge/` endpoints; invalid/missing key → 401.
 - [ ] **Resolve-kitir endpoint:** `POST /api/v1/weighbridge/resolve-kitir` returns vehicle details + tare weight + authorization; 404 for invalid/expired quota.
@@ -497,18 +530,21 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
 - [ ] **Audit logging:** All API calls logged (timestamp, serviceAccount, endpoint, status, IP).
 
 ### Testing & Quality
+
 - [ ] **E2E tests:** ≥90% coverage of weighbridge module (happy path + all error cases).
 - [ ] **Unit tests:** ≥85% coverage per service (resolution, validation, idempotency, rate limit).
 - [ ] **Lint + typecheck:** `pnpm lint && pnpm typecheck` clean (0 errors, 0 warnings).
 - [ ] **Integration tests:** weighbridge endpoints tested with realistic data (TransactionDay, DisposalPermit, Trip).
 
 ### Documentation & Integration
+
 - [ ] **API documentation:** Swagger at `/api/docs` with all endpoints documented (descriptions, examples, error codes).
 - [ ] **Integration spec:** WEIGHBRIDGE-API.md provided to TPA vendor.
 - [ ] **Reconciliation design:** TpaInboundLog schema + design doc ready for Phase 2.
 - [ ] **Offline queue design:** Design doc for desktop app offline SQLite queue.
 
 ### Data Integrity
+
 - [ ] **Server-side net weight:** netWeight = gross - tare computed on server; never trusts client input.
 - [ ] **TpaInboundLog reconciliation:** All weighings recorded in TpaInboundLog for Phase 2 reporting.
 - [ ] **Idempotency working:** Duplicate POST requests with same key don't create duplicate records.
@@ -518,6 +554,7 @@ Integrate the TPA (Tempat Pembuangan Akhir) weighbridge desktop application via 
 ## Milestone
 
 **End of Phase 4 — Weighbridge Integration Complete.** The TPA weighbridge desktop app can:
+
 - Query vehicle authorization and tare weight (resolve-kitir).
 - Post weighing results to SWAT backend.
 - Retry safely with idempotency keys (no duplicates).
@@ -529,25 +566,25 @@ SWAT records all weighings in Trip + TpaInboundLog. Tonnage is reconciled daily 
 
 ## Task Summary (T-401 … T-417)
 
-| Task ID | Epic | Title | Size |
-|---------|------|-------|------|
-| T-401 | 4.1 | ServiceAccount entity & API key generation | M |
-| T-402 | 4.1 | Service account CRUD endpoints (admin UI) | M |
-| T-403 | 4.1 | API key authentication guard (middleware) | M |
-| T-404 | 4.2 | DisposalPermit resolution service (by code or plate) | M |
-| T-405 | 4.2 | Weighing validation service (weights, tare, net) | M |
-| T-406 | 4.3 | POST /api/v1/weighbridge/resolve-kitir endpoint | M |
-| T-407 | 4.4 | Find or create DISPOSAL trip for weighing | M |
-| T-408 | 4.4 | POST /api/v1/weighbridge/post-weighing endpoint | L |
-| T-409 | 4.4 | TpaInboundLog insertion & audit trail | M |
-| T-410 | 4.4 | Idempotency key support (optional header) | S |
-| T-411 | 4.5 | Rate limiting per API key (middleware) | S |
-| T-412 | 4.5 | API call audit logging | S |
-| T-413 | 4.6 | Offline queue stub (desktop app local SQLite) | S |
-| T-414 | 4.7 | Weighbridge E2E test suite (Supertest) | M |
-| T-415 | 4.7 | Weighbridge API documentation & Swagger | S |
-| T-416 | 4.7 | Integration testing with TPA desktop app (staging) | M |
-| T-417 | 4.8 | TpaInboundLog reconciliation job (stub) | S |
+| Task ID | Epic | Title                                                | Size |
+| ------- | ---- | ---------------------------------------------------- | ---- |
+| T-401   | 4.1  | ServiceAccount entity & API key generation           | M    |
+| T-402   | 4.1  | Service account CRUD endpoints (admin UI)            | M    |
+| T-403   | 4.1  | API key authentication guard (middleware)            | M    |
+| T-404   | 4.2  | DisposalPermit resolution service (by code or plate) | M    |
+| T-405   | 4.2  | Weighing validation service (weights, tare, net)     | M    |
+| T-406   | 4.3  | POST /api/v1/weighbridge/resolve-kitir endpoint      | M    |
+| T-407   | 4.4  | Find or create DISPOSAL trip for weighing            | M    |
+| T-408   | 4.4  | POST /api/v1/weighbridge/post-weighing endpoint      | L    |
+| T-409   | 4.4  | TpaInboundLog insertion & audit trail                | M    |
+| T-410   | 4.4  | Idempotency key support (optional header)            | S    |
+| T-411   | 4.5  | Rate limiting per API key (middleware)               | S    |
+| T-412   | 4.5  | API call audit logging                               | S    |
+| T-413   | 4.6  | Offline queue stub (desktop app local SQLite)        | S    |
+| T-414   | 4.7  | Weighbridge E2E test suite (Supertest)               | M    |
+| T-415   | 4.7  | Weighbridge API documentation & Swagger              | S    |
+| T-416   | 4.7  | Integration testing with TPA desktop app (staging)   | M    |
+| T-417   | 4.8  | TpaInboundLog reconciliation job (stub)              | S    |
 
 **Total tasks:** 17 | **Est. effort:** 2–3 weeks
 
