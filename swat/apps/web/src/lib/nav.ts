@@ -6,6 +6,7 @@ import {
   Database,
   FuelIcon,
   Gauge,
+  KeyRound,
   LayoutDashboard,
   type LucideIcon,
   MapPin,
@@ -146,6 +147,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     leaves: [
       { key: 'users', href: '/users', icon: UserCog, permission: 'user:read' },
       { key: 'roles', href: '/roles', icon: ShieldCheck, permission: 'role:read' },
+      {
+        key: 'serviceAccounts',
+        href: '/service-accounts',
+        icon: KeyRound,
+        permission: 'service-account:read',
+      },
     ],
   },
 ];

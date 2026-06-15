@@ -47,7 +47,9 @@
     "refuelLog": "Pengisian Bahan Bakar",
     "usersAccess": "Pengguna & Akses",
     "users": "Pengguna",
-    "roles": "Hak Akses"
+    "roles": "Hak Akses",
+    "serviceAccounts": "Akun Layanan",
+    "apiAuditLog": "Log API"
   },
   "shell": {
     "openMenu": "Buka menu",

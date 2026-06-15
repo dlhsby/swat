@@ -47,7 +47,9 @@
     "refuelLog": "Refuel Log",
     "usersAccess": "Users & Access",
     "users": "Users",
-    "roles": "Access Control"
+    "roles": "Access Control",
+    "serviceAccounts": "Service Accounts",
+    "apiAuditLog": "API Log"
   },
   "shell": {
     "openMenu": "Open menu",
