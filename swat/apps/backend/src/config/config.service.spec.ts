@@ -18,6 +18,7 @@ const ENV: Env = {
   S3_ACCESS_KEY: 'swat',
   S3_SECRET_KEY: 'swat-secret',
   S3_FORCE_PATH_STYLE: true,
+  WEIGHBRIDGE_RATE_LIMIT_PER_MIN: 500,
 };
 
 describe('AppConfigService', () => {

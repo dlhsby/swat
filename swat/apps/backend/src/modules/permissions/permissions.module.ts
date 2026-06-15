@@ -22,6 +22,9 @@ export class PermissionsModule implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     try {
       await this.sync.syncCatalog();
+      // Keep the superuser role current so newly-added permissions are usable by
+      // admin on the next boot without a reseed.
+      await this.sync.ensureSuperuserGrants();
     } catch (err) {
       this.logger.error(
         `Permission catalog sync skipped: ${err instanceof Error ? err.message : 'unknown error'}`,

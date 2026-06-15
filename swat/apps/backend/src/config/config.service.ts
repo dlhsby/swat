@@ -68,4 +68,9 @@ export class AppConfigService {
       forcePathStyle: this.get('S3_FORCE_PATH_STYLE'),
     };
   }
+
+  /** Per-minute rate limit for a USER principal on the weighbridge API (Phase 4). */
+  get weighbridgeRateLimitPerMin(): number {
+    return this.get('WEIGHBRIDGE_RATE_LIMIT_PER_MIN');
+  }
 }

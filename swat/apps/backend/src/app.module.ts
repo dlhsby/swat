@@ -17,6 +17,7 @@ import { TokenBearerMiddleware } from './modules/auth/token-bearer.middleware';
 import { CacheModule } from './modules/cache/cache.module';
 import { FleetModule } from './modules/fleet/fleet.module';
 import { GeographyModule } from './modules/geography/geography.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { LevyModule } from './modules/levy/levy.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { OperationsModule } from './modules/operations/operations.module';
@@ -26,6 +27,7 @@ import { PrismaModule } from './modules/prisma/prisma.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { SchedulingModule } from './modules/scheduling/scheduling.module';
+import { ServiceAccountsModule } from './modules/service-accounts/service-accounts.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
@@ -67,6 +69,8 @@ import { SessionModule } from './session.module';
     MonitoringModule,
     ArchivingModule,
     ReportsModule,
+    ServiceAccountsModule,
+    IntegrationsModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },

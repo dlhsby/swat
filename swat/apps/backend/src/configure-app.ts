@@ -13,6 +13,11 @@ import { buildSessionMiddleware, SessionRedis } from './session';
  * pipeline as production.
  */
 export async function configureApp(app: INestApplication, config: AppConfigService): Promise<void> {
+  // Trust the reverse proxy (nginx) so `req.ip` / `X-Forwarded-For` reflect the
+  // real client, not the proxy. Required for the weighbridge service-account IP
+  // allowlist and accurate audit-log IPs. `1` = trust the single nearest hop.
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   // Security headers. CSP is disabled here — this app serves JSON + the Swagger
   // UI (whose inline assets a default CSP would block); the HTML web app's CSP
   // is set at the Nginx layer. frameguard `deny` + noSniff satisfy the

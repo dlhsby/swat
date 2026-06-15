@@ -109,6 +109,14 @@ enum AuthAction {
   PERMISSION_DENIED
 }
 
+// Which kind of principal authenticated an integration API call (Phase 4
+// weighbridge): an interactive operator (OAuth2 bearer) or a machine credential
+// (ServiceAccount API key). Recorded on every `ApiAuditLog` row.
+enum ApiPrincipalType {
+  USER
+  SERVICE_ACCOUNT
+}
+
 // ===========================================================================
 // Auth
 // ===========================================================================
@@ -154,8 +162,9 @@ model Role {
   name        String           @unique @db.VarChar(100)
   createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
-  users       User[]
-  permissions RolePermission[]
+  users           User[]
+  permissions     RolePermission[]
+  serviceAccounts ServiceAccount[]
 
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
   createdById String?   @map("created_by_id") @db.Uuid
@@ -225,6 +234,65 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([timestamp])
   @@map("audit_log")
+}
+
+// Machine credential for the integration APIs (Phase 4 weighbridge). Used for
+// UNATTENDED paths — offline-queue sync, Excel bulk upload, the TPA-side kitir
+// push — where no human is logged in. The interactive weighbridge flow uses a
+// per-operator OAuth2 bearer instead (see specs/09-modules/integration-weighbridge.md
+// §4). The full key is shown ONCE on creation; only its bcrypt/argon2 hash is
+// stored. `apiKeyPrefix` (first 8 chars) lets admins identify a key in lists.
+// `roleId` reuses the RBAC role machinery so permission checks are identical to
+// users. `allowedIPs` (empty = any) gates by source IP.
+model ServiceAccount {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  legacyId        Int?      @unique @map("legacy_id")
+  name            String    @db.VarChar(100)
+  apiKeyHash      String    @map("api_key_hash") @db.VarChar(255)
+  apiKeyPrefix    String    @map("api_key_prefix") @db.VarChar(16)
+  roleId          String    @map("role_id") @db.Uuid
+  role            Role      @relation(fields: [roleId], references: [id])
+  active          Boolean   @default(true)
+  rateLimitPerMin Int       @default(500) @map("rate_limit_per_min")
+  allowedIPs      String[]  @map("allowed_ips")
+  lastUsedAt      DateTime? @map("last_used_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  revokedAt       DateTime? @map("revoked_at") @db.Timestamptz(6)
+
+  createdById String? @map("created_by_id") @db.Uuid
+  updatedById String? @map("updated_by_id") @db.Uuid
+
+  @@index([active])
+  @@index([apiKeyPrefix])
+  @@map("service_account")
+}
+
+// Append-only audit trail for integration API calls (Phase 4 weighbridge). One
+// row per call: who (principalType+id+name), what (method+endpoint), outcome
+// (statusCode), and short request/response summaries — NEVER keys, passwords, or
+// full bodies. Principal-agnostic (no FK) so it can reference either a User or a
+// ServiceAccount. See specs/09-modules/integration-weighbridge.md §9.3.
+model ApiAuditLog {
+  id              String           @id @default(uuid(7)) @db.Uuid
+  principalType   ApiPrincipalType @map("principal_type")
+  principalId     String?          @map("principal_id") @db.Uuid
+  principalName   String           @map("principal_name") @db.VarChar(100)
+  method          String           @db.VarChar(10)
+  endpoint        String           @db.VarChar(256)
+  statusCode      Int              @map("status_code")
+  requestSummary  String?          @map("request_summary") @db.VarChar(512)
+  responseSummary String?          @map("response_summary") @db.VarChar(512)
+  ipAddress       String           @map("ip_address") @db.VarChar(45)
+  userAgent       String           @map("user_agent") @db.VarChar(512)
+  timestamp       DateTime         @default(now()) @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([timestamp])
+  @@index([principalId])
+  @@index([endpoint])
+  @@index([statusCode])
+  @@map("api_audit_log")
 }
 
 // ===========================================================================
@@ -934,6 +1002,25 @@ model LegacyNameMap {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("legacy_name_map")
+}
+
+// SI ↔ SWAT unit/name conversion (legacy `konversi_si_swat`, parity G14). Used by
+// the Phase-4 Excel weighing upload ("Upload Data Penimbangan") to translate the
+// TPA desktop app's legacy naming (waste source, pool, unit) into SWAT entities,
+// complementing `LegacyNameMap`. `category` scopes a mapping (WASTE_SOURCE | POOL
+// | UNIT). See specs/09-modules/integration-weighbridge.md §3.2 / G14.
+model KonversiSiSwat {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  legacyId  Int?     @unique @map("legacy_id")
+  category  String   @db.VarChar(32)
+  si        String   @db.VarChar(250)
+  swat      String   @db.VarChar(250)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([category, si])
+  @@index([category])
+  @@map("konversi_si_swat")
 }
 
 /// Metadata for archived (detached + compressed) monthly partitions

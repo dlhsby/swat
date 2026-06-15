@@ -132,6 +132,17 @@ export const PERMISSION_KEYS: readonly string[] = [
   // Archiving (Phase 2, Epic 2.5) — admin-only partition lifecycle.
   'archive:read',
   'archive:manage',
+  // Service accounts (Phase 4) — admin-only machine-credential management.
+  'service-account:read',
+  'service-account:create',
+  'service-account:update',
+  'service-account:delete',
+  // Weighbridge integration (Phase 4) — TPA scale ↔ SWAT. Granted to the
+  // weighing operators (Petugas Timbang) and the TPA service account.
+  'weighbridge:resolve',
+  'weighbridge:post',
+  'weighbridge:update',
+  'weighbridge:read',
 ];
 
 const ACTION_LABELS: Readonly<Record<string, string>> = {

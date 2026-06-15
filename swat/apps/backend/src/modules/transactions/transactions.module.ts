@@ -10,6 +10,7 @@ import { HaulAssignmentsService } from './haul-assignments/haul-assignments.serv
 import { TransactionDaysController } from './transaction-days/transaction-days.controller';
 import { TransactionDaysRepository } from './transaction-days/transaction-days.repository';
 import { TransactionDaysService } from './transaction-days/transaction-days.service';
+import { TripFinderService } from './trip-finder.service';
 import { TripsController } from './trips/trips.controller';
 import { TripsRepository } from './trips/trips.repository';
 import { TripsService } from './trips/trips.service';
@@ -30,8 +31,9 @@ import { TripsService } from './trips/trips.service';
     HaulAssignmentsRepository,
     TripsService,
     TripsRepository,
+    TripFinderService,
     CacheInvalidationInterceptor,
   ],
-  exports: [DailyInitService],
+  exports: [DailyInitService, TripFinderService],
 })
 export class TransactionsModule {}

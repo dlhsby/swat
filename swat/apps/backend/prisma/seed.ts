@@ -107,11 +107,34 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
     patterns: ['vehicle:read', 'driver:read', 'schedule-template:read', 'trip:read', 'trip:update'],
   },
   { name: 'Petugas TPA', patterns: ['site:read', 'trip:read', 'trip:record-disposal'] },
+  // Weighbridge operators (TPA "Jembatan Timbang") — resolve a kitir and post the
+  // weighing result via the Phase-4 integration API (specs/09-modules/integration-weighbridge.md).
+  {
+    name: 'Petugas Timbang',
+    patterns: [
+      'site:read',
+      'trip:read',
+      'disposal-permit:read',
+      'weighbridge:resolve',
+      'weighbridge:post',
+      'weighbridge:update',
+      'weighbridge:read',
+    ],
+  },
+  // Role assigned to integration ServiceAccounts (machine credentials). The
+  // unattended TPA desktop app authenticates with an API key bearing this role —
+  // resolve/post/update/read weighings, no interactive UI permissions.
+  {
+    name: 'Integrasi Timbang',
+    patterns: ['weighbridge:resolve', 'weighbridge:post', 'weighbridge:update', 'weighbridge:read'],
+  },
   {
     name: 'Supervisor',
     patterns: ['*:read', 'monitoring:read', 'report:read', 'report:export', 'transaction-day:read'],
   },
 ];
+
+const SERVICE_ACCOUNT_ROLE = 'Integrasi Timbang';
 
 async function seedPermissions(): Promise<Map<string, string>> {
   const idByKey = new Map<string, string>();
@@ -1097,6 +1120,44 @@ async function seedDemoRoleUsers(roleIdByName: Map<string, string>): Promise<voi
   }
 }
 
+/**
+ * Dev/CI-only demo ServiceAccount for the weighbridge integration API. Uses a
+ * FIXED dev key (stable across reseeds, upserted by name) so a developer can copy
+ * it from the seed log and call `/api/v1/weighbridge/*` immediately. Only the
+ * Argon2 hash is stored, mirroring the runtime ServiceAccountService. Never in
+ * production. The real cutover issues keys via the admin UI (one-time display).
+ */
+const DEMO_SERVICE_ACCOUNT_KEY =
+  'swatwb_demo_000000000000000000000000000000000000000000000000000000';
+
+async function seedDemoServiceAccount(roleIdByName: Map<string, string>): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+  const roleId = roleIdByName.get(SERVICE_ACCOUNT_ROLE);
+  if (roleId === undefined) {
+    return;
+  }
+  const apiKeyHash = await hash(DEMO_SERVICE_ACCOUNT_KEY, ARGON2_OPTIONS);
+  const apiKeyPrefix = DEMO_SERVICE_ACCOUNT_KEY.slice(0, 12);
+  await prisma.serviceAccount.upsert({
+    where: { legacyId: -1 }, // sentinel for the demo account; never collides with real ids
+    update: { apiKeyHash, apiKeyPrefix, roleId, active: true, revokedAt: null },
+    create: {
+      legacyId: -1,
+      name: 'TPA Jembatan Timbang (Demo)',
+      apiKeyHash,
+      apiKeyPrefix,
+      roleId,
+      active: true,
+      rateLimitPerMin: 500,
+      allowedIPs: [],
+    },
+  });
+  // eslint-disable-next-line no-console
+  console.log('Demo service account API key (dev only): ' + DEMO_SERVICE_ACCOUNT_KEY);
+}
+
 /** Recompute the monitoring rollups over the seeded range so the dashboards work
  * straight after `seed:demo` with no separate `rollup:backfill` step. */
 async function backfillRollups(range: { from: Date; to: Date }): Promise<void> {
@@ -1128,6 +1189,7 @@ async function main(): Promise<void> {
     );
   } else {
     await seedDemoRoleUsers(roleIdByName);
+    await seedDemoServiceAccount(roleIdByName);
     await seedReferenceData();
     if (process.env.SEED_SYNTHETIC !== 'false') {
       await seedLevies();

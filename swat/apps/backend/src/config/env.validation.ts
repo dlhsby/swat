@@ -34,6 +34,11 @@ export const envSchema = z.object({
     .enum(['true', 'false'])
     .default('true')
     .transform((v) => v === 'true'),
+
+  // Weighbridge integration (Phase 4). Per-minute rate limit applied to a USER
+  // principal calling /weighbridge/* (service accounts use their own per-account
+  // ServiceAccount.rateLimitPerMin). Default mirrors the spec's 500/min.
+  WEIGHBRIDGE_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(500),
 });
 
 export type Env = z.infer<typeof envSchema>;
