@@ -32,7 +32,8 @@ Build-side progress records sit next to each phase plan (`phase-N-status.md`): t
 | 0 | ✅ Complete | [`phase-0-status.md`](./phase-0-status.md) |
 | 1 | ✅ Code-complete (operator cutover pending) | [`phase-1-status.md`](./phase-1-status.md) · [`PHASE-1-VERIFICATION.md`](./PHASE-1-VERIFICATION.md) |
 | 2 | ✅ Code-complete (operator live steps pending) | [`phase-2-status.md`](./phase-2-status.md) · [`PHASE-2-VERIFICATION.md`](./PHASE-2-VERIFICATION.md) |
-| 3–5 | ⏳ Not started | — |
+| 3 | ✅ Code-complete (Excel/PDF report engine; T-316 sample page deferred) | [`PHASE-3-VERIFICATION.md`](./PHASE-3-VERIFICATION.md) |
+| 4–5 | ⏳ Not started | — |
 
 ## Design & legacy parity (read before Phase 1 frontend)
 

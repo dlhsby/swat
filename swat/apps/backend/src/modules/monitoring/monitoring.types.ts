@@ -84,6 +84,12 @@ export interface LevyTrendRow {
   readonly totalAmount: number;
 }
 
+export interface LevyByCategoryMonthRow {
+  readonly categoryName: string;
+  readonly month: string;
+  readonly totalAmount: number;
+}
+
 export interface KpiOverview {
   readonly totalTonnageKg: number;
   readonly haulsCompleted: number;

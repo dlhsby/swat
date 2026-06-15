@@ -275,6 +275,36 @@
       "fieldNotes": "Notes"
     }
   },
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Generate tonnage, fuel, route, and levy reports as Excel or PDF.",
+    "tabs": { "tonnage": "Tonnage", "fuel": "Fuel", "route": "Routes", "levy": "Levy" },
+    "description": {
+      "tonnage": "Waste haulage tonnage — monthly summary, daily, by source, and by TPS.",
+      "fuel": "Fuel consumption per vehicle and fuel type, with variance analysis.",
+      "route": "Route haulage frequency and activity.",
+      "levy": "Levy by category and monthly trend."
+    },
+    "format": "Format",
+    "formatXlsx": "Excel (.xlsx)",
+    "formatPdf": "PDF",
+    "generate": "Generate Report",
+    "generateFailed": "Failed to generate report.",
+    "statusTitle": "Report Generation",
+    "statusLabel": "Status",
+    "status": {
+      "QUEUED": "Queued",
+      "PROCESSING": "Processing",
+      "COMPLETED": "Completed",
+      "FAILED": "Failed"
+    },
+    "generating": "Generating report…",
+    "ready": "Report is ready to download.",
+    "failed": "Report generation failed.",
+    "download": "Download",
+    "downloadFailed": "Failed to download report.",
+    "close": "Close"
+  },
   "crud": {
     "created": "Created successfully.",
     "updated": "Changes saved.",

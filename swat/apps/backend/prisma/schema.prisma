@@ -139,6 +139,7 @@ model User {
   maintenanceRecordsUpdatedBy MaintenanceRecord[] @relation("MaintenanceRecordUpdatedBy")
   inspectionsInspector        VehicleInspection[] @relation("VehicleInspectionInspector")
   inspectionsCreatedBy        VehicleInspection[] @relation("VehicleInspectionCreatedBy")
+  reportJobs                  ReportJob[]
 
   createdById String? @map("created_by_id") @db.Uuid
   updatedById String? @map("updated_by_id") @db.Uuid
@@ -979,4 +980,29 @@ model Levy {
   @@index([date])
   @@index([categoryName, date])
   @@map("levy")
+}
+
+/// Async report-generation job (Phase 3). One row per requested export; the
+/// BullMQ worker fills fileUrl/fileSize on success and a nightly cron deletes
+/// rows past expiresAt (7-day TTL).
+model ReportJob {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  user         User      @relation(fields: [userId], references: [id])
+  reportType   String    @map("report_type") @db.VarChar(20) // tonnage | fuel | route | levy
+  format       String    @db.VarChar(10) // xlsx | pdf
+  status       String    @default("QUEUED") @db.VarChar(20) // QUEUED|PROCESSING|COMPLETED|FAILED
+  filters      Json
+  objectKey    String?   @map("object_key") @db.VarChar(512)
+  fileSize     BigInt?   @map("file_size")
+  errorMessage String?   @map("error_message") @db.VarChar(512)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz(6)
+  expiresAt    DateTime? @map("expires_at") @db.Timestamptz(6)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("report_job")
 }

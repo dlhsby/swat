@@ -83,10 +83,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       },
       {
         key: 'reports',
-        href: '/laporan',
+        href: '/reports',
         icon: BarChart3,
         permission: 'report:read',
-        comingSoon: true,
       },
     ],
   },

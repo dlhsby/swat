@@ -47,9 +47,21 @@ export class StorageService {
     return getSignedUrl(this.client, command, { expiresIn });
   }
 
-  /** Presigned GET URL for short-lived read access to a private object. */
-  async getPresignedGetUrl(key: string, expiresIn = DEFAULT_EXPIRY_SECONDS): Promise<string> {
-    const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+  /**
+   * Presigned GET URL for short-lived read access to a private object. `bucket`
+   * defaults to the photo bucket; pass the reports bucket for report downloads.
+   */
+  async getPresignedGetUrl(
+    key: string,
+    expiresIn = DEFAULT_EXPIRY_SECONDS,
+    bucket = this.bucket,
+    responseContentDisposition?: string,
+  ): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ResponseContentDisposition: responseContentDisposition,
+    });
     return getSignedUrl(this.client, command, { expiresIn });
   }
 
@@ -58,14 +70,15 @@ export class StorageService {
     key: string,
     body: Buffer | Uint8Array | string,
     contentType: string,
+    bucket = this.bucket,
   ): Promise<void> {
     await this.client.send(
-      new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType }),
+      new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: contentType }),
     );
   }
 
-  async deleteObject(key: string): Promise<void> {
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
-    this.logger.log(`Deleted object ${key}`);
+  async deleteObject(key: string, bucket = this.bucket): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    this.logger.log(`Deleted object ${key} from ${bucket}`);
   }
 }

@@ -53,6 +53,7 @@ export class AppConfigService {
     endpoint: string;
     region: string;
     bucket: string;
+    reportsBucket: string;
     accessKey: string;
     secretKey: string;
     forcePathStyle: boolean;
@@ -61,6 +62,7 @@ export class AppConfigService {
       endpoint: this.get('S3_ENDPOINT'),
       region: this.get('S3_REGION'),
       bucket: this.get('S3_BUCKET'),
+      reportsBucket: this.get('S3_REPORTS_BUCKET'),
       accessKey: this.get('S3_ACCESS_KEY'),
       secretKey: this.get('S3_SECRET_KEY'),
       forcePathStyle: this.get('S3_FORCE_PATH_STYLE'),

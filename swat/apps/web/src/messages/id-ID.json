@@ -275,6 +275,36 @@
       "fieldNotes": "Catatan"
     }
   },
+  "reports": {
+    "title": "Laporan",
+    "subtitle": "Buat laporan tonase, BBM, rute, dan retribusi dalam format Excel atau PDF.",
+    "tabs": { "tonnage": "Tonase", "fuel": "BBM", "route": "Rute", "levy": "Retribusi" },
+    "description": {
+      "tonnage": "Tonase pengangkutan sampah — ringkasan bulanan, harian, per sumber, dan per TPS.",
+      "fuel": "Konsumsi bahan bakar per kendaraan dan jenis BBM, dengan analisis varian.",
+      "route": "Frekuensi dan aktivitas rute pengangkutan.",
+      "levy": "Retribusi per kategori dan tren bulanan."
+    },
+    "format": "Format",
+    "formatXlsx": "Excel (.xlsx)",
+    "formatPdf": "PDF",
+    "generate": "Buat Laporan",
+    "generateFailed": "Gagal membuat laporan.",
+    "statusTitle": "Pembuatan Laporan",
+    "statusLabel": "Status",
+    "status": {
+      "QUEUED": "Dalam antrean",
+      "PROCESSING": "Memproses",
+      "COMPLETED": "Selesai",
+      "FAILED": "Gagal"
+    },
+    "generating": "Laporan sedang dibuat…",
+    "ready": "Laporan siap diunduh.",
+    "failed": "Pembuatan laporan gagal.",
+    "download": "Unduh",
+    "downloadFailed": "Gagal mengunduh laporan.",
+    "close": "Tutup"
+  },
   "crud": {
     "created": "Data berhasil dibuat.",
     "updated": "Perubahan berhasil disimpan.",

@@ -25,6 +25,9 @@ export const envSchema = z.object({
   S3_ENDPOINT: z.string().min(1).default('http://localhost:9000'),
   S3_REGION: z.string().min(1).default('us-east-1'),
   S3_BUCKET: z.string().min(1).default('swat-photos'),
+  // Dedicated bucket for generated reports (ephemeral, 7-day TTL) — kept apart
+  // from the permanent photo bucket so a MinIO lifecycle rule can back up cleanup.
+  S3_REPORTS_BUCKET: z.string().min(1).default('swat-reports'),
   S3_ACCESS_KEY: z.string().min(1).default('swat'),
   S3_SECRET_KEY: z.string().min(1).default('swat-secret'),
   S3_FORCE_PATH_STYLE: z

@@ -340,6 +340,30 @@ export class MonitoringRepository {
     }));
   }
 
+  /** Levy totals per (category, calendar month) within `[from, to]` — feeds the
+   * report's category×month pivot sheet. Integer IDR; ordered category then month. */
+  async levyByCategoryMonth(
+    from: Date,
+    to: Date,
+  ): Promise<Array<{ categoryName: string; month: string; totalAmount: number }>> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ categoryName: string; month: Date; total: bigint }>
+    >`
+      SELECT "category_name"                    AS "categoryName",
+             date_trunc('month', "date")::date  AS "month",
+             COALESCE(SUM("amount"), 0)::bigint AS "total"
+      FROM "levy"
+      WHERE "date" >= ${from}::date AND "date" <= ${to}::date
+      GROUP BY "category_name", date_trunc('month', "date")
+      ORDER BY "category_name" ASC, "month" ASC
+    `;
+    return rows.map((row) => ({
+      categoryName: row.categoryName,
+      month: row.month.toISOString().slice(0, 7),
+      totalAmount: Number(row.total),
+    }));
+  }
+
   /** Paginated trip rows from the partitioned Trip table, pruned by operationDate. */
   async tripSummary(args: {
     from: Date;

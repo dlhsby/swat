@@ -23,6 +23,7 @@ import { OperationsModule } from './modules/operations/operations.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PersonnelModule } from './modules/personnel/personnel.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { SchedulingModule } from './modules/scheduling/scheduling.module';
 import { StorageModule } from './modules/storage/storage.module';
@@ -65,6 +66,7 @@ import { SessionModule } from './session.module';
     LevyModule,
     MonitoringModule,
     ArchivingModule,
+    ReportsModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },

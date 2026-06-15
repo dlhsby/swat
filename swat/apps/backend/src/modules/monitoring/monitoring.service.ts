@@ -15,6 +15,7 @@ import {
   type FuelByTypeRow,
   type FuelConsumptionRow,
   type KpiOverview,
+  type LevyByCategoryMonthRow,
   type LevySummaryRow,
   type LevyTrendRow,
   type MonthlyTonnageRow,
@@ -131,6 +132,13 @@ export class MonitoringService {
     const { from, to } = this.range(query);
     return this.cached(this.key('levy-trend', query), TTL_LEVY, () =>
       this.repo.levyTrend(from, to),
+    );
+  }
+
+  async levyByCategoryMonth(query: DateRangeQueryDto): Promise<LevyByCategoryMonthRow[]> {
+    const { from, to } = this.range(query);
+    return this.cached(this.key('levy-by-category-month', query), TTL_LEVY, () =>
+      this.repo.levyByCategoryMonth(from, to),
     );
   }
 
