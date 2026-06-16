@@ -3,7 +3,7 @@
 - **Status:** Draft
 - **Author:** TBD
 - **Created:** 2026-06-05
-- **Target phase:** extends Phase 5 (Field/GPS) or **Phase 6** (if schedule allows; TBD after Phase 5 assessment)
+- **Target phase:** extends Phase 8 (Field/GPS) or **Phase 9** (if schedule allows; TBD after Phase 8 assessment)
 - **Detailed design / planning:** [`design.md`](./design.md) · session notes in [`sessions/`](./sessions/)
 - **Relates to:** [`../RFC-0001-monitoring-revamp.md`](../RFC-0001-monitoring-revamp.md) (complementary live
   alerting; share alert-channel strategy), [`../../09-modules/scheduling.md`](../../09-modules/scheduling.md)
@@ -26,7 +26,7 @@ invisible until reconciliation (if at all).
 
 ### 3.1 Location source
 - **Vehicle GPS device / telematics** (preferred for reliability) posting positions to an ingestion
-  API, **and/or** the driver **PWA** (Phase 5) sending background geolocation. Support both via one
+  API, **and/or** the driver **PWA** (Phase 8) sending background geolocation. Support both via one
   ingestion contract.
 
 ### 3.2 Planned route geometry
@@ -78,9 +78,9 @@ invisible until reconciliation (if at all).
   + tolerance). New map and geospatial components in design system.
 
 ## 6. Dependencies & risks
-- **Hardware/data source:** depends on GPS devices in vehicles OR Phase 5 driver-PWA background location.
+- **Hardware/data source:** depends on GPS devices in vehicles OR Phase 8 driver-PWA background location.
   Devices require procurement + connectivity + battery management; PWA fallback uses cellular data (offline
-  buffering via service worker). Coordinate with Phase 5 field/mobile planning.
+  buffering via service worker). Coordinate with Phase 8 field/mobile planning.
 - **PostGIS extension:** required for efficient corridor math (point-to-linestring distance). Adds ~30 MB
   binary; test compatibility with Prisma + pooling (PgBouncer). Corridor queries must be indexed
   (GIST index on geometry columns) to stay < 100 ms per vehicle.
@@ -94,10 +94,10 @@ invisible until reconciliation (if at all).
   buffer should be tunable (proposal: 100–500 m) per route; test ground-truth on live routes.
 
 ## 7. Rough sizing
-**XL.** Suggested phasing across Phase 5–6: (a) ingestion API + live map (basic, no rules); (b) route
+**XL.** Suggested phasing across Phase 8–6: (a) ingestion API + live map (basic, no rules); (b) route
 geometry + corridor model; (c) deviation rules + real-time alerts; (d) analytics & downsampling. The feature
-is too large for Phase 5 alone; defer detailed scheduling to planning session after Phase 5 assessment.
-If Phase 6 is not in the current roadmap, propose Phase 5 **extension** or prioritize which sub-phases
+is too large for Phase 8 alone; defer detailed scheduling to planning session after Phase 8 assessment.
+If Phase 9 is not in the current roadmap, propose Phase 8 **extension** or prioritize which sub-phases
 (likely a, b, c) are MVP.
 
 ## 8. Open questions

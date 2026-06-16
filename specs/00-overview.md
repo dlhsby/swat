@@ -79,7 +79,7 @@ process** and **migrating the existing data**.
   `getKitir`/`getBkosong`/weight-post). The contract is **documented now** (see
   [`09-modules/integration-weighbridge.md`](./09-modules/integration-weighbridge.md)) but
   **built in Phase 4**.
-- 🔜 Field/driver mobile app and live GPS tracking (Phase 5).
+- 🔜 Field/driver mobile app and live GPS tracking (Phase 8).
 
 ## Legacy → new stack summary
 

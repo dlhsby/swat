@@ -102,7 +102,7 @@ from 1,000 devices).
 
 **Response:** `{ "accepted": 5 }` (batch count).
 
-**Offline buffering (driver-PWA only, Phase 5 feature):** PWA service worker queues pings locally via IndexedDB
+**Offline buffering (driver-PWA only, Phase 8 feature):** PWA service worker queues pings locally via IndexedDB
 if offline; syncs when reconnected. Timestamps remain original (client-side).
 
 **Fallback & retry:** if ingest fails, client retries with exponential backoff; server dedup prevents duplicates.
@@ -182,13 +182,13 @@ so CPU load is modest. Verify via load test before going live.
   Dedup key: `vehicle + ruleId + (latitude bucket to 100m grid)`.
 - UI shows alert once; count badge "×3 pings".
 
-**Mute rules (future; post-MVP, Phase 6+):**
+**Mute rules (future; post-MVP, Phase 9+):**
 - Supervisor can mute an alert type for a vehicle (e.g. "ignore dwell-time on this route for 1 hour").
 - Stored as ephemeral mute rule in Redis (TTL 1 hour).
 
 **Channels (see D4 open question):**
-- **MVP (Phase 5a):** in-app WebSocket notification only (live map + alert center badge + audio ping).
-- **Post-MVP (Phase 6+, optional):** email on new alerts, per supervisor preference.
+- **MVP (Phase 8a):** in-app WebSocket notification only (live map + alert center badge + audio ping).
+- **Post-MVP (Phase 9+, optional):** email on new alerts, per supervisor preference.
 - **Out of scope (initial):** SMS/WhatsApp (requires vendor integration; defer to RFC-0001 alert-channel decision).
 
 ## 7. Data model (detailed)
@@ -337,7 +337,7 @@ model VehicleDevice {
 **MVP recommendation:** start with **Google Maps free tier** (250k requests/day free, then pay-per-use) or **Mapbox** for
 easier operations; pivot to self-host later if cost becomes prohibitive or internet connectivity is unreliable.
 
-**Infra cost estimate (Phase 5–6):**
+**Infra cost estimate (Phase 8–6):**
 - PostgreSQL + PostGIS: +50–100 GB incremental disk (~IDR 100k–500k/month for storage, varies by provider)
 - Redis (queue + pub/sub): ~2 GB, same Redis as Phase 1 (already budgeted)
 - Matcher worker: runs in backend service (no extra cost)
@@ -362,7 +362,7 @@ individual movement patterns). Must be handled per local data-protection law and
   supervisors see fleet + their vehicles; managers see all. Immutable audit log of access (who viewed vehicle X at time T).
 - **Encryption in transit:** all GPS ingest + track read over HTTPS/TLS 1.2+.
 - **Encryption at rest (optional for MVP):** `VehicleGpsPing` table encryption per PostgreSQL extension (pgcrypto or native). 
-  Optional if DLH policy does not require; prioritize if compliance officer deems necessary (Phase 6+).
+  Optional if DLH policy does not require; prioritize if compliance officer deems necessary (Phase 9+).
 - **Retention enforcement:** archive job automatically detaches partitions > 30 days (configurable per policy);
   cold-archived pings cannot be queried via normal API (only admin/data-recovery role with override).
 - **Operator oversight:** supervisors can see live alerts; access to raw ping history is restricted to specific
@@ -376,26 +376,26 @@ individual movement patterns). Must be handled per local data-protection law and
 
 **Proposed phasing (pending D1 GPS-source decision):**
 
-1. **Phase 5a (MVP minimum):** GPS ingest API + live map
+1. **Phase 8a (MVP minimum):** GPS ingest API + live map
    - Build ingestion API, Redis queue, basic ping storage
    - Live fleet map: vehicle markers + latest position, no route geometry yet
    - Pilot: 10–20 vehicles (mixed routes + high-volume routes like TPS pickups)
    - Metrics: ingest throughput (target 100+ pings/sec), map latency (target < 500 ms refresh), 0 data loss
 
-2. **Phase 5b:** Route geometry + corridor model
+2. **Phase 8b:** Route geometry + corridor model
    - Build RouteGeometry entity + CRUD API
    - Supervisor tools to draw/import polylines, set tolerance
    - Geometry validation (non-self-intersecting, ordered waypoints)
    - Pilot: same 10–20 vehicles; manually define 3–5 critical routes
    - Metrics: false-alert rate (measure GPS noise vs real deviations), accuracy vs ground truth
 
-3. **Phase 5c / Phase 6a:** Deviation rules + real-time alerts
+3. **Phase 8c / Phase 9a:** Deviation rules + real-time alerts
    - Implement matcher worker, rule evaluation, debounce logic
    - WebSocket alert push, alert center UI, acknowledge flow
    - Full pilot: 50–100 vehicles
    - Metrics: alert accuracy (precision/recall), supervisor response time, false-alert suppression
 
-4. **Phase 6b (post-MVP):** Analytics & downsampling
+4. **Phase 9b (post-MVP):** Analytics & downsampling
    - Historical track playback, heatmaps, per-vehicle deviation stats
    - Downsampling job + warm-data materialization
    - Full fleet rollout (1,000+ vehicles)
@@ -412,7 +412,7 @@ individual movement patterns). Must be handled per local data-protection law and
 - Daily standup: review alerts, false positives, tune tolerances
 - Measure: alert count / day, acknowledgment rate, incidents caught early vs old flow
 
-**Cutover criteria (Phase 5 → 6):**
+**Cutover criteria (Phase 8 → 6):**
 - Ingest API 99.9% uptime over 2 weeks
 - Map rendering latency < 500 ms p95
 - No data loss (log reconciliation vs device/PWA records)
@@ -426,7 +426,7 @@ individual movement patterns). Must be handled per local data-protection law and
 | **Option B: Stream ingest (Kafka) vs Redis Streams** | Kafka: battle-tested, higher throughput, multi-consumer | Kafka: ops overhead, extra infrastructure | Selected: Redis Streams (simpler for 8.6M/day volume; already in stack Phase 1) |
 | **Option C: PostGIS vs custom geospatial library** | PostGIS: mature, tested, SQL-queryable | PostGIS: adds extension dependency | Selected: PostGIS (built-in polygon/distance calcs, < 50 lines SQL) |
 | **Option D: Supervised learning for anomaly detection** | Adaptive to local patterns | requires labeled data, model tuning, drift monitoring | Rejected for MVP — rule-based sufficient; revisit if false-alert rate > 10% |
-| **Option E: Automatic route re-optimization** | Supervisor gets suggestions to reroute vehicle | complex, requires real-time traffic data + driver acceptance | Rejected — out of scope; Phase 6+ feature |
+| **Option E: Automatic route re-optimization** | Supervisor gets suggestions to reroute vehicle | complex, requires real-time traffic data + driver acceptance | Rejected — out of scope; Phase 9+ feature |
 | **Option F: In-database alerting (PostgreSQL trigger)** | Alert creation happens at write time | trigger complexity, limited geospatial in SQL, hard to debug | Rejected — application-level alerting (NestJS service) is clearer |
 
 ## 13. Open decisions (track to closure)
@@ -436,7 +436,7 @@ by the end of the first planning session.
 
 | ID | Decision | Options | Owner | Status | Target date | Notes |
 |----|----------|---------|-------|--------|------|-------|
-| D1 | GPS source | device telematics (preferred) / PWA location (Phase 5) / hybrid? | TBD | open | planning session 1 | Device + PWA combo gives fallback; device primary for reliability |
+| D1 | GPS source | device telematics (preferred) / PWA location (Phase 8) / hybrid? | TBD | open | planning session 1 | Device + PWA combo gives fallback; device primary for reliability |
 | D2 | Ping frequency | 5 sec (26M/day) / **10 sec (8.6M/day)** / 30 sec (2.9M/day) | TBD | open | planning session 1 | 10 sec = balanced; 5 sec = higher ops cost; test battery impact if PWA |
 | D3 | Maps/routing | self-host (OSRM+OSM, on-prem) / **Google Maps / Mapbox** | TBD | open | planning session 1 | Recommend: start with Google Maps free tier, pivot to self-host if cost/internet is issue |
 | D4 | Alert channels | **in-app WebSocket only (MVP)** / + email / + WhatsApp/SMS? | TBD | open | after RFC-0001 decision | Coordinate with RFC-0001 for consistent alert strategy across features |

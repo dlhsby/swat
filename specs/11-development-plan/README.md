@@ -17,7 +17,10 @@ phase is now a self-contained, turnkey execution doc.
 | 2 | [`phase-2.md`](./phase-2.md) | Monitoring: rollups, dashboards, aggregate caching, archiving job | Turnkey (task-level) |
 | 3 | [`phase-3.md`](./phase-3.md) | Reporting: Excel/PDF exports, levy management | Turnkey (task-level) |
 | 4 | [`phase-4.md`](./phase-4.md) | Weighbridge integration: TPA desktop-app API, kitir match, ingest | Turnkey (task-level) |
-| 5 | [`phase-5.md`](./phase-5.md) | Field/mobile + GPS: offline PWA capture, live tracking | Turnkey (task-level) |
+| 5 | [`phase-5.md`](./phase-5.md) | Transaction revamp: ad-hoc trips, native REST parity, trip photos, TPA history backfill | Turnkey (task-level) |
+| 6 | [`phase-6.md`](./phase-6.md) | Monitoring/dashboard/reporting gap analysis & review | Stub (expands at phase start) |
+| 7 | [`phase-7.md`](./phase-7.md) | Production deploy + legacy migration preparation | Stub (expands at phase start) |
+| 8 | [`phase-8.md`](./phase-8.md) | Field/mobile + GPS: offline PWA capture, live tracking | Turnkey (task-level) |
 
 > **Backlog / not-yet-committed:** see [`../14-proposals/`](../14-proposals/). An accepted RFC
 > graduates into a `../09-modules/` spec and a new phase/epic here.
@@ -33,7 +36,10 @@ Build-side progress records sit next to each phase plan (`phase-N-status.md`): t
 | 1 | ✅ Code-complete (operator cutover pending) | [`phase-1-status.md`](./phase-1-status.md) · [`PHASE-1-VERIFICATION.md`](./PHASE-1-VERIFICATION.md) |
 | 2 | ✅ Code-complete (operator live steps pending) | [`phase-2-status.md`](./phase-2-status.md) · [`PHASE-2-VERIFICATION.md`](./PHASE-2-VERIFICATION.md) |
 | 3 | ✅ Code-complete (Excel/PDF report engine; T-316 sample page deferred) | [`PHASE-3-VERIFICATION.md`](./PHASE-3-VERIFICATION.md) |
-| 4–5 | ⏳ Not started | — |
+| 4 | ✅ Code-complete (weighbridge TPA API + dual auth + Excel import) | [`PHASE-4-VERIFICATION.md`](./PHASE-4-VERIFICATION.md) |
+| 5 | 🚧 In progress (transaction revamp: ad-hoc trips, native parity, trip photos, TPA backfill) | [`phase-5.md`](./phase-5.md) · [`PHASE-5-VERIFICATION.md`](./PHASE-5-VERIFICATION.md) |
+| 6–7 | ⏳ Planned | [`phase-6.md`](./phase-6.md) · [`phase-7.md`](./phase-7.md) |
+| 8 | ⏳ Not started (Field/mobile + GPS) | [`phase-8.md`](./phase-8.md) |
 
 ## Design & legacy parity (read before Phase 1 frontend)
 
@@ -140,9 +146,12 @@ Per-domain backend module = `apps/backend/src/modules/<domain>/` containing
 | Monitoring | 2 | Rollups, dashboards, aggregate caching, archiving job | 2–3 |
 | Reporting | 3 | Excel/PDF exports, levy mgmt | 2 |
 | Weighbridge | 4 | TPA API, kitir resolution, post-weighing ingest | 2–3 |
-| Field/GPS | 5 | Offline PWA, live tracking, push notifications | 3–4 |
+| Transaction revamp | 5 | Ad-hoc trips, native REST parity (bulk kitir, operator attribution, kitir→trip link), trip photos, TPA history backfill | 1–2 |
+| Monitoring/reporting review | 6 | Legacy-vs-new gap analysis + remediation for dashboards/reports | 1–2 |
+| Production deploy + migration prep | 7 | Prisma 7 cutover, staging/prod seed tracks, infra runbook, legacy cutover checklist | 1–2 |
+| Field/GPS | 8 | Offline PWA, live tracking, push notifications | 3–4 |
 
-**To MVP (Phases 0–1): ~17–21 weeks. To full Phase 5: ~27–33 weeks.** This estimate is the *committed*
+**To MVP (Phases 0–1): ~17–21 weeks. To full Phase 8: ~30–39 weeks.** This estimate is the *committed*
 MVP figure — it already includes the design-system/dark token layer, the component library
 (Epic 1.8.5), and **all legacy-parity work (Epic 1.17)**. Parity is **committed Phase-1 scope, not an
 optional add-on**: this is a rewrite of `old_swat`, and the cutover (Epic 1.16) is gated on full
