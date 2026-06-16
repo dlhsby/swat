@@ -168,7 +168,7 @@ async function main(): Promise<void> {
   mkdirSync(dir, { recursive: true });
   const md = renderReportMarkdown(report);
   writeFileSync(join(dir, 'delta-sync-kpi-report.md'), md);
-  // eslint-disable-next-line no-console
+
   console.log(md);
 
   await prisma.$disconnect();
@@ -180,7 +180,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: unknown) => {
-  // eslint-disable-next-line no-console
   console.error(err);
   void prisma.$disconnect();
   process.exit(1);

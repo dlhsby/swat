@@ -31,7 +31,7 @@
     "@swat/eslint-config": "workspace:*",
     "@swat/tsconfig": "workspace:*",
     "@types/node": "^22.9.0",
-    "eslint": "^8.57.1",
+    "eslint": "^9.39.4",
     "husky": "^9.1.6",
     "lint-staged": "^15.2.10",
     "prettier": "^3.3.3",

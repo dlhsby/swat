@@ -218,7 +218,6 @@ import type { LegacyVehicleModel } from './legacy-vehicle-models';
   const out = join(__dirname, '..', 'prisma', 'demo-fixtures.ts');
   writeFileSync(out, header + body, 'utf8');
 
-  // eslint-disable-next-line no-console
   console.log(
     `demo-fixtures.ts written: ${c.sites.length} sites, ${c.routes.length} routes, ` +
       `${c.vehicles.length} vehicles, ${c.models.length} models, ${c.drivers.length} drivers, ` +

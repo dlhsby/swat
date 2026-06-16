@@ -1,18 +1,22 @@
 /**
- * Next.js ESLint layer for the SWAT web app.
- * Extends the shared base and relaxes a few rules that don't apply to
- * React Server/Client components (e.g. browser console in dev tooling).
+ * Next.js ESLint **flat** layer for the SWAT web app (ESLint 9+).
+ * Extends the shared base with browser globals and relaxes default-export
+ * (pages/layouts are default exports). The Next.js plugin rules themselves are
+ * composed in the web app's own `eslint.config.mjs` (via eslint-config-next).
  */
-module.exports = {
-  extends: ['@swat/eslint-config'],
-  env: {
-    browser: true,
-    node: true,
-    es2022: true,
+const globals = require('globals');
+
+const base = require('./index.js');
+
+/** @type {import('eslint').Linter.Config[]} */
+module.exports = [
+  ...base,
+  {
+    languageOptions: {
+      globals: { ...globals.browser },
+    },
+    rules: {
+      'import/no-default-export': 'off',
+    },
   },
-  rules: {
-    // React components frequently re-export types; keep import ordering strict
-    // but allow default exports for pages/layouts.
-    'import/no-default-export': 'off',
-  },
-};
+];

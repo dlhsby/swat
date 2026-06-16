@@ -84,11 +84,10 @@ export function parseFlags(argv: readonly string[]): Flags {
 export function log(message: string): void {
   // Migration scripts run on a console; timestamped progress is the intended
   // output here (not application logging).
-  // eslint-disable-next-line no-console
+
   console.log(`[${new Date().toISOString()}] ${message}`);
 }
 
 export function warn(message: string): void {
-  // eslint-disable-next-line no-console
   console.warn(`[${new Date().toISOString()}] WARN ${message}`);
 }

@@ -55,7 +55,7 @@ interface AuditLogWriter {
   auditLog: { create: (args: { data: AuditLogEntry }) => Promise<unknown> };
 }
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any, no-param-reassign -- Prisma's $use middleware works by mutating `params`. */
+/* eslint-disable @typescript-eslint/no-explicit-any, no-param-reassign -- Prisma's $use middleware works by mutating `params`. */
 
 function recordId(result: unknown): string {
   const id = (result as { id?: unknown } | null)?.id;

@@ -1,6 +1,3 @@
-/* eslint-disable import/no-named-as-default-member -- pdfmake's CJS default
-   export is the printer instance; its methods are non-enumerable, so the named
-   imports the rule suggests are undefined at runtime. The default import works. */
 import { Injectable } from '@nestjs/common';
 import pdfMake from 'pdfmake';
 import { type Content, type TDocumentDefinitions } from 'pdfmake/interfaces';
