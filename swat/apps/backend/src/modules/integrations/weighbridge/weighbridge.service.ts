@@ -98,7 +98,9 @@ export class WeighbridgeService {
 
     const actualTime = dto.timestamp ? new Date(dto.timestamp) : new Date();
     const recordedAt = new Date();
-    const recordedById = recorderId(principal);
+    // A service-account post (TPA desktop app on an API key) has no session user,
+    // so fall back to the supplied operatorId — the legacy `petugasid`.
+    const recordedById = recorderId(principal) ?? dto.operatorId ?? null;
 
     await this.prisma.trip.update({
       where: { id: trip.id },
@@ -112,6 +114,8 @@ export class WeighbridgeService {
         notes: `[Weighbridge] ${dto.notes ?? dto.cctvReference ?? ''}`.trim(),
         recordedById,
         updatedById: recordedById,
+        // Persist the kitir→trip link (legacy jatahKitir) for historical audit.
+        disposalPermitId: permit.id,
         ...(dto.verified ? { verifiedById: recordedById, verifiedAt: recordedAt } : {}),
       },
     });

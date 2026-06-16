@@ -71,4 +71,12 @@ export class PostWeighingDto {
   @IsOptional()
   @IsBoolean()
   verified?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Operator (User) who performed the weighing — legacy `petugasid`. Used as the trip recorder when posting with a service-account API key (no session user).',
+  })
+  @IsOptional()
+  @IsUUID(undefined, { message: 'operatorId harus berupa UUID' })
+  operatorId?: string;
 }

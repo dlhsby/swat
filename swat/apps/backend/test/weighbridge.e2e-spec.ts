@@ -151,6 +151,8 @@ describe('Weighbridge API (e2e)', () => {
     const trip = await prisma.trip.findUnique({ where: { id: res.body.data.tripId } });
     expect(trip?.status).toBe('DONE');
     expect(trip?.netWeight).toBe(2000);
+    // The kitir→trip link (legacy jatahKitir) is persisted for audit.
+    expect(trip?.disposalPermitId).toBe(fx.permitId);
 
     const log = await prisma.tpaInboundLog.findFirst({ where: { tripId: res.body.data.tripId } });
     expect(log?.netWeight).toBe(2000);

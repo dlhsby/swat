@@ -377,6 +377,18 @@ const GROUPS = [
         },
         note: 'Impor Massal — upsert by legacyId; per-row validation. Frontend parses the CSV/Excel and posts structured rows.',
       }),
+      req('Issue Kitir (bulk)', 'POST', '/disposal-permits/bulk-issue', {
+        body: {
+          vehicleId: '{{vehicleId}}',
+          siteId: '{{destinationSiteId}}',
+          validFrom: '2026-06-01',
+          validTo: '2026-06-30',
+          count: 5,
+        },
+        capture: 'disposalPermitId',
+        captureFrom: 'data[0].id',
+        note: 'Legacy insertJatahKitir — issue N kitir at once; returns all with printable KT-YYYYMM-NNNN codes for the kitir-printing app.',
+      }),
       req('Update Disposal Permit (revoke)', 'PATCH', '/disposal-permits/{{disposalPermitId}}', {
         body: { status: 'INACTIVE' },
       }),
@@ -600,10 +612,11 @@ const GROUPS = [
           tareWeight: 8000,
           wasteVolume: 4,
           notes: 'uji timbang',
+          operatorId: '{{userId}}',
         },
         capture: 'weighbridgeTripId',
         captureFrom: 'data.tripId',
-        note: 'Creates/updates the inbound weighing + Trip. Captures the resulting tripId.',
+        note: 'Creates/updates the inbound weighing + Trip. operatorId (legacy petugasid) attributes the human weigher on API-key posts. Captures the resulting tripId.',
       }),
       req('List Weighings', 'GET', '/weighbridge/weighings', {
         query: { page: '1', limit: '20', date: '2026-06-05' },

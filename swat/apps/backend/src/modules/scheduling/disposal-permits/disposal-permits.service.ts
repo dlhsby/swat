@@ -16,6 +16,7 @@ import {
   type BulkImportDisposalPermitsDto,
   type BulkImportResult,
 } from './dto/bulk-import-disposal-permits.dto';
+import { type BulkIssueDisposalPermitsDto } from './dto/bulk-issue-disposal-permits.dto';
 import { type CreateDisposalPermitDto } from './dto/create-disposal-permit.dto';
 import { type ListDisposalPermitsQueryDto } from './dto/list-disposal-permits.query.dto';
 import { type UpdateDisposalPermitDto } from './dto/update-disposal-permit.dto';
@@ -134,6 +135,29 @@ export class DisposalPermitsService {
         throw err;
       }
     }
+  }
+
+  /**
+   * Issue N identical kitir at once (legacy `insertJatahKitir`). Reuses `create()`
+   * so each gets its own KT-YYYYMM-NNNN barcode + validation; returns all N with
+   * the printable fields the kitir app needs. Created sequentially so the
+   * per-month code counter stays consistent (matches the legacy loop).
+   */
+  async bulkIssue(dto: BulkIssueDisposalPermitsDto): Promise<DisposalPermitDto[]> {
+    const issuedAt = dto.issuedAt ?? formatDateOnly(new Date());
+    const created: DisposalPermitDto[] = [];
+    for (let i = 0; i < dto.count; i += 1) {
+      created.push(
+        await this.create({
+          vehicleId: dto.vehicleId,
+          siteId: dto.siteId,
+          issuedAt,
+          validFrom: dto.validFrom,
+          validTo: dto.validTo,
+        }),
+      );
+    }
+    return created;
   }
 
   /** Next barcode for the issue month: `KT-YYYYMM-NNNN`, counter per period. */

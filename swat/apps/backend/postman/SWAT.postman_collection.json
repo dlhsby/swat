@@ -2636,6 +2636,43 @@
           }
         },
         {
+          "name": "Issue Kitir (bulk)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['0']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('disposalPermitId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/disposal-permits/bulk-issue",
+              "host": ["{{baseUrl}}"],
+              "path": ["disposal-permits", "bulk-issue"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"siteId\": \"{{destinationSiteId}}\",\n  \"validFrom\": \"2026-06-01\",\n  \"validTo\": \"2026-06-30\",\n  \"count\": 5\n}"
+            },
+            "description": "Legacy insertJatahKitir — issue N kitir at once; returns all with printable KT-YYYYMM-NNNN codes for the kitir-printing app."
+          }
+        },
+        {
           "name": "Update Disposal Permit (revoke)",
           "event": [
             {
@@ -4163,9 +4200,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"plateNumber\": \"L 9 UJI\",\n  \"date\": \"2026-06-05\",\n  \"grossWeight\": 12000,\n  \"tareWeight\": 8000,\n  \"wasteVolume\": 4,\n  \"notes\": \"uji timbang\"\n}"
+              "raw": "{\n  \"plateNumber\": \"L 9 UJI\",\n  \"date\": \"2026-06-05\",\n  \"grossWeight\": 12000,\n  \"tareWeight\": 8000,\n  \"wasteVolume\": 4,\n  \"notes\": \"uji timbang\",\n  \"operatorId\": \"{{userId}}\"\n}"
             },
-            "description": "Creates/updates the inbound weighing + Trip. Captures the resulting tripId."
+            "description": "Creates/updates the inbound weighing + Trip. operatorId (legacy petugasid) attributes the human weigher on API-key posts. Captures the resulting tripId."
           }
         },
         {

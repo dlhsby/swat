@@ -273,4 +273,28 @@ describe('DisposalPermitsService', () => {
       expect(result).toMatchObject({ imported: 1, skipped: 1, errorCount: 0 });
     });
   });
+
+  describe('bulkIssue', () => {
+    it('issues N permits and returns all of them with printable fields', async () => {
+      let n = 0;
+      repo.create.mockImplementation(() =>
+        Promise.resolve(buildPermit({ id: `id-${(n += 1)}`, code: `KT-202606-000${n}` })),
+      );
+      const result = await service.bulkIssue({
+        vehicleId: '00000000-0000-0000-0000-000000000001',
+        siteId: '00000000-0000-0000-0000-000000000002',
+        validFrom: '2026-06-01',
+        validTo: '2026-06-30',
+        count: 3,
+      });
+      expect(result).toHaveLength(3);
+      expect(repo.create).toHaveBeenCalledTimes(3);
+      expect(result.map((p) => p.code)).toEqual([
+        'KT-202606-0001',
+        'KT-202606-0002',
+        'KT-202606-0003',
+      ]);
+      expect(result[0]).toMatchObject({ vehiclePlate: 'L 1 AB', siteName: 'SPBU' });
+    });
+  });
 });

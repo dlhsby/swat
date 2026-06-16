@@ -9,6 +9,7 @@ import {
   BulkImportDisposalPermitsDto,
   type BulkImportResult,
 } from './dto/bulk-import-disposal-permits.dto';
+import { BulkIssueDisposalPermitsDto } from './dto/bulk-issue-disposal-permits.dto';
 import { CreateDisposalPermitDto } from './dto/create-disposal-permit.dto';
 import { ListDisposalPermitsQueryDto } from './dto/list-disposal-permits.query.dto';
 import { UpdateDisposalPermitDto } from './dto/update-disposal-permit.dto';
@@ -46,6 +47,16 @@ export class DisposalPermitsController {
   @ApiOperation({ summary: 'Bulk-import disposal permits (Impor Massal); upsert by legacyId' })
   bulkImport(@Body() dto: BulkImportDisposalPermitsDto): Promise<BulkImportResult> {
     return this.disposalPermits.bulkImport(dto);
+  }
+
+  @Post('bulk-issue')
+  @RequirePermissions('disposal-permit:create')
+  @ApiOperation({
+    summary:
+      'Issue N kitir at once (legacy insertJatahKitir); returns all permits with printable codes',
+  })
+  bulkIssue(@Body() dto: BulkIssueDisposalPermitsDto): Promise<DisposalPermitDto[]> {
+    return this.disposalPermits.bulkIssue(dto);
   }
 
   @Patch(':id')

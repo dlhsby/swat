@@ -657,6 +657,8 @@ model DisposalPermit {
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
   deletedById String?   @map("deleted_by_id") @db.Uuid
 
+  trips Trip[] @relation("TripDisposalPermit")
+
   @@index([vehicleId, status, validFrom, validTo])
   @@index([status, validFrom, validTo])
   @@map("disposal_permit")
@@ -767,12 +769,17 @@ model Trip {
   verifiedById        String?        @map("verified_by_id") @db.Uuid
   verifiedBy          User?          @relation("TripVerifiedBy", fields: [verifiedById], references: [id])
   verifiedAt          DateTime?      @map("verified_at") @db.Timestamptz(6)
+  // The disposal permit (kitir) a weighbridge disposal was recorded against — the
+  // legacy `jatahKitir` linkage, persisted for historical auditability.
+  disposalPermitId    String?         @map("disposal_permit_id") @db.Uuid
+  disposalPermit      DisposalPermit? @relation("TripDisposalPermit", fields: [disposalPermitId], references: [id])
 
   @@index([haulAssignmentId])
   @@index([routeId])
   @@index([status])
   @@index([operationDate])
   @@index([legacyId])
+  @@index([disposalPermitId])
   @@map("trip")
 }
 
