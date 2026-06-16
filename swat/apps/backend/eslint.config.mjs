@@ -21,6 +21,13 @@ export default [
     },
   },
   {
-    ignores: ['dist/', 'prisma/generated/', 'postman/', '**/*.config.js', 'eslint.config.mjs'],
+    ignores: [
+      'dist/',
+      'prisma/generated/',
+      'postman/',
+      '**/*.config.js',
+      'eslint.config.mjs',
+      'prisma.config.ts',
+    ],
   },
 ];

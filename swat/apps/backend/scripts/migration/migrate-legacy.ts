@@ -17,6 +17,8 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { hash } from 'argon2';
 
 import { PERMISSION_CATALOG } from '../../src/common/auth/permission-catalog';
+import { loadScriptEnv } from '../../src/common/prisma/load-script-env';
+import { pgAdapter } from '../../src/common/prisma/pg-adapter';
 
 import { mapDayStatus, mapTripStatus } from './lib/enums';
 import type {
@@ -111,7 +113,8 @@ if (seedEnv) {
   }
 }
 
-const prisma = new PrismaClient();
+loadScriptEnv();
+const prisma = new PrismaClient({ adapter: pgAdapter() });
 const NOW = new Date();
 
 /**

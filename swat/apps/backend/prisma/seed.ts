@@ -46,6 +46,7 @@ import {
   describePermission,
   expandPatterns,
 } from '../src/common/auth/permission-catalog';
+import { pgAdapter } from '../src/common/prisma/pg-adapter';
 import { RollupRepository } from '../src/modules/analytics/rollup.repository';
 import { RollupService } from '../src/modules/analytics/rollup.service';
 import { type PrismaService } from '../src/modules/prisma/prisma.service';
@@ -61,7 +62,7 @@ import {
   DEMO_VEHICLES,
 } from './demo-fixtures';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({ adapter: pgAdapter() });
 
 // Default admin password — meets the policy in specs/06-auth-rbac.md §1.4
 // (≥12 chars, upper/lower/digit/symbol). Forced to change on first login.

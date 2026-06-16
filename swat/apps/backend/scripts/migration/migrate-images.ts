@@ -15,10 +15,14 @@ import { join } from 'node:path';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { PrismaClient } from '@prisma/client';
 
+import { loadScriptEnv } from '../../src/common/prisma/load-script-env';
+import { pgAdapter } from '../../src/common/prisma/pg-adapter';
+
 import { contentTypeForPath, isSupportedImage, objectKeyFor } from './lib/images';
 import { connectLegacy, legacyDbConfigFromEnv, log, query, warn } from './lib/runtime';
 
-const prisma = new PrismaClient();
+loadScriptEnv();
+const prisma = new PrismaClient({ adapter: pgAdapter() });
 
 interface ImageRef {
   ownerType: string;

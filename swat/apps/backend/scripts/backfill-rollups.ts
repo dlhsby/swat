@@ -12,11 +12,16 @@
  *   pnpm --filter @swat/backend run rollup:backfill -- 2025-06-01 2025-12-31
  */
 import { Logger } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 
 import { formatDateOnly, parseDateOnly } from '../src/common/dates';
+import { loadScriptEnv } from '../src/common/prisma/load-script-env';
+import { pgAdapter } from '../src/common/prisma/pg-adapter';
 import { RollupRepository } from '../src/modules/analytics/rollup.repository';
 import { RollupService } from '../src/modules/analytics/rollup.service';
-import { PrismaService } from '../src/modules/prisma/prisma.service';
+import { type PrismaService } from '../src/modules/prisma/prisma.service';
+
+loadScriptEnv();
 
 const logger = new Logger('rollup-backfill');
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -50,7 +55,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const prisma = new PrismaService();
+  const prisma = new PrismaClient({ adapter: pgAdapter() }) as unknown as PrismaService;
   await prisma.$connect();
   try {
     const range = await resolveRange(prisma, fromArg, toArg);

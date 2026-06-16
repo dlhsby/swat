@@ -11,6 +11,9 @@ import { join } from 'node:path';
 
 import { PrismaClient } from '@prisma/client';
 
+import { loadScriptEnv } from '../../src/common/prisma/load-script-env';
+import { pgAdapter } from '../../src/common/prisma/pg-adapter';
+
 import {
   type MigrationReport,
   type ReconcileRow,
@@ -20,7 +23,8 @@ import {
 } from './lib/reconcile';
 import { connectLegacy, countRows, legacyDbConfigFromEnv, log, query, warn } from './lib/runtime';
 
-const prisma = new PrismaClient();
+loadScriptEnv();
+const prisma = new PrismaClient({ adapter: pgAdapter() });
 
 interface Pair {
   legacyTable: string;
