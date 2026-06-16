@@ -353,6 +353,16 @@ Response 200
 }
 ```
 
+### 4.x Phase 5 additions (Transaction Revamp)
+
+| Method & path | Permission | Notes |
+| --- | --- | --- |
+| `POST /trips` | `trip:create` | Record an **ad-hoc/unscheduled** trip on a haul assignment (legacy parity for off-plan pickups/refuels/disposals). Body: `{ haulAssignmentId, routeId? \| (category + destinationSiteId?), name?, ...optional actuals }`. The route is resolved from `routeId`, or inferred from `category` + `destinationSiteId`. When `actualTime` + `actualOdometer` are supplied the trip is recorded (DONE) in the same call (also requires the category record permission); otherwise it is created `IN_PROGRESS`. |
+| `GET /trips/:id/photos` | `trip:read` | List a trip's documentation photos (legacy `dokumentasitrayek`), each with a short-lived presigned view URL. |
+| `POST /trips/:id/photos` | `trip:update` | Register a photo against a trip. Upload the bytes via `POST /storage/presigned-put` first, then post the object metadata `{ objectKey, contentType, sizeBytes, checksum, width?, height? }`. Stored as a polymorphic `Photo` (`ownerType='trip'`); bytes never pass through the API server. |
+
+**`Trip.disposalPermitId`** (new, nullable FK → `DisposalPermit`) records the kitir a weighbridge disposal was posted against (legacy `jatahKitir`), set by `post-weighing` for historical auditability. `trip` is a partitioned table, so the column was added by a raw-SQL migration applied with `migrate deploy`.
+
 ---
 
 ## 5. Business Rules (from 02-domain-model.md)

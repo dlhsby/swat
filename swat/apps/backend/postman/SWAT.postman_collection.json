@@ -2918,6 +2918,43 @@
           }
         },
         {
+          "name": "Create Ad-hoc Trip",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('tripId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"haulAssignmentId\": \"{{haulAssignmentId}}\",\n  \"category\": \"PICKUP\",\n  \"destinationSiteId\": \"{{siteId}}\",\n  \"name\": \"Pengambilan tak terjadwal\"\n}"
+            },
+            "description": "Legacy parity — record an unscheduled trip. Provide routeId, or category + destinationSiteId. Add actualTime+actualOdometer to record it (DONE) in one call."
+          }
+        },
+        {
           "name": "Get Trip",
           "event": [
             {
@@ -2938,6 +2975,63 @@
               "host": ["{{baseUrl}}"],
               "path": ["trips", "{{tripId}}"]
             }
+          }
+        },
+        {
+          "name": "List Trip Photos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/photos",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", "{{tripId}}", "photos"]
+            },
+            "description": "Returns each photo with a short-lived presigned view URL."
+          }
+        },
+        {
+          "name": "Attach Trip Photo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/photos",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", "{{tripId}}", "photos"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"objectKey\": \"trip/{{tripId}}/uji.jpg\",\n  \"contentType\": \"image/jpeg\",\n  \"sizeBytes\": 12345,\n  \"checksum\": \"deadbeef\"\n}"
+            },
+            "description": "Legacy dokumentasitrayek — upload bytes via /storage/presigned-put first, then register the object metadata here."
           }
         },
         {

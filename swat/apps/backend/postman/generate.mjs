@@ -426,7 +426,29 @@ const GROUPS = [
       req('Record Return', 'PUT', '/haul-assignments/{{haulAssignmentId}}/record-return', {
         body: { actualOdometer: 1080, actualTime: '2026-06-08T14:30:00.000Z' },
       }),
+      req('Create Ad-hoc Trip', 'POST', '/trips', {
+        body: {
+          haulAssignmentId: '{{haulAssignmentId}}',
+          category: 'PICKUP',
+          destinationSiteId: '{{siteId}}',
+          name: 'Pengambilan tak terjadwal',
+        },
+        capture: 'tripId',
+        note: 'Legacy parity — record an unscheduled trip. Provide routeId, or category + destinationSiteId. Add actualTime+actualOdometer to record it (DONE) in one call.',
+      }),
       req('Get Trip', 'GET', '/trips/{{tripId}}'),
+      req('List Trip Photos', 'GET', '/trips/{{tripId}}/photos', {
+        note: 'Returns each photo with a short-lived presigned view URL.',
+      }),
+      req('Attach Trip Photo', 'POST', '/trips/{{tripId}}/photos', {
+        body: {
+          objectKey: 'trip/{{tripId}}/uji.jpg',
+          contentType: 'image/jpeg',
+          sizeBytes: 12345,
+          checksum: 'deadbeef',
+        },
+        note: 'Legacy dokumentasitrayek — upload bytes via /storage/presigned-put first, then register the object metadata here.',
+      }),
       req('Record Trip (actuals)', 'PUT', '/trips/{{tripId}}', {
         body: {
           actualTime: '2026-06-08T06:15:00.000Z',

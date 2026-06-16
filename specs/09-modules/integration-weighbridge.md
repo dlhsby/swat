@@ -229,6 +229,15 @@ OR
 - Optional header: `Idempotency-Key: <UUID>`.
 - If provided, server caches response for 24 hours; retry with same key returns same 201 + ID.
 
+### 1.3 Phase 5 parity additions (Transaction Revamp)
+
+These close the remaining field-level gaps so the legacy .NET apps can be repointed to REST (REST-only; no SOAP shim).
+
+- **`post-weighing` `operatorId`** (optional, legacy `petugasid`): when posting with a **service-account API key** (no session user), this attributes the human weigher — used as `Trip.recordedById`. A session-user post keeps using the session principal.
+- **Kitir→trip link**: `post-weighing` now persists the resolved permit as **`Trip.disposalPermitId`** (legacy `jatahKitir`), so historical weighings are auditable against the kitir that authorized them.
+- **`POST /disposal-permits/bulk-issue`** (`disposal-permit:create`): issue **N kitir in one call** (legacy `insertJatahKitir`, which took a count and returned the printable ids). Body `{ vehicleId, siteId, validFrom, validTo, count }` → an array of `{ id, code, vehiclePlate, siteName, validFrom, validTo }`; each gets its own `KT-YYYYMM-NNNN` barcode for the kitir-printing app.
+- **TPA history**: migrated `TpaInboundLog` rows load with `tripId = NULL`; the one-shot `migrate:backfill-tpa` script links them to their DISPOSAL trips (see Phase 5 / T-504).
+
 ---
 
 ## 2. Backend Service Logic
