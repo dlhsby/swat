@@ -11,3 +11,6 @@ public/service-worker.js
 # Generated artifacts (not hand-maintained source)
 apps/web/test-results/
 apps/backend/scripts/migration/reports/
+# Next auto-generates this ("should not be edited") and flips its import path +
+# quote style between dev (.next/dev/…) and build (.next/…), so prettier churns.
+apps/web/next-env.d.ts
