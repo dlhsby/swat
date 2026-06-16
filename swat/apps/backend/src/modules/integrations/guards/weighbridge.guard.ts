@@ -49,12 +49,25 @@ export class WeighbridgeGuard implements CanActivate {
       return true;
     } catch (err) {
       // A guard rejection short-circuits before the audit interceptor runs, so
-      // record the rejected attempt here (invalid key, IP block, 403, 429).
-      if (err instanceof HttpException) {
+      // record the rejected attempt here (invalid key, IP block, 403, 429). Only
+      // audit when a credential was actually presented: blank unauthenticated
+      // probes hit before the rate limiter (routes are @Public), so auditing them
+      // would let an anonymous flood grow the audit table unbounded (disk DoS).
+      if (err instanceof HttpException && this.hasCredential(request)) {
         await this.apiAudit.logRejection(request, err.getStatus());
       }
       throw err;
     }
+  }
+
+  /** True when the request carried a credential (session, bearer, or API key) —
+   * i.e. a real auth attempt worth auditing, not an anonymous probe. */
+  private hasCredential(request: Request): boolean {
+    return (
+      Boolean(request.session?.user) ||
+      Boolean(request.user) ||
+      this.extractApiKey(request) !== null
+    );
   }
 
   private async authorize(

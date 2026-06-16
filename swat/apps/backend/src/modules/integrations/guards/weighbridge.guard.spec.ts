@@ -66,8 +66,15 @@ describe('WeighbridgeGuard', () => {
     expect(request.principal).toMatchObject({ type: 'USER', id: 'u1' });
   });
 
-  it('401s when no principal resolves, and audits the rejection', async () => {
+  it('401s a blank probe WITHOUT auditing it (no credential → anti-flood)', async () => {
     const { ctx } = buildContext({ headers: {}, method: 'POST' });
+    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(apiAudit.logRejection).not.toHaveBeenCalled();
+  });
+
+  it('401s an invalid API key AND audits it (a credential was presented)', async () => {
+    serviceAccounts.validateApiKey.mockResolvedValue(null);
+    const { ctx } = buildContext({ headers: { 'x-api-key': 'swatwb_bad' }, method: 'POST' });
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(UnauthorizedException);
     expect(apiAudit.logRejection).toHaveBeenCalledWith(expect.any(Object), 401);
   });
