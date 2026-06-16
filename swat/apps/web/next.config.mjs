@@ -12,9 +12,6 @@ const nextConfig = {
   outputFileTracingRoot: new URL('../../', import.meta.url).pathname,
   // Transpile the workspace package consumed by the app.
   transpilePackages: ['@swat/schemas'],
-  experimental: {
-    typedRoutes: false,
-  },
 };
 
 export default withNextIntl(nextConfig);
