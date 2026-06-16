@@ -37,7 +37,9 @@ import { type ServiceAccountDto, serviceAccountsApi } from '@/lib/service-accoun
 const schema = z.object({
   name: z.string().min(1, 'Nama wajib diisi').max(100),
   roleId: z.string().uuid('Peran wajib dipilih'),
-  rateLimitPerMin: z.coerce.number().int().min(1, 'Minimal 1').max(100000),
+  // NumberField emits a number; avoid z.coerce (Zod 4 types its input as unknown,
+  // which breaks react-hook-form's resolver input/output typing).
+  rateLimitPerMin: z.number().int().min(1, 'Minimal 1').max(100000),
   allowedIPs: z.string().max(2000).optional(),
 });
 type Values = z.infer<typeof schema>;
