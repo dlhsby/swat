@@ -8,6 +8,7 @@ import { PageHead } from '@/components/shell/page-head';
 import { AddTripDialog } from '@/components/transactions/add-trip-dialog';
 import { ReconcileDialog } from '@/components/transactions/reconcile-dialog';
 import { RecordTripDialog } from '@/components/transactions/record-trip-dialog';
+import { TripPhotosDialog } from '@/components/transactions/trip-photos-dialog';
 import { TripSheet } from '@/components/transactions/trip-sheet';
 import { VerifyTripDialog } from '@/components/transactions/verify-trip-dialog';
 import {
@@ -50,6 +51,7 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
   const [recordTrip, setRecordTrip] = useState<TripDto | null>(null);
   const [verifyTrip, setVerifyTrip] = useState<TripDto | null>(null);
   const [addTripAssignmentId, setAddTripAssignmentId] = useState<string | null>(null);
+  const [photoTrip, setPhotoTrip] = useState<TripDto | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -236,12 +238,14 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
         onRecord={(trip) => setRecordTrip(trip)}
         onVerify={(trip) => setVerifyTrip(trip)}
         onAddTrip={(assignmentId) => setAddTripAssignmentId(assignmentId)}
+        onPhotos={(trip) => setPhotoTrip(trip)}
       />
       <AddTripDialog
         haulAssignmentId={addTripAssignmentId}
         onOpenChange={(open) => !open && setAddTripAssignmentId(null)}
         onCreated={() => void load()}
       />
+      <TripPhotosDialog trip={photoTrip} onOpenChange={(open) => !open && setPhotoTrip(null)} />
       <ReconcileDialog
         assignment={reconcileAssignment}
         onOpenChange={(open) => !open && setReconcileId(null)}

@@ -6,8 +6,10 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { CacheInvalidationInterceptor } from '../../../common/interceptors/cache-invalidation.interceptor';
 
+import { AttachTripPhotoDto } from './dto/attach-trip-photo.dto';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { RecordTripDto } from './dto/record-trip.dto';
+import { type TripPhotoDto, TripPhotosService } from './trip-photos.service';
 import { type TripDto } from './trip.mapper';
 import { type TripDetailDto, TripsService } from './trips.service';
 
@@ -16,7 +18,10 @@ import { type TripDetailDto, TripsService } from './trips.service';
 @Controller('trips')
 @UseInterceptors(CacheInvalidationInterceptor)
 export class TripsController {
-  constructor(private readonly trips: TripsService) {}
+  constructor(
+    private readonly trips: TripsService,
+    private readonly tripPhotos: TripPhotosService,
+  ) {}
 
   @Post()
   @RequirePermissions('trip:create')
@@ -53,5 +58,22 @@ export class TripsController {
   @ApiOperation({ summary: 'Verify a recorded trip (locks it against further edits)' })
   verify(@Param('id') id: string, @CurrentUser() user: SessionUser): Promise<TripDto> {
     return this.trips.verify(id, user);
+  }
+
+  @Get(':id/photos')
+  @RequirePermissions('trip:read')
+  @ApiOperation({ summary: 'List a trip’s photos with short-lived view URLs' })
+  listPhotos(@Param('id') id: string): Promise<TripPhotoDto[]> {
+    return this.tripPhotos.list(id);
+  }
+
+  @Post(':id/photos')
+  @RequirePermissions('trip:update')
+  @ApiOperation({
+    summary:
+      'Attach a photo to a trip (legacy dokumentasitrayek). Upload the bytes via /storage/presigned-put first, then register the object metadata here.',
+  })
+  attachPhoto(@Param('id') id: string, @Body() dto: AttachTripPhotoDto): Promise<TripPhotoDto> {
+    return this.tripPhotos.attach(id, dto);
   }
 }

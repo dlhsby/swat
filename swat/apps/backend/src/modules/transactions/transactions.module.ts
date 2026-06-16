@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { CacheInvalidationInterceptor } from '../../common/interceptors/cache-invalidation.interceptor';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { StorageModule } from '../storage/storage.module';
 
 import { DailyInitService } from './daily-init/daily-init.service';
 import { HaulAssignmentsController } from './haul-assignments/haul-assignments.controller';
@@ -11,6 +12,7 @@ import { TransactionDaysController } from './transaction-days/transaction-days.c
 import { TransactionDaysRepository } from './transaction-days/transaction-days.repository';
 import { TransactionDaysService } from './transaction-days/transaction-days.service';
 import { TripFinderService } from './trip-finder.service';
+import { TripPhotosService } from './trips/trip-photos.service';
 import { TripsController } from './trips/trips.controller';
 import { TripsRepository } from './trips/trips.repository';
 import { TripsService } from './trips/trips.service';
@@ -21,7 +23,7 @@ import { TripsService } from './trips/trips.service';
  * recording + verification.
  */
 @Module({
-  imports: [AnalyticsModule],
+  imports: [AnalyticsModule, StorageModule],
   controllers: [TransactionDaysController, HaulAssignmentsController, TripsController],
   providers: [
     DailyInitService,
@@ -32,6 +34,7 @@ import { TripsService } from './trips/trips.service';
     TripsService,
     TripsRepository,
     TripFinderService,
+    TripPhotosService,
     CacheInvalidationInterceptor,
   ],
   exports: [DailyInitService, TripFinderService],

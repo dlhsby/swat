@@ -1,6 +1,6 @@
 'use client';
 
-import { Fuel, Inbox, MapPin, Scale } from 'lucide-react';
+import { Camera, Fuel, Inbox, MapPin, Scale } from 'lucide-react';
 import { type ComponentType } from 'react';
 
 import {
@@ -45,6 +45,7 @@ export interface TripSheetProps {
   onRecord: (trip: TripDto) => void;
   onVerify: (trip: TripDto) => void;
   onAddTrip: (assignmentId: string) => void;
+  onPhotos: (trip: TripDto) => void;
 }
 
 /** Right-side sheet listing a haul assignment's trips with contextual actions. */
@@ -55,6 +56,7 @@ export function TripSheet({
   onRecord,
   onVerify,
   onAddTrip,
+  onPhotos,
 }: TripSheetProps): JSX.Element {
   const { can } = usePermissions();
 
@@ -104,6 +106,14 @@ export function TripSheet({
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label="Foto dokumentasi"
+                    onClick={() => onPhotos(trip)}
+                  >
+                    <Camera className="h-4 w-4" />
+                  </Button>
                   <StatusPill domain="trip" value={trip.status} />
                   {trip.status === 'IN_PROGRESS' && canRecord ? (
                     <Button size="sm" onClick={() => onRecord(trip)}>

@@ -87,3 +87,56 @@ export function verifyTrip(id: string): Promise<TripDto> {
 export function createTrip(body: CreateTripInput): Promise<TripDto> {
   return apiClient.post<TripDto>('/trips', { ...body });
 }
+
+export interface TripPhotoDto {
+  id: string;
+  objectKey: string;
+  contentType: string;
+  sizeBytes: number;
+  width: number | null;
+  height: number | null;
+  createdAt: string;
+  url: string;
+}
+
+export function listTripPhotos(tripId: string): Promise<TripPhotoDto[]> {
+  return apiClient.get<TripPhotoDto[]>(`/trips/${tripId}/photos`);
+}
+
+function sha256Hex(buffer: ArrayBuffer): Promise<string> {
+  return crypto.subtle.digest('SHA-256', buffer).then((digest) =>
+    Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join(''),
+  );
+}
+
+/**
+ * Upload a trip photo (legacy dokumentasitrayek): presign → PUT bytes to object
+ * storage → register the metadata. Bytes never pass through the API server.
+ */
+export async function uploadTripPhoto(tripId: string, file: File): Promise<TripPhotoDto> {
+  const ext = file.name.includes('.') ? file.name.split('.').pop() : 'jpg';
+  const key = `trip/${tripId}/${crypto.randomUUID()}.${ext ?? 'jpg'}`;
+  const contentType = file.type || 'application/octet-stream';
+
+  const { url } = await apiClient.post<{ url: string; key: string; expiresIn: number }>(
+    '/storage/presigned-put',
+    { key, contentType },
+  );
+  const put = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType },
+    body: file,
+  });
+  if (!put.ok) {
+    throw new Error('Gagal mengunggah berkas ke penyimpanan.');
+  }
+  const checksum = await sha256Hex(await file.arrayBuffer());
+  return apiClient.post<TripPhotoDto>(`/trips/${tripId}/photos`, {
+    objectKey: key,
+    contentType,
+    sizeBytes: file.size,
+    checksum,
+  });
+}
