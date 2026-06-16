@@ -53,6 +53,10 @@ export class TripsRepository {
     return this.prisma.trip.findUnique({ where: { id }, include: fullInclude });
   }
 
+  findWithRefs(id: string): Promise<TripWithRefs | null> {
+    return this.prisma.trip.findUnique({ where: { id }, include: tripInclude });
+  }
+
   update(id: string, data: Prisma.TripUpdateInput): Promise<TripWithRefs> {
     return this.prisma.trip.update({ where: { id }, data, include: tripInclude });
   }

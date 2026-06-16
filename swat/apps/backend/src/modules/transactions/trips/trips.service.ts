@@ -11,7 +11,9 @@ import { RolePermissionsService } from '../../../common/auth/role-permissions.se
 import { type SessionUser } from '../../../common/auth/session.types';
 import { RollupService } from '../../analytics/rollup.service';
 import { AuditService } from '../../audit/audit.service';
+import { TripFinderService } from '../trip-finder.service';
 
+import { type CreateTripDto } from './dto/create-trip.dto';
 import { type RecordTripDto } from './dto/record-trip.dto';
 import { type TripDto, toTripDto } from './trip.mapper';
 import { type TripForRecording, type TripFull, TripsRepository } from './trips.repository';
@@ -73,7 +75,55 @@ export class TripsService {
     private readonly rolePermissions: RolePermissionsService,
     private readonly audit: AuditService,
     private readonly rollups: RollupService,
+    private readonly tripFinder: TripFinderService,
   ) {}
+
+  /**
+   * Create an ad-hoc (unscheduled) trip on a haul assignment — legacy parity for
+   * off-plan pickups/refuels/disposals. When both `actualTime` and
+   * `actualOdometer` are supplied the trip is recorded (DONE) in the same call,
+   * reusing `record()`; otherwise it is created IN_PROGRESS for later recording.
+   */
+  async create(dto: CreateTripDto, user: SessionUser): Promise<TripDto> {
+    const wantsRecord = dto.actualTime !== undefined || dto.actualOdometer !== undefined;
+    if (wantsRecord && (dto.actualTime === undefined || dto.actualOdometer === undefined)) {
+      throw new BadRequestException(
+        'actualTime dan actualOdometer harus diisi bersama untuk mencatat realisasi.',
+      );
+    }
+
+    const trip = await this.tripFinder.createAdHocTrip({
+      haulAssignmentId: dto.haulAssignmentId,
+      routeId: dto.routeId,
+      category: dto.category,
+      destinationSiteId: dto.destinationSiteId,
+      name: dto.name,
+      createdById: user.id,
+    });
+
+    if (dto.actualTime !== undefined && dto.actualOdometer !== undefined) {
+      const recordDto: RecordTripDto = {
+        actualTime: dto.actualTime,
+        actualOdometer: dto.actualOdometer,
+        fuelRequestedLiters: dto.fuelRequestedLiters,
+        fuelApprovedLiters: dto.fuelApprovedLiters,
+        tareWeight: dto.tareWeight,
+        grossWeight: dto.grossWeight,
+        wasteVolume: dto.wasteVolume,
+        notes: dto.notes,
+      };
+      return this.record(trip.id, recordDto, user);
+    }
+
+    if (dto.notes !== undefined) {
+      return toTripDto(await this.repo.update(trip.id, { notes: dto.notes }));
+    }
+    const full = await this.repo.findWithRefs(trip.id);
+    if (!full) {
+      throw new NotFoundException('Trip tidak ditemukan.');
+    }
+    return toTripDto(full);
+  }
 
   async getById(idParam: string): Promise<TripDetailDto> {
     const trip = await this.repo.findFull(idParam);

@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { type Trip } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { type Prisma, type RouteCategory, type Trip } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -17,17 +17,81 @@ export interface DisposalTripResult {
   readonly created: boolean;
 }
 
+export interface CreateAdHocTripParams {
+  readonly haulAssignmentId: string;
+  /** Use an explicit route, or infer one from `category` + `destinationSiteId`. */
+  readonly routeId?: string;
+  readonly category?: RouteCategory;
+  readonly destinationSiteId?: string;
+  readonly name?: string;
+  readonly createdById?: string;
+}
+
 /**
- * Resolves the DISPOSAL trip a weighing should attach to (Phase 4, T-407). Finds
- * the vehicle's Haul for the transaction day, then a non-VERIFIED DISPOSAL trip
- * among its assignments' trips. If none exists (an organic TPA arrival not in the
- * daily plan), creates an ad-hoc DISPOSAL trip on the primary assignment using the
- * inferred DISPOSAL route to the TPA site. Throws 404 when the Haul or a DISPOSAL
- * route to the TPA is missing.
+ * Creates ad-hoc (unscheduled) trips — the legacy parity for off-plan activity
+ * the daily init never materialized. `createAdHocTrip` is the general primitive
+ * (any route category); `findOrCreateDisposalTrip` is the weighbridge-specific
+ * find-or-create that reuses it (Phase 4, T-407).
  */
 @Injectable()
 export class TripFinderService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Create one unscheduled trip on an existing assignment, resolving its route. */
+  async createAdHocTrip(params: CreateAdHocTripParams): Promise<Trip> {
+    const assignment = await this.prisma.haulAssignment.findUnique({
+      where: { id: params.haulAssignmentId },
+      select: { id: true, operationDate: true },
+    });
+    if (!assignment) {
+      throw new NotFoundException('Penugasan haul tidak ditemukan.');
+    }
+
+    const route = await this.resolveRoute(params);
+    const name =
+      params.name ??
+      (route ? `${route.originSite.name} → ${route.destinationSite.name}` : 'Trip tak terjadwal');
+
+    return this.prisma.trip.create({
+      data: {
+        haulAssignmentId: assignment.id,
+        routeId: route?.id ?? null,
+        operationDate: assignment.operationDate,
+        status: 'IN_PROGRESS',
+        name,
+        ...(params.createdById ? { createdById: params.createdById } : {}),
+      },
+    });
+  }
+
+  /** Resolve the route from an explicit id, or infer it from category + destination. */
+  private async resolveRoute(params: CreateAdHocTripParams): Promise<RouteWithSites | null> {
+    if (params.routeId) {
+      const route = await this.prisma.route.findFirst({
+        where: { id: params.routeId, deletedAt: null },
+        select: routeSelect,
+      });
+      if (!route) {
+        throw new NotFoundException('Route tidak ditemukan.');
+      }
+      return route;
+    }
+    if (params.category && params.destinationSiteId) {
+      const route = await this.prisma.route.findFirst({
+        where: {
+          category: params.category,
+          destinationSiteId: params.destinationSiteId,
+          deletedAt: null,
+        },
+        select: routeSelect,
+      });
+      if (!route) {
+        throw new NotFoundException('Route untuk kategori dan tujuan ini tidak ditemukan.');
+      }
+      return route;
+    }
+    throw new BadRequestException('Sertakan routeId, atau category dengan destinationSiteId.');
+  }
 
   async findOrCreateDisposalTrip(
     params: FindOrCreateDisposalTripParams,
@@ -55,23 +119,21 @@ export class TripFinderService {
     if (!assignment) {
       throw new NotFoundException('Haul tidak memiliki penugasan untuk kendaraan ini');
     }
-    const route = await this.prisma.route.findFirst({
-      where: { destinationSiteId: params.tpaSiteId, category: 'DISPOSAL', deletedAt: null },
-      select: { id: true },
-    });
-    if (!route) {
-      throw new NotFoundException('Route DISPOSAL untuk TPA tidak ditemukan');
-    }
 
-    const trip = await this.prisma.trip.create({
-      data: {
-        haulAssignmentId: assignment.id,
-        routeId: route.id,
-        operationDate: params.operationDate,
-        status: 'IN_PROGRESS',
-        name: `Pembuangan ke ${params.tpaSiteName}`,
-      },
+    const trip = await this.createAdHocTrip({
+      haulAssignmentId: assignment.id,
+      category: 'DISPOSAL',
+      destinationSiteId: params.tpaSiteId,
+      name: `Pembuangan ke ${params.tpaSiteName}`,
     });
     return { trip, created: true };
   }
 }
+
+const routeSelect = {
+  id: true,
+  originSite: { select: { name: true } },
+  destinationSite: { select: { name: true } },
+} satisfies Prisma.RouteSelect;
+
+type RouteWithSites = Prisma.RouteGetPayload<{ select: typeof routeSelect }>;

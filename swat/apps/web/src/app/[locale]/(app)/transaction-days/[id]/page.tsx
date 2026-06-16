@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
 import { PageHead } from '@/components/shell/page-head';
+import { AddTripDialog } from '@/components/transactions/add-trip-dialog';
 import { ReconcileDialog } from '@/components/transactions/reconcile-dialog';
 import { RecordTripDialog } from '@/components/transactions/record-trip-dialog';
 import { TripSheet } from '@/components/transactions/trip-sheet';
@@ -48,6 +49,7 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
   const [reconcileId, setReconcileId] = useState<string | null>(null);
   const [recordTrip, setRecordTrip] = useState<TripDto | null>(null);
   const [verifyTrip, setVerifyTrip] = useState<TripDto | null>(null);
+  const [addTripAssignmentId, setAddTripAssignmentId] = useState<string | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -233,6 +235,12 @@ export default function HaulBoardPage({ params }: { params: { id: string } }): J
         onOpenChange={(open) => !open && setSheetId(null)}
         onRecord={(trip) => setRecordTrip(trip)}
         onVerify={(trip) => setVerifyTrip(trip)}
+        onAddTrip={(assignmentId) => setAddTripAssignmentId(assignmentId)}
+      />
+      <AddTripDialog
+        haulAssignmentId={addTripAssignmentId}
+        onOpenChange={(open) => !open && setAddTripAssignmentId(null)}
+        onCreated={() => void load()}
       />
       <ReconcileDialog
         assignment={reconcileAssignment}

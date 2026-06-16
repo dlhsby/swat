@@ -44,6 +44,7 @@ export interface TripSheetProps {
   onOpenChange: (open: boolean) => void;
   onRecord: (trip: TripDto) => void;
   onVerify: (trip: TripDto) => void;
+  onAddTrip: (assignmentId: string) => void;
 }
 
 /** Right-side sheet listing a haul assignment's trips with contextual actions. */
@@ -53,6 +54,7 @@ export function TripSheet({
   onOpenChange,
   onRecord,
   onVerify,
+  onAddTrip,
 }: TripSheetProps): JSX.Element {
   const { can } = usePermissions();
 
@@ -64,6 +66,18 @@ export function TripSheet({
             Rute — {vehiclePlate} · {assignment?.driverName}
           </SheetTitle>
         </SheetHeader>
+        {assignment && can('trip:create') ? (
+          <div className="px-4 pt-3">
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => onAddTrip(assignment.id)}
+            >
+              + Tambah rute tak terjadwal
+            </Button>
+          </div>
+        ) : null}
         <SheetBody className="space-y-2">
           {(assignment?.trips ?? []).map((trip) => {
             const category = trip.routeCategory ?? 'DEPART_POOL';

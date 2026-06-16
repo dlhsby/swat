@@ -4,6 +4,7 @@ import { type RolePermissionsService } from '../../../common/auth/role-permissio
 import { type SessionUser } from '../../../common/auth/session.types';
 import { type RollupService } from '../../analytics/rollup.service';
 import { type AuditService } from '../../audit/audit.service';
+import { type TripFinderService } from '../trip-finder.service';
 
 import { type TripsRepository } from './trips.repository';
 import { TripsService } from './trips.service';
@@ -61,16 +62,23 @@ function buildTrip(overrides: Record<string, unknown> = {}): Record<string, unkn
 }
 
 describe('TripsService', () => {
-  let repo: { findForRecording: jest.Mock; findFull: jest.Mock; update: jest.Mock };
+  let repo: {
+    findForRecording: jest.Mock;
+    findFull: jest.Mock;
+    findWithRefs: jest.Mock;
+    update: jest.Mock;
+  };
   let rolePermissions: { getPermissionKeys: jest.Mock };
   let audit: { record: jest.Mock };
   let rollups: { refreshForOperationDate: jest.Mock };
+  let tripFinder: { createAdHocTrip: jest.Mock; findOrCreateDisposalTrip: jest.Mock };
   let service: TripsService;
 
   beforeEach(() => {
     repo = {
       findForRecording: jest.fn(),
       findFull: jest.fn(),
+      findWithRefs: jest.fn(),
       update: jest.fn((_id, data) =>
         Promise.resolve(buildTrip({ ...data, route: buildTrip().route })),
       ),
@@ -87,11 +95,16 @@ describe('TripsService', () => {
     };
     audit = { record: jest.fn().mockResolvedValue(undefined) };
     rollups = { refreshForOperationDate: jest.fn().mockResolvedValue(undefined) };
+    tripFinder = {
+      createAdHocTrip: jest.fn(),
+      findOrCreateDisposalTrip: jest.fn(),
+    };
     service = new TripsService(
       repo as unknown as TripsRepository,
       rolePermissions as unknown as RolePermissionsService,
       audit as unknown as AuditService,
       rollups as unknown as RollupService,
+      tripFinder as unknown as TripFinderService,
     );
   });
 
@@ -339,6 +352,45 @@ describe('TripsService', () => {
       const result = await service.getById('10000');
       expect(result.haulAssignment.haul.vehiclePlate).toBe('L 1 AB');
       expect(result.haulAssignment.haul.transactionDay.date).toBe('2026-06-08');
+    });
+  });
+
+  describe('create (ad-hoc trip)', () => {
+    it('creates an IN_PROGRESS trip when no actuals are supplied', async () => {
+      tripFinder.createAdHocTrip.mockResolvedValue({ id: 'trip-10000' });
+      repo.findWithRefs.mockResolvedValue(buildTrip());
+      const result = await service.create(
+        { haulAssignmentId: 'a1', category: 'PICKUP', destinationSiteId: 's1' },
+        USER,
+      );
+      expect(tripFinder.createAdHocTrip).toHaveBeenCalledWith(
+        expect.objectContaining({ haulAssignmentId: 'a1', createdById: USER.id }),
+      );
+      expect(repo.update).not.toHaveBeenCalled();
+      expect(result.id).toBe('trip-10000');
+    });
+
+    it('records the trip in the same call when actuals are supplied', async () => {
+      tripFinder.createAdHocTrip.mockResolvedValue({ id: 'trip-10000' });
+      repo.findForRecording.mockResolvedValue(buildTrip());
+      await service.create(
+        { haulAssignmentId: 'a1', routeId: 'r1', grossWeight: 12000, ...dispatch },
+        USER,
+      );
+      expect(repo.update).toHaveBeenCalledWith(
+        'trip-10000',
+        expect.objectContaining({ status: 'DONE', grossWeight: 12000, netWeight: 4000 }),
+      );
+    });
+
+    it('rejects actualTime without actualOdometer (before creating)', async () => {
+      await expect(
+        service.create(
+          { haulAssignmentId: 'a1', routeId: 'r1', actualTime: dispatch.actualTime },
+          USER,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(tripFinder.createAdHocTrip).not.toHaveBeenCalled();
     });
   });
 });

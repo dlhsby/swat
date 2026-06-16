@@ -3,10 +3,19 @@ import {
   type DailyInitResult,
   type DayStatus,
   type HaulAssignmentDto,
+  type RouteCategory,
   type TransactionDayDto,
   type TripDetailDto,
   type TripDto,
 } from './types/transactions';
+
+export interface CreateTripInput {
+  haulAssignmentId: string;
+  routeId?: string;
+  category?: RouteCategory;
+  destinationSiteId?: string;
+  name?: string;
+}
 
 export interface RecordLegInput {
   actualOdometer: number;
@@ -72,4 +81,9 @@ export function recordTrip(id: string, body: RecordTripInput): Promise<TripDto> 
 
 export function verifyTrip(id: string): Promise<TripDto> {
   return apiClient.put<TripDto>(`/trips/${id}/verify`);
+}
+
+/** Create an ad-hoc (unscheduled) trip on a haul assignment (legacy parity). */
+export function createTrip(body: CreateTripInput): Promise<TripDto> {
+  return apiClient.post<TripDto>('/trips', { ...body });
 }

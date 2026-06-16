@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import { type PrismaService } from '../prisma/prisma.service';
 
@@ -15,6 +15,7 @@ const PARAMS = {
 describe('TripFinderService', () => {
   let prisma: {
     haul: { findFirst: jest.Mock };
+    haulAssignment: { findUnique: jest.Mock };
     route: { findFirst: jest.Mock };
     trip: { create: jest.Mock };
   };
@@ -23,6 +24,9 @@ describe('TripFinderService', () => {
   beforeEach(() => {
     prisma = {
       haul: { findFirst: jest.fn() },
+      haulAssignment: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'a1', operationDate: PARAMS.operationDate }),
+      },
       route: { findFirst: jest.fn() },
       trip: { create: jest.fn() },
     };
@@ -71,5 +75,64 @@ describe('TripFinderService', () => {
     await expect(service.findOrCreateDisposalTrip(PARAMS)).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  describe('createAdHocTrip', () => {
+    it('creates a trip from an explicit routeId, inheriting the assignment operationDate', async () => {
+      prisma.route.findFirst.mockResolvedValue({
+        id: 'route-1',
+        originSite: { name: 'Pool' },
+        destinationSite: { name: 'TPS A' },
+      });
+      prisma.trip.create.mockResolvedValue({ id: 'new-trip' });
+      const trip = await service.createAdHocTrip({
+        haulAssignmentId: 'a1',
+        routeId: 'route-1',
+        createdById: 'user-1',
+      });
+      expect(trip).toEqual({ id: 'new-trip' });
+      expect(prisma.trip.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          haulAssignmentId: 'a1',
+          routeId: 'route-1',
+          operationDate: PARAMS.operationDate,
+          status: 'IN_PROGRESS',
+          name: 'Pool → TPS A',
+          createdById: 'user-1',
+        }),
+      });
+    });
+
+    it('infers the route from category + destinationSiteId', async () => {
+      prisma.route.findFirst.mockResolvedValue({
+        id: 'route-2',
+        originSite: { name: 'TPS B' },
+        destinationSite: { name: 'TPA Benowo' },
+      });
+      prisma.trip.create.mockResolvedValue({ id: 'trip-2' });
+      await service.createAdHocTrip({
+        haulAssignmentId: 'a1',
+        category: 'DISPOSAL',
+        destinationSiteId: 'site-1',
+      });
+      expect(prisma.route.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ category: 'DISPOSAL', destinationSiteId: 'site-1' }),
+        }),
+      );
+    });
+
+    it('400s when neither routeId nor category+destination is given', async () => {
+      await expect(service.createAdHocTrip({ haulAssignmentId: 'a1' })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('404s when the assignment does not exist', async () => {
+      prisma.haulAssignment.findUnique.mockResolvedValue(null);
+      await expect(
+        service.createAdHocTrip({ haulAssignmentId: 'missing', routeId: 'route-1' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
   });
 });
