@@ -2,7 +2,7 @@
   "info": {
     "name": "SWAT API",
     "_postman_id": "swat-api-collection",
-    "description": "SWAT backend — auth, RBAC, and master data. The web flow uses cookie session auth: run Auth → Login first. Native .NET clients use bearer tokens: run Auth → Get Token (native client), which captures accessToken + refreshToken for the Bearer requests. Regenerate with `node apps/backend/postman/generate.mjs`.",
+    "description": "SWAT backend — full API surface: auth/RBAC, master data, scheduling, daily transactions, levies/refuel, maintenance & inspections, monitoring analytics, async reports, the TPA weighbridge integration, service accounts, and storage/archiving. Kept 1:1 with the Swagger spec at `/api/docs`. The web flow uses cookie session auth: run Auth → Login first. Native .NET clients use bearer tokens: run Auth → Get Token (native client), which captures accessToken + refreshToken for the Bearer requests; the weighbridge also accepts `X-API-Key`. Regenerate with `node apps/backend/postman/generate.mjs`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -101,7 +101,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -124,7 +124,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -157,7 +157,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -181,7 +181,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -270,7 +270,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -299,7 +299,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -333,7 +333,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -366,7 +366,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -389,7 +389,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -425,7 +425,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -457,7 +457,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -480,7 +480,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['0']?.['id'];",
@@ -507,7 +507,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -530,7 +530,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -566,7 +566,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -598,7 +598,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -621,7 +621,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -644,7 +644,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -673,7 +673,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -706,7 +706,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -729,7 +729,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -765,7 +765,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -801,7 +801,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -833,7 +833,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -856,7 +856,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -889,7 +889,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -912,7 +912,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -948,7 +948,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -980,7 +980,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1008,7 +1008,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1041,7 +1041,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1064,7 +1064,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -1100,7 +1100,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1132,7 +1132,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1160,7 +1160,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['0']?.['id'];",
@@ -1187,7 +1187,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -1223,7 +1223,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1255,7 +1255,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1278,7 +1278,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['0']?.['id'];",
@@ -1305,7 +1305,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -1341,7 +1341,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['0']?.['id'];",
@@ -1368,7 +1368,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -1404,7 +1404,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1436,7 +1436,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['0']?.['id'];",
@@ -1463,7 +1463,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -1499,7 +1499,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1532,7 +1532,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1555,7 +1555,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -1591,7 +1591,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1623,7 +1623,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1646,7 +1646,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1669,7 +1669,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1701,7 +1701,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1713,6 +1713,231 @@
               "raw": "{{baseUrl}}/vehicles/{{vehicleId}}/waste-sources/{{wasteSourceId}}",
               "host": ["{{baseUrl}}"],
               "path": ["vehicles", "{{vehicleId}}", "waste-sources", "{{wasteSourceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-types/{{vehicleTypeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-types", "{{vehicleTypeId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Fuel Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fuel-categories/{{fuelCategoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["fuel-categories", "{{fuelCategoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Fuel Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/fuel-categories/{{fuelCategoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["fuel-categories", "{{fuelCategoryId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kategori Uji (edit)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Fuel Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fuel-categories/{{fuelCategoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["fuel-categories", "{{fuelCategoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Fuel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fuels/{{fuelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["fuels", "{{fuelId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Fuel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fuels/{{fuelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["fuels", "{{fuelId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Vehicle Model",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-models/{{modelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-models", "{{modelId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Vehicle Model",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-models/{{modelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-models", "{{modelId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brand\": \"Hino Uji (edit)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Vehicle Model",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-models/{{modelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-models", "{{modelId}}"]
             }
           }
         }
@@ -1729,7 +1954,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['0']?.['id'];",
@@ -1756,7 +1981,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1789,7 +2014,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1812,7 +2037,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -1848,7 +2073,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1880,7 +2105,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1903,7 +2128,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1926,7 +2151,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -1962,7 +2187,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -1994,7 +2219,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2015,14 +2240,14 @@
       "name": "Scheduling",
       "item": [
         {
-          "name": "List Crew Schedules",
+          "name": "List Schedule Templates",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2031,9 +2256,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/crew-schedules?page=1&limit=20",
+              "raw": "{{baseUrl}}/schedule-templates?page=1&limit=20",
               "host": ["{{baseUrl}}"],
-              "path": ["crew-schedules"],
+              "path": ["schedule-templates"],
               "query": [
                 {
                   "key": "page",
@@ -2048,14 +2273,14 @@
           }
         },
         {
-          "name": "Get Crew Schedule",
+          "name": "Get Schedule Template",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2064,25 +2289,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/crew-schedules/{{crewScheduleId}}",
+              "raw": "{{baseUrl}}/schedule-templates/{{scheduleTemplateId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["crew-schedules", "{{crewScheduleId}}"]
+              "path": ["schedule-templates", "{{scheduleTemplateId}}"]
             }
           }
         },
         {
-          "name": "Create Crew Schedule",
+          "name": "Create Schedule Template",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
-                  "if (value !== undefined && value !== null) { pm.environment.set('crewScheduleId', value); }"
+                  "if (value !== undefined && value !== null) { pm.environment.set('scheduleTemplateId', value); }"
                 ]
               }
             }
@@ -2096,9 +2321,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/crew-schedules",
+              "raw": "{{baseUrl}}/schedule-templates",
               "host": ["{{baseUrl}}"],
-              "path": ["crew-schedules"]
+              "path": ["schedule-templates"]
             },
             "body": {
               "mode": "raw",
@@ -2107,14 +2332,14 @@
           }
         },
         {
-          "name": "Update Crew Schedule",
+          "name": "Update Schedule Template",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2128,9 +2353,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/crew-schedules/{{crewScheduleId}}",
+              "raw": "{{baseUrl}}/schedule-templates/{{scheduleTemplateId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["crew-schedules", "{{crewScheduleId}}"]
+              "path": ["schedule-templates", "{{scheduleTemplateId}}"]
             },
             "body": {
               "mode": "raw",
@@ -2139,14 +2364,14 @@
           }
         },
         {
-          "name": "Delete Crew Schedule",
+          "name": "Delete Schedule Template",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2155,9 +2380,9 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/crew-schedules/{{crewScheduleId}}",
+              "raw": "{{baseUrl}}/schedule-templates/{{scheduleTemplateId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["crew-schedules", "{{crewScheduleId}}"]
+              "path": ["schedule-templates", "{{scheduleTemplateId}}"]
             }
           }
         },
@@ -2169,7 +2394,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2178,9 +2403,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/crew-schedules/{{crewScheduleId}}/trip-templates",
+              "raw": "{{baseUrl}}/schedule-templates/{{scheduleTemplateId}}/trip-templates",
               "host": ["{{baseUrl}}"],
-              "path": ["crew-schedules", "{{crewScheduleId}}", "trip-templates"]
+              "path": ["schedule-templates", "{{scheduleTemplateId}}", "trip-templates"]
             }
           }
         },
@@ -2192,7 +2417,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -2210,9 +2435,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/crew-schedules/{{crewScheduleId}}/trip-templates",
+              "raw": "{{baseUrl}}/schedule-templates/{{scheduleTemplateId}}/trip-templates",
               "host": ["{{baseUrl}}"],
-              "path": ["crew-schedules", "{{crewScheduleId}}", "trip-templates"]
+              "path": ["schedule-templates", "{{scheduleTemplateId}}", "trip-templates"]
             },
             "body": {
               "mode": "raw",
@@ -2228,7 +2453,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2242,11 +2467,11 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/crew-schedules/{{crewScheduleId}}/trip-templates/{{tripTemplateId}}",
+              "raw": "{{baseUrl}}/schedule-templates/{{scheduleTemplateId}}/trip-templates/{{tripTemplateId}}",
               "host": ["{{baseUrl}}"],
               "path": [
-                "crew-schedules",
-                "{{crewScheduleId}}",
+                "schedule-templates",
+                "{{scheduleTemplateId}}",
                 "trip-templates",
                 "{{tripTemplateId}}"
               ]
@@ -2265,7 +2490,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2274,11 +2499,11 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/crew-schedules/{{crewScheduleId}}/trip-templates/{{tripTemplateId}}",
+              "raw": "{{baseUrl}}/schedule-templates/{{scheduleTemplateId}}/trip-templates/{{tripTemplateId}}",
               "host": ["{{baseUrl}}"],
               "path": [
-                "crew-schedules",
-                "{{crewScheduleId}}",
+                "schedule-templates",
+                "{{scheduleTemplateId}}",
                 "trip-templates",
                 "{{tripTemplateId}}"
               ]
@@ -2293,7 +2518,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2326,7 +2551,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2349,7 +2574,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
                   "",
                   "const json = pm.response.json();",
                   "const value = json?.['data']?.['id'];",
@@ -2385,7 +2610,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2418,7 +2643,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
                 ]
               }
             }
@@ -2440,6 +2665,1928 @@
               "mode": "raw",
               "raw": "{\n  \"status\": \"INACTIVE\"\n}"
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "description": "Daily transaction workflow: a TransactionDay holds Hauls; each Haul has HaulAssignments (depart/return) that produce Trips. Set `transactionDayId`/`haulAssignmentId`/`tripId` from the list/detail responses below.",
+      "item": [
+        {
+          "name": "List Transaction Days",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['0']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('transactionDayId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transaction-days?date=2026-06-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["transaction-days"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-06-01"
+                }
+              ]
+            },
+            "description": "`date` (YYYY-MM-DD) is required. Captures the first day id."
+          }
+        },
+        {
+          "name": "Initialize Today",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transaction-days/initialize-today",
+              "host": ["{{baseUrl}}"],
+              "path": ["transaction-days", "initialize-today"]
+            },
+            "description": "Creates today's TransactionDay and seeds planned hauls/trips from the active schedule templates. Idempotent."
+          }
+        },
+        {
+          "name": "Get Transaction Day",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transaction-days/{{transactionDayId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["transaction-days", "{{transactionDayId}}"]
+            },
+            "description": "Detail includes the hauls + assignments — copy a haulAssignmentId/tripId for the requests below."
+          }
+        },
+        {
+          "name": "Update Transaction Day (status)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transaction-days/{{transactionDayId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["transaction-days", "{{transactionDayId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DONE\"\n}"
+            },
+            "description": "status ∈ IN_PROGRESS | DONE."
+          }
+        },
+        {
+          "name": "List Haul Assignment Trips",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['0']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('tripId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/haul-assignments/{{haulAssignmentId}}/trips",
+              "host": ["{{baseUrl}}"],
+              "path": ["haul-assignments", "{{haulAssignmentId}}", "trips"]
+            },
+            "description": "Set haulAssignmentId from a transaction-day detail. Captures the first trip id."
+          }
+        },
+        {
+          "name": "Record Depart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/haul-assignments/{{haulAssignmentId}}/record-depart",
+              "host": ["{{baseUrl}}"],
+              "path": ["haul-assignments", "{{haulAssignmentId}}", "record-depart"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actualOdometer\": 1000,\n  \"actualTime\": \"2026-06-08T05:30:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Record Return",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/haul-assignments/{{haulAssignmentId}}/record-return",
+              "host": ["{{baseUrl}}"],
+              "path": ["haul-assignments", "{{haulAssignmentId}}", "record-return"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actualOdometer\": 1080,\n  \"actualTime\": \"2026-06-08T14:30:00.000Z\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Trip",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", "{{tripId}}"]
+            }
+          }
+        },
+        {
+          "name": "Record Trip (actuals)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", "{{tripId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actualTime\": \"2026-06-08T06:15:00.000Z\",\n  \"actualOdometer\": 1200,\n  \"fuelApprovedLiters\": 20,\n  \"tareWeight\": 8000,\n  \"grossWeight\": 12000,\n  \"wasteVolume\": 4\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Trip",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["trips", "{{tripId}}", "verify"]
+            },
+            "description": "Checker verification — no body."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Levies & Refuel",
+      "item": [
+        {
+          "name": "List Levies",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['0']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('levyId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/levies?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["levies"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Levy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('levyId', String(value)); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/levies",
+              "host": ["{{baseUrl}}"],
+              "path": ["levies"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryName\": \"Rumah Tangga\",\n  \"date\": \"2026-06-01\",\n  \"amount\": 15000000,\n  \"notes\": \"uji\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Levy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/levies/{{levyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["levies", "{{levyId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Levy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/levies/{{levyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["levies", "{{levyId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 16000000\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Levy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/levies/{{levyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["levies", "{{levyId}}"]
+            }
+          }
+        },
+        {
+          "name": "List Refuels",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/refuels?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["refuels"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Read-only fuel-dispensing log (derived from trip fuel actuals)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Maintenance & Inspections",
+      "item": [
+        {
+          "name": "List Maintenance Records",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['0']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('maintenanceId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/maintenance-records?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance-records"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Maintenance Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('maintenanceId', String(value)); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/maintenance-records",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance-records"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"type\": \"SERVICE\",\n  \"date\": \"2026-06-08\",\n  \"odometer\": 12000,\n  \"workshop\": \"Bengkel Uji\",\n  \"description\": \"Ganti oli + filter\"\n}"
+            },
+            "description": "type ∈ SERVICE | REPAIR."
+          }
+        },
+        {
+          "name": "Get Maintenance Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/maintenance-records/{{maintenanceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance-records", "{{maintenanceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Maintenance Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/maintenance-records/{{maintenanceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance-records", "{{maintenanceId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workshop\": \"Bengkel Uji (edit)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Approve Maintenance Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/maintenance-records/{{maintenanceId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance-records", "{{maintenanceId}}", "approve"]
+            },
+            "description": "Supervisor approval — no body."
+          }
+        },
+        {
+          "name": "Delete Maintenance Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/maintenance-records/{{maintenanceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance-records", "{{maintenanceId}}"]
+            }
+          }
+        },
+        {
+          "name": "List Vehicle Inspections",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['0']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('inspectionId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-inspections?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-inspections"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Vehicle Inspection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('inspectionId', String(value)); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-inspections",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-inspections"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"date\": \"2026-06-08\",\n  \"notes\": \"Inspeksi harian\",\n  \"items\": [\n    {\n      \"name\": \"Rem\",\n      \"status\": \"OK\"\n    }\n  ]\n}"
+            },
+            "description": "items[].status ∈ OK | ATTENTION | FAIL."
+          }
+        },
+        {
+          "name": "Get Vehicle Inspection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-inspections/{{inspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-inspections", "{{inspectionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Vehicle Inspection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-inspections/{{inspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-inspections", "{{inspectionId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Inspeksi harian (edit)\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Vehicle Inspection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vehicle-inspections/{{inspectionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["vehicle-inspections", "{{inspectionId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Monitoring",
+      "description": "Read-only analytics over the pre-aggregated rollup tables. All endpoints take `dateFrom`/`dateTo` (YYYY-MM-DD, **required**). The demo seed covers 2025-06-09 … 2026-06-08.",
+      "item": [
+        {
+          "name": "KPI Overview",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/kpi-overview?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "kpi-overview"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trip Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/trip-summary?dateFrom=2025-06-09&dateTo=2026-06-08&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "trip-summary"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Tonnage (5-day)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/tonnage-5day?dateFrom=2026-06-04&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "tonnage-5day"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2026-06-04"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Tonnage (monthly)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/tonnage-monthly?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "tonnage-monthly"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Tonnage by Site",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/tonnage-by-site?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "tonnage-by-site"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Tonnage by Source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/tonnage-by-source?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "tonnage-by-source"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Fuel Consumption",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/fuel-consumption?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "fuel-consumption"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Fuel by Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/fuel-by-type?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "fuel-by-type"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Routes Active",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/routes-active?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "routes-active"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Levy Summary",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/levy-summary?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "levy-summary"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Levy Trend",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/levy-trend?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "levy-trend"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "description": "Async Excel/PDF report engine. **Generate** enqueues a BullMQ job and returns a `jobId` (captured). Poll **Get Job** until status is `READY`, then **Download** for a presigned URL. `format` ∈ xlsx | pdf.",
+      "item": [
+        {
+          "name": "Generate Tonnage Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['jobId'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('reportJobId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/tonnage/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "tonnage", "generate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dateFrom\": \"2026-05-01\",\n  \"dateTo\": \"2026-05-31\",\n  \"format\": \"xlsx\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Generate Fuel Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['jobId'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('reportJobId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/fuel/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "fuel", "generate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dateFrom\": \"2026-05-01\",\n  \"dateTo\": \"2026-05-31\",\n  \"format\": \"xlsx\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Generate Route Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['jobId'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('reportJobId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/route/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "route", "generate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dateFrom\": \"2026-05-01\",\n  \"dateTo\": \"2026-05-31\",\n  \"format\": \"pdf\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Generate Levy Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['jobId'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('reportJobId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reports/levy/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "levy", "generate"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dateFrom\": \"2026-05-01\",\n  \"dateTo\": \"2026-05-31\",\n  \"format\": \"xlsx\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Report Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/jobs/{{reportJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "jobs", "{{reportJobId}}"]
+            },
+            "description": "Poll until data.status === \"READY\" (or \"FAILED\")."
+          }
+        },
+        {
+          "name": "Download Report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/download/{{reportJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "download", "{{reportJobId}}"]
+            },
+            "description": "Returns a presigned MinIO URL once the job is READY."
+          }
+        },
+        {
+          "name": "Delete Report Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/jobs/{{reportJobId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "jobs", "{{reportJobId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Weighbridge (TPA Integration)",
+      "description": "TPA \"Jembatan Timbang\" REST API (replaces the legacy SOAP). Dual auth: the admin **session cookie** works for the operator endpoints, OR send `X-API-Key: {{weighbridgeApiKey}}` (the demo seed prints a `swatwb_demo_…` key) for unattended posting. `post-weighing` accepts an optional `Idempotency-Key`.",
+      "item": [
+        {
+          "name": "Resolve Kitir",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{weighbridgeApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/weighbridge/resolve-kitir",
+              "host": ["{{baseUrl}}"],
+              "path": ["weighbridge", "resolve-kitir"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plateNumber\": \"L 9 UJI\",\n  \"date\": \"2026-06-05\"\n}"
+            },
+            "description": "Look up the open disposal-permit (kitir) for a plate/date before posting a weighing."
+          }
+        },
+        {
+          "name": "Post Weighing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['tripId'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('weighbridgeTripId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{weighbridgeApiKey}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/weighbridge/post-weighing",
+              "host": ["{{baseUrl}}"],
+              "path": ["weighbridge", "post-weighing"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plateNumber\": \"L 9 UJI\",\n  \"date\": \"2026-06-05\",\n  \"grossWeight\": 12000,\n  \"tareWeight\": 8000,\n  \"wasteVolume\": 4,\n  \"notes\": \"uji timbang\"\n}"
+            },
+            "description": "Creates/updates the inbound weighing + Trip. Captures the resulting tripId."
+          }
+        },
+        {
+          "name": "List Weighings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/weighbridge/weighings?page=1&limit=20&date=2026-06-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["weighbridge", "weighings"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "date",
+                  "value": "2026-06-05"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Weighing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/weighbridge/weighings/{{weighbridgeTripId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["weighbridge", "weighings", "{{weighbridgeTripId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grossWeight\": 12500,\n  \"verified\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Import Excel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/weighbridge/import-excel",
+              "host": ["{{baseUrl}}"],
+              "path": ["weighbridge", "import-excel"]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "description": "Bulk import a legacy weighbridge Excel export. Attach an .xlsx in the file field before sending."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Service Accounts (Admin)",
+      "description": "Manage machine principals + their API keys (for the weighbridge/native integrations) and inspect the API audit trail. Requires `service-account:manage`.",
+      "item": [
+        {
+          "name": "List Service Accounts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['0']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('serviceAccountId', value); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/service-accounts?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "service-accounts"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Service Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('serviceAccountId', String(value)); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/service-accounts",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "service-accounts"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"TPA Jembatan Timbang (uji)\",\n  \"roleId\": \"{{roleId}}\",\n  \"rateLimitPerMin\": 120\n}"
+            },
+            "description": "Response includes the one-time plaintext API key — copy it into weighbridgeApiKey."
+          }
+        },
+        {
+          "name": "Get Service Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/service-accounts/{{serviceAccountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "service-accounts", "{{serviceAccountId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Service Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/service-accounts/{{serviceAccountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "service-accounts", "{{serviceAccountId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rateLimitPerMin\": 240,\n  \"active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Service Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/service-accounts/{{serviceAccountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "service-accounts", "{{serviceAccountId}}"]
+            }
+          }
+        },
+        {
+          "name": "List API Audit Logs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/api-audit-logs?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "api-audit-logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Storage & Archiving",
+      "item": [
+        {
+          "name": "Presigned Upload URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/storage/presigned-put",
+              "host": ["{{baseUrl}}"],
+              "path": ["storage", "presigned-put"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"trip/2026/06/uji.jpg\",\n  \"contentType\": \"image/jpeg\",\n  \"expiresIn\": 900\n}"
+            },
+            "description": "Returns a presigned MinIO PUT URL the client uploads to directly."
+          }
+        },
+        {
+          "name": "Presigned Download URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/storage/presigned-get",
+              "host": ["{{baseUrl}}"],
+              "path": ["storage", "presigned-get"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"trip/2026/06/uji.jpg\",\n  \"expiresIn\": 900\n}"
+            }
+          }
+        },
+        {
+          "name": "List Archive Catalog",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/archiving",
+              "host": ["{{baseUrl}}"],
+              "path": ["archiving"]
+            },
+            "description": "Lists detached/archived monthly partitions."
+          }
+        },
+        {
+          "name": "Reattach Partition",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/archiving/reattach",
+              "host": ["{{baseUrl}}"],
+              "path": ["archiving", "reattach"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tableName\": \"trip_y2024m03\",\n  \"period\": \"2024-03\"\n}"
+            },
+            "description": "Re-attaches a previously detached monthly partition for querying."
           }
         }
       ]

@@ -242,6 +242,20 @@ const GROUPS = [
         'DELETE',
         '/vehicles/{{vehicleId}}/waste-sources/{{wasteSourceId}}',
       ),
+      // --- master-data detail/update/delete (complete the CRUD) ---
+      req('Get Application', 'GET', '/vehicle-types/{{vehicleTypeId}}'),
+      req('Get Fuel Category', 'GET', '/fuel-categories/{{fuelCategoryId}}'),
+      req('Update Fuel Category', 'PATCH', '/fuel-categories/{{fuelCategoryId}}', {
+        body: { name: 'Kategori Uji (edit)' },
+      }),
+      req('Delete Fuel Category', 'DELETE', '/fuel-categories/{{fuelCategoryId}}'),
+      req('Get Fuel', 'GET', '/fuels/{{fuelId}}'),
+      req('Delete Fuel', 'DELETE', '/fuels/{{fuelId}}'),
+      req('Get Vehicle Model', 'GET', '/vehicle-models/{{modelId}}'),
+      req('Update Vehicle Model', 'PATCH', '/vehicle-models/{{modelId}}', {
+        body: { brand: 'Hino Uji (edit)' },
+      }),
+      req('Delete Vehicle Model', 'DELETE', '/vehicle-models/{{modelId}}'),
     ],
   },
   {
@@ -288,36 +302,47 @@ const GROUPS = [
   {
     name: 'Scheduling',
     items: [
-      req('List Crew Schedules', 'GET', '/crew-schedules', { query: { page: '1', limit: '20' } }),
-      req('Get Crew Schedule', 'GET', '/crew-schedules/{{crewScheduleId}}'),
-      req('Create Crew Schedule', 'POST', '/crew-schedules', {
+      req('List Schedule Templates', 'GET', '/schedule-templates', {
+        query: { page: '1', limit: '20' },
+      }),
+      req('Get Schedule Template', 'GET', '/schedule-templates/{{scheduleTemplateId}}'),
+      req('Create Schedule Template', 'POST', '/schedule-templates', {
         body: {
           vehicleId: '{{vehicleId}}',
           driverId: '{{driverId}}',
           departTime: '05:00',
           returnTime: '14:00',
         },
-        capture: 'crewScheduleId',
+        capture: 'scheduleTemplateId',
       }),
-      req('Update Crew Schedule', 'PATCH', '/crew-schedules/{{crewScheduleId}}', {
+      req('Update Schedule Template', 'PATCH', '/schedule-templates/{{scheduleTemplateId}}', {
         body: { returnTime: '15:00' },
       }),
-      req('Delete Crew Schedule', 'DELETE', '/crew-schedules/{{crewScheduleId}}'),
-      req('List Trip Templates', 'GET', '/crew-schedules/{{crewScheduleId}}/trip-templates'),
-      req('Add Trip Template', 'POST', '/crew-schedules/{{crewScheduleId}}/trip-templates', {
-        body: { routeId: '{{routeId}}', targetTime: '06:30', fuelRequestedLiters: 20 },
-        capture: 'tripTemplateId',
-      }),
+      req('Delete Schedule Template', 'DELETE', '/schedule-templates/{{scheduleTemplateId}}'),
+      req(
+        'List Trip Templates',
+        'GET',
+        '/schedule-templates/{{scheduleTemplateId}}/trip-templates',
+      ),
+      req(
+        'Add Trip Template',
+        'POST',
+        '/schedule-templates/{{scheduleTemplateId}}/trip-templates',
+        {
+          body: { routeId: '{{routeId}}', targetTime: '06:30', fuelRequestedLiters: 20 },
+          capture: 'tripTemplateId',
+        },
+      ),
       req(
         'Update Trip Template',
         'PATCH',
-        '/crew-schedules/{{crewScheduleId}}/trip-templates/{{tripTemplateId}}',
+        '/schedule-templates/{{scheduleTemplateId}}/trip-templates/{{tripTemplateId}}',
         { body: { targetTime: '07:00' } },
       ),
       req(
         'Delete Trip Template',
         'DELETE',
-        '/crew-schedules/{{crewScheduleId}}/trip-templates/{{tripTemplateId}}',
+        '/schedule-templates/{{scheduleTemplateId}}/trip-templates/{{tripTemplateId}}',
       ),
       req('List Disposal Permits', 'GET', '/disposal-permits', {
         query: { page: '1', limit: '20' },
@@ -357,6 +382,286 @@ const GROUPS = [
       }),
     ],
   },
+  {
+    name: 'Transactions',
+    description:
+      'Daily transaction workflow: a TransactionDay holds Hauls; each Haul has HaulAssignments (depart/return) that produce Trips. Set `transactionDayId`/`haulAssignmentId`/`tripId` from the list/detail responses below.',
+    items: [
+      req('List Transaction Days', 'GET', '/transaction-days', {
+        query: { date: '2026-06-01' },
+        capture: 'transactionDayId',
+        captureFrom: 'data[0].id',
+        note: '`date` (YYYY-MM-DD) is required. Captures the first day id.',
+      }),
+      req('Initialize Today', 'POST', '/transaction-days/initialize-today', {
+        note: "Creates today's TransactionDay and seeds planned hauls/trips from the active schedule templates. Idempotent.",
+      }),
+      req('Get Transaction Day', 'GET', '/transaction-days/{{transactionDayId}}', {
+        note: 'Detail includes the hauls + assignments — copy a haulAssignmentId/tripId for the requests below.',
+      }),
+      req('Update Transaction Day (status)', 'PATCH', '/transaction-days/{{transactionDayId}}', {
+        body: { status: 'DONE' },
+        note: 'status ∈ IN_PROGRESS | DONE.',
+      }),
+      req('List Haul Assignment Trips', 'GET', '/haul-assignments/{{haulAssignmentId}}/trips', {
+        capture: 'tripId',
+        captureFrom: 'data[0].id',
+        note: 'Set haulAssignmentId from a transaction-day detail. Captures the first trip id.',
+      }),
+      req('Record Depart', 'PUT', '/haul-assignments/{{haulAssignmentId}}/record-depart', {
+        body: { actualOdometer: 1000, actualTime: '2026-06-08T05:30:00.000Z' },
+      }),
+      req('Record Return', 'PUT', '/haul-assignments/{{haulAssignmentId}}/record-return', {
+        body: { actualOdometer: 1080, actualTime: '2026-06-08T14:30:00.000Z' },
+      }),
+      req('Get Trip', 'GET', '/trips/{{tripId}}'),
+      req('Record Trip (actuals)', 'PUT', '/trips/{{tripId}}', {
+        body: {
+          actualTime: '2026-06-08T06:15:00.000Z',
+          actualOdometer: 1200,
+          fuelApprovedLiters: 20,
+          tareWeight: 8000,
+          grossWeight: 12000,
+          wasteVolume: 4,
+        },
+      }),
+      req('Verify Trip', 'PUT', '/trips/{{tripId}}/verify', {
+        note: 'Checker verification — no body.',
+      }),
+    ],
+  },
+  {
+    name: 'Levies & Refuel',
+    items: [
+      req('List Levies', 'GET', '/levies', {
+        query: { page: '1', limit: '20' },
+        capture: 'levyId',
+        captureFrom: 'data[0].id',
+      }),
+      req('Create Levy', 'POST', '/levies', {
+        body: { categoryName: 'Rumah Tangga', date: '2026-06-01', amount: 15000000, notes: 'uji' },
+        capture: 'levyId',
+        captureString: true,
+      }),
+      req('Get Levy', 'GET', '/levies/{{levyId}}'),
+      req('Update Levy', 'PATCH', '/levies/{{levyId}}', { body: { amount: 16000000 } }),
+      req('Delete Levy', 'DELETE', '/levies/{{levyId}}'),
+      req('List Refuels', 'GET', '/refuels', {
+        query: { page: '1', limit: '20' },
+        note: 'Read-only fuel-dispensing log (derived from trip fuel actuals).',
+      }),
+    ],
+  },
+  {
+    name: 'Maintenance & Inspections',
+    items: [
+      req('List Maintenance Records', 'GET', '/maintenance-records', {
+        query: { page: '1', limit: '20' },
+        capture: 'maintenanceId',
+        captureFrom: 'data[0].id',
+      }),
+      req('Create Maintenance Record', 'POST', '/maintenance-records', {
+        body: {
+          vehicleId: '{{vehicleId}}',
+          type: 'SERVICE',
+          date: '2026-06-08',
+          odometer: 12000,
+          workshop: 'Bengkel Uji',
+          description: 'Ganti oli + filter',
+        },
+        capture: 'maintenanceId',
+        captureString: true,
+        note: 'type ∈ SERVICE | REPAIR.',
+      }),
+      req('Get Maintenance Record', 'GET', '/maintenance-records/{{maintenanceId}}'),
+      req('Update Maintenance Record', 'PATCH', '/maintenance-records/{{maintenanceId}}', {
+        body: { workshop: 'Bengkel Uji (edit)' },
+      }),
+      req('Approve Maintenance Record', 'PATCH', '/maintenance-records/{{maintenanceId}}/approve', {
+        note: 'Supervisor approval — no body.',
+      }),
+      req('Delete Maintenance Record', 'DELETE', '/maintenance-records/{{maintenanceId}}'),
+      req('List Vehicle Inspections', 'GET', '/vehicle-inspections', {
+        query: { page: '1', limit: '20' },
+        capture: 'inspectionId',
+        captureFrom: 'data[0].id',
+      }),
+      req('Create Vehicle Inspection', 'POST', '/vehicle-inspections', {
+        body: {
+          vehicleId: '{{vehicleId}}',
+          date: '2026-06-08',
+          notes: 'Inspeksi harian',
+          items: [{ name: 'Rem', status: 'OK' }],
+        },
+        capture: 'inspectionId',
+        captureString: true,
+        note: 'items[].status ∈ OK | ATTENTION | FAIL.',
+      }),
+      req('Get Vehicle Inspection', 'GET', '/vehicle-inspections/{{inspectionId}}'),
+      req('Update Vehicle Inspection', 'PATCH', '/vehicle-inspections/{{inspectionId}}', {
+        body: { notes: 'Inspeksi harian (edit)' },
+      }),
+      req('Delete Vehicle Inspection', 'DELETE', '/vehicle-inspections/{{inspectionId}}'),
+    ],
+  },
+  {
+    name: 'Monitoring',
+    description:
+      'Read-only analytics over the pre-aggregated rollup tables. All endpoints take `dateFrom`/`dateTo` (YYYY-MM-DD, **required**). The demo seed covers 2025-06-09 … 2026-06-08.',
+    items: [
+      req('KPI Overview', 'GET', '/monitoring/kpi-overview', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08' },
+      }),
+      req('Trip Summary', 'GET', '/monitoring/trip-summary', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08', page: '1', limit: '20' },
+      }),
+      req('Tonnage (5-day)', 'GET', '/monitoring/tonnage-5day', {
+        query: { dateFrom: '2026-06-04', dateTo: '2026-06-08' },
+      }),
+      req('Tonnage (monthly)', 'GET', '/monitoring/tonnage-monthly', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08' },
+      }),
+      req('Tonnage by Site', 'GET', '/monitoring/tonnage-by-site', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08' },
+      }),
+      req('Tonnage by Source', 'GET', '/monitoring/tonnage-by-source', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08' },
+      }),
+      req('Fuel Consumption', 'GET', '/monitoring/fuel-consumption', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08' },
+      }),
+      req('Fuel by Type', 'GET', '/monitoring/fuel-by-type', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08' },
+      }),
+      req('Routes Active', 'GET', '/monitoring/routes-active', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08' },
+      }),
+      req('Levy Summary', 'GET', '/monitoring/levy-summary', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08' },
+      }),
+      req('Levy Trend', 'GET', '/monitoring/levy-trend', {
+        query: { dateFrom: '2025-06-09', dateTo: '2026-06-08' },
+      }),
+    ],
+  },
+  {
+    name: 'Reports',
+    description:
+      'Async Excel/PDF report engine. **Generate** enqueues a BullMQ job and returns a `jobId` (captured). Poll **Get Job** until status is `READY`, then **Download** for a presigned URL. `format` ∈ xlsx | pdf.',
+    items: [
+      req('Generate Tonnage Report', 'POST', '/reports/tonnage/generate', {
+        body: { dateFrom: '2026-05-01', dateTo: '2026-05-31', format: 'xlsx' },
+        capture: 'reportJobId',
+        captureFrom: 'data.jobId',
+      }),
+      req('Generate Fuel Report', 'POST', '/reports/fuel/generate', {
+        body: { dateFrom: '2026-05-01', dateTo: '2026-05-31', format: 'xlsx' },
+        capture: 'reportJobId',
+        captureFrom: 'data.jobId',
+      }),
+      req('Generate Route Report', 'POST', '/reports/route/generate', {
+        body: { dateFrom: '2026-05-01', dateTo: '2026-05-31', format: 'pdf' },
+        capture: 'reportJobId',
+        captureFrom: 'data.jobId',
+      }),
+      req('Generate Levy Report', 'POST', '/reports/levy/generate', {
+        body: { dateFrom: '2026-05-01', dateTo: '2026-05-31', format: 'xlsx' },
+        capture: 'reportJobId',
+        captureFrom: 'data.jobId',
+      }),
+      req('Get Report Job', 'GET', '/reports/jobs/{{reportJobId}}', {
+        note: 'Poll until data.status === "READY" (or "FAILED").',
+      }),
+      req('Download Report', 'GET', '/reports/download/{{reportJobId}}', {
+        note: 'Returns a presigned MinIO URL once the job is READY.',
+      }),
+      req('Delete Report Job', 'DELETE', '/reports/jobs/{{reportJobId}}'),
+    ],
+  },
+  {
+    name: 'Weighbridge (TPA Integration)',
+    description:
+      'TPA "Jembatan Timbang" REST API (replaces the legacy SOAP). Dual auth: the admin **session cookie** works for the operator endpoints, OR send `X-API-Key: {{weighbridgeApiKey}}` (the demo seed prints a `swatwb_demo_…` key) for unattended posting. `post-weighing` accepts an optional `Idempotency-Key`.',
+    items: [
+      req('Resolve Kitir', 'POST', '/weighbridge/resolve-kitir', {
+        headers: [{ key: 'X-API-Key', value: '{{weighbridgeApiKey}}' }],
+        body: { plateNumber: 'L 9 UJI', date: '2026-06-05' },
+        note: 'Look up the open disposal-permit (kitir) for a plate/date before posting a weighing.',
+      }),
+      req('Post Weighing', 'POST', '/weighbridge/post-weighing', {
+        headers: [
+          { key: 'X-API-Key', value: '{{weighbridgeApiKey}}' },
+          { key: 'Idempotency-Key', value: '{{$guid}}' },
+        ],
+        body: {
+          plateNumber: 'L 9 UJI',
+          date: '2026-06-05',
+          grossWeight: 12000,
+          tareWeight: 8000,
+          wasteVolume: 4,
+          notes: 'uji timbang',
+        },
+        capture: 'weighbridgeTripId',
+        captureFrom: 'data.tripId',
+        note: 'Creates/updates the inbound weighing + Trip. Captures the resulting tripId.',
+      }),
+      req('List Weighings', 'GET', '/weighbridge/weighings', {
+        query: { page: '1', limit: '20', date: '2026-06-05' },
+      }),
+      req('Update Weighing', 'PATCH', '/weighbridge/weighings/{{weighbridgeTripId}}', {
+        body: { grossWeight: 12500, verified: true },
+      }),
+      req('Import Excel', 'POST', '/weighbridge/import-excel', {
+        formdata: [{ key: 'file', type: 'file', src: [] }],
+        note: 'Bulk import a legacy weighbridge Excel export. Attach an .xlsx in the file field before sending.',
+      }),
+    ],
+  },
+  {
+    name: 'Service Accounts (Admin)',
+    description:
+      'Manage machine principals + their API keys (for the weighbridge/native integrations) and inspect the API audit trail. Requires `service-account:manage`.',
+    items: [
+      req('List Service Accounts', 'GET', '/admin/service-accounts', {
+        query: { page: '1', limit: '20' },
+        capture: 'serviceAccountId',
+        captureFrom: 'data[0].id',
+      }),
+      req('Create Service Account', 'POST', '/admin/service-accounts', {
+        body: { name: 'TPA Jembatan Timbang (uji)', roleId: '{{roleId}}', rateLimitPerMin: 120 },
+        capture: 'serviceAccountId',
+        captureString: true,
+        note: 'Response includes the one-time plaintext API key — copy it into weighbridgeApiKey.',
+      }),
+      req('Get Service Account', 'GET', '/admin/service-accounts/{{serviceAccountId}}'),
+      req('Update Service Account', 'PATCH', '/admin/service-accounts/{{serviceAccountId}}', {
+        body: { rateLimitPerMin: 240, active: true },
+      }),
+      req('Delete Service Account', 'DELETE', '/admin/service-accounts/{{serviceAccountId}}'),
+      req('List API Audit Logs', 'GET', '/admin/api-audit-logs', {
+        query: { page: '1', limit: '20' },
+      }),
+    ],
+  },
+  {
+    name: 'Storage & Archiving',
+    items: [
+      req('Presigned Upload URL', 'POST', '/storage/presigned-put', {
+        body: { key: 'trip/2026/06/uji.jpg', contentType: 'image/jpeg', expiresIn: 900 },
+        note: 'Returns a presigned MinIO PUT URL the client uploads to directly.',
+      }),
+      req('Presigned Download URL', 'POST', '/storage/presigned-get', {
+        body: { key: 'trip/2026/06/uji.jpg', expiresIn: 900 },
+      }),
+      req('List Archive Catalog', 'GET', '/archiving', {
+        note: 'Lists detached/archived monthly partitions.',
+      }),
+      req('Reattach Partition', 'POST', '/archiving/reattach', {
+        body: { tableName: 'trip_y2024m03', period: '2024-03' },
+        note: 'Re-attaches a previously detached monthly partition for querying.',
+      }),
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -380,8 +685,10 @@ function captureScript(item) {
 }
 
 function defaultTest(item) {
+  // 202 (async report generate) and 204 (deletes) are valid successes too.
   return [
-    item.test ?? "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+    item.test ??
+      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
   ];
 }
 
@@ -404,6 +711,11 @@ function toRequest(item) {
   if (item.body) {
     request.header.push({ key: 'Content-Type', value: 'application/json' });
     request.body = { mode: 'raw', raw: JSON.stringify(item.body, null, 2) };
+  }
+  if (item.formdata) {
+    // multipart/form-data (file uploads). Postman sets the boundary itself, so
+    // don't add a Content-Type header here.
+    request.body = { mode: 'formdata', formdata: item.formdata };
   }
   if (item.headers) {
     // Extra request headers (e.g. Authorization: Bearer for native-client calls).
@@ -429,7 +741,7 @@ const collection = {
     name: 'SWAT API',
     _postman_id: 'swat-api-collection',
     description:
-      'SWAT backend — auth, RBAC, and master data. The web flow uses cookie session auth: run Auth → Login first. Native .NET clients use bearer tokens: run Auth → Get Token (native client), which captures accessToken + refreshToken for the Bearer requests. Regenerate with `node apps/backend/postman/generate.mjs`.',
+      'SWAT backend — full API surface: auth/RBAC, master data, scheduling, daily transactions, levies/refuel, maintenance & inspections, monitoring analytics, async reports, the TPA weighbridge integration, service accounts, and storage/archiving. Kept 1:1 with the Swagger spec at `/api/docs`. The web flow uses cookie session auth: run Auth → Login first. Native .NET clients use bearer tokens: run Auth → Get Token (native client), which captures accessToken + refreshToken for the Bearer requests; the weighbridge also accepts `X-API-Key`. Regenerate with `node apps/backend/postman/generate.mjs`.',
     schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
   },
   item: GROUPS.map((group) => ({
@@ -463,9 +775,21 @@ const ENV_VARS = [
   'licenseClassId',
   'driverId',
   'licenseId',
-  'crewScheduleId',
+  'scheduleTemplateId',
   'tripTemplateId',
   'disposalPermitId',
+  'transactionDayId',
+  'haulAssignmentId',
+  'tripId',
+  'levyId',
+  'maintenanceId',
+  'inspectionId',
+  'reportJobId',
+  'serviceAccountId',
+  'weighbridgeTripId',
+  // Default to the demo seed's dev-only weighbridge key so the Weighbridge
+  // folder works out of the box; replace with a real key in other envs.
+  ['weighbridgeApiKey', 'swatwb_demo_000000000000000000000000000000000000000000000000000000'],
   'accessToken',
   'refreshToken',
 ];

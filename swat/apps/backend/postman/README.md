@@ -1,9 +1,21 @@
 # SWAT API — Postman collection
 
 Importable Postman collection + environment for manual testing of the SWAT
-backend. Covers the unauthenticated **System** health checks, plus Phase 1 **M1**
-(auth, users, roles, permissions) and **M2** (geography, waste sources, fleet,
-personnel, scheduling).
+backend. **Kept 1:1 with the Swagger spec at `/api/docs`** — every documented
+operation has a request. Folders:
+
+- **System** — unauthenticated health checks
+- **Auth** — cookie login + native-client bearer tokens (get/refresh/logout)
+- **Users & Access / Geography / Waste Sources / Fleet / Personnel / Scheduling** —
+  RBAC + master data + schedule/trip templates + disposal permits (kitir)
+- **Transactions** — transaction days, haul assignments (depart/return), trips
+- **Levies & Refuel** — retribusi CRUD + the refuel log
+- **Maintenance & Inspections** — maintenance records (+ approve) + vehicle inspections
+- **Monitoring** — analytics endpoints (KPI, tonnage, fuel, routes, levy)
+- **Reports** — async Excel/PDF generate → poll job → download
+- **Weighbridge (TPA Integration)** — resolve-kitir, post-weighing, weighings, Excel import
+- **Service Accounts (Admin)** — machine principals/API keys + API audit logs
+- **Storage & Archiving** — presigned MinIO URLs + partition reattach
 
 ## URL variables
 
@@ -59,6 +71,18 @@ client)**, which captures `accessToken` + `refreshToken` into the environment so
 the **Me (Bearer)** / **Token Logout** requests (and any `Authorization: Bearer
 {{accessToken}}` call) work. **Refresh Token** rotates the pair; replaying an old
 refresh token returns `401` (reuse-detection).
+
+**Weighbridge auth** is dual: the admin session cookie works for the operator
+endpoints (weighings, import), while the unattended ingest endpoints
+(`resolve-kitir`, `post-weighing`) also accept `X-API-Key: {{weighbridgeApiKey}}`.
+The env var defaults to the demo seed's dev-only `swatwb_demo_…` key, so the
+**Weighbridge** folder works out of the box; replace it with a real key issued
+via **Service Accounts (Admin) → Create Service Account** in other environments.
+
+> Many requests chain via captured ids (`reportJobId`, `weighbridgeTripId`,
+> `serviceAccountId`, `levyId`, …). A few — `tripId`, `haulAssignmentId`,
+> `transactionDayId` — are best seeded from a **Transactions → Get Transaction
+> Day** detail, since trips/assignments are created by the daily workflow.
 
 ## Updating as the API grows
 
