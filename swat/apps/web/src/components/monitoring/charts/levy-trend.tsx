@@ -49,7 +49,7 @@ export function LevyTrend({ data }: { data: readonly LevyTrendPoint[] }): JSX.El
           width={56}
         />
         <Tooltip
-          formatter={(value: number) => [formatRupiah(value), 'Retribusi']}
+          formatter={(value) => [formatRupiah(Number(value)), 'Retribusi']}
           contentStyle={{
             background: 'var(--neutral-0)',
             border: '1px solid var(--neutral-200)',

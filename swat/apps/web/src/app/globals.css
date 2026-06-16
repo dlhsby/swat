@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* Keep the existing JS config (design-token color ramps, custom fontSize scale,
+   content globs) — Tailwind 4 loads it via @config, preserving the v3 setup. */
+@config '../../tailwind.config.ts';
 
 /* ============================================================================
    SWAT — Design Tokens (ported verbatim from

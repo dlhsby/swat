@@ -34,7 +34,7 @@ export function FuelGrouped({ data }: { data: readonly FuelBar[] }): JSX.Element
           axisLine={false}
         />
         <Tooltip
-          formatter={(value: number, name: string) => [`${value} L`, name]}
+          formatter={(value, name) => [`${value} L`, name]}
           contentStyle={{
             background: 'var(--neutral-0)',
             border: '1px solid var(--neutral-200)',

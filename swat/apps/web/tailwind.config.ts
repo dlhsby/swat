@@ -5,7 +5,7 @@ import animate from 'tailwindcss-animate';
 // Token values are the source of truth; the CSS variable layer lives in
 // src/app/globals.css (ported verbatim from designs/.../swat-tokens.css).
 export default {
-  darkMode: ['class'],
+  darkMode: 'class',
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {

@@ -25,7 +25,7 @@ export function SourceDonut({ slices }: { slices: readonly DonutSlice[] }): JSX.
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number, name: string) => [`${value} ton`, name]}
+            formatter={(value, name) => [`${value} ton`, name]}
             contentStyle={{
               background: 'var(--neutral-0)',
               border: '1px solid var(--neutral-200)',

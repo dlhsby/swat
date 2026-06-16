@@ -21,7 +21,7 @@ export function TonnageColumns({ data }: { data: readonly TonnagePoint[] }): JSX
           axisLine={false}
         />
         <Tooltip
-          formatter={(value: number) => [`${value} ton`, 'Tonase']}
+          formatter={(value) => [`${value} ton`, 'Tonase']}
           contentStyle={{
             background: 'var(--neutral-0)',
             border: '1px solid var(--neutral-200)',
