@@ -110,7 +110,10 @@ From a multi-agent review of the diff:
   service-account IP allowlist and audit IPs are now accurate (was comparing against the proxy IP).
 - **Rejected calls are audited.** The guard records 401/403/429 attempts via
   `ApiAuditService.logRejection` (a guard rejection short-circuits before the audit interceptor), so
-  brute-force / IP-spoof / invalid-key attempts leave a trail.
+  brute-force / IP-spoof / invalid-key attempts leave a trail — but only when a credential was
+  actually presented (session/bearer/API key). Anonymous, no-credential probes are **not** audited:
+  weighbridge routes are `@Public` and rate limiting runs after auth, so auditing blank probes would
+  let an unauthenticated flood grow `api_audit_log` unbounded (disk DoS).
 - **Excel import hardened:** out-of-range dates (e.g. `2026-13-32`) become a per-row error instead of
   an `Invalid Date` that aborted the whole batch with a 500; dedup + insert batched to one `findMany`
   - one `createMany` (was 2×N queries).
