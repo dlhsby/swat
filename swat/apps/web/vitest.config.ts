@@ -8,6 +8,13 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // `turbo run test` runs the web/backend/schemas suites concurrently; under
+    // that CPU contention jsdom component tests can transiently time out. Higher
+    // timeouts + a couple of retries make the combined run deterministic without
+    // serializing (isolated runs are unaffected).
+    testTimeout: 15000,
+    hookTimeout: 15000,
+    retry: 2,
     coverage: {
       provider: 'v8',
       include: [

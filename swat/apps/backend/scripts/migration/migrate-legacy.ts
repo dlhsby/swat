@@ -97,6 +97,9 @@ import {
 // `seed:legacy` track leaves SEED_ENV unset and uses the ambient shell/.env.
 const seedEnv = process.env.SEED_ENV;
 if (seedEnv) {
+  // Staging/production: load ONLY the per-env file so DATABASE_URL (read eagerly
+  // by the Prisma 7 pg adapter below) points at the right database. Do NOT also
+  // run loadScriptEnv() here — its prisma/.env (dev) load could shadow it.
   const envFile = `.env.${seedEnv}`;
   const loadEnvFile = (process as NodeJS.Process & { loadEnvFile?: (path: string) => void })
     .loadEnvFile;
@@ -111,9 +114,11 @@ if (seedEnv) {
         (err instanceof Error ? err.message : String(err)),
     );
   }
+} else {
+  // Local `seed:legacy`: pull DATABASE_URL + LEGACY_DB_* from prisma/.env / .env.
+  loadScriptEnv();
 }
 
-loadScriptEnv();
 const prisma = new PrismaClient({ adapter: pgAdapter() });
 const NOW = new Date();
 

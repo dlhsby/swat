@@ -10,7 +10,7 @@ transitive-override pass in `753af5e`).
 | Area | From → To | Notes |
 | --- | --- | --- |
 | ESLint | 8 → **9** (flat config) | Shared `@swat/eslint-config` rewritten to flat; every `.eslintrc.cjs` → `eslint.config.mjs`; web lints via `eslint .` with `@next/eslint-plugin-next` + react-hooks (no `next lint`). Backend keeps type-aware parsing so `consistent-type-imports` honours `emitDecoratorMetadata`. |
-| Test stack | Vitest 2 → **4** (+ Vite 7, @vitejs/plugin-react 5, jsdom 29), Jest 29 → **30** | Configs unchanged. Web vitest can flake under concurrent CPU load (turbo runs all suites at once); it is reliably green run in isolation. |
+| Test stack | Vitest 2 → **4** (+ Vite 7, @vitejs/plugin-react 5, jsdom 29), Jest 29 → **30** | Web `vitest.config.ts` adds `retry: 2` + 15s timeouts so the concurrent `turbo run test` (all suites at once) is deterministic under CPU load. |
 | Tooling | turbo 2.9, TypeScript **5.9**, prettier 3.8, lint-staged 17, commitlint 21, @types/node 24 | TS 6 deferred (typescript-eslint/ts-jest peers not ready). |
 | NestJS | 10 → **11** (Express 5) | `@nestjs/swagger` 7→11, `schedule` 4→6, `config` 3→4; platform-express 11 brings Express 5 + multer 2. No code changes (`forRoutes('*')` still matches; upload uses buffer only). |
 | Prisma | 5 → **7** | Driver adapters: `@prisma/adapter-pg` + `pg`; URL moved to `prisma.config.ts`; the removed `$use` audit middleware reimplemented as a `$extends` client extension returned from the `PrismaService` constructor (soft-delete + stamping + AuditLog) — keeps the 88 `@prisma/client` import sites unchanged (kept `prisma-client-js` generator). Scripts use a shared pg-adapter + script env loader. |
@@ -47,3 +47,8 @@ catch up (re-check on the next `pnpm audit`):
   `tsc`, not the LSP.
 - A clean `rm -rf node_modules && pnpm install` clears orphaned `@types/*` copies
   that otherwise cause dual-React-types JSX errors.
+- **CI** (`.github/workflows/ci.yml`): the exact sequence (frozen install →
+  `prisma:generate` → lint → typecheck → test → build) was dry-run locally on the
+  new stack and is green. `migrate-legacy` loads its per-env file (staging/
+  production) XOR `prisma/.env` (local) BEFORE constructing the client, since the
+  Prisma 7 pg adapter reads `DATABASE_URL` eagerly at construction.
