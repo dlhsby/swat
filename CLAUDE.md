@@ -12,7 +12,9 @@ Concise orientation so sessions don't re-explore. Global directives live in `~/.
 
 ## Stack
 
-pnpm + Turborepo · NestJS 10 + Prisma 5 + Postgres 15 · Next 14 + Tailwind 3 + next-intl 3.
+pnpm + Turborepo · NestJS 11 (Express 5) + Prisma 7 + Postgres 15 · Next 16 + React 19 +
+Tailwind 4 + next-intl 4 · Zod 4 · ESLint 9 (flat config) · Vitest 4 / Jest 30 · TypeScript 5.9.
+(All deps on latest majors as of 2026-06; `pnpm audit` = 0. See `docs/DEPENDENCY-UPGRADE.md`.)
 Packages: `@swat/{schemas,prisma-client,eslint-config,tsconfig}`; backend = `@swat/backend`.
 Admin seed login: `admin / Password123!` (no forced reset). Dev/CI seed also creates
 `adminreset / Password123!` (`mustChangePassword=true`) to exercise the forced first-login
@@ -41,6 +43,10 @@ None of these dev/CI accounts are created in production.
   from `designs/`. `tailwind.config.ts` color ramps reference those vars (`var(--neutral-0)` …) so
   `.dark` flips every `bg-/text-*` utility. Opacity can't be applied to a hex `var()` — overlays use
   the dedicated `--scrim` token (`bg-scrim`), not `bg-neutral-900/50`.
+- **Tailwind 4 (CSS-first toolchain, legacy JS config kept):** `globals.css` starts with
+  `@import "tailwindcss";` + `@config "../../tailwind.config.ts";` so the design-token JS config above
+  is preserved unchanged. PostCSS uses `@tailwindcss/postcss` (autoprefixer is bundled — don't re-add
+  it). `cn()` still uses `extendTailwindMerge` (tailwind-merge 3); keep the `fontSize` group in sync.
 - **Theme**: default follows system (`prefers-color-scheme`); user choice persists in
   `localStorage['swat-theme']` and is applied pre-paint. Controller: `src/lib/theme.ts`. The
   in-app **Settings** page (`/settings`, avatar menu) switches appearance (System/Light/Dark) +
