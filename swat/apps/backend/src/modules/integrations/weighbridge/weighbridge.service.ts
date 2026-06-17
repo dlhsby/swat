@@ -99,8 +99,19 @@ export class WeighbridgeService {
     const actualTime = dto.timestamp ? new Date(dto.timestamp) : new Date();
     const recordedAt = new Date();
     // A service-account post (TPA desktop app on an API key) has no session user,
-    // so fall back to the supplied operatorId — the legacy `petugasid`.
-    const recordedById = recorderId(principal) ?? dto.operatorId ?? null;
+    // so fall back to the supplied operatorId — the legacy `petugasid`. Validate it
+    // up front so a bad id is a clean 422, not a downstream FK-violation 500.
+    let recordedById = recorderId(principal);
+    if (recordedById === null && dto.operatorId !== undefined) {
+      const operator = await this.prisma.user.findUnique({
+        where: { id: dto.operatorId },
+        select: { id: true },
+      });
+      if (!operator) {
+        throw new UnprocessableEntityException('operatorId tidak dikenal');
+      }
+      recordedById = dto.operatorId;
+    }
 
     await this.prisma.trip.update({
       where: { id: trip.id },
