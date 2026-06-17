@@ -2,24 +2,27 @@
 
 Fleet & solid-waste-transport operations platform for **DLH Kota Surabaya**.
 A TypeScript monorepo rebuilding the legacy CodeIgniter app (`../old_swat`) on a
-modern stack. **Phase 0 (foundation) is complete**; **Phase 1** (auth/RBAC, master
-data, transactions, frontend, legacy parity, migration toolkit, hardening — M1–M8)
-is delivered under green gates. Status ledgers:
-`../specs/11-development-plan/phase-1-status.md` (spec: `phase-1.md`) and
-`phase-0-status.md`. Live infra steps (Docker stack, `migrate deploy`, the
-multi-TB transactional migration, cutover) are the operator's on-prem steps.
+modern stack. **Phases 0–5 are code-complete under green gates:** 0 foundation ·
+1 auth/RBAC + master data + transactions + migration toolkit · 2 monitoring &
+analytics · 3 reporting/exports · 4 weighbridge (TPA) integration · 5 transaction
+revamp (ad-hoc trips, native REST parity, trip photos, TPA backfill). Next:
+6 monitoring/reporting review · 7 production deploy + migration · 8 field/mobile.
+The phased plan + status ledgers live in
+[`../specs/11-development-plan/`](../specs/11-development-plan/) (`README.md` is the
+roadmap index). Live infra steps (Docker stack, `migrate deploy`, the multi-TB
+transactional migration, cutover) are the operator's on-prem steps.
 
 ## Stack
 
-| Layer           | Tech                                                                      |
-| --------------- | ------------------------------------------------------------------------- |
-| Monorepo        | pnpm workspaces + Turborepo                                               |
-| Backend         | NestJS · Prisma · PostgreSQL 15 (monthly range-partitioned)               |
-| Frontend        | Next.js (App Router) · Tailwind + shadcn tokens · next-intl (id-ID) · PWA |
-| Auth            | Argon2id · session cookies (Phase 1)                                      |
-| Storage / Cache | MinIO (S3) · Redis                                                        |
-| Validation      | Zod (`@swat/schemas`, shared) + class-validator                           |
-| Tooling         | TypeScript strict · ESLint · Prettier · Husky · commitlint · Vitest/Jest  |
+| Layer           | Tech                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------- |
+| Monorepo        | pnpm workspaces + Turborepo                                                                       |
+| Backend         | NestJS · Prisma · PostgreSQL 15 (monthly range-partitioned)                                       |
+| Frontend        | Next.js (App Router) · Tailwind + shadcn tokens · next-intl (id-ID) · PWA                         |
+| Auth            | Argon2id · session cookies (web) + OAuth2 bearer tokens (native clients) + API keys (weighbridge) |
+| Storage / Cache | MinIO (S3) · Redis                                                                                |
+| Validation      | Zod (`@swat/schemas`, shared) + class-validator                                                   |
+| Tooling         | TypeScript strict · ESLint · Prettier · Husky · commitlint · Vitest/Jest                          |
 
 ## Layout
 
@@ -78,10 +81,12 @@ docker compose --env-file infra/docker-compose.env up -d
 #   Postgres :5432 · Adminer :8080 · Redis :6379 · MinIO :9000 (console :9001) · nginx :8088
 #   The minio-init job creates buckets: swat-photos, swat-thumbnails, swat-reports
 
-# 4. Apply migrations, then seed. Seeding is two independent, idempotent tracks:
+# 4. Apply migrations, then seed. Seeding has FOUR independent, idempotent tracks:
 pnpm db:migrate
-pnpm db:seed                    # = db:seed:demo — dummy data for testing (SEED_SYNTHETIC=1 → ~365d of trips)
-#   pnpm db:seed:legacy         # real legacy data instead (self-sufficient; needs LEGACY_DB_* env)
+pnpm db:seed                    # = db:seed:demo — synthetic dev data + a year of trips + auto rollup backfill
+#   pnpm db:seed:legacy         # real legacy masters from MySQL (no transactions); needs LEGACY_DB_* env
+#   pnpm db:seed:staging        # legacy + transactional history → staging DB (SEED_ENV=staging / .env.staging)
+#   pnpm db:seed:production      # the real cutover → production DB (.env.production; needs --confirm-production)
 
 # 5. Run both apps
 pnpm dev
@@ -102,18 +107,21 @@ If you change `POSTGRES_PORT`, `REDIS_PORT`, or `MINIO_API_PORT`, update the mat
 
 ## Scripts (root)
 
-| Command                             | Description                      |
-| ----------------------------------- | -------------------------------- |
-| `pnpm dev`                          | Run backend + web in watch mode  |
-| `pnpm build`                        | Build all workspaces (Turborepo) |
-| `pnpm lint` / `pnpm typecheck`      | Lint / type-check all            |
-| `pnpm test`                         | Unit tests (Vitest + Jest)       |
-| `pnpm format` / `pnpm format:check` | Prettier write / check           |
-| `pnpm db:generate`                  | `prisma generate`                |
-| `pnpm db:migrate`                   | `prisma migrate deploy`          |
-| `pnpm db:seed` / `db:seed:demo`     | Seed dummy/demo data (default)   |
-| `pnpm db:seed:legacy`               | Load real legacy data (no demo)  |
-| `pnpm db:seed:auth`                 | Auth bootstrap only (admin)      |
+| Command                                                | Description                                       |
+| ------------------------------------------------------ | ------------------------------------------------- |
+| `pnpm dev`                                             | Run backend + web in watch mode                   |
+| `pnpm build`                                           | Build all workspaces (Turborepo)                  |
+| `pnpm lint` / `pnpm typecheck`                         | Lint / type-check all                             |
+| `pnpm test`                                            | Unit tests (Vitest + Jest)                        |
+| `pnpm format` / `pnpm format:check`                    | Prettier write / check                            |
+| `pnpm db:generate`                                     | `prisma generate`                                 |
+| `pnpm db:migrate`                                      | `prisma migrate deploy`                           |
+| `pnpm db:seed` / `db:seed:demo`                        | Seed synthetic demo data + rollups (default)      |
+| `pnpm db:seed:legacy`                                  | Load real legacy masters (no demo, no txns)       |
+| `pnpm db:seed:staging`                                 | Legacy + transactional history → staging DB       |
+| `pnpm db:seed:production`                              | Production cutover (needs `--confirm-production`) |
+| `pnpm db:seed:auth`                                    | Auth bootstrap only (admin)                       |
+| `pnpm --filter @swat/backend run migrate:backfill-tpa` | Link migrated TPA logs → trips (Phase 5)          |
 
 ## Production deployment
 
@@ -143,8 +151,12 @@ bootstraps the permission catalog + a full-access `admin / Password123!`, loads 
 real legacy users (each `Password123!` with a forced first-login reset; legacy MD5 is
 never copied) and their permissions derived from the legacy menu tree, plus master +
 aggregate data. Run it on a clean DB (`prisma migrate reset --force --skip-seed`), not
-on top of `db:seed:demo`. See that folder's README "Two data tracks" section (incl. the
-deferred **T-155** transactional bulk load — revisit with live data).
+on top of `db:seed:demo`. The **transactional bulk load** (haritransaksi→TransactionDay,
+transaksiangkutsampah→Haul, detail→HaulAssignment, trayek→Trip, sampahmasuktpa→
+TpaInboundLog) is implemented and runs via `db:seed:staging`/`db:seed:production`
+(`--include-transactions`, keyset-batched + watermarked). After a legacy load, link the
+migrated TPA logs to their trips with `migrate:backfill-tpa` (Phase 5). See that folder's
+README for the per-track detail.
 
 ## Cutover & operations docs
 
