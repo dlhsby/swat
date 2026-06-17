@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckCircle2, Eye, Pencil } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
 import { PageHead } from '@/components/shell/page-head';
@@ -39,8 +39,12 @@ function leg(target: string | null, actual: string | null): string {
   return `${target ? formatTime(target) : '—'} / ${actual ? formatTime(actual) : '—'}`;
 }
 
-export default function HaulBoardPage({ params }: { params: { id: string } }): JSX.Element {
-  const dayId = params.id;
+export default function HaulBoardPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): JSX.Element {
+  const { id: dayId } = use(params);
   const [day, setDay] = useState<TransactionDayDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
