@@ -75,6 +75,34 @@ call (also needs the category record permission).
 
 ---
 
+## 2b. Role-focused quick-entry screens (legacy per-role transaksi menus)
+
+**Why:** the legacy app gave each field role a focused single-task screen
+(`pengambilansampah` / `pembuangansampah` / `pengisianbahanbakar` / `aktivitaspool`).
+The rebuild now restores these under `/record/*` so an operator records just their activity
+without navigating the day → haul → trip tree.
+
+### UI
+1. In the sidebar, open the new **Pencatatan** group → **Pengambilan Sampah** (`/id-ID/record/pickup`).
+   Also: **Pembuangan Sampah** (`/record/disposal`), **Pengisian BBM** (`/record/refuel`),
+   **Aktivitas Pool** (`/record/pool`).
+2. Pick a vehicle from the **Kendaraan** combobox (today's scheduled fleet).
+3. The matching-category trips for that vehicle list with a status pill; click **Catat** on an
+   IN_PROGRESS one → the same `RecordTripDialog` (category-specific fields) opens. Save.
+4. On pickup/disposal/refuel, **Tambah aktivitas tak terjadwal** adds an ad-hoc trip of that
+   category (route picker is filtered to the category).
+
+✅ Expect: each screen shows only its own activity; recording updates the trip and refreshes the
+list. A role without `trip:update` doesn't see the Pencatatan group; without `trip:create` the
+"Tambah" button is hidden. If today's transaction day isn't initialized, a friendly "belum tersedia"
+card shows (not a crash).
+
+> Note: visibility is gated by the generic `trip:update`/`trip:create`, so all four screens show to
+> any recorder. Per-role *scoping* (a TPS role seeing only pickup) would need per-category
+> permissions — a documented follow-up, not in this pass.
+
+---
+
 ## 3. Bulk kitir issuance (native parity — legacy insertJatahKitir)
 
 ### UI
@@ -201,6 +229,7 @@ pnpm --filter @swat/backend test:e2e     # needs the Docker stack up
 
 - [ ] Roadmap renumbered (§1)
 - [ ] Ad-hoc trip create works in UI + API; permission-gated (§2)
+- [ ] Role-focused `/record/*` quick-entry screens record per-category; permission-gated (§2b)
 - [ ] Bulk kitir returns N printable codes (§3)
 - [ ] Operator attribution sets recordedById; bad id → 422 (§4)
 - [ ] `trip.disposal_permit_id` populated after weighing; migration no-drift (§5)

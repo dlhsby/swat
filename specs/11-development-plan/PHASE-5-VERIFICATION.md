@@ -32,11 +32,13 @@ import) and D1/D2/D4/D5 were accepted as deferred.
   - `migrate:backfill-tpa` → scanned 4 676 demo logs, idempotent (demo logs are synthetic/independent,
     so 0 matched — matcher verified against the real-data shape; disambiguated-plate caveat documented).
 
-## Post-verification fixes (manual UAT)
+## Post-verification fixes & additions (manual UAT, 2026-06-17)
 
-| Date | Commit | Fix |
-| --- | --- | --- |
-| 2026-06-17 | `fix(web): unwrap route params Promise on transaction-day detail (Next 16)` | The transaction-day detail page (`transaction-days/[id]/page.tsx`, a client component) read `params.id` synchronously. Under Next 16 `params` is a Promise, so `id` was `undefined` and reached the API as the string `"undefined"`, crashing `GET /transaction-days/:id` with a Prisma `invalid input syntax for type uuid` 500. Unwrapped with `React.use(params)`. `pnpm --filter @swat/web typecheck` clean; it is the only dynamic client route. |
+| Commit | Change |
+| --- | --- |
+| `fix(web): unwrap route params Promise on transaction-day detail (Next 16)` | The transaction-day detail page (`transaction-days/[id]/page.tsx`, a client component) read `params.id` synchronously. Under Next 16 `params` is a Promise, so `id` was `undefined` and reached the API as the string `"undefined"`, crashing `GET /transaction-days/:id` with a Prisma `invalid input syntax for type uuid` 500. Unwrapped with `React.use(params)`. It is the only dynamic client route. |
+| `fix(web): contain combobox search focus ring under Tailwind 4 layers` | The global focus-visible ring in `globals.css` was unlayered CSS; under Tailwind 4's cascade layers an unlayered rule beats every layered utility regardless of specificity, so the combobox search input's `focus-visible:shadow-none` override (in `@layer utilities`) stopped winning and the green ring re-overflowed the popover. Moved the global ring into `@layer base` so per-component utilities win by layer order. |
+| `feat(web): role-focused quick-entry screens for field recording` | Restored the legacy per-role transaksi menus as focused single-task screens under `/record/{pickup,disposal,refuel,pool}` (legacy `pengambilansampah` / `pembuangansampah` / `pengisianbahanbakar` / `aktivitaspool`). Pick today's vehicle → record just that activity, no day→haul→trip navigation. Reuses `RecordTripDialog`/`AddTripDialog`; new "Pencatatan" nav group gated by `trip:update` (record) / `trip:create` (ad-hoc add). Gate is generic `trip:update`; per-category role scoping (e.g. `trip:pickup`) is a possible follow-up. **Gate re-run:** web typecheck + lint clean · 167 web tests green · `next build` OK (4 new routes). |
 
 ## Exit criteria
 
