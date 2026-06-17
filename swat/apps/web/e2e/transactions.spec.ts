@@ -14,9 +14,9 @@ test.describe('Transaction workflow', () => {
   });
 
   test('navigate to a transaction day and open the Haul Board', async ({ page }) => {
-    await page.goto('/id-ID/transaction-days');
+    await page.goto('/id-ID/scheduling');
     await expectAppShell(page);
-    await expect(page.getByRole('heading', { name: /hari transaksi/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /penjadwalan/i })).toBeVisible();
 
     // Open the first available day (if any) → Haul Board.
     const firstDay = page
@@ -25,7 +25,7 @@ test.describe('Transaction workflow', () => {
       .first();
     if (await firstDay.count()) {
       await firstDay.click();
-      await expect(page).toHaveURL(/\/transaction-days\/\d+/);
+      await expect(page).toHaveURL(/\/scheduling\/[0-9a-f-]+/i);
       // Haul Board shows the verified/total counter in the page head.
       await expect(page.getByText(/terverifikasi/i)).toBeVisible();
     }
@@ -35,7 +35,7 @@ test.describe('Transaction workflow', () => {
     // Documents the data-quality gate exercised in the record-disposal dialog;
     // the operator's run drives a real DISPOSAL trip end-to-end (depart → pickup →
     // disposal → verify). Here we assert the screen is reachable.
-    await page.goto('/id-ID/transaction-days');
-    await expect(page.getByRole('heading', { name: /hari transaksi/i })).toBeVisible();
+    await page.goto('/id-ID/scheduling');
+    await expect(page.getByRole('heading', { name: /penjadwalan/i })).toBeVisible();
   });
 });

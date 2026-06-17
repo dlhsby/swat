@@ -43,9 +43,9 @@
     "scheduleTemplates": "Haulage Schedule Template",
     "disposalPermits": "Disposal Permits",
     "pengangkutan": "Operations",
-    "transactionDays": "Transaction Days",
-    "refuelLog": "Refuel Log",
-    "recording": "Quick Entry",
+    "scheduling": "Scheduling",
+    "refuelLog": "Refuel Ledger",
+    "recordActivity": "Activity Recording",
     "recordPickup": "Waste Pickup",
     "recordDisposal": "Waste Disposal",
     "recordRefuel": "Refueling",
@@ -166,7 +166,7 @@
     "greetingEvening": "Good evening",
     "greetingNight": "Good night",
     "subtitle": "Today's operational summary.",
-    "initDay": "Initialize Today",
+    "initDay": "Create Today's Schedule",
     "initDaySuccess": "Transaction day is ready.",
     "initDayExists": "Today's transaction day already exists.",
     "initDayCreated": "Transaction day created: {hauls} hauls, {assignments} assignments, {trips} trips.",
@@ -186,7 +186,7 @@
     "colVehicles": "Vehicles",
     "colTonnage": "Tonnage",
     "viewBoard": "View Board",
-    "emptyDays": "No transaction days yet. Start with \"Initialize Today\"."
+    "emptyDays": "No schedule yet. Start with \"Create Today's Schedule\"."
   },
   "monitoring": {
     "range": {

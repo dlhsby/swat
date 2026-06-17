@@ -4,7 +4,6 @@ import { PlusCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
-import { PageHead } from '@/components/shell/page-head';
 import { AddTripDialog } from '@/components/transactions/add-trip-dialog';
 import { RecordTripDialog } from '@/components/transactions/record-trip-dialog';
 import {
@@ -29,9 +28,6 @@ import {
 export interface QuickEntryBoardProps {
   /** Trip categories this focused screen records (e.g. ['DEPART_POOL','RETURN_POOL']). */
   readonly categories: readonly RouteCategory[];
-  readonly title: string;
-  readonly description: string;
-  readonly breadcrumbLabel: string;
   /** Offer "add ad-hoc trip" — off for pool legs (auto-created from the schedule). */
   readonly allowAdHoc?: boolean;
 }
@@ -50,9 +46,6 @@ interface CategoryTrip {
  */
 export function QuickEntryBoard({
   categories,
-  title,
-  description,
-  breadcrumbLabel,
   allowAdHoc = false,
 }: QuickEntryBoardProps): JSX.Element {
   const [day, setDay] = useState<TransactionDayDto | null>(null);
@@ -106,12 +99,6 @@ export function QuickEntryBoard({
 
   return (
     <>
-      <PageHead
-        breadcrumb={[{ label: 'Pencatatan', href: '#' }, { label: breadcrumbLabel }]}
-        title={title}
-        description={description}
-      />
-
       {error || !day ? (
         <Card>
           <CardContent className="space-y-3 py-10 text-center">
@@ -126,7 +113,7 @@ export function QuickEntryBoard({
         </Card>
       ) : (
         <div className="space-y-4">
-          <div className="max-w-sm space-y-1.5">
+          <div className="space-y-1.5">
             <label className="text-label text-neutral-700" htmlFor="qe-vehicle">
               Kendaraan
             </label>
@@ -137,6 +124,7 @@ export function QuickEntryBoard({
               placeholder="Pilih kendaraan"
               searchPlaceholder="Cari nomor polisi…"
               emptyText="Tidak ada kendaraan terjadwal hari ini"
+              className="w-72 max-w-full"
             />
           </div>
 

@@ -11,14 +11,12 @@ import {
   LayoutDashboard,
   type LucideIcon,
   MapPin,
-  PackageOpen,
   ShieldCheck,
   Ticket,
   Trash2,
   Truck,
   UserCog,
   Users,
-  Warehouse,
 } from 'lucide-react';
 
 /** A single sidebar leaf link. */
@@ -73,6 +71,15 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: FuelIcon,
         permission: 'monitoring:read',
       },
+      // Per-refuel ledger (liters/cost/anomaly history) — a monitoring/report view,
+      // distinct from the entry tab under Pencatatan. Legacy had no separate ledger;
+      // fuel lived only as entry + monitoring + laporan.
+      {
+        key: 'refuelLog',
+        href: '/refuel-log',
+        icon: FuelIcon,
+        permission: 'trip:read',
+      },
       {
         key: 'routes',
         href: '/monitoring/routes',
@@ -124,8 +131,8 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     icon: ArrowLeftRight,
     leaves: [
       {
-        key: 'transactionDays',
-        href: '/transaction-days',
+        key: 'scheduling',
+        href: '/scheduling',
         icon: Gauge,
         permission: 'transaction-day:read',
       },
@@ -135,28 +142,13 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: Ticket,
         permission: 'disposal-permit:read',
       },
+      // Single tabbed "Pencatatan Aktivitas" screen (pickup/disposal/refuel/pool).
       {
-        key: 'refuelLog',
-        href: '/refuel-log',
-        icon: FuelIcon,
-        permission: 'trip:read',
-      },
-    ],
-  },
-  {
-    id: 'grp-record',
-    key: 'recording',
-    icon: ClipboardList,
-    leaves: [
-      { key: 'recordPickup', href: '/record/pickup', icon: PackageOpen, permission: 'trip:update' },
-      {
-        key: 'recordDisposal',
-        href: '/record/disposal',
-        icon: Warehouse,
+        key: 'recordActivity',
+        href: '/record',
+        icon: ClipboardList,
         permission: 'trip:update',
       },
-      { key: 'recordRefuel', href: '/record/refuel', icon: FuelIcon, permission: 'trip:update' },
-      { key: 'recordPool', href: '/record/pool', icon: Truck, permission: 'trip:update' },
     ],
   },
   {

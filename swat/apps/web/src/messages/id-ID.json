@@ -43,9 +43,9 @@
     "scheduleTemplates": "Template Jadwal Pengangkutan",
     "disposalPermits": "Jatah Kitir",
     "pengangkutan": "Pengangkutan",
-    "transactionDays": "Hari Transaksi",
-    "refuelLog": "Pengisian Bahan Bakar",
-    "recording": "Pencatatan",
+    "scheduling": "Penjadwalan",
+    "refuelLog": "Riwayat & Biaya BBM",
+    "recordActivity": "Pencatatan Aktivitas",
     "recordPickup": "Pengambilan Sampah",
     "recordDisposal": "Pembuangan Sampah",
     "recordRefuel": "Pengisian BBM",
@@ -166,7 +166,7 @@
     "greetingEvening": "Selamat sore",
     "greetingNight": "Selamat malam",
     "subtitle": "Ringkasan operasional hari ini.",
-    "initDay": "Inisiasi Hari Ini",
+    "initDay": "Buat Jadwal Hari Ini",
     "initDaySuccess": "Hari transaksi siap.",
     "initDayExists": "Hari transaksi hari ini sudah ada.",
     "initDayCreated": "Hari transaksi dibuat: {hauls} angkut sampah, {assignments} penugasan, {trips} trayek.",
@@ -186,7 +186,7 @@
     "colVehicles": "Kendaraan",
     "colTonnage": "Tonase",
     "viewBoard": "Lihat Angkut Sampah",
-    "emptyDays": "Belum ada hari transaksi. Mulai dengan \"Inisiasi Hari Ini\"."
+    "emptyDays": "Belum ada jadwal. Mulai dengan \"Buat Jadwal Hari Ini\"."
   },
   "monitoring": {
     "range": {

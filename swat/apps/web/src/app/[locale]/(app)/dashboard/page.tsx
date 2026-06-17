@@ -88,7 +88,7 @@ export default function DashboardPage(): JSX.Element {
       );
       await load();
     } catch (err) {
-      notify.error(err instanceof ApiError ? err.message : 'Gagal menginisiasi hari.');
+      notify.error(err instanceof ApiError ? err.message : 'Gagal membuat jadwal hari ini.');
     } finally {
       setInitializing(false);
     }
@@ -154,7 +154,7 @@ export default function DashboardPage(): JSX.Element {
             ) : day ? (
               <button
                 type="button"
-                onClick={() => router.push(`/transaction-days/${day.id}`)}
+                onClick={() => router.push(`/scheduling/${day.id}`)}
                 className={cn(
                   'flex w-full items-center justify-between gap-3 rounded-base border border-neutral-200 px-4 py-3 text-left transition-colors hover:bg-neutral-50',
                 )}

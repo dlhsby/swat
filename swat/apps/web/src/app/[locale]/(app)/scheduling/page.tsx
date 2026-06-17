@@ -67,7 +67,7 @@ export default function TransactionDaysPage(): JSX.Element {
       setDate(todayWIB());
       await load(todayWIB());
     } catch (err) {
-      notify.error(err instanceof ApiError ? err.message : 'Gagal menginisiasi hari.');
+      notify.error(err instanceof ApiError ? err.message : 'Gagal membuat jadwal hari ini.');
     } finally {
       setInitializing(false);
     }
@@ -78,19 +78,20 @@ export default function TransactionDaysPage(): JSX.Element {
   return (
     <>
       <PageHead
-        title={t('transactionDays')}
+        title={t('scheduling')}
         actions={
           <ProtectedAction permission="transaction-day:manage">
             <Button onClick={() => void onInitialize()} loading={initializing}>
-              Inisiasi Hari Ini
+              Buat Jadwal Hari Ini
             </Button>
           </ProtectedAction>
         }
       />
 
       <Alert variant="info" className="mb-4">
-        Inisiasi Hari membuat hari transaksi dan menurunkan Haul + penugasan dari jadwal kru aktif.
-        Operasi ini idempoten — menjalankan ulang untuk tanggal yang sama tidak menggandakan data.
+        Buat Jadwal Hari Ini menyusun jadwal harian dan menurunkan Haul + penugasan dari jadwal kru
+        aktif. Operasi ini idempoten — menjalankan ulang untuk tanggal yang sama tidak menggandakan
+        data.
       </Alert>
 
       <Card>
@@ -111,7 +112,7 @@ export default function TransactionDaysPage(): JSX.Element {
           ) : day ? (
             <button
               type="button"
-              onClick={() => router.push(`/transaction-days/${day.id}`)}
+              onClick={() => router.push(`/scheduling/${day.id}`)}
               className="flex w-full items-center justify-between gap-3 rounded-lg border border-neutral-200 px-4 py-3 text-left transition-colors hover:bg-neutral-50"
             >
               <div className="flex items-center gap-3">

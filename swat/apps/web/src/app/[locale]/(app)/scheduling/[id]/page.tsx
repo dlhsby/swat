@@ -122,7 +122,7 @@ export default function HaulBoardPage({
   return (
     <>
       <PageHead
-        breadcrumb={[{ label: 'Hari Transaksi', href: '/transaction-days' }, { label: day.date }]}
+        breadcrumb={[{ label: 'Penjadwalan', href: '/scheduling' }, { label: day.date }]}
         title={`Angkut Sampah · ${formatDateDisplay(day.date)}`}
         description={`${verifiedCount}/${allTrips.length} rute terverifikasi`}
         actions={
