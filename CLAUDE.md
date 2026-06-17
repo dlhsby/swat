@@ -25,8 +25,9 @@ None of these dev/CI accounts are created in production.
 ## Frontend conventions (`apps/web`)
 
 - **Routes use English slugs** under `[locale]` (e.g. `/id-ID/dashboard`, `/vehicles`,
-  `/transaction-days`, `/monitoring/fuel`); **UI labels stay localized** via next-intl. IA lives in
-  `src/lib/nav.ts`.
+  `/scheduling`, `/record`, `/monitoring/fuel`); **UI labels stay localized** via next-intl. IA lives in
+  `src/lib/nav.ts`. Note the frontend `/scheduling` route (UI label "Penjadwalan") is served by the
+  unchanged backend API path `/transaction-days` — the FE slug and BE path intentionally differ.
 - **Code/DB keep English domain terms (`Haul`, `Levy`); user-facing display reconciles to the
   operators' vocabulary** — `Haul` → "Angkut Sampah", `Levy` → "Retribusi". Don't surface the raw
   English entity name in id-ID UI strings (en-US may keep "Haul" — it's valid English).
