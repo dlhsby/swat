@@ -8,6 +8,8 @@
 #   ./scripts/start.sh             # infra + both apps (pnpm dev)
 #   ./scripts/start.sh --infra     # only start/ensure the Docker infra
 #   ./scripts/start.sh --no-docker # skip Docker, just run the apps
+#   ./scripts/start.sh --clean     # wipe web .next + backend dist first
+#                                  # (use after adding/moving routes or pnpm install)
 #
 set -euo pipefail
 
@@ -16,12 +18,14 @@ cd "$ROOT"
 
 INFRA_ONLY=0
 START_DOCKER=1
+CLEAN=0
 for arg in "$@"; do
   case "$arg" in
     --infra) INFRA_ONLY=1 ;;
     --no-docker) START_DOCKER=0 ;;
+    --clean | --fresh) CLEAN=1 ;;
     -h | --help)
-      grep '^#' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' | head -10
+      grep '^#' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' | head -12
       exit 0
       ;;
     *)
@@ -59,6 +63,14 @@ fi
 if [ "$INFRA_ONLY" = 1 ]; then
   log 'Infrastructure ready (--infra). Apps not started.'
   exit 0
+fi
+
+# --clean: drop the dev build caches so Turbopack/SWC re-scan from scratch. Only
+# needed after structural changes (added/moved/deleted routes, pnpm install) — a
+# normal start keeps the caches for fast warm reloads.
+if [ "$CLEAN" = 1 ]; then
+  log 'Cleaning dev build caches (apps/web/.next, apps/backend/dist)'
+  rm -rf apps/web/.next apps/backend/dist
 fi
 
 log "Starting apps — backend :${BE_PORT:-3000} · web :${WEB_PORT:-3001}  (Ctrl-C to stop)"
