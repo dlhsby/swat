@@ -157,7 +157,7 @@ export function MaintenanceDialog({
         </DialogHeader>
 
         <div className="max-h-[65vh] space-y-4 overflow-y-auto px-0.5">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4">
             <div className="space-y-1.5">
               <Label required>Kendaraan</Label>
               <Select

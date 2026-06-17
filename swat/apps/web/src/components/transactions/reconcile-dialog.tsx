@@ -106,7 +106,7 @@ export function ReconcileDialog({
             <p className="text-tiny text-neutral-500">
               Target odometer {formatNumber(assignment?.departTargetOdometer ?? 0)} km
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <div className="space-y-1.5">
                 <Label required>Waktu</Label>
                 <TimePicker value={departTime} onValueChange={setDepartTime} presets={false} />
@@ -132,7 +132,7 @@ export function ReconcileDialog({
             {!departed ? (
               <p className="text-tiny text-warning-700">Catat keberangkatan terlebih dahulu.</p>
             ) : null}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <div className="space-y-1.5">
                 <Label required>Waktu</Label>
                 <TimePicker value={returnTime} onValueChange={setReturnTime} presets={false} />

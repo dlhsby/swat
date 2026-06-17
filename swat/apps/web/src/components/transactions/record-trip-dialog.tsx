@@ -126,7 +126,7 @@ export function RecordTripDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4">
             <div className="space-y-1.5">
               <Label required>Waktu Aktual</Label>
               <TimePicker value={time} onValueChange={setTime} presets={false} />
@@ -144,7 +144,7 @@ export function RecordTripDialog({
 
           {category === 'DISPOSAL' ? (
             <>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4">
                 <div className="space-y-1.5">
                   <Label>Berat Tara</Label>
                   <NumberInput
@@ -190,7 +190,7 @@ export function RecordTripDialog({
           ) : null}
 
           {category === 'PICKUP' ? (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <div className="space-y-1.5">
                 <Label>Berat Tara</Label>
                 <NumberInput
@@ -213,7 +213,7 @@ export function RecordTripDialog({
 
           {category === 'REFUEL' ? (
             <>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4">
                 <div className="space-y-1.5">
                   <Label required>Jumlah Diminta</Label>
                   <NumberInput
