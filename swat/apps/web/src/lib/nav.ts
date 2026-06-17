@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   CalendarClock,
+  ClipboardList,
   Database,
   FuelIcon,
   Gauge,
@@ -10,12 +11,14 @@ import {
   LayoutDashboard,
   type LucideIcon,
   MapPin,
+  PackageOpen,
   ShieldCheck,
   Ticket,
   Trash2,
   Truck,
   UserCog,
   Users,
+  Warehouse,
 } from 'lucide-react';
 
 /** A single sidebar leaf link. */
@@ -138,6 +141,22 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: FuelIcon,
         permission: 'trip:read',
       },
+    ],
+  },
+  {
+    id: 'grp-record',
+    key: 'recording',
+    icon: ClipboardList,
+    leaves: [
+      { key: 'recordPickup', href: '/record/pickup', icon: PackageOpen, permission: 'trip:update' },
+      {
+        key: 'recordDisposal',
+        href: '/record/disposal',
+        icon: Warehouse,
+        permission: 'trip:update',
+      },
+      { key: 'recordRefuel', href: '/record/refuel', icon: FuelIcon, permission: 'trip:update' },
+      { key: 'recordPool', href: '/record/pool', icon: Truck, permission: 'trip:update' },
     ],
   },
   {

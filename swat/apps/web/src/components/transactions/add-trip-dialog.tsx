@@ -22,6 +22,7 @@ import {
 import { ApiError } from '@/lib/api-error';
 import { type RouteDto, routesApi } from '@/lib/master-api';
 import { createTrip } from '@/lib/transactions-api';
+import { type RouteCategory } from '@/lib/types/transactions';
 
 const CATEGORY_LABEL: Record<string, string> = {
   PICKUP: 'Pengambilan',
@@ -34,6 +35,8 @@ const CATEGORY_LABEL: Record<string, string> = {
 export interface AddTripDialogProps {
   /** The haul assignment to add the ad-hoc trip to; null closes the dialog. */
   haulAssignmentId: string | null;
+  /** Restrict the route picker to a single category (focused quick-entry screens). */
+  category?: RouteCategory;
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 }
@@ -45,6 +48,7 @@ export interface AddTripDialogProps {
  */
 export function AddTripDialog({
   haulAssignmentId,
+  category,
   onOpenChange,
   onCreated,
 }: AddTripDialogProps): JSX.Element {
@@ -105,12 +109,14 @@ export function AddTripDialog({
                 <SelectValue placeholder="Pilih rute" />
               </SelectTrigger>
               <SelectContent>
-                {routes.map((route) => (
-                  <SelectItem key={route.id} value={route.id}>
-                    {CATEGORY_LABEL[route.category] ?? route.category} · {route.originSiteName} →{' '}
-                    {route.destinationSiteName}
-                  </SelectItem>
-                ))}
+                {(category ? routes.filter((r) => r.category === category) : routes).map(
+                  (route) => (
+                    <SelectItem key={route.id} value={route.id}>
+                      {CATEGORY_LABEL[route.category] ?? route.category} · {route.originSiteName} →{' '}
+                      {route.destinationSiteName}
+                    </SelectItem>
+                  ),
+                )}
               </SelectContent>
             </Select>
           </div>
