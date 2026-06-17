@@ -32,6 +32,12 @@ import) and D1/D2/D4/D5 were accepted as deferred.
   - `migrate:backfill-tpa` → scanned 4 676 demo logs, idempotent (demo logs are synthetic/independent,
     so 0 matched — matcher verified against the real-data shape; disambiguated-plate caveat documented).
 
+## Post-verification fixes (manual UAT)
+
+| Date | Commit | Fix |
+| --- | --- | --- |
+| 2026-06-17 | `fix(web): unwrap route params Promise on transaction-day detail (Next 16)` | The transaction-day detail page (`transaction-days/[id]/page.tsx`, a client component) read `params.id` synchronously. Under Next 16 `params` is a Promise, so `id` was `undefined` and reached the API as the string `"undefined"`, crashing `GET /transaction-days/:id` with a Prisma `invalid input syntax for type uuid` 500. Unwrapped with `React.use(params)`. `pnpm --filter @swat/web typecheck` clean; it is the only dynamic client route. |
+
 ## Exit criteria
 
 - [x] Ad-hoc trips recordable for every route category (G1).
