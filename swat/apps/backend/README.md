@@ -63,6 +63,14 @@ After a legacy load, link migrated TPA logs to trips:
 pnpm --filter @swat/backend dev          # watch mode on $BE_PORT (default :3000)
 ```
 
+> **Hot reload:** `dev` compiles with **SWC** (`swc --watch`) and restarts via **nodemon** —
+> sub-second restarts on save, far faster/more reliable than tsc-watch on WSL. nodemon also
+> watches the shared packages' `dist` (`@swat/schemas`, `@swat/prisma-client`), so editing shared
+> code restarts the API too (their `dev` scripts rebuild on change; `turbo run dev` runs them).
+> SWC skips type-checking for speed — run `pnpm typecheck` separately. Production `pnpm build`
+> still uses `nest build` (tsc), so type errors can't slip into a release build. A `schema.prisma`
+> change still needs `pnpm db:generate` + a restart.
+
 - Health: `GET http://localhost:3000/health` · Swagger UI: `http://localhost:3000/api/docs`
 - All routes are under the `api/v1` prefix; responses use the `ApiResponse<T>` envelope.
 - Default login: `admin / Password123!`.

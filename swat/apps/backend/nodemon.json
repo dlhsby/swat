@@ -1,0 +1,6 @@
+{
+  "watch": ["dist", "../../packages/schemas/dist", "../../packages/prisma-client/dist"],
+  "ext": "js,json",
+  "delay": "300",
+  "exec": "node dist/main.js"
+}
