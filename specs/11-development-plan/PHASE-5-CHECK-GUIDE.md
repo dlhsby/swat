@@ -88,22 +88,26 @@ without navigating the day → haul → trip tree.
 > **IA note (UX revamp 2026-06-17):** these started as four separate `/record/*` routes; they are now
 > a single screen **Pencatatan Aktivitas** at `/record` with tabs synced to `?tab=pickup|disposal|refuel|pool`,
 > living as a leaf inside the **Pengangkutan** group (next to **Penjadwalan** and **Jatah Kitir**).
+> Each tab is a **per-day recap datagrid** (legacy-style), not a vehicle-picker — all of today's
+> matching-category trips across the fleet are listed for review + in-place recording.
 
 ### UI
 
 1. In the sidebar, open **Pengangkutan → Pencatatan Aktivitas** (`/id-ID/record`). Switch tabs:
    **Pengambilan Sampah** (`?tab=pickup`), **Pembuangan Sampah** (`?tab=disposal`),
    **Pengisian BBM** (`?tab=refuel`), **Aktivitas Pool** (`?tab=pool`). The active tab is bookmarkable.
-2. Pick a vehicle from the **Kendaraan** combobox (today's scheduled fleet; fixed-width so it renders
-   in the plain page body — see the combobox fix below).
-3. The matching-category trips for that vehicle list with a status pill; click **Catat** on an
-   IN_PROGRESS one → the same `RecordTripDialog` (category-specific fields) opens. Save.
-4. On pickup/disposal/refuel, **Tambah aktivitas tak terjadwal** adds an ad-hoc trip of that
-   category (route picker is filtered to the category). Pool legs offer no ad-hoc add.
+2. Each tab shows a **datagrid of today's records** for that activity: Kendaraan · Pengemudi ·
+   Rute/Tujuan (Aktivitas for pool) · Target · Aktual · Odometer · status, plus category columns —
+   **Volume** (pickup), **Bruto/Netto** (disposal), **Diminta/Disetujui** (refuel). Search + column
+   toggle + refresh in the toolbar. Sortable, paginated, mobile-card on small screens.
+3. Click **Catat** on an IN_PROGRESS row → the same `RecordTripDialog` (category-specific fields)
+   opens; saving updates the row in place. DONE/VERIFIED rows show "—" (read-only recap).
+4. On pickup/disposal/refuel, the toolbar has a **Kendaraan** picker + **Tak terjadwal** button to
+   add an ad-hoc trip of that category for the chosen vehicle. Pool legs offer no ad-hoc add.
 
-✅ Expect: each tab shows only its own activity; recording updates the trip and refreshes the
-list. Without `trip:update` the Pencatatan Aktivitas leaf is hidden; without `trip:create` the
-"Tambah" button is hidden. If today's schedule isn't built, a friendly "belum tersedia" card shows.
+✅ Expect: each tab recaps only its own activity for today; recording updates the trip and refreshes
+the grid. Without `trip:update` the Pencatatan Aktivitas leaf is hidden; without `trip:create` the
+ad-hoc picker is hidden. If today's schedule isn't built, a friendly "belum tersedia" card shows.
 
 > Note: visibility is gated by the generic `trip:update`/`trip:create`, so all four tabs show to
 > any recorder. Per-role _scoping_ (a TPS role seeing only pickup) would need per-category
