@@ -13,3 +13,6 @@ prompts/
 Thumbs.db
 *.swp
 *~
+
+# Local legacy DB backup tooling (operator scripts, not versioned)
+legacy-db-backup/
