@@ -16,27 +16,20 @@ interface RecordTab {
   /** Translation key under the `nav` namespace. */
   readonly labelKey: string;
   readonly categories: readonly RouteCategory[];
-  readonly allowAdHoc: boolean;
 }
 
 /**
  * Tabs of the single "Pencatatan Aktivitas" screen (legacy parity for the
- * per-role transaksi menus: pengambilansampah / pembuangansampah /
- * pengisianbahanbakar / aktivitaspool). Pool legs are auto-created from the
- * schedule, so they offer no ad-hoc add.
+ * per-role transaksi menus). Order mirrors the operational flow:
+ * pool → refuel → pickup → disposal.
  */
-const DEFAULT_TAB = 'pickup';
+const DEFAULT_TAB = 'pool';
 
 const TABS: readonly RecordTab[] = [
-  { value: 'pickup', labelKey: 'recordPickup', categories: ['PICKUP'], allowAdHoc: true },
-  { value: 'disposal', labelKey: 'recordDisposal', categories: ['DISPOSAL'], allowAdHoc: true },
-  { value: 'refuel', labelKey: 'recordRefuel', categories: ['REFUEL'], allowAdHoc: true },
-  {
-    value: 'pool',
-    labelKey: 'recordPool',
-    categories: ['DEPART_POOL', 'RETURN_POOL'],
-    allowAdHoc: false,
-  },
+  { value: 'pool', labelKey: 'recordPool', categories: ['DEPART_POOL', 'RETURN_POOL'] },
+  { value: 'refuel', labelKey: 'recordRefuel', categories: ['REFUEL'] },
+  { value: 'pickup', labelKey: 'recordPickup', categories: ['PICKUP'] },
+  { value: 'disposal', labelKey: 'recordDisposal', categories: ['DISPOSAL'] },
 ];
 
 function RecordTabs(): JSX.Element {
@@ -70,7 +63,7 @@ function RecordTabs(): JSX.Element {
 
         {TABS.map((tab) => (
           <TabsContent key={tab.value} value={tab.value}>
-            <QuickEntryBoard categories={tab.categories} allowAdHoc={tab.allowAdHoc} />
+            <QuickEntryBoard categories={tab.categories} />
           </TabsContent>
         ))}
       </Tabs>

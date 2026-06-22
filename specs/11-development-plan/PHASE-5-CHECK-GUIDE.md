@@ -86,28 +86,31 @@ The rebuild restores these as one **tabbed** screen so an operator records just 
 without navigating the day → haul → trip tree.
 
 > **IA note (UX revamp 2026-06-17):** these started as four separate `/record/*` routes; they are now
-> a single screen **Pencatatan Aktivitas** at `/record` with tabs synced to `?tab=pickup|disposal|refuel|pool`,
-> living as a leaf inside the **Pengangkutan** group (next to **Penjadwalan** and **Jatah Kitir**).
-> Each tab is a **per-day recap datagrid** (legacy-style), not a vehicle-picker — all of today's
-> matching-category trips across the fleet are listed for review + in-place recording.
+> a single screen **Pencatatan Aktivitas** at `/record` with tabs synced to `?tab=pool|refuel|pickup|disposal`
+> (tab order: **Aktivitas Pool · Pengisian BBM · Pengambilan Sampah · Pembuangan Sampah**), living as a
+> leaf inside the **Pengangkutan** group (next to **Penjadwalan** and **Jatah Kitir**).
+> Each tab follows the legacy **form-on-top + recap-grid-below** pattern: an entry form, and a grid of
+> today's already-recorded (**DONE/VERIFIED**) trips of that kind.
 
 ### UI
 
-1. In the sidebar, open **Pengangkutan → Pencatatan Aktivitas** (`/id-ID/record`). Switch tabs:
-   **Pengambilan Sampah** (`?tab=pickup`), **Pembuangan Sampah** (`?tab=disposal`),
-   **Pengisian BBM** (`?tab=refuel`), **Aktivitas Pool** (`?tab=pool`). The active tab is bookmarkable.
-2. Each tab shows a **datagrid of today's records** for that activity: Kendaraan · Pengemudi ·
-   Rute/Tujuan (Aktivitas for pool) · Target · Aktual · Odometer · status, plus category columns —
-   **Volume** (pickup), **Bruto/Netto** (disposal), **Diminta/Disetujui** (refuel). Search + column
-   toggle + refresh in the toolbar. Sortable, paginated, mobile-card on small screens.
-3. Click **Catat** on an IN_PROGRESS row → the same `RecordTripDialog` (category-specific fields)
-   opens; saving updates the row in place. DONE/VERIFIED rows show "—" (read-only recap).
-4. On pickup/disposal/refuel, the toolbar has a **Kendaraan** picker + **Tak terjadwal** button to
-   add an ad-hoc trip of that category for the chosen vehicle. Pool legs offer no ad-hoc add.
+1. In the sidebar, open **Pengangkutan → Pencatatan Aktivitas** (`/id-ID/record`). Tabs (in order):
+   **Aktivitas Pool** (`?tab=pool`), **Pengisian BBM** (`?tab=refuel`), **Pengambilan Sampah**
+   (`?tab=pickup`), **Pembuangan Sampah** (`?tab=disposal`). The active tab is bookmarkable.
+2. Fill the **entry form** (legacy parity per kind): **Kendaraan** + **Waktu** + **Speedometer** always;
+   plus **Jenis Aktivitas** (Berangkat/Kembali) for pool, **Jumlah Isi BBM** for refuel, **TPS** for
+   pickup, **TPS + Berat Kotor/Kosong/Volume + Keterangan** for disposal. Click **Simpan**.
+3. On submit the system mirrors legacy: it finds the vehicle's scheduled (IN_PROGRESS) trip of this
+   kind — by TPS for pickup/disposal, by leg for pool, any pending refuel — and **records** it; if none
+   exists (and the kind allows it) it **creates an unscheduled trip** for the typed location, then
+   records. Pool is update-only (no create).
+4. The **recap grid** below lists today's **DONE/VERIFIED** trips of this kind (read-only): Kendaraan ·
+   Pengemudi · Rute/Lokasi · Waktu · Odometer · status + category columns (Bruto/Netto for disposal,
+   BBM for refuel). Search/sort/column-toggle/refresh in the toolbar. The just-saved row appears here.
 
-✅ Expect: each tab recaps only its own activity for today; recording updates the trip and refreshes
-the grid. Without `trip:update` the Pencatatan Aktivitas leaf is hidden; without `trip:create` the
-ad-hoc picker is hidden. If today's schedule isn't built, a friendly "belum tersedia" card shows.
+✅ Expect: Simpan records (or creates+records) and the row moves into the grid. Without `trip:update`
+the form is hidden (recap grid still shows). If today's schedule isn't built, a "belum tersedia" card
+shows. Recording an SPBU fill sets approved = the entered liters (no `fuel:approve` needed).
 
 > Note: visibility is gated by the generic `trip:update`/`trip:create`, so all four tabs show to
 > any recorder. Per-role _scoping_ (a TPS role seeing only pickup) would need per-category
