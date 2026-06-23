@@ -24,6 +24,10 @@ export interface VehicleDto {
   readonly poolSiteName: string;
   readonly modelId: string;
   readonly modelBrand: string;
+  /** Vehicle type name (legacy "aplikasi kendaraan") via the model. */
+  readonly vehicleTypeName: string;
+  /** Fuel name (legacy "bahan bakar") via the model. */
+  readonly fuelTypeName: string;
   readonly chassisNumber: string;
   readonly engineNumber: string;
   readonly manufactureYear: number | null;
@@ -33,6 +37,8 @@ export interface VehicleDto {
   readonly registrationExpiry: string;
   readonly taxExpiry: string;
   readonly notes: string | null;
+  /** Codes of the waste sources this vehicle serves (e.g. `['D']` = Dinas). */
+  readonly wasteSourceCodes: string[];
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -51,6 +57,8 @@ function toDto(vehicle: VehicleWithRefs): VehicleDto {
     poolSiteName: vehicle.poolSite.name,
     modelId: vehicle.modelId,
     modelBrand: vehicle.model.brand,
+    vehicleTypeName: vehicle.model.vehicleType.name,
+    fuelTypeName: vehicle.model.fuel.name,
     chassisNumber: vehicle.chassisNumber,
     engineNumber: vehicle.engineNumber,
     manufactureYear: vehicle.manufactureYear,
@@ -60,6 +68,7 @@ function toDto(vehicle: VehicleWithRefs): VehicleDto {
     registrationExpiry: formatDateOnly(vehicle.registrationExpiry),
     taxExpiry: formatDateOnly(vehicle.taxExpiry),
     notes: vehicle.notes,
+    wasteSourceCodes: vehicle.wasteSources.map((link) => link.wasteSource.code),
     createdAt: vehicle.createdAt.toISOString(),
     updatedAt: vehicle.updatedAt.toISOString(),
   };

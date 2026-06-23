@@ -128,18 +128,12 @@ describe('NumberInput', () => {
 });
 
 describe('TimePicker', () => {
-  it('emits the chosen preset', async () => {
+  it('emits a time picked from the dropdown list', async () => {
     const onValueChange = vi.fn();
     render(<TimePicker aria-label="jam" onValueChange={onValueChange} />);
-    await userEvent.click(screen.getByRole('button', { name: '08:00' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Pilih jam' }));
+    await userEvent.click(screen.getByRole('option', { name: '08:00' }));
     expect(onValueChange).toHaveBeenCalledWith('08:00');
-  });
-
-  it('"Sekarang" emits an HH:mm string', async () => {
-    const onValueChange = vi.fn();
-    render(<TimePicker aria-label="jam" onValueChange={onValueChange} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Sekarang' }));
-    expect(onValueChange).toHaveBeenCalledWith(expect.stringMatching(/^\d{2}:\d{2}$/));
   });
 
   it('masks typed digits into 24-hour HH:mm (no AM/PM)', async () => {
@@ -153,15 +147,14 @@ describe('TimePicker', () => {
     expect(input).toHaveValue('18:30');
   });
 
-  it('picks hour and minute from the 24-hour dropdown', async () => {
+  it('picks a time from the dropdown list', async () => {
     function Controlled(): JSX.Element {
       const [v, setV] = useState('');
       return <TimePicker aria-label="jam" value={v} onValueChange={setV} />;
     }
     render(<Controlled />);
     await userEvent.click(screen.getByRole('button', { name: 'Pilih jam' }));
-    await userEvent.click(screen.getByRole('option', { name: '09' }));
-    await userEvent.click(screen.getByRole('option', { name: '30' }));
+    await userEvent.click(screen.getByRole('option', { name: '09:30' }));
     expect(screen.getByRole('textbox', { name: 'jam' })).toHaveValue('09:30');
   });
 
@@ -200,12 +193,22 @@ describe('Combobox', () => {
 describe('DatePicker', () => {
   it('renders the formatted dd/MM/yyyy value', () => {
     render(<DatePicker value="2026-03-15" />);
-    expect(screen.getByText('15/03/2026')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('15/03/2026');
   });
 
   it('shows the placeholder when empty', () => {
     render(<DatePicker placeholder="dd/mm/yyyy" />);
-    expect(screen.getByText('dd/mm/yyyy')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', 'dd/mm/yyyy');
+  });
+
+  it('parses a typed dd/MM/yyyy into ISO on blur', async () => {
+    const onValueChange = vi.fn();
+    render(<DatePicker onValueChange={onValueChange} />);
+    const input = screen.getByRole('textbox');
+    await userEvent.type(input, '15032026');
+    expect(input).toHaveValue('15/03/2026');
+    await userEvent.tab();
+    expect(onValueChange).toHaveBeenCalledWith('2026-03-15');
   });
 });
 

@@ -52,6 +52,11 @@ declare module '@tanstack/react-table' {
     /** Column data type — selects the per-column filter control + filterFn.
      * Defaults to `text` (contains-search) when omitted. */
     filterVariant?: FilterVariant;
+    /** Pin to the right edge (sticky) — e.g. an actions column — so the data
+     * columns scroll horizontally underneath it. */
+    pinRight?: boolean;
+    /** Pin to the left edge (sticky) — e.g. a row-number column. */
+    pinLeft?: boolean;
   }
 }
 
@@ -134,6 +139,7 @@ export function DataTable<TData, TValue>({
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0]);
   const [pageIndex, setPageIndex] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   // Assign each filterable column the filterFn matching its declared variant
   // (number → range, date → date-range), unless the page set one explicitly.
@@ -193,14 +199,25 @@ export function DataTable<TData, TValue>({
       {showToolbar ? (
         <div className="flex flex-wrap items-center gap-2">
           {hasSearch ? (
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={searchPlaceholder}
-              leading={<Search className="h-4 w-4" aria-hidden />}
-              aria-label="Cari"
-              className="max-w-xs"
-            />
+            // Compact magnifier that expands to fit its placeholder on focus (or
+            // while it has a value); full-width on mobile, capped on desktop.
+            <div
+              className={cn(
+                'transition-[width] duration-200',
+                searchFocused || search.length > 0 ? 'w-full sm:w-80' : 'w-10',
+              )}
+            >
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                placeholder={searchPlaceholder}
+                leading={<Search className="h-4 w-4" aria-hidden />}
+                aria-label="Cari"
+                className="w-full"
+              />
+            </div>
           ) : null}
           {toolbar}
           {enableColumnToggle || actions || onRefresh || hasFilterableColumns ? (
@@ -302,6 +319,15 @@ export function DataTable<TData, TValue>({
                   return (
                     <TableHead
                       key={header.id}
+                      className={cn(
+                        (header.column.columnDef.meta?.pinLeft ||
+                          header.column.columnDef.meta?.pinRight) &&
+                          'z-[15] bg-neutral-50',
+                        header.column.columnDef.meta?.pinLeft &&
+                          'left-0 border-r border-neutral-200',
+                        header.column.columnDef.meta?.pinRight &&
+                          'right-0 border-l border-neutral-200',
+                      )}
                       aria-sort={
                         sorted === 'asc'
                           ? 'ascending'
@@ -313,7 +339,12 @@ export function DataTable<TData, TValue>({
                       }
                     >
                       {header.isPlaceholder ? null : (
-                        <div className="flex flex-col gap-1.5">
+                        <div
+                          className={cn(
+                            'flex flex-col gap-1.5',
+                            showFilters && header.column.getCanFilter() && 'gap-2 pb-2 pt-1',
+                          )}
+                        >
                           {sortable ? (
                             <button
                               type="button"
@@ -399,10 +430,26 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() ? 'selected' : undefined}
-                  className={cn('hover:bg-neutral-100', idx % 2 === 1 && 'bg-neutral-50/60')}
+                  className={cn('group hover:bg-neutral-100', idx % 2 === 1 && 'bg-neutral-50/60')}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        (cell.column.columnDef.meta?.pinLeft ||
+                          cell.column.columnDef.meta?.pinRight) &&
+                          cn(
+                            'sticky z-[5] group-hover:bg-neutral-100',
+                            cell.column.columnDef.meta?.pinLeft &&
+                              'left-0 border-r border-neutral-200',
+                            cell.column.columnDef.meta?.pinRight &&
+                              'right-0 border-l border-neutral-200',
+                            // Opaque bg (matching the row stripe) so scrolled cells
+                            // don't show through the pinned column.
+                            idx % 2 === 1 ? 'bg-neutral-50' : 'bg-neutral-0',
+                          ),
+                      )}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

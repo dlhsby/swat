@@ -13,6 +13,8 @@ export const tripInclude = {
   },
   recordedBy: { select: { id: true, name: true } },
   verifiedBy: { select: { id: true, name: true } },
+  createdBy: { select: { id: true, name: true } },
+  updatedBy: { select: { id: true, name: true } },
 } satisfies Prisma.TripInclude;
 
 export type TripWithRefs = Prisma.TripGetPayload<{ include: typeof tripInclude }>;
@@ -23,7 +25,14 @@ export interface TripDto {
   readonly routeId: string | null;
   readonly routeCategory: string | null;
   readonly routeLabel: string | null;
+  readonly originSiteName: string | null;
+  readonly destinationSiteName: string | null;
   readonly name: string;
+  readonly notes: string | null;
+  /** CCTV reference from the TPA weighbridge log (disposal only); null otherwise.
+   *  Sourced from `TpaInboundLog` (no Prisma relation on the partitioned Trip), so
+   *  it is filled by the read path, not this mapper. */
+  readonly cctvReference: string | null;
   readonly status: string;
   readonly operationDate: string;
   readonly targetTime: string | null;
@@ -42,6 +51,10 @@ export interface TripDto {
   readonly verifiedByName: string | null;
   readonly verifiedAt: string | null;
   readonly realizationEntryAt: string | null;
+  readonly createdById: string | null;
+  readonly createdByName: string | null;
+  readonly updatedById: string | null;
+  readonly updatedByName: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -58,7 +71,11 @@ export function toTripDto(trip: TripWithRefs): TripDto {
     routeLabel: trip.route
       ? `${trip.route.originSite.name} → ${trip.route.destinationSite.name}`
       : null,
+    originSiteName: trip.route?.originSite.name ?? null,
+    destinationSiteName: trip.route?.destinationSite.name ?? null,
     name: trip.name,
+    notes: trip.notes,
+    cctvReference: null,
     status: trip.status,
     operationDate: trip.operationDate.toISOString().slice(0, 10),
     targetTime: trip.targetTime?.toISOString() ?? null,
@@ -77,6 +94,10 @@ export function toTripDto(trip: TripWithRefs): TripDto {
     verifiedByName: trip.verifiedBy?.name ?? null,
     verifiedAt: trip.verifiedAt?.toISOString() ?? null,
     realizationEntryAt: trip.realizationEntryAt?.toISOString() ?? null,
+    createdById: trip.createdById,
+    createdByName: trip.createdBy?.name ?? null,
+    updatedById: trip.updatedById,
+    updatedByName: trip.updatedBy?.name ?? null,
     createdAt: trip.createdAt.toISOString(),
     updatedAt: trip.updatedAt.toISOString(),
   };

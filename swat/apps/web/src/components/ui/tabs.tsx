@@ -15,7 +15,11 @@ export const TabsList = forwardRef<
   return (
     <TabsPrimitive.List
       ref={ref}
-      className={cn('flex items-center gap-1 border-b border-neutral-200', className)}
+      // Scroll horizontally rather than clip/wrap when the triggers overflow (mobile).
+      className={cn(
+        'flex items-center gap-1 overflow-x-auto border-b border-neutral-200 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        className,
+      )}
       {...props}
     />
   );
@@ -29,7 +33,7 @@ export const TabsTrigger = forwardRef<
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        '-mb-px border-b-2 border-transparent px-4 py-2.5 text-body-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-primary-600 data-[state=active]:font-semibold data-[state=active]:text-primary-700',
+        '-mb-px shrink-0 whitespace-nowrap border-b-2 border-transparent px-4 py-2.5 text-body-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-primary-600 data-[state=active]:font-semibold data-[state=active]:text-primary-700',
         className,
       )}
       {...props}

@@ -2,12 +2,21 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 
 import { PageHead } from '@/components/shell/page-head';
 import { QuickEntryBoard } from '@/components/transactions/quick-entry-board';
-import { Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import {
+  DatePicker,
+  Label,
+  Skeleton,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
 import { usePathname, useRouter } from '@/i18n/navigation';
+import { todayWIB } from '@/lib/dates';
 import { type RouteCategory } from '@/lib/types/transactions';
 
 interface RecordTab {
@@ -40,6 +49,9 @@ function RecordTabs(): JSX.Element {
 
   const requested = params.get('tab');
   const active = TABS.some((tab) => tab.value === requested) ? (requested as string) : DEFAULT_TAB;
+  // Shared across tabs: which day's activities to view/record (defaults to today,
+  // so view-only roles can review previous days too).
+  const [date, setDate] = useState(todayWIB());
 
   const onChange = (value: string): void => {
     router.replace({ pathname, query: { tab: value } });
@@ -49,7 +61,15 @@ function RecordTabs(): JSX.Element {
     <>
       <PageHead
         title={t('recordActivity')}
-        description="Pilih aktivitas dan kendaraan, lalu catat kegiatan operasional hari ini."
+        description="Catat aktivitas memakai Waktu Realisasi pada formulir; rekap di bawah difilter per tanggal."
+        actions={
+          <div className="flex items-center gap-2">
+            <Label className="text-body-sm text-neutral-500">Rekap tanggal</Label>
+            <div className="w-44">
+              <DatePicker value={date} onValueChange={(v) => v && setDate(v)} disableFuture />
+            </div>
+          </div>
+        }
       />
 
       <Tabs value={active} onValueChange={onChange}>
@@ -63,7 +83,7 @@ function RecordTabs(): JSX.Element {
 
         {TABS.map((tab) => (
           <TabsContent key={tab.value} value={tab.value}>
-            <QuickEntryBoard categories={tab.categories} />
+            <QuickEntryBoard categories={tab.categories} date={date} onDateChange={setDate} />
           </TabsContent>
         ))}
       </Tabs>

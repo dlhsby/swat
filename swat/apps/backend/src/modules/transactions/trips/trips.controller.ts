@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseInterceptors } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { type SessionUser } from '../../../common/auth/session.types';
@@ -51,6 +51,15 @@ export class TripsController {
     @CurrentUser() user: SessionUser,
   ): Promise<TripDto> {
     return this.trips.record(id, dto, user);
+  }
+
+  @Delete(':id')
+  @ApiOperation({
+    summary:
+      'Un-record a trip realization (soft delete on the recap): reverts it to IN_PROGRESS and clears the entered values, keeping the scheduled slot. The required permission depends on the route category; a verified trip needs trip:override. Enforced server-side.',
+  })
+  unrecord(@Param('id') id: string, @CurrentUser() user: SessionUser): Promise<TripDto> {
+    return this.trips.unrecord(id, user);
   }
 
   @Put(':id/verify')

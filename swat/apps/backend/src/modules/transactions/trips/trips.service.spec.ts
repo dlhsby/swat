@@ -146,6 +146,34 @@ describe('TripsService', () => {
     });
   });
 
+  describe('operation-day anchoring', () => {
+    it('forces actual_time onto the operation day, preserving the WIB time', async () => {
+      repo.findForRecording.mockResolvedValue(buildTrip()); // operationDate = 2026-06-08
+      // 07:00 WIB but submitted on the wrong calendar day (the 9th).
+      await service.record(
+        '10000',
+        { actualTime: '2026-06-09T07:00:00+07:00', actualOdometer: 12050, grossWeight: 12000 },
+        USER,
+      );
+      const data = repo.update.mock.calls[0][1] as { actualTime: Date };
+      // Re-anchored to 07:00 WIB on the operation day (2026-06-08) = 2026-06-08T00:00Z.
+      expect(data.actualTime.toISOString()).toBe('2026-06-08T00:00:00.000Z');
+    });
+  });
+
+  describe('realization entry time', () => {
+    it('preserves the original realizationEntryAt when re-recording (edit)', async () => {
+      const entered = new Date('2026-06-08T02:00:00.000Z');
+      repo.findForRecording.mockResolvedValue(
+        buildTrip({ status: 'DONE', realizationEntryAt: entered }),
+      );
+      await service.record('10000', { ...dispatch, grossWeight: 12000 }, USER);
+      const data = repo.update.mock.calls[0][1] as { realizationEntryAt: Date };
+      // Kept as-is so the recap's input-order numbering stays stable across edits.
+      expect(data.realizationEntryAt).toBe(entered);
+    });
+  });
+
   describe('odometer chain', () => {
     it('rejects an odometer below the departure odometer', async () => {
       repo.findForRecording.mockResolvedValue(buildTrip());
@@ -174,6 +202,28 @@ describe('TripsService', () => {
       await expect(
         service.record('10000', { ...dispatch, actualOdometer: 12070, grossWeight: 12000 }, USER),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('accepts the -1 "not captured" sentinel and skips the chain (TPA disposal)', async () => {
+      repo.findForRecording.mockResolvedValue(
+        buildTrip({
+          haulAssignment: {
+            id: 'assignment-1000',
+            departActualOdometer: 12010,
+            haul: {
+              vehicleId: 'vehicle-7',
+              vehicle: { currentTareWeight: 8000, currentOdometer: 12010 },
+            },
+            trips: [
+              { id: 'trip-9999', status: 'DONE', actualOdometer: 12080, targetTime: null },
+              { id: 'trip-10000', status: 'IN_PROGRESS', actualOdometer: 0, targetTime: null },
+            ],
+          },
+        }),
+      );
+      await expect(
+        service.record('10000', { ...dispatch, actualOdometer: -1, grossWeight: 12000 }, USER),
+      ).resolves.toBeDefined();
     });
   });
 
@@ -320,6 +370,42 @@ describe('TripsService', () => {
       expect(rollups.refreshForOperationDate).toHaveBeenCalledWith(
         new Date('2026-06-08T00:00:00Z'),
       );
+    });
+  });
+
+  describe('unrecord', () => {
+    it('404s an unknown trip', async () => {
+      repo.findForRecording.mockResolvedValue(null);
+      await expect(service.unrecord('1', USER)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('rejects a trip that was never recorded', async () => {
+      repo.findForRecording.mockResolvedValue(buildTrip({ status: 'IN_PROGRESS' }));
+      await expect(service.unrecord('10000', USER)).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects un-recording a verified trip without override', async () => {
+      repo.findForRecording.mockResolvedValue(buildTrip({ status: 'VERIFIED' }));
+      await expect(service.unrecord('10000', USER)).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('reverts a recorded trip to IN_PROGRESS and clears the entered values', async () => {
+      repo.findForRecording.mockResolvedValue(buildTrip({ status: 'DONE' }));
+      await service.unrecord('10000', USER);
+      expect(repo.update).toHaveBeenCalledWith(
+        'trip-10000',
+        expect.objectContaining({
+          status: 'IN_PROGRESS',
+          actualTime: null,
+          actualOdometer: 0,
+          grossWeight: null,
+          fuelApprovedLiters: null,
+          notes: null,
+          realizationEntryAt: null,
+          recordedBy: { disconnect: true },
+        }),
+      );
+      expect(rollups.refreshForOperationDate).toHaveBeenCalled();
     });
   });
 

@@ -1,8 +1,9 @@
 'use client';
 
 import { type Column, type FilterFn, type FilterFnOption } from '@tanstack/react-table';
-import { X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
+import { cn } from '@/lib/cn';
 import { formatDateDisplay, formatDateForm } from '@/lib/format';
 
 import { Input } from './input';
@@ -53,18 +54,27 @@ interface ColumnFilterProps<TData> {
   label: string;
 }
 
-/** Per-column contains-search input with an inline clear (×) button. */
+/** Per-column contains-search input with a leading magnifier + inline clear (×).
+ *  A `min-w` keeps the box usable even under narrow columns (the column grows to
+ *  fit rather than crushing the input); an active value gets a primary border. */
 export function ColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): JSX.Element {
   const value = (column.getFilterValue() as string | undefined) ?? '';
   return (
-    <div className="relative">
+    <div className="relative w-full min-w-[8.5rem]">
+      <Search
+        className="pointer-events-none absolute inset-y-0 left-2 my-auto h-3.5 w-3.5 text-neutral-400"
+        aria-hidden
+      />
       <Input
         value={value}
         // Empty → undefined so the column drops out of the active-filter count.
         onChange={(e) => column.setFilterValue(e.target.value || undefined)}
         placeholder="Filter…"
         aria-label={`Filter ${label}`}
-        className="h-7 pr-7 text-tiny font-normal"
+        className={cn(
+          'h-8 w-full pl-7 pr-7 text-body-sm font-normal',
+          value && 'border-primary-600',
+        )}
       />
       {value ? (
         <button

@@ -32,6 +32,8 @@ describe('TransactionDaysService', () => {
     findByDate: jest.Mock;
     updateStatus: jest.Mock;
     countOpenHauls: jest.Mock;
+    listSummaries: jest.Mock;
+    cctvByTripIds: jest.Mock;
   };
   let dailyInit: { handleManualToday: jest.Mock };
   let service: TransactionDaysService;
@@ -42,6 +44,8 @@ describe('TransactionDaysService', () => {
       findByDate: jest.fn(),
       updateStatus: jest.fn(),
       countOpenHauls: jest.fn().mockResolvedValue(0),
+      listSummaries: jest.fn(),
+      cctvByTripIds: jest.fn().mockResolvedValue([]),
     };
     dailyInit = { handleManualToday: jest.fn() };
     service = new TransactionDaysService(
@@ -98,6 +102,43 @@ describe('TransactionDaysService', () => {
       await service.updateStatus('day-1', 'IN_PROGRESS');
       expect(repo.countOpenHauls).not.toHaveBeenCalled();
       expect(repo.updateStatus).toHaveBeenCalledWith('day-1', 'IN_PROGRESS');
+    });
+  });
+
+  describe('list', () => {
+    it('maps summary rows and wraps them with pagination meta (date → YYYY-MM-DD)', async () => {
+      repo.listSummaries.mockResolvedValue({
+        rows: [
+          {
+            id: 'day-1',
+            date: new Date('2026-06-08T00:00:00Z'),
+            status: 'DONE',
+            vehicleCount: 12,
+            tonnageKg: 34_500,
+          },
+        ],
+        total: 1,
+      });
+      const result = await service.list({ page: 1, limit: 20 });
+      expect(repo.listSummaries).toHaveBeenCalledWith({ page: 1, limit: 20, status: undefined });
+      expect(result.meta).toEqual({ total: 1, page: 1, limit: 20 });
+      expect(result.data[0]).toEqual({
+        id: 'day-1',
+        date: '2026-06-08',
+        status: 'DONE',
+        vehicleCount: 12,
+        tonnageKg: 34_500,
+      });
+    });
+
+    it('forwards the status filter', async () => {
+      repo.listSummaries.mockResolvedValue({ rows: [], total: 0 });
+      await service.list({ page: 2, limit: 50, status: 'IN_PROGRESS' });
+      expect(repo.listSummaries).toHaveBeenCalledWith({
+        page: 2,
+        limit: 50,
+        status: 'IN_PROGRESS',
+      });
     });
   });
 

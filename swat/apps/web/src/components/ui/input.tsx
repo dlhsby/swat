@@ -42,7 +42,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   }
 
   return (
-    <div className="relative">
+    <div className="relative w-full">
       {leading ? (
         <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-500">
           {leading}

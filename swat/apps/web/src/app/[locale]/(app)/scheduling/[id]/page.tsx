@@ -1,6 +1,7 @@
 'use client';
 
-import { CheckCircle2, Eye, Pencil } from 'lucide-react';
+import { type ColumnDef } from '@tanstack/react-table';
+import { Eye, Pencil } from 'lucide-react';
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
@@ -17,6 +18,7 @@ import {
   Card,
   CardContent,
   ConfirmDialog,
+  DataTable,
   Skeleton,
   StatusPill,
   notify,
@@ -92,6 +94,98 @@ export default function HaulBoardPage({
   const selectedAssignment = rows.find((r) => r.id === sheetId) ?? null;
   const reconcileAssignment = rows.find((r) => r.id === reconcileId) ?? null;
 
+  const columns = useMemo<ColumnDef<AssignmentRow, unknown>[]>(
+    () => [
+      {
+        accessorKey: 'vehiclePlate',
+        header: 'Kendaraan',
+        meta: { label: 'Kendaraan' },
+        cell: ({ row }) => (
+          <span className="font-mono font-semibold text-neutral-900">
+            {row.original.vehiclePlate}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'driverName',
+        header: 'Pengemudi',
+        meta: { label: 'Pengemudi' },
+        cell: ({ row }) => <span className="text-neutral-700">{row.original.driverName}</span>,
+      },
+      {
+        id: 'verifikasi',
+        accessorFn: (r) => r.trips.filter((t) => t.status === 'VERIFIED').length,
+        header: 'Verifikasi',
+        meta: { label: 'Verifikasi' },
+        cell: ({ row }) => {
+          const total = row.original.trips.length;
+          const verified = row.original.trips.filter((t) => t.status === 'VERIFIED').length;
+          const variant =
+            verified === total && total > 0 ? 'green' : verified > 0 ? 'amber' : 'slate';
+          return (
+            <Badge variant={variant} dot>
+              {verified}/{total} Terverifikasi
+            </Badge>
+          );
+        },
+      },
+      {
+        id: 'berangkat',
+        accessorFn: (r) => r.departActualTime ?? r.departTargetTime ?? '',
+        header: 'Berangkat (T/A)',
+        meta: { label: 'Berangkat (T/A)' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {leg(row.original.departTargetTime, row.original.departActualTime)}
+          </span>
+        ),
+      },
+      {
+        id: 'kembali',
+        accessorFn: (r) => r.returnActualTime ?? r.returnTargetTime ?? '',
+        header: 'Kembali (T/A)',
+        meta: { label: 'Kembali (T/A)' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {leg(row.original.returnTargetTime, row.original.returnActualTime)}
+          </span>
+        ),
+      },
+      {
+        id: 'ritase',
+        accessorFn: (r) => r.trips.length,
+        header: 'Ritase',
+        meta: { label: 'Ritase', filterVariant: 'number' },
+        cell: ({ row }) => (
+          <span className="tabular-nums">{formatNumber(row.original.trips.length)}</span>
+        ),
+      },
+      {
+        id: 'actions',
+        header: '',
+        enableSorting: false,
+        enableHiding: false,
+        enableColumnFilter: false,
+        meta: { pinRight: true, label: 'Aksi' },
+        cell: ({ row }) => (
+          <div className="flex items-center justify-end gap-2">
+            <ProtectedAction permission="trip:update">
+              <Button variant="outline" size="sm" onClick={() => setReconcileId(row.original.id)}>
+                <Pencil className="h-4 w-4" aria-hidden />
+                Edit
+              </Button>
+            </ProtectedAction>
+            <Button variant="secondary" size="sm" onClick={() => setSheetId(row.original.id)}>
+              <Eye className="h-4 w-4" aria-hidden />
+              Lihat
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
+
   const onMarkDone = async (): Promise<void> => {
     try {
       await updateDayStatus(dayId, 'DONE');
@@ -134,7 +228,9 @@ export default function HaulBoardPage({
                   onClick={() => setMarkDone(true)}
                   disabled={openHauls}
                   title={
-                    openHauls ? 'Semua angkut sampah harus selesai terlebih dahulu.' : undefined
+                    openHauls
+                      ? 'Semua angkut sampah harus berstatus selesai terlebih dahulu. Verifikasi rute tidak diwajibkan.'
+                      : 'Tandai seluruh hari transaksi selesai.'
                   }
                 >
                   Tandai Hari Selesai
@@ -145,95 +241,23 @@ export default function HaulBoardPage({
         }
       />
 
-      <div className="space-y-2.5">
-        {/* Column header (hi-fi `.hf-haulhead`) — desktop only. */}
-        {rows.length > 0 ? (
-          <div className="hidden grid-cols-[1.3fr_1.1fr_1.2fr_1.2fr_0.7fr_auto] items-center gap-4 px-[18px] pb-1 text-[11px] font-bold uppercase tracking-[0.05em] text-neutral-400 lg:grid">
-            <span>Kendaraan</span>
-            <span>Verifikasi</span>
-            <span>Berangkat (T/A)</span>
-            <span>Kembali (T/A)</span>
-            <span>Ritase</span>
-            <span />
-          </div>
-        ) : null}
+      {day.status !== 'DONE' ? (
+        <p className="-mt-2 text-tiny text-neutral-500">
+          {openHauls
+            ? 'Hari dapat ditandai selesai setelah semua angkut sampah berstatus selesai (verifikasi rute opsional, tidak menghalangi). Hanya peran Administrasi/Administrator yang dapat menandainya.'
+            : 'Semua angkut sampah selesai — hari siap ditandai selesai oleh Administrasi/Administrator.'}
+        </p>
+      ) : null}
 
-        {rows.map((row) => {
-          const total = row.trips.length;
-          const verified = row.trips.filter((t) => t.status === 'VERIFIED').length;
-          return (
-            <div
-              key={row.id}
-              className="grid grid-cols-1 items-center gap-x-4 gap-y-3 rounded-lg border border-neutral-200 bg-neutral-0 px-[18px] py-4 transition-shadow hover:shadow-sm sm:grid-cols-2 lg:grid-cols-[1.3fr_1.1fr_1.2fr_1.2fr_0.7fr_auto]"
-            >
-              {/* Vehicle + driver (hi-fi `.plate` / `.drv`). */}
-              <div className="sm:col-span-2 lg:col-span-1">
-                <div className="font-mono text-[14px] font-semibold text-neutral-900">
-                  {row.vehiclePlate}
-                </div>
-                <div className="mt-0.5 text-[12px] text-neutral-500">{row.driverName}</div>
-              </div>
-
-              {/* Verification badge. */}
-              <div>
-                {verified === total && total > 0 ? (
-                  <Badge variant="green" dot>
-                    {verified}/{total} Terverifikasi
-                  </Badge>
-                ) : (
-                  <Badge variant={verified > 0 ? 'amber' : 'slate'} dot>
-                    {verified}/{total} Terverifikasi
-                  </Badge>
-                )}
-              </div>
-
-              {/* Time/target columns (hi-fi `.hf-tt`). */}
-              <div className="text-[12px] text-neutral-500">
-                <span className="lg:hidden">Berangkat T/A</span>
-                <span className="hidden lg:inline">Berangkat</span>
-                <b className="mt-0.5 block text-[14px] font-semibold tabular-nums text-neutral-900">
-                  {leg(row.departTargetTime, row.departActualTime)}
-                </b>
-              </div>
-              <div className="text-[12px] text-neutral-500">
-                <span className="lg:hidden">Kembali T/A</span>
-                <span className="hidden lg:inline">Kembali</span>
-                <b className="mt-0.5 block text-[14px] font-semibold tabular-nums text-neutral-900">
-                  {leg(row.returnTargetTime, row.returnActualTime)}
-                </b>
-              </div>
-              <div className="text-[12px] text-neutral-500">
-                Ritase
-                <b className="mt-0.5 block text-[14px] font-semibold tabular-nums text-neutral-900">
-                  {formatNumber(total)}
-                </b>
-              </div>
-
-              {/* Actions. */}
-              <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
-                <ProtectedAction permission="trip:update">
-                  <Button variant="outline" size="sm" onClick={() => setReconcileId(row.id)}>
-                    <Pencil className="h-4 w-4" aria-hidden />
-                    Edit
-                  </Button>
-                </ProtectedAction>
-                <Button variant="secondary" size="sm" onClick={() => setSheetId(row.id)}>
-                  <Eye className="h-4 w-4" aria-hidden />
-                  Lihat
-                </Button>
-              </div>
-            </div>
-          );
-        })}
-        {rows.length === 0 ? (
-          <Card>
-            <CardContent className="flex items-center gap-2 py-8 text-body-sm text-neutral-500">
-              <CheckCircle2 className="h-5 w-5 text-neutral-400" aria-hidden />
-              Tidak ada angkut sampah untuk hari ini.
-            </CardContent>
-          </Card>
-        ) : null}
-      </div>
+      <DataTable
+        columns={columns}
+        data={rows}
+        getRowId={(r) => r.vehiclePlate}
+        searchPlaceholder="Cari kendaraan / pengemudi"
+        onRefresh={() => void load()}
+        refreshing={loading}
+        emptyTitle="Tidak ada angkut sampah untuk hari ini."
+      />
 
       <TripSheet
         assignment={selectedAssignment}

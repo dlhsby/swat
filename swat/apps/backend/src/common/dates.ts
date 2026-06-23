@@ -67,3 +67,30 @@ export function trailingDates(end: Date, count: number): Date[] {
   }
   return dates;
 }
+
+/** WIB (Asia/Jakarta) is a fixed UTC+7 with no daylight saving. */
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+/** The WIB calendar date (`YYYY-MM-DD`) an instant falls on. */
+export function wibDateKey(instant: Date): string {
+  return new Date(instant.getTime() + WIB_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * Re-anchor a realization instant onto its operation day, preserving the WIB
+ * wall-clock time. A realization belongs to a known operation day, so its
+ * `actual_time` must fall on the same WIB date as `operation_date`; this enforces
+ * that invariant for every client. The shift is a whole number of days (WIB has no
+ * DST), so `HH:mm:ss` is untouched; an already-aligned instant is returned as-is.
+ */
+export function anchorInstantToOperationDate(instant: Date, operationDate: Date): Date {
+  const fromKey = wibDateKey(instant);
+  const toKey = formatDateOnly(operationDate);
+  if (fromKey === toKey) {
+    return instant;
+  }
+  const dayDiff = Math.round(
+    (Date.parse(`${toKey}T00:00:00Z`) - Date.parse(`${fromKey}T00:00:00Z`)) / 86_400_000,
+  );
+  return new Date(instant.getTime() + dayDiff * 86_400_000);
+}

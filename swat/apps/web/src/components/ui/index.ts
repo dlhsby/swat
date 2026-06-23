@@ -14,6 +14,7 @@ export * from './checkbox';
 export * from './combobox';
 export * from './command';
 export * from './date-picker';
+export * from './date-time-picker';
 export * from './form';
 export * from './input';
 export * from './label';

@@ -31,7 +31,7 @@ export function hiddenIdColumn<T>(): ColumnDef<T, unknown> {
 }
 
 /** Hidden-by-default audit columns (timestamps + actor names) appended to every master-data table. */
-function auditColumns<T>(): ColumnDef<T, unknown>[] {
+export function auditColumns<T>(): ColumnDef<T, unknown>[] {
   const dateCell = (value: unknown): JSX.Element => (
     <span className="tabular-nums text-neutral-500">
       {typeof value === 'string' && value ? formatDateDisplay(value) : '—'}
@@ -125,14 +125,18 @@ export function CrudListShell<T>({
   const toolbarCreateButton = makeCreateButton('hidden sm:inline');
 
   // ID leads, the page's own columns follow, then the hidden audit columns, with
-  // the row-actions column kept last.
+  // the row-actions column kept last and pinned to the right edge (sticky) so the
+  // data columns scroll underneath it.
   const actionsIdx = columns.findIndex((c) => c.id === 'actions');
   const id = hiddenIdColumn<T>();
   const audit = auditColumns<T>();
-  const mergedColumns =
-    actionsIdx >= 0
-      ? [id, ...columns.slice(0, actionsIdx), ...audit, ...columns.slice(actionsIdx)]
-      : [id, ...columns, ...audit];
+  const actionsCol = actionsIdx >= 0 ? columns[actionsIdx] : undefined;
+  const pinnedActions: ColumnDef<T>[] = actionsCol
+    ? [{ ...actionsCol, meta: { ...actionsCol.meta, pinRight: true } } as ColumnDef<T>]
+    : [];
+  const mergedColumns = actionsCol
+    ? [id, ...columns.slice(0, actionsIdx), ...audit, ...pinnedActions]
+    : [id, ...columns, ...audit];
 
   return (
     <>

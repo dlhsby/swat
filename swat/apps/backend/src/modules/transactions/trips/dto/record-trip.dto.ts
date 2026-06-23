@@ -16,10 +16,13 @@ export class RecordTripDto {
   @IsISO8601({ strict: true }, { message: 'Waktu harus berformat ISO-8601' })
   actualTime!: string;
 
-  @ApiProperty({ minimum: 0, description: 'Odometer reading (km)' })
+  @ApiProperty({
+    minimum: -1,
+    description: 'Odometer reading (km). Use -1 when not captured (e.g. TPA disposal).',
+  })
   @Type(() => Number)
   @IsInt({ message: 'Odometer harus berupa angka' })
-  @Min(0, { message: 'Odometer tidak boleh negatif' })
+  @Min(-1, { message: 'Odometer tidak valid' })
   actualOdometer!: number;
 
   @ApiPropertyOptional({ minimum: 0, description: 'REFUEL: liters requested' })

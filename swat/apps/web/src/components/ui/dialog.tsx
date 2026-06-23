@@ -47,6 +47,10 @@ export const DialogContent = forwardRef<
       <DialogOverlay />
       <DialogPrimitive.Content
         ref={ref}
+        // Don't yank focus into the first field on open (which would, e.g., pop the
+        // time-picker dropdown immediately). Focus stays put; the trap still works.
+        // Callers can opt back in by passing their own `onOpenAutoFocus`.
+        onOpenAutoFocus={(event) => event.preventDefault()}
         className={cn(
           'fixed left-1/2 top-1/2 z-modal grid max-h-[90dvh] w-[min(92vw,520px)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-lg bg-neutral-0 p-6 shadow-lg',
           'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',

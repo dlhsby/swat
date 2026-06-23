@@ -5,8 +5,16 @@ import { toSkipTake, type PageParams } from '../../../common/pagination';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const vehicleInclude = {
-  model: { select: { id: true, brand: true } },
+  model: {
+    select: {
+      id: true,
+      brand: true,
+      vehicleType: { select: { name: true } },
+      fuel: { select: { name: true } },
+    },
+  },
   poolSite: { select: { id: true, name: true } },
+  wasteSources: { include: { wasteSource: { select: { code: true } } } },
 } satisfies Prisma.VehicleInclude;
 
 export type VehicleWithRefs = Prisma.VehicleGetPayload<{ include: typeof vehicleInclude }>;

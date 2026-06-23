@@ -136,18 +136,20 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: Gauge,
         permission: 'transaction-day:read',
       },
+      // Single tabbed "Pencatatan Aktivitas" screen (pickup/disposal/refuel/pool).
+      // Gated by trip:read so view-only roles can review past days; the entry form
+      // inside is separately gated by trip:update.
+      {
+        key: 'recordActivity',
+        href: '/record',
+        icon: ClipboardList,
+        permission: 'trip:read',
+      },
       {
         key: 'disposalPermits',
         href: '/disposal-permits',
         icon: Ticket,
         permission: 'disposal-permit:read',
-      },
-      // Single tabbed "Pencatatan Aktivitas" screen (pickup/disposal/refuel/pool).
-      {
-        key: 'recordActivity',
-        href: '/record',
-        icon: ClipboardList,
-        permission: 'trip:update',
       },
     ],
   },

@@ -9,6 +9,7 @@ import { type Prisma } from '@prisma/client';
 import { hasPermission } from '../../../common/auth/permission-matcher';
 import { RolePermissionsService } from '../../../common/auth/role-permissions.service';
 import { type SessionUser } from '../../../common/auth/session.types';
+import { anchorInstantToOperationDate } from '../../../common/dates';
 import { RollupService } from '../../analytics/rollup.service';
 import { AuditService } from '../../audit/audit.service';
 import { TripFinderService } from '../trip-finder.service';
@@ -159,9 +160,15 @@ export class TripsService {
     const categoryData = this.categoryData(category, dto, trip, granted);
     const data: Prisma.TripUpdateInput = {
       status: 'DONE',
-      actualTime: new Date(dto.actualTime),
+      // Anchor the realization to its operation day so `actual_time`'s WIB date
+      // can never diverge from `operation_date` (the FE already aligns them; this
+      // makes it hold for native/API clients too).
+      actualTime: anchorInstantToOperationDate(new Date(dto.actualTime), trip.operationDate),
       actualOdometer: dto.actualOdometer,
-      realizationEntryAt: new Date(),
+      // Set once, on first entry — an edit corrects values but keeps the original
+      // entry time, so the recap's input-order numbering stays stable. (An un-record
+      // clears it, so a later re-entry is correctly treated as a fresh entry.)
+      realizationEntryAt: trip.realizationEntryAt ?? new Date(),
       recordedBy: { connect: { id: user.id } },
       updatedBy: { connect: { id: user.id } },
       ...(dto.notes !== undefined ? { notes: dto.notes } : {}),
@@ -192,6 +199,60 @@ export class TripsService {
     return toTripDto(updated);
   }
 
+  /**
+   * Un-record a realization (the recap's soft "delete"): revert the trip to
+   * IN_PROGRESS and clear the entered values, keeping the scheduled slot so it can
+   * be re-entered. Mirrors {@link record}'s category gate; a verified trip needs
+   * `trip:override`. Refreshes the day's rollups since tonnage/fuel change.
+   */
+  async unrecord(idParam: string, user: SessionUser): Promise<TripDto> {
+    const trip = await this.repo.findForRecording(idParam);
+    if (!trip) {
+      throw new NotFoundException('Trip tidak ditemukan.');
+    }
+    if (trip.status === 'IN_PROGRESS') {
+      throw new BadRequestException('Trip ini belum dicatat.');
+    }
+
+    const granted = await this.rolePermissions.getPermissionKeys(user.roleId);
+    if (trip.status === 'VERIFIED' && !hasPermission(granted, 'trip:override')) {
+      throw new ForbiddenException('Trip telah diverifikasi dan tidak dapat diubah.');
+    }
+    const category = trip.route?.category ?? 'DEPART_POOL';
+    const requiredPermission = CATEGORY_PERMISSION[category] ?? 'trip:update';
+    if (!hasPermission(granted, requiredPermission)) {
+      throw new ForbiddenException('Akses ditolak untuk menghapus catatan trip ini.');
+    }
+
+    const updated = await this.repo.update(trip.id, {
+      status: 'IN_PROGRESS',
+      actualTime: null,
+      actualOdometer: 0,
+      tareWeight: 0,
+      grossWeight: null,
+      netWeight: null,
+      wasteVolume: null,
+      fuelRequestedLiters: null,
+      fuelApprovedLiters: null,
+      notes: null,
+      realizationEntryAt: null,
+      recordedBy: { disconnect: true },
+      verifiedBy: { disconnect: true },
+      verifiedAt: null,
+      updatedBy: { connect: { id: user.id } },
+    });
+
+    await this.audit.record({
+      actor: user,
+      action: 'trip.unrecord',
+      entityType: 'Trip',
+      entityId: trip.id,
+    });
+
+    await this.rollups.refreshForOperationDate(updated.operationDate);
+    return toTripDto(updated);
+  }
+
   async verify(idParam: string, user: SessionUser): Promise<TripDto> {
     const id = idParam;
     const trip = await this.repo.findForRecording(id);
@@ -219,8 +280,13 @@ export class TripsService {
     return toTripDto(updated);
   }
 
-  /** actualOdometer must be ≥ the highest odometer already recorded on this leg. */
+  /** actualOdometer must be ≥ the highest odometer already recorded on this leg.
+   * A negative value is the "not captured" sentinel (e.g. TPA disposal, where the
+   * weighbridge reads weight, not odometer) and skips the chain check. */
   private assertOdometerChain(trip: TripForRecording, actualOdometer: number): void {
+    if (actualOdometer < 0) {
+      return;
+    }
     const siblingMax = trip.haulAssignment.trips
       .filter((sibling) => sibling.id !== trip.id && sibling.status !== 'IN_PROGRESS')
       .reduce((max, sibling) => Math.max(max, sibling.actualOdometer), 0);

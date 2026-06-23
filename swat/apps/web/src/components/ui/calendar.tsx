@@ -40,7 +40,9 @@ export function Calendar({
         day: 'h-9 w-9 p-0 text-center text-body-sm',
         day_button:
           'inline-flex h-9 w-9 items-center justify-center rounded-base text-neutral-900 hover:bg-neutral-100 aria-selected:bg-primary-700 aria-selected:text-white',
-        today: 'rounded-base ring-1 ring-inset ring-primary-600',
+        // Quiet orientation marker only — the *selected* day owns the strong fill.
+        // Use the "Hari ini"/"Sekarang" footer shortcut to jump here.
+        today: 'font-semibold text-primary-700',
         selected: 'rounded-base',
         outside: 'text-neutral-400 opacity-60',
         disabled: 'text-neutral-300 opacity-50',

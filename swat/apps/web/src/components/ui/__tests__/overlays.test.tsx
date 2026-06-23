@@ -94,7 +94,7 @@ describe('Calendar / DatePicker', () => {
   it('selects a day and emits an ISO date', async () => {
     const onValueChange = vi.fn();
     render(<DatePicker value="2026-03-15" onValueChange={onValueChange} />);
-    await userEvent.click(screen.getByText('15/03/2026'));
+    await userEvent.click(screen.getByRole('button', { name: 'Pilih tanggal' }));
     // Calendar opens on the selected month (March); pick the 20th.
     const grid = await screen.findByRole('grid');
     await userEvent.click(within(grid).getByText('20'));

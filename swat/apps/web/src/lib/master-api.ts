@@ -57,6 +57,10 @@ export interface VehicleDto {
   poolSiteName: string;
   modelId: string;
   modelBrand: string;
+  /** Vehicle type name (legacy "aplikasi kendaraan"). */
+  vehicleTypeName: string;
+  /** Fuel name (legacy "bahan bakar"). */
+  fuelTypeName: string;
   chassisNumber: string;
   engineNumber: string;
   manufactureYear: number | null;
@@ -66,6 +70,8 @@ export interface VehicleDto {
   registrationExpiry: string;
   taxExpiry: string;
   notes: string | null;
+  /** Codes of the waste sources this vehicle serves (e.g. `['D']` = Dinas). */
+  wasteSourceCodes: string[];
   createdAt: string;
   updatedAt: string;
 }

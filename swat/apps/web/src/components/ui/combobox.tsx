@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/cn';
 
@@ -24,11 +24,18 @@ export interface ComboboxProps {
   disabled?: boolean;
   error?: boolean;
   className?: string;
+  /**
+   * Cap the number of options rendered at once (the rest stay searchable —
+   * filter-as-you-type across the full list). Use for large sets (sites, etc.)
+   * to avoid rendering hundreds of rows. Omit to render every option (cmdk filter).
+   */
+  limit?: number;
 }
 
 /**
  * Combobox (design-system §3.5) — searchable single-select for large option
- * sets (vehicle/driver/site/route pickers). Case-insensitive filter via cmdk.
+ * sets (vehicle/driver/site/route pickers). Case-insensitive filter via cmdk;
+ * with `limit`, shows the first N and filters the full list as the user types.
  */
 export function Combobox({
   options,
@@ -40,9 +47,24 @@ export function Combobox({
   disabled,
   error,
   className,
+  limit,
 }: ComboboxProps): JSX.Element {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const selected = options.find((o) => o.value === value);
+  const capped = limit != null;
+
+  // Reset the search box each time the popover closes.
+  useEffect(() => {
+    if (!open) setQuery('');
+  }, [open]);
+
+  const { visible, hiddenCount } = useMemo(() => {
+    if (!capped) return { visible: options, hiddenCount: 0 };
+    const q = query.trim().toLowerCase();
+    const matched = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
+    return { visible: matched.slice(0, limit), hiddenCount: Math.max(0, matched.length - limit) };
+  }, [options, query, capped, limit]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -66,11 +88,14 @@ export function Combobox({
         className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
         align="start"
       >
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+        <Command shouldFilter={!capped}>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            {...(capped ? { value: query, onValueChange: setQuery } : {})}
+          />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
-            {options.map((option) => (
+            {visible.map((option) => (
               <CommandItem
                 key={option.value}
                 value={option.label}
@@ -86,6 +111,11 @@ export function Combobox({
                 {option.label}
               </CommandItem>
             ))}
+            {hiddenCount > 0 ? (
+              <p className="px-2 py-1.5 text-tiny text-neutral-400">
+                +{hiddenCount} lainnya — ketik untuk mencari…
+              </p>
+            ) : null}
           </CommandList>
         </Command>
       </PopoverContent>

@@ -1,10 +1,12 @@
 import { apiClient } from './api-client';
+import { makeResourceApi } from './resource-api';
 import {
   type DailyInitResult,
   type DayStatus,
   type HaulAssignmentDto,
   type RouteCategory,
   type TransactionDayDto,
+  type TransactionDaySummaryDto,
   type TripDetailDto,
   type TripDto,
 } from './types/transactions';
@@ -31,6 +33,17 @@ export interface RecordTripInput {
   grossWeight?: number;
   wasteVolume?: number;
   notes?: string;
+}
+
+const transactionDaysList = makeResourceApi<TransactionDaySummaryDto>('/transaction-days/list');
+
+/**
+ * All transaction days (newest first), optionally filtered by status. Pages are
+ * fetched transparently (1000/req) so the client-side DataTable can search/sort
+ * the full history. Each row is a lightweight summary (no haul/trip tree).
+ */
+export function listTransactionDays(status?: DayStatus): Promise<TransactionDaySummaryDto[]> {
+  return transactionDaysList.list(status ? `?status=${encodeURIComponent(status)}` : undefined);
 }
 
 export function getTransactionDayByDate(date: string): Promise<TransactionDayDto> {
@@ -81,6 +94,12 @@ export function recordTrip(id: string, body: RecordTripInput): Promise<TripDto> 
 
 export function verifyTrip(id: string): Promise<TripDto> {
   return apiClient.put<TripDto>(`/trips/${id}/verify`);
+}
+
+/** Un-record a realization (soft delete): reverts the trip to IN_PROGRESS and
+ *  clears the entered values, keeping the scheduled slot. */
+export function unrecordTrip(id: string): Promise<TripDto> {
+  return apiClient.delete<TripDto>(`/trips/${id}`);
 }
 
 /** Create an ad-hoc (unscheduled) trip on a haul assignment (legacy parity). */

@@ -1,5 +1,6 @@
 import {
   addDays,
+  anchorInstantToOperationDate,
   formatDateOnly,
   formatTimeOnly,
   parseDateOnly,
@@ -7,6 +8,7 @@ import {
   startOfMonth,
   startOfNextMonth,
   trailingDates,
+  wibDateKey,
 } from '../dates';
 
 describe('date/time helpers', () => {
@@ -14,6 +16,30 @@ describe('date/time helpers', () => {
     const d = parseDateOnly('2026-06-08');
     expect(d.toISOString()).toBe('2026-06-08T00:00:00.000Z');
     expect(formatDateOnly(d)).toBe('2026-06-08');
+  });
+
+  describe('WIB anchoring of realization timestamps', () => {
+    it('reads the WIB calendar date of an instant (incl. the UTC-day boundary)', () => {
+      // 01:00 WIB on 23 Jun is 18:00 UTC on 22 Jun — still the 23rd in WIB.
+      expect(wibDateKey(new Date('2026-06-22T18:00:00Z'))).toBe('2026-06-23');
+      expect(wibDateKey(new Date('2026-06-23T07:00:00+07:00'))).toBe('2026-06-23');
+    });
+
+    it('returns an already-aligned instant unchanged', () => {
+      const op = parseDateOnly('2026-06-23');
+      const earlyMorning = new Date('2026-06-23T01:00:00+07:00'); // WIB date == op
+      expect(anchorInstantToOperationDate(earlyMorning, op).toISOString()).toBe(
+        earlyMorning.toISOString(),
+      );
+    });
+
+    it('shifts a wrong-day instant onto the operation day, keeping the WIB time', () => {
+      const op = parseDateOnly('2026-06-23');
+      const wrongDay = new Date('2026-06-24T07:00:00+07:00'); // 07:00 WIB, but on the 24th
+      const fixed = anchorInstantToOperationDate(wrongDay, op);
+      expect(wibDateKey(fixed)).toBe('2026-06-23'); // now on the operation day…
+      expect(fixed.toISOString()).toBe('2026-06-23T00:00:00.000Z'); // …at the same 07:00 WIB
+    });
   });
 
   it('round-trips a time-only value independent of server timezone', () => {

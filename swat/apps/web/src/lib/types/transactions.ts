@@ -14,7 +14,12 @@ export interface TripDto {
   routeId: string | null;
   routeCategory: RouteCategory | null;
   routeLabel: string | null;
+  originSiteName: string | null;
+  destinationSiteName: string | null;
   name: string;
+  notes: string | null;
+  /** CCTV reference from the TPA weighbridge log (disposal only); null otherwise. */
+  cctvReference: string | null;
   status: TripStatus;
   operationDate: string;
   targetTime: string | null;
@@ -33,6 +38,10 @@ export interface TripDto {
   verifiedByName: string | null;
   verifiedAt: string | null;
   realizationEntryAt: string | null;
+  createdById: string | null;
+  createdByName: string | null;
+  updatedById: string | null;
+  updatedByName: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -74,6 +83,17 @@ export interface TransactionDayDto {
   hauls: HaulDto[];
   createdAt: string;
   updatedAt: string;
+}
+
+/** Lightweight per-day row for the paginated scheduling list (no haul/trip tree). */
+export interface TransactionDaySummaryDto {
+  id: string;
+  date: string;
+  status: DayStatus;
+  /** Scheduled vehicles for the day (= number of hauls). */
+  vehicleCount: number;
+  /** Disposal tonnage in kilograms from the daily rollup (0 when not rolled up). */
+  tonnageKg: number;
 }
 
 export interface TripDetailDto extends TripDto {
