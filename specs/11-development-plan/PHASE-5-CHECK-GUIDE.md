@@ -97,7 +97,7 @@ without navigating the day → haul → trip tree.
 1. In the sidebar, open **Pengangkutan → Pencatatan Aktivitas** (`/id-ID/record`). Tabs (in order):
    **Aktivitas Pool** (`?tab=pool`), **Pengisian BBM** (`?tab=refuel`), **Pengambilan Sampah**
    (`?tab=pickup`), **Pembuangan Sampah** (`?tab=disposal`). The active tab is bookmarkable.
-2. Fill the **entry form** (legacy parity per kind): **Kendaraan** + **Waktu** + **Speedometer** always;
+2. Fill the **entry form** (legacy parity per kind): **Kendaraan** + **Waktu** + **Odometer** always;
    plus **Jenis Aktivitas** (Berangkat/Kembali) for pool, **Jumlah Isi BBM** for refuel, **TPS** for
    pickup, **TPS + Berat Kotor/Kosong/Volume + Keterangan** for disposal. Click **Simpan**.
 3. On submit the system mirrors legacy: it finds the vehicle's scheduled (IN_PROGRESS) trip of this

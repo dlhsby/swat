@@ -91,7 +91,7 @@ export function ActivityEditDialog({
     try {
       const payload: RecordTripInput = {
         actualTime: combineDateTimeWIB(trip.operationDate, time),
-        // Speedometer is optional (and never read for disposal) → -1 sentinel.
+        // Odometer is optional (and never read for disposal) → -1 sentinel.
         actualOdometer: isDisposal || odometer === '' ? -1 : Number(odometer),
         // Always send notes so an edit can also clear it.
         notes: notes.trim(),
@@ -194,10 +194,10 @@ export function ActivityEditDialog({
             </>
           ) : null}
 
-          {/* Speedometer — optional, omitted for disposal (sent as -1). */}
+          {/* Odometer — optional, omitted for disposal (sent as -1). */}
           {!isDisposal ? (
             <div className="space-y-1.5">
-              <Label>Nominal Speedometer (opsional)</Label>
+              <Label>Odometer (opsional)</Label>
               <NumberInput
                 value={odometer}
                 onValueChange={(v) => setOdometer(Number.isNaN(v) ? '' : v)}

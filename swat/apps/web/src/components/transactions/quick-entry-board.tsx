@@ -351,8 +351,8 @@ export function QuickEntryBoard({
           ]
         : kind === 'REFUEL'
           ? [
-              textCol('Aplikasi', (r) => vehicleById.get(r.vehicleId)?.vehicleTypeName ?? ''),
-              textCol('Kategori', (r) => vehicleById.get(r.vehicleId)?.modelBrand ?? ''),
+              textCol('Tipe', (r) => vehicleById.get(r.vehicleId)?.vehicleTypeName ?? ''),
+              textCol('Model', (r) => vehicleById.get(r.vehicleId)?.modelBrand ?? ''),
               textCol('Bahan Bakar', (r) => vehicleById.get(r.vehicleId)?.fuelTypeName ?? ''),
             ]
           : [textCol('TPS', tripLocation)];
@@ -459,7 +459,9 @@ export function QuickEntryBoard({
       {
         accessorKey: 'status',
         header: 'Status',
-        meta: { label: 'Status' },
+        // Recap only lists DONE/VERIFIED trips, so status is redundant by default —
+        // revealable via the column chooser.
+        meta: { label: 'Status', defaultHidden: true },
         cell: ({ row }) => <StatusPill domain="trip" value={row.original.status} />,
       },
       ...actions,
@@ -495,11 +497,8 @@ export function QuickEntryBoard({
           ]
         : kind === 'REFUEL'
           ? [
-              {
-                header: 'Aplikasi',
-                value: (r) => vehicleById.get(r.vehicleId)?.vehicleTypeName ?? '',
-              },
-              { header: 'Kategori', value: (r) => vehicleById.get(r.vehicleId)?.modelBrand ?? '' },
+              { header: 'Tipe', value: (r) => vehicleById.get(r.vehicleId)?.vehicleTypeName ?? '' },
+              { header: 'Model', value: (r) => vehicleById.get(r.vehicleId)?.modelBrand ?? '' },
               {
                 header: 'Bahan Bakar',
                 value: (r) => vehicleById.get(r.vehicleId)?.fuelTypeName ?? '',
@@ -617,7 +616,7 @@ export function QuickEntryBoard({
     vehicleId !== '' &&
     date !== '' &&
     time !== '' &&
-    // Speedometer is optional for every activity type.
+    // Odometer is optional for every activity type.
     (kind !== 'POOL' || location !== '') &&
     (!needsTps || location !== '') &&
     (kind !== 'REFUEL' || liters !== '') &&
@@ -829,7 +828,7 @@ export function QuickEntryBoard({
                   Optional for the other kinds too. */}
               {kind !== 'DISPOSAL' ? (
                 <div className="space-y-1.5">
-                  <Label>Nominal Speedometer (opsional)</Label>
+                  <Label>Odometer (opsional)</Label>
                   <NumberInput
                     value={odometer}
                     onValueChange={(v) => setOdometer(Number.isNaN(v) ? '' : v)}
