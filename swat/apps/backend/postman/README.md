@@ -25,7 +25,7 @@ The request URL is composed from parts so you can retarget the whole collection
 | Variable    | Default                     | Notes                                          |
 | ----------- | --------------------------- | ---------------------------------------------- |
 | `protocol`  | `http`                      | `http` / `https`                               |
-| `host`      | `localhost:3000`            | host (+ port)                                  |
+| `host`      | `localhost:3000`            | host (+ port); override if `BE_PORT` differs   |
 | `apiPrefix` | `api/v1`                    | API version prefix                             |
 | `rootUrl`   | `{{protocol}}://{{host}}`   | server root — used by **System** health checks |
 | `baseUrl`   | `{{rootUrl}}/{{apiPrefix}}` | API base — used by every `/api/v1` request     |

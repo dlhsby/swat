@@ -287,25 +287,28 @@ The Transactions module is the **operational core** of SWAT. It models a vehicle
 
 ## 4. API Endpoints
 
-See [`07-api-spec.md`](../07-api-spec.md) **§2.8**:
+As implemented (see the live Swagger at `/api/docs` and the Postman collection under `apps/backend/postman/`). Permission strings in parentheses.
 
-- `GET /transaction-days` — List days (paginated, filterable by date range).
-- `GET /transaction-days/:date` — Get day detail + hauls.
-- `POST /transaction-days/:date/initiate` — Manually trigger daily init.
-- `PATCH /transaction-days/:date` — Mark day DONE.
-- `GET /hauls` — List hauls (filterable by date, vehicle).
-- `GET /hauls/:id` — Get haul + assignments + trips.
-- `PATCH /hauls/:id` — Update haul (notes, mark DONE).
-- `GET /trips` — List trips (filterable by date, status, route, category).
-- `GET /trips/:id` — Get trip detail.
-- `POST /trips` — Create ad-hoc trip (admin/supervisor only).
-- `PATCH /trips/:id` — Update trip (name, notes; before DONE state).
-- `POST /trips/:id/record-pickup` — Record pickup actuals (time, odometer, tare).
-- `POST /trips/:id/record-disposal` — Record disposal weighing (time, odometer, gross/net weight, volume).
-- `POST /trips/:id/record-fuel` — Record fuel (requested, approved liters).
-- `POST /trips/:id/verify` — Verify and lock (checker role only; cannot be undone without supervisor override).
+**Transaction days**
+- `GET /transaction-days?date=YYYY-MM-DD` — Get the day's full tree (hauls → assignments → trips) for one date (`transaction-day:read`).
+- `GET /transaction-days/list` — Paginated day summaries, newest first; optional `status` filter (`transaction-day:read`).
+- `GET /transaction-days/:id` — Day detail by id (`transaction-day:read`).
+- `POST /transaction-days/initialize-today` — Manually run today's daily init; idempotent (`transaction-day:manage`).
+- `PATCH /transaction-days/:id` — Update day status (`transaction-day:manage`).
 
-**Example — POST /trips/:id/record-disposal:**
+**Haul assignments** (the depart/return legs)
+- `GET /haul-assignments/:id/trips` — List an assignment's trips (`trip:read`).
+- `PUT /haul-assignments/:id/record-depart` · `PUT /haul-assignments/:id/record-return` — Record the leg's actuals (`trip:update`).
+
+**Trips**
+- `GET /trips/:id` — Trip detail (`trip:read`).
+- `POST /trips` — Create an **ad-hoc/unscheduled** trip; optionally record it in the same call (`trip:create` + the category record permission). See §4.x.
+- `PUT /trips/:id` — **Record actuals.** One endpoint; the route category derives both the fields validated and the permission required: `trip:record-pickup` / `trip:record-disposal` / `trip:record-fuel`, or `trip:update` for pool legs. A `VERIFIED` trip needs `trip:override`.
+- `DELETE /trips/:id` — **Un-record** (soft): revert to `IN_PROGRESS`, clear entered values, keep the scheduled slot (same per-category permission; `trip:override` if verified).
+- `PUT /trips/:id/verify` — Verify and lock (`trip:verify`); re-recording reverts it to `DONE`.
+- `GET /trips/:id/photos` · `POST /trips/:id/photos` — List / attach trip documentation photos (legacy `dokumentasitrayek`); read `trip:read`, attach `trip:update`. Upload bytes via `POST /storage/presigned-put` first, then register the object metadata.
+
+**Example — PUT /trips/:id (record a disposal):**
 ```json
 {
   "actualTime": "2026-06-05T14:45:00Z",
@@ -335,7 +338,7 @@ Response 200
 }
 ```
 
-**Example — POST /trips/:id/verify:**
+**Example — PUT /trips/:id/verify:**
 ```json
 {
   "notes": "Verified by checker"

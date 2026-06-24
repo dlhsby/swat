@@ -405,6 +405,10 @@ const GROUPS = [
         captureFrom: 'data[0].id',
         note: '`date` (YYYY-MM-DD) is required. Captures the first day id.',
       }),
+      req('List Transaction Days (paginated)', 'GET', '/transaction-days/list', {
+        query: { page: '1', limit: '20' },
+        note: 'Paginated day summaries (newest first) backing the Penjadwalan grid. Optional `status` ∈ IN_PROGRESS | DONE. Distinct from the date-keyed `GET /transaction-days` above.',
+      }),
       req('Initialize Today', 'POST', '/transaction-days/initialize-today', {
         note: "Creates today's TransactionDay and seeds planned hauls/trips from the active schedule templates. Idempotent.",
       }),
@@ -461,6 +465,9 @@ const GROUPS = [
       }),
       req('Verify Trip', 'PUT', '/trips/{{tripId}}/verify', {
         note: 'Checker verification — no body.',
+      }),
+      req('Un-record Trip (soft delete)', 'DELETE', '/trips/{{tripId}}', {
+        note: 'Reverts a recorded trip to IN_PROGRESS and clears the entered values, keeping the scheduled slot — the recap grid “Hapus” action. Category-specific permission; a verified trip needs trip:override.',
       }),
     ],
   },
@@ -790,12 +797,15 @@ const collection = {
 // Postman resolves nested {{vars}} recursively, so `baseUrl`/`rootUrl` stay in sync.
 const ENV_VARS = [
   ['protocol', 'http'],
+  // Default backend port is 3000 (BE_PORT in .env.example). Override `host` here
+  // if you run on another port (e.g. localhost:4020) — every URL composes from it.
   ['host', 'localhost:3000'],
   ['apiPrefix', 'api/v1'],
   ['rootUrl', '{{protocol}}://{{host}}'],
   ['baseUrl', '{{rootUrl}}/{{apiPrefix}}'],
   ['adminUsername', 'admin'],
-  ['adminPassword', 'ChangeMe!2026'],
+  // Matches the demo/dev seed (admin / Password123!) so Login works out of the box.
+  ['adminPassword', 'Password123!'],
   'userId',
   'roleId',
   'siteId',
