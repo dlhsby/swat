@@ -884,7 +884,7 @@ async function seedDemoTransactions(fleet: DemoFleet): Promise<{ from: Date; to:
     const assignmentIdByHaul = new Map(assignments.map((a) => [a.haulId, a.id]));
 
     const trips: Prisma.TripCreateManyInput[] = [];
-    const tpaRows: Array<{ plate: string; net: number; tare: number }> = [];
+    const tpaRows: Array<{ plate: string; net: number; tare: number; assignmentId: string }> = [];
 
     for (let vi = 0; vi < vehicles.length; vi += 1) {
       const v = vehicles[vi];
@@ -936,10 +936,25 @@ async function seedDemoTransactions(fleet: DemoFleet): Promise<{ from: Date; to:
         });
       }
 
-      tpaRows.push({ plate: v.plateNumber, net: vehicleNet, tare: v.tareWeight });
+      tpaRows.push({ plate: v.plateNumber, net: vehicleNet, tare: v.tareWeight, assignmentId });
     }
 
     await prisma.trip.createMany({ data: trips });
+
+    // Resolve one representative disposal trip per assignment so the weighbridge
+    // log can carry a `trip_id` + `cctv_reference` (the recap grid's "CCTV TPA"
+    // modal reads cctv via this link — see TransactionDaysService.withCctv).
+    const disposalTrips = await prisma.trip.findMany({
+      where: { operationDate: opDate, routeId: { in: disposalRouteIds } },
+      select: { id: true, haulAssignmentId: true },
+      orderBy: { name: 'asc' },
+    });
+    const tripByAssignment = new Map<string, string>();
+    for (const t of disposalTrips) {
+      if (!tripByAssignment.has(t.haulAssignmentId)) {
+        tripByAssignment.set(t.haulAssignmentId, t.id);
+      }
+    }
 
     // TPA weighbridge logs (one per vehicle) reconciled against the day's
     // disposal tonnage: every 12th day PENDING (no rows), the next DISCREPANCY
@@ -952,12 +967,17 @@ async function seedDemoTransactions(fleet: DemoFleet): Promise<{ from: Date; to:
         .filter((r) => r.net > 0)
         .map((r) => {
           const net = Math.round(r.net * factor);
-          return Prisma.sql`(${opDate}::date, ${opDate}::date, ${r.plate}, ${r.tare + net}, ${r.tare}, ${net}, now())`;
+          // A deterministic demo capture image per (vehicle, day) so the CCTV TPA
+          // modal shows a real picture; the cell falls back to this raw reference
+          // if the network is offline. trip_id links it to the recap grid row.
+          const tripId = tripByAssignment.get(r.assignmentId) ?? null;
+          const cctv = `https://picsum.photos/seed/${encodeURIComponent(r.plate)}-${offset}/640/480`;
+          return Prisma.sql`(${opDate}::date, ${opDate}::date, ${r.plate}, ${r.tare + net}, ${r.tare}, ${net}, ${cctv}, ${tripId}::uuid, now())`;
         });
       if (values.length > 0) {
         await prisma.$executeRaw`
           INSERT INTO "tpa_inbound_log"
-            ("operation_date", "date", "plate_number", "gross_weight", "tare_weight", "net_weight", "updated_at")
+            ("operation_date", "date", "plate_number", "gross_weight", "tare_weight", "net_weight", "cctv_reference", "trip_id", "updated_at")
           VALUES ${Prisma.join(values)}
         `;
       }
