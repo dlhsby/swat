@@ -4,15 +4,14 @@
  * cache so any date range — including archived years — stays under a second.
  */
 
-export type ReconciliationStatus = 'MATCHED' | 'DISCREPANCY' | 'PENDING';
 export type FuelVarianceFlag = 'OK' | 'RED';
 
 export interface DailyTonnageRow {
   readonly date: string;
   readonly totalTonnageKg: number;
   readonly haulCount: number;
+  /** Landfill weighbridge total for the day (informational); null if none posted. */
   readonly tpaInboundKg: number | null;
-  readonly reconciliationStatus: ReconciliationStatus;
 }
 
 export interface MonthlyTonnageRow {

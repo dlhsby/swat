@@ -8,7 +8,7 @@ import { type DateRangeQueryDto } from './dto/date-range.query.dto';
 import { type FuelConsumptionQueryDto } from './dto/fuel.query.dto';
 import { type TonnageBySourceQueryDto } from './dto/tonnage-source.query.dto';
 import { type TripSummaryQueryDto } from './dto/trip-summary.query.dto';
-import { averagePerTransaction, fuelVariance, reconciliationStatus } from './monitoring.math';
+import { averagePerTransaction, fuelVariance } from './monitoring.math';
 import { MonitoringRepository } from './monitoring.repository';
 import {
   type DailyTonnageRow,
@@ -54,13 +54,11 @@ export class MonitoringService {
       const tpaByDate = new Map(tpa.map((row) => [formatDateOnly(row.date), row.tpaInboundKg]));
       return daily.map((row) => {
         const dateStr = formatDateOnly(row.date);
-        const tpaInboundKg = tpaByDate.has(dateStr) ? tpaByDate.get(dateStr)! : null;
         return {
           date: dateStr,
           totalTonnageKg: row.totalTonnageKg,
           haulCount: row.haulCount,
-          tpaInboundKg,
-          reconciliationStatus: reconciliationStatus(row.totalTonnageKg, tpaInboundKg),
+          tpaInboundKg: tpaByDate.has(dateStr) ? tpaByDate.get(dateStr)! : null,
         };
       });
     });

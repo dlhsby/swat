@@ -92,7 +92,7 @@
     "org": "Department of Environment · City of Surabaya",
     "heading": "Waste operations in one system.",
     "tagline": "Manage fleet, routes, weighing, and levies from a single unified dashboard.",
-    "feature1": "Track tonnage & TPA reconciliation in real time",
+    "feature1": "Track tonnage & the TPA weighbridge in real time",
     "feature2": "Record trips, fuel, and vehicle maintenance",
     "feature3": "Reports & analytics for better decisions"
   },
@@ -203,11 +203,6 @@
       "last1y": "Last 1Y",
       "selectEnd": "Select end"
     },
-    "recon": {
-      "MATCHED": "Matched",
-      "DISCREPANCY": "Discrepancy",
-      "PENDING": "Pending"
-    },
     "common": {
       "empty": "No data in this range.",
       "loadError": "Failed to load monitoring data.",
@@ -225,12 +220,11 @@
       "chartSub": "Kilograms converted to tonnes.",
       "donutTitle": "Composition by Source",
       "tableTitle": "Tonnage per Site",
-      "infoNote": "Aggregated from realized disposal legs (Done or Verified). Nightly reconciliation against the TPA weighbridge; gaps over 5% are flagged as anomalies.",
+      "infoNote": "Aggregated from realized disposal legs (Done or Verified). The TPA Weighbridge column shows that day's landfill weighbridge total, for reference.",
       "colDate": "Date",
       "colTonnage": "Tonnage",
       "colHauls": "Hauls",
       "colTpa": "TPA Weighbridge",
-      "colStatus": "Reconciliation",
       "colSite": "Site",
       "sourceLabel": "Source",
       "sourceAll": "All",
@@ -241,7 +235,8 @@
       "chartMonthlyTitle": "Monthly Tonnage Trend",
       "tableBySourceTitle": "Tonnage by Source",
       "colSource": "Source",
-      "colCode": "Code"
+      "colCode": "Code",
+      "tableDailyTitle": "Daily Summary"
     },
     "fuel": {
       "title": "Fuel Consumption",

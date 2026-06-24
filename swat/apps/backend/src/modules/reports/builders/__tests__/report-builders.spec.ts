@@ -28,7 +28,6 @@ describe('TonnageReportBuilder', () => {
           totalTonnageKg: 500,
           haulCount: 5,
           tpaInboundKg: 480,
-          reconciliationStatus: 'MATCHED',
         },
       ],
       bySource: [

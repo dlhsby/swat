@@ -58,7 +58,6 @@ export class TonnageReportBuilder extends BaseReportBuilder {
           numFmt: FMT_KG,
           value: (r) => r.tpaInboundKg,
         },
-        { header: 'Rekonsiliasi', key: 'reconciliationStatus', width: 16 },
       ],
       data.daily,
       { totals: ['totalTonnageKg', 'haulCount'], freeze: true },

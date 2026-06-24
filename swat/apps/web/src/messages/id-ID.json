@@ -92,7 +92,7 @@
     "org": "Dinas Lingkungan Hidup · Kota Surabaya",
     "heading": "Operasional persampahan dalam satu sistem.",
     "tagline": "Kelola armada, rute, penimbangan, dan retribusi dari satu dasbor terpadu.",
-    "feature1": "Pantau tonase & rekonsiliasi TPA secara real-time",
+    "feature1": "Pantau tonase & timbangan TPA secara real-time",
     "feature2": "Catat ritase, BBM, dan perawatan kendaraan",
     "feature3": "Laporan & analitik untuk pengambilan keputusan"
   },
@@ -203,11 +203,6 @@
       "last1y": "1 Tahun",
       "selectEnd": "Pilih akhir"
     },
-    "recon": {
-      "MATCHED": "Sesuai",
-      "DISCREPANCY": "Anomali",
-      "PENDING": "Menunggu"
-    },
     "common": {
       "empty": "Tidak ada data pada rentang ini.",
       "loadError": "Gagal memuat data pemantauan.",
@@ -225,12 +220,11 @@
       "chartSub": "Kilogram dikonversi ke ton.",
       "donutTitle": "Komposisi per Sumber",
       "tableTitle": "Tonase per TPS",
-      "infoNote": "Agregasi dari leg DISPOSAL terealisasi (Selesai atau Terverifikasi). Rekonsiliasi malam terhadap timbangan TPA; selisih >5% ditandai anomali.",
+      "infoNote": "Agregasi dari leg pembuangan terealisasi (Selesai atau Terverifikasi). Kolom Timbangan TPA menampilkan total timbangan jembatan TPA hari itu sebagai informasi.",
       "colDate": "Tanggal",
       "colTonnage": "Tonase",
       "colHauls": "Angkut Sampah",
       "colTpa": "Timbangan TPA",
-      "colStatus": "Rekonsiliasi",
       "colSite": "TPS",
       "sourceLabel": "Sumber",
       "sourceAll": "Semua",
@@ -241,7 +235,8 @@
       "chartMonthlyTitle": "Tren Tonase Bulanan",
       "tableBySourceTitle": "Tonase per Sumber",
       "colSource": "Sumber",
-      "colCode": "Kode"
+      "colCode": "Kode",
+      "tableDailyTitle": "Ringkasan Harian"
     },
     "fuel": {
       "title": "Konsumsi BBM",

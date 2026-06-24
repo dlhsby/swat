@@ -13,7 +13,6 @@ import { ExportMenu } from '@/components/monitoring/export-menu';
 import { PageHead } from '@/components/shell/page-head';
 import {
   Alert,
-  Badge,
   Button,
   DataTable,
   MetricCard,
@@ -42,19 +41,11 @@ import {
   sourceComposition,
   tonnageTrend,
 } from '@/lib/monitoring-charts';
-import { type PillVariant } from '@/lib/status-pill';
 
 type SourceTab = 'SEMUA' | 'NON_SWASTA' | 'SWASTA';
 
-const RECON_VARIANT: Record<string, PillVariant> = {
-  MATCHED: 'green',
-  DISCREPANCY: 'red',
-  PENDING: 'slate',
-};
-
 export default function VolumePage(): JSX.Element {
   const t = useTranslations('monitoring.volume');
-  const tRecon = useTranslations('monitoring.recon');
   const tCommon = useTranslations('monitoring.common');
   const { range, setRange, today } = useMonitoringRange();
   const [tab, setTab] = useState<SourceTab>('SEMUA');
@@ -84,15 +75,6 @@ export default function VolumePage(): JSX.Element {
       header: t('colTpa'),
       cell: ({ row }) =>
         row.original.tpaInboundKg === null ? '—' : formatWeight(row.original.tpaInboundKg),
-    },
-    {
-      accessorKey: 'reconciliationStatus',
-      header: t('colStatus'),
-      cell: ({ row }) => (
-        <Badge variant={RECON_VARIANT[row.original.reconciliationStatus] ?? 'slate'}>
-          {tRecon(row.original.reconciliationStatus)}
-        </Badge>
-      ),
     },
   ];
 
@@ -227,7 +209,7 @@ export default function VolumePage(): JSX.Element {
                 <TonnageColumns data={monthlyPoints} />
               )}
             </ChartCard>
-            <ChartCard title={t('colStatus')}>
+            <ChartCard title={t('tableDailyTitle')}>
               <DataTable
                 columns={dailyColumns}
                 data={dailyRows}
