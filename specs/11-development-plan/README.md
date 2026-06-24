@@ -37,7 +37,7 @@ Build-side progress records sit next to each phase plan (`phase-N-status.md`): t
 | 2 | ✅ Code-complete (operator live steps pending) | [`phase-2-status.md`](./phase-2-status.md) · [`PHASE-2-VERIFICATION.md`](./PHASE-2-VERIFICATION.md) |
 | 3 | ✅ Code-complete (Excel/PDF report engine; T-316 sample page deferred) | [`PHASE-3-VERIFICATION.md`](./PHASE-3-VERIFICATION.md) |
 | 4 | ✅ Code-complete (weighbridge TPA API + dual auth + Excel import) | [`PHASE-4-VERIFICATION.md`](./PHASE-4-VERIFICATION.md) |
-| 5 | 🚧 In progress (transaction revamp: ad-hoc trips, native parity, trip photos, TPA backfill) | [`phase-5.md`](./phase-5.md) · [`PHASE-5-VERIFICATION.md`](./PHASE-5-VERIFICATION.md) |
+| 5 | ✅ Code-complete (ad-hoc trips, native parity, trip photos, TPA backfill; activity-record UX + CCTV modal + weighbridge/kitir reconciliation) | [`phase-5.md`](./phase-5.md) · [`PHASE-5-VERIFICATION.md`](./PHASE-5-VERIFICATION.md) |
 | 6–7 | ⏳ Planned | [`phase-6.md`](./phase-6.md) · [`phase-7.md`](./phase-7.md) |
 | 8 | ⏳ Not started (Field/mobile + GPS) | [`phase-8.md`](./phase-8.md) |
 

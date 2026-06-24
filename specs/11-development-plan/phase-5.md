@@ -26,6 +26,8 @@ verification audit · D4 dedup-null routes/templates · D5 vehicle↔source MIN 
 - Operator attribution + kitir→trip link on weighings (legacy `petugasid` / `jatahKitir`).
 - Per-trip photo attach/list (legacy `dokumentasitrayek`).
 - One-shot backfill linking migrated `TpaInboundLog` rows to their `Trip`s.
+- "Pencatatan Aktivitas" recording UX (tabbed form + recap grids, CCTV image modal) and a full
+  weighbridge/kitir legacy-parity reconciliation (Epic 5.6, delivered during UAT).
 
 ---
 
@@ -141,12 +143,46 @@ verification audit · D4 dedup-null routes/templates · D5 vehicle↔source MIN 
 
 ---
 
+## Epic 5.6 — Activity-record UX + weighbridge/kitir reconciliation (delivered)
+
+Follow-on work that landed under Phase 5 during manual UAT (frontend-led, plus one permission/spec fix).
+Frontend-only except where noted — the REST surface is unchanged.
+
+#### T-506. "Pencatatan Aktivitas" recording UX
+
+- One tabbed screen at `/record` (**Aktivitas Pool · Pengisian BBM · Pengambilan Sampah · Pembuangan
+  Sampah**), legacy form-on-top + recap-grid-below per kind. Submit finds the vehicle's scheduled trip
+  (by TPS / pool leg / pending refuel) and records it, else creates an ad-hoc one then records.
+- Recap grids: stable pinned **No.**, pinned-right **Aksi** kebab (Ubah / Hapus = soft un-record via
+  `DELETE /trips/:id`), per-kind columns, **Tipe + Model** on every kind, per-kind **Waktu** label
+  (Aktivitas/Pengambilan/Pembuangan/Pengisian), **Status** default-hidden, hidden audit columns,
+  client-side **xlsx/pdf** export mirroring the grid. Odometer optional everywhere (placeholder, no
+  asterisk); "speedometer" reworded to **odometer** in UI/DB/logic.
+- **CCTV TPA** cell on the disposal grid opens the capture (`cctvReference`) in an **image modal**
+  (legacy `dokumentasitrayek` screen-icon lightbox parity), with a raw-reference fallback. Demo seed now
+  attaches deterministic capture URLs + `trip_id` to the TPA weighbridge logs so the modal has data.
+- Kendaraan picker labels options **`Nopol - Tipe - Model`**; edit dialog field order mirrors the grid.
+
+#### T-507. Weighbridge/kitir legacy reconciliation
+
+- Verified the new REST surface against the legacy SOAP service (`Soapservers.php` + `webservice/server.php`):
+  at or ahead of parity on every method (post/verify/correct weighing, list, bulk kitir, lookups subsumed
+  by `resolve-kitir`, `login` → `/auth/token`). One gap closed: the bearer weighbridge operator (**Petugas
+  Timbang** role) now carries `trip:update` so it can attach the CCTV capture via `POST /trips/:id/photos`
+  (legacy `uploadgambar`); documented in `integration-weighbridge.md`.
+- Spec + Postman re-synced to the live API (155 operations, Swagger↔Postman 1:1); added the
+  previously-missing `GET /transaction-days/list` and `DELETE /trips/:id` requests; fixed the Postman
+  Login default (`Password123!`).
+
+---
+
 ## Exit Criteria
 
-- [ ] Ad-hoc trips recordable for every route category (G1 closed).
-- [ ] Native REST surface field-complete: bulk kitir, operator attribution, kitir→trip link (parity bits).
-- [ ] Trip photos attach/list (G2 closed).
-- [ ] Migrated TPA weighings linked to trips (D3 closed).
-- [ ] Specs + Postman in sync; full gate + e2e green; commits conventional, pushed on request.
+- [x] Ad-hoc trips recordable for every route category (G1 closed).
+- [x] Native REST surface field-complete: bulk kitir, operator attribution, kitir→trip link (parity bits).
+- [x] Trip photos attach/list (G2 closed); weighbridge operator can attach CCTV captures.
+- [x] Migrated TPA weighings linkable to trips (D3 closed).
+- [x] Activity-record UX revamp shipped; weighbridge/kitir reconciled against legacy (no missing functionality).
+- [x] Specs + Postman in sync; full gate green; commits conventional, pushed.
 
 **Next:** Phase 6 — Monitoring/dashboard/reporting gap analysis & review.
