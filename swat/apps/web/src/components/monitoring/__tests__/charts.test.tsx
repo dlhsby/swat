@@ -24,8 +24,8 @@ describe('TonnageColumns', () => {
     const { container } = render(
       <TonnageColumns
         data={[
-          { label: '1 Jun', date: '2026-06-01', ton: 4 },
-          { label: '2 Jun', date: '2026-06-02', ton: 6 },
+          { label: '1 Jun', date: '2026-06-01', ton: 4, deltaTon: null, deltaPct: null },
+          { label: '2 Jun', date: '2026-06-02', ton: 6, deltaTon: 2, deltaPct: 50 },
         ]}
       />,
     );

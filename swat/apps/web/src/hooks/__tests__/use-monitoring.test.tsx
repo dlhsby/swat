@@ -89,12 +89,19 @@ describe('monitoring data hooks', () => {
 });
 
 describe('useMonitoringRange', () => {
-  it('defaults to the trailing seven days', () => {
+  it('defaults to today ("Latest")', () => {
     const { result } = renderHookWithProviders(() => useMonitoringRange());
     const { range, today } = result.current;
-    // dateTo is today; dateFrom is six days earlier (inclusive 7-day window).
+    // Default preset is "today": a single-day window anchored on the latest date.
     expect(range.dateTo).toBe(today);
-    expect(range.dateFrom < range.dateTo).toBe(true);
+    expect(range.dateFrom).toBe(today);
+  });
+
+  it('honours an explicit initial preset (e.g. ytd)', () => {
+    const { result } = renderHookWithProviders(() => useMonitoringRange('ytd'));
+    const { range, today } = result.current;
+    expect(range.dateTo).toBe(today);
+    expect(range.dateFrom < range.dateTo).toBe(true); // Jan 1 … today
   });
 
   it('updates the range through its setter', () => {

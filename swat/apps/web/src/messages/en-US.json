@@ -27,7 +27,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "monitoring": "Monitoring",
-    "volume": "Volume per Day",
+    "volume": "Waste Tonnage",
     "fuelMonitoring": "Fuel Consumption",
     "routes": "Route Activity",
     "levy": "Levy",
@@ -54,7 +54,8 @@
     "users": "Users",
     "roles": "Access Control",
     "serviceAccounts": "Service Accounts",
-    "apiAuditLog": "API Log"
+    "apiAuditLog": "API Log",
+    "hauling": "Hauling"
   },
   "shell": {
     "openMenu": "Open menu",
@@ -194,7 +195,13 @@
       "last7": "7 Days",
       "thisMonth": "This Month",
       "lastMonth": "Last Month",
-      "ytd": "Year to Date"
+      "ytd": "Year to Date",
+      "prevDay": "Prev Day",
+      "last1m": "Last 1M",
+      "last3m": "Last 3M",
+      "last6m": "Last 6M",
+      "last1y": "Last 1Y",
+      "selectEnd": "Select end"
     },
     "recon": {
       "MATCHED": "Matched",
@@ -208,7 +215,7 @@
       "monthNote": "By-source, by-site, and route breakdowns are aggregated monthly—a daily range shows the totals of the months it spans."
     },
     "volume": {
-      "title": "Volume per Day",
+      "title": "Waste Tonnage",
       "subtitle": "Hauled waste tonnage from realized disposal legs.",
       "kpiTotal": "Total Tonnage",
       "kpiHauls": "Hauls Completed",
@@ -228,7 +235,13 @@
       "sourceLabel": "Source",
       "sourceAll": "All",
       "sourceNonSwasta": "Non-Swasta",
-      "sourceSwasta": "Swasta"
+      "sourceSwasta": "Swasta",
+      "tabSummary": "Overview",
+      "tabRecap": "By Source & Site",
+      "chartMonthlyTitle": "Monthly Tonnage Trend",
+      "tableBySourceTitle": "Tonnage by Source",
+      "colSource": "Source",
+      "colCode": "Code"
     },
     "fuel": {
       "title": "Fuel Consumption",
@@ -246,7 +259,16 @@
       "colVariance": "Variance",
       "colFlag": "Status",
       "flagOk": "OK",
-      "flagRed": "Anomaly"
+      "flagRed": "Anomaly",
+      "tabSummary": "Overview",
+      "tabByType": "By Fuel Type",
+      "tabHistory": "Refuel History",
+      "chartByTypeTitle": "Consumption by Fuel Type",
+      "chartByTypeSub": "Total approved litres per fuel type.",
+      "colFuelType": "Fuel Type",
+      "colTypeApproved": "Approved",
+      "colTypeRequested": "Requested",
+      "filterVehicle": "All Vehicles"
     },
     "routes": {
       "title": "Route Activity",
@@ -280,12 +302,43 @@
       "fieldDate": "Date",
       "fieldAmount": "Amount",
       "fieldNotes": "Notes"
+    },
+    "hauling": {
+      "title": "Hauling",
+      "subtitle": "Operational hauling monitoring: crew, vehicle, route, and map.",
+      "tabMap": "Map",
+      "tabOperational": "Operational",
+      "tabRecap": "Recap",
+      "kpiActive": "Active Routes",
+      "kpiTrips": "Total Trips",
+      "mapTitle": "Route & Site Map",
+      "mapPlaceholder": "Map not configured. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to display it.",
+      "mapEmpty": "No active routes to map in this range.",
+      "opTitle": "Operational Trip Detail",
+      "colDate": "Date",
+      "colVehicle": "Vehicle",
+      "colDriver": "Driver",
+      "colRoute": "Route",
+      "colKmTarget": "Target KM",
+      "colKmActual": "Actual KM",
+      "colTimeTarget": "Target Time",
+      "colTimeActual": "Actual Time",
+      "colStatus": "Status",
+      "recapTitle": "Most Active Routes",
+      "colCategory": "Category",
+      "colDistance": "Distance",
+      "colTrips": "Trips"
     }
   },
   "reports": {
     "title": "Reports",
     "subtitle": "Generate tonnage, fuel, route, and levy reports as Excel or PDF.",
-    "tabs": { "tonnage": "Tonnage", "fuel": "Fuel", "route": "Routes", "levy": "Levy" },
+    "tabs": {
+      "tonnage": "Tonnage",
+      "fuel": "Fuel",
+      "route": "Routes",
+      "levy": "Levy"
+    },
     "description": {
       "tonnage": "Waste haulage tonnage — monthly summary, daily, by source, and by TPS.",
       "fuel": "Fuel consumption per vehicle and fuel type, with variance analysis.",
@@ -310,7 +363,8 @@
     "failed": "Report generation failed.",
     "download": "Download",
     "downloadFailed": "Failed to download report.",
-    "close": "Close"
+    "close": "Close",
+    "export": "Export"
   },
   "crud": {
     "created": "Created successfully.",

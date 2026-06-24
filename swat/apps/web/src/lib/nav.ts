@@ -58,6 +58,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     id: 'grp-monitoring',
     key: 'monitoring',
     icon: Activity,
+    // Four domain pages (each a tabbed "big page" with its own embedded xlsx/pdf
+    // export): Tonase Sampah, Konsumsi BBM, Pengangkutan, Retribusi. The former
+    // refuel-log + standalone reports leaves folded into Konsumsi BBM / per-page.
     leaves: [
       {
         key: 'volume',
@@ -71,18 +74,9 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: FuelIcon,
         permission: 'monitoring:read',
       },
-      // Per-refuel ledger (liters/cost/anomaly history) — a monitoring/report view,
-      // distinct from the entry tab under Pencatatan. Legacy had no separate ledger;
-      // fuel lived only as entry + monitoring + laporan.
       {
-        key: 'refuelLog',
-        href: '/refuel-log',
-        icon: FuelIcon,
-        permission: 'trip:read',
-      },
-      {
-        key: 'routes',
-        href: '/monitoring/routes',
+        key: 'hauling',
+        href: '/monitoring/hauling',
         icon: MapPin,
         permission: 'monitoring:read',
       },
@@ -91,12 +85,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         href: '/monitoring/levy',
         icon: Ticket,
         permission: 'monitoring:read',
-      },
-      {
-        key: 'reports',
-        href: '/reports',
-        icon: BarChart3,
-        permission: 'report:read',
       },
     ],
   },

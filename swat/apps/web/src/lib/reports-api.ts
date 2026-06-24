@@ -12,6 +12,12 @@ export type ReportStatus = 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
 export interface GenerateReportRequest extends DateRange {
   readonly format: ReportFormat;
+  /** Optional per-type filters the backend GenerateReportDto already accepts. */
+  readonly vehicleId?: string;
+  readonly wasteSourceId?: string;
+  readonly siteId?: string;
+  readonly fuelTypeId?: string;
+  readonly categoryId?: string;
 }
 
 export interface GenerateReportResponse {

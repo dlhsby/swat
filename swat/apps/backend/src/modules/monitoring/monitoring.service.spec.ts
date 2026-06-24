@@ -17,6 +17,7 @@ function createRepo(): jest.Mocked<MonitoringRepository> {
     countOperatingVehicles: jest.fn().mockResolvedValue(0),
     levySummary: jest.fn().mockResolvedValue([]),
     tripSummary: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
+    routeMap: jest.fn().mockResolvedValue({ sites: [], edges: [] }),
   } as unknown as jest.Mocked<MonitoringRepository>;
 }
 
@@ -162,6 +163,48 @@ describe('MonitoringService', () => {
         expect.objectContaining({ page: 2, limit: 50, status: undefined, routeId: undefined }),
       );
       expect(result.meta).toEqual({ total: 42, page: 2, limit: 50 });
+    });
+
+    it('passes the vehicle/driver filters through to the repo', async () => {
+      await service.tripSummary({
+        ...RANGE,
+        page: 1,
+        limit: 25,
+        vehicleId: '00000000-0000-0000-0000-0000000000v9',
+        driverId: '00000000-0000-0000-0000-0000000000d9',
+      });
+
+      expect(repo.tripSummary).toHaveBeenCalledWith(
+        expect.objectContaining({
+          vehicleId: '00000000-0000-0000-0000-0000000000v9',
+          driverId: '00000000-0000-0000-0000-0000000000d9',
+        }),
+      );
+    });
+  });
+
+  describe('routeMap', () => {
+    it('delegates to the repo with the month-anchored range', async () => {
+      repo.routeMap.mockResolvedValue({
+        sites: [
+          {
+            id: 's1',
+            name: 'TPS A',
+            type: 'TPS',
+            latitude: -7.25,
+            longitude: 112.75,
+          },
+        ],
+        edges: [],
+      });
+
+      const result = await service.routeMap(RANGE);
+
+      expect(repo.routeMap).toHaveBeenCalledWith(
+        parseDateOnly('2026-06-01'),
+        parseDateOnly('2026-06-01'),
+      );
+      expect(result.sites).toHaveLength(1);
     });
   });
 

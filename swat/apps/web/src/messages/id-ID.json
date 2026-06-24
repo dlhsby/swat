@@ -27,7 +27,7 @@
   "nav": {
     "dashboard": "Dasbor",
     "monitoring": "Pemantauan",
-    "volume": "Volume per Hari",
+    "volume": "Tonase Sampah",
     "fuelMonitoring": "Konsumsi BBM",
     "routes": "Aktivitas Rute",
     "levy": "Retribusi",
@@ -54,7 +54,8 @@
     "users": "Pengguna",
     "roles": "Hak Akses",
     "serviceAccounts": "Akun Layanan",
-    "apiAuditLog": "Log API"
+    "apiAuditLog": "Log API",
+    "hauling": "Pengangkutan"
   },
   "shell": {
     "openMenu": "Buka menu",
@@ -194,7 +195,13 @@
       "last7": "7 Hari",
       "thisMonth": "Bulan Ini",
       "lastMonth": "Bulan Lalu",
-      "ytd": "Tahun Berjalan"
+      "ytd": "Tahun Berjalan",
+      "prevDay": "Kemarin",
+      "last1m": "1 Bulan",
+      "last3m": "3 Bulan",
+      "last6m": "6 Bulan",
+      "last1y": "1 Tahun",
+      "selectEnd": "Pilih akhir"
     },
     "recon": {
       "MATCHED": "Sesuai",
@@ -208,7 +215,7 @@
       "monthNote": "Rincian per sumber, TPS, dan rute diagregasi per bulan—rentang harian menampilkan total bulan yang tercakup."
     },
     "volume": {
-      "title": "Volume per Hari",
+      "title": "Tonase Sampah",
       "subtitle": "Tonase pengangkutan sampah dari leg pembuangan terealisasi.",
       "kpiTotal": "Total Tonase",
       "kpiHauls": "Angkut Sampah Selesai",
@@ -228,7 +235,13 @@
       "sourceLabel": "Sumber",
       "sourceAll": "Semua",
       "sourceNonSwasta": "Non-Swasta",
-      "sourceSwasta": "Swasta"
+      "sourceSwasta": "Swasta",
+      "tabSummary": "Ringkasan",
+      "tabRecap": "Per Sumber & TPS",
+      "chartMonthlyTitle": "Tren Tonase Bulanan",
+      "tableBySourceTitle": "Tonase per Sumber",
+      "colSource": "Sumber",
+      "colCode": "Kode"
     },
     "fuel": {
       "title": "Konsumsi BBM",
@@ -246,7 +259,16 @@
       "colVariance": "Varian",
       "colFlag": "Status",
       "flagOk": "Sesuai",
-      "flagRed": "Anomali"
+      "flagRed": "Anomali",
+      "tabSummary": "Ringkasan",
+      "tabByType": "Per Jenis BBM",
+      "tabHistory": "Riwayat Pengisian",
+      "chartByTypeTitle": "Konsumsi per Jenis BBM",
+      "chartByTypeSub": "Total liter disetujui per jenis bahan bakar.",
+      "colFuelType": "Jenis BBM",
+      "colTypeApproved": "Disetujui",
+      "colTypeRequested": "Diminta",
+      "filterVehicle": "Semua Kendaraan"
     },
     "routes": {
       "title": "Aktivitas Rute",
@@ -280,12 +302,43 @@
       "fieldDate": "Tanggal",
       "fieldAmount": "Jumlah",
       "fieldNotes": "Catatan"
+    },
+    "hauling": {
+      "title": "Pengangkutan",
+      "subtitle": "Pemantauan operasional pengangkutan: kru, kendaraan, rute, dan peta.",
+      "tabMap": "Peta",
+      "tabOperational": "Operasional",
+      "tabRecap": "Rekap",
+      "kpiActive": "Rute Aktif",
+      "kpiTrips": "Total Trayek",
+      "mapTitle": "Peta Rute & Lokasi",
+      "mapPlaceholder": "Peta belum dikonfigurasi. Setel NEXT_PUBLIC_GOOGLE_MAPS_API_KEY untuk menampilkannya.",
+      "mapEmpty": "Tidak ada rute aktif untuk dipetakan pada rentang ini.",
+      "opTitle": "Rincian Operasional Trayek",
+      "colDate": "Tanggal",
+      "colVehicle": "Kendaraan",
+      "colDriver": "Pengemudi",
+      "colRoute": "Rute",
+      "colKmTarget": "KM Target",
+      "colKmActual": "KM Realisasi",
+      "colTimeTarget": "Waktu Target",
+      "colTimeActual": "Waktu Realisasi",
+      "colStatus": "Status",
+      "recapTitle": "Rute Teraktif",
+      "colCategory": "Kategori",
+      "colDistance": "Jarak",
+      "colTrips": "Trayek"
     }
   },
   "reports": {
     "title": "Laporan",
     "subtitle": "Buat laporan tonase, BBM, rute, dan retribusi dalam format Excel atau PDF.",
-    "tabs": { "tonnage": "Tonase", "fuel": "BBM", "route": "Rute", "levy": "Retribusi" },
+    "tabs": {
+      "tonnage": "Tonase",
+      "fuel": "BBM",
+      "route": "Rute",
+      "levy": "Retribusi"
+    },
     "description": {
       "tonnage": "Tonase pengangkutan sampah — ringkasan bulanan, harian, per sumber, dan per TPS.",
       "fuel": "Konsumsi bahan bakar per kendaraan dan jenis BBM, dengan analisis varian.",
@@ -310,7 +363,8 @@
     "failed": "Pembuatan laporan gagal.",
     "download": "Unduh",
     "downloadFailed": "Gagal mengunduh laporan.",
-    "close": "Tutup"
+    "close": "Tutup",
+    "export": "Ekspor"
   },
   "crud": {
     "created": "Data berhasil dibuat.",

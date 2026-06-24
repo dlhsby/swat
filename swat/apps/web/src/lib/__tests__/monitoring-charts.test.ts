@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  type DailyTonnageRow,
   type FuelConsumptionRow,
   type LevySummaryRow,
   type LevyTrendRow,
@@ -70,18 +71,29 @@ describe('levyByCategory / levyTrendPoints', () => {
 });
 
 describe('tonnageTrend', () => {
-  it('maps daily rows to labelled tonne points', () => {
-    expect(
-      tonnageTrend([
-        {
-          date: '2026-06-01',
-          totalTonnageKg: 4000,
-          haulCount: 3,
-          tpaInboundKg: null,
-          reconciliationStatus: 'PENDING',
-        },
-      ]),
-    ).toEqual([{ label: '1 Jun', date: '2026-06-01', ton: 4 }]);
+  const dailyRow = (date: string, kg: number): DailyTonnageRow => ({
+    date,
+    totalTonnageKg: kg,
+    haulCount: 3,
+    tpaInboundKg: null,
+    reconciliationStatus: 'PENDING',
+  });
+
+  it('maps daily rows to labelled tonne points (first point has no delta)', () => {
+    expect(tonnageTrend([dailyRow('2026-06-01', 4000)])).toEqual([
+      { label: '1 Jun', date: '2026-06-01', ton: 4, deltaTon: null, deltaPct: null },
+    ]);
+  });
+
+  it('computes day-over-day deltas in tonnes and percent', () => {
+    const points = tonnageTrend([dailyRow('2026-06-01', 4000), dailyRow('2026-06-02', 5000)]);
+    expect(points[1]).toEqual({
+      label: '2 Jun',
+      date: '2026-06-02',
+      ton: 5,
+      deltaTon: 1,
+      deltaPct: 25,
+    });
   });
 });
 
@@ -94,20 +106,27 @@ describe('sourceComposition', () => {
     haulCount: 1,
   });
 
-  it('keeps the top three sources and folds the rest into Lainnya', () => {
+  it('keeps the top four sources and folds the rest into Lainnya', () => {
     const { slices, totalTon } = sourceComposition([
       row('Dinas', 4000),
       row('Pasar', 3000),
       row('Rekanan', 2000),
       row('Pintu Air', 1000),
       row('Pelabuhan', 500),
+      row('Swasta', 500),
     ]);
-    expect(slices.map((s) => s.name)).toEqual(['Dinas', 'Pasar', 'Rekanan', 'Lainnya']);
-    expect(slices[3]!.ton).toBe(1.5); // 1000 + 500 kg
-    expect(totalTon).toBe(10.5);
+    expect(slices.map((s) => s.name)).toEqual([
+      'Dinas',
+      'Pasar',
+      'Rekanan',
+      'Pintu Air',
+      'Lainnya',
+    ]);
+    expect(slices[4]!.ton).toBe(1); // 500 + 500 kg folded
+    expect(totalTon).toBe(11);
   });
 
-  it('omits Lainnya when there are three or fewer sources', () => {
+  it('omits Lainnya when there are four or fewer sources', () => {
     const { slices } = sourceComposition([row('Dinas', 4000), row('Pasar', 3000)]);
     expect(slices).toHaveLength(2);
   });
