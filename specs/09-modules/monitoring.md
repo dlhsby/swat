@@ -46,9 +46,11 @@ The Monitoring module provides real-time operational dashboards for management a
    - `vehicleId`, `siteId` (TPA): enables matching trips to permit/kitir
    - `validFrom`, `validTo`: tracks active permits over date range
 
-5. **TpaInboundLog** — external weighbridge ingest
-   - `date`, `plateNumber`, `grossWeight`, `tareWeight`, `netWeight`: reconciliation source
-   - Updated nightly from TPA desktop app; used for data quality checks
+5. **TpaInboundLog** — landfill weighbridge log
+   - `date`, `plateNumber`, `grossWeight`, `tareWeight`, `netWeight`, `tripId`
+   - Written by the **weighbridge native-app POST** (the primary disposal capture, which also fills
+     the linked Trip) and the Excel import. Surfaced as an **informational** daily total on the tonnage
+     dashboard; not a separate reconciliation source (see §Tonnage data sources)
 
 6. **DailyTonnage** — pre-aggregated daily total
    - `date` (unique): cached total tonnage per day = Σ netWeight(DISPOSAL, DONE|VERIFIED)
@@ -95,7 +97,7 @@ The Monitoring module provides real-time operational dashboards for management a
   - Color: by waste source (D, R, PS, PU, Swasta) stacked area option
 
 - **Table (row 3):** Daily summary, last 5 days
-  - Columns: Date | Total tonnage | Haul count | TPA inbound (reconciliation check) | Status (✓ verified / ⚠ partial)
+  - Columns: Date | Total tonnage | Haul count | TPA weighbridge total (informational)
 
 ---
 
@@ -226,17 +228,15 @@ See [`07-api-spec.md`](../07-api-spec.md) for endpoint paths and response format
   "data": [
     {
       "date": "2026-06-01",
-      "totalTonnage": 45200,
+      "totalTonnageKg": 45200,
       "haulCount": 12,
-      "tpaInboundTonnage": 44800,
-      "reconciliationStatus": "MATCHED"
+      "tpaInboundKg": 44800
     },
     {
       "date": "2026-06-02",
-      "totalTonnage": 48100,
+      "totalTonnageKg": 48100,
       "haulCount": 13,
-      "tpaInboundTonnage": null,
-      "reconciliationStatus": "PENDING"
+      "tpaInboundKg": null
     }
   ]
 }
@@ -260,7 +260,20 @@ Tonnage = Σ(Trip.netWeight)
 **Data quality checks:**
 - If `HaulAssignment.returnActualTime IS NULL`, trip is still IN_PROGRESS; exclude from totals.
 - If `Trip.netWeight = 0` (weighing not recorded), exclude from totals; log warning.
-- Reconcile against `TpaInboundLog.netWeight` nightly; flag discrepancies >5% as anomalies.
+
+### Tonnage data sources (weighbridge primary, activity record fallback)
+
+The disposal weighing is captured **primarily by the weighbridge native app**
+(`POST /weighbridge/post-weighing`): it finds/creates the DISPOSAL **Trip**, fills its
+gross/tare/net (server computes `net = gross − tare`), marks it DONE/VERIFIED, and writes a linked
+`TpaInboundLog` row. When the weighbridge/native app is unavailable, the **manual activity record**
+(`PUT /trips/:id`) is the **fallback** — it fills the same Trip but writes no `TpaInboundLog`.
+
+Either way, **`Trip.netWeight` is the single canonical tonnage** all dashboards/reports read (the
+same "trip record is canonical, weighbridge feeds it" pattern legacy used via its Excel sync into
+`trayek`). The `TpaInboundLog` daily total is shown **for reference only** — there is **no
+trip-vs-weighbridge reconciliation status** (the legacy system had none either; a short-lived
+reconciliation badge/nightly job was removed as it merely re-measured weighbridge-fed trips).
 
 ### Fuel Consumption Aggregation
 
@@ -368,7 +381,7 @@ Per doc 12 §5 **Dashboard KPIs / aggregates** layer:
 - [x] Drill-down from monthly to daily to trip level is functional.
 - [x] Date-range filtering (dateFrom/dateTo) works on all endpoints.
 - [x] KPI cards cached in Redis with TTL=15 minutes (per doc 12 §5); invalidate on trip verify.
-- [x] TPA inbound reconciliation flagged on tonnage dashboard (< 5% mismatch = MATCHED).
+- [x] TPA weighbridge daily total shown as an informational column (no reconciliation status).
 - [x] All monitoring queries (rollups + cache) return within 1 second p95.
 - [x] Levy summary dashboard shows monthly trend + category breakdown.
 - [x] Read-only operations; no mutations in monitoring module.
@@ -384,7 +397,7 @@ Per doc 12 §5 **Dashboard KPIs / aggregates** layer:
 | T3 | Fuel variance flagged | Haul has REFUEL trip: requested=100L, approved=80L | GET /monitoring/fuel-consumption | Response includes variance = -20%, flag = RED |
 | T4 | Site drill-down | 3 TPS sites with 5, 8, 3 hauls respectively | GET /monitoring/tonnage-by-site?dateFrom=2026-06-01&dateTo=2026-06-05 | Response ordered by tonnage DESC; top site has 8 entries |
 | T5 | Incomplete trip excluded | Trip with status=IN_PROGRESS, netWeight=5000 | GET /monitoring/tonnage-5day?dateFrom=2026-06-05&dateTo=2026-06-05 | Tonnage excludes this trip |
-| T6 | TPA inbound reconciliation | Trip netWeight=4000 kg; TpaInboundLog netWeight=4200 kg (5% diff) | GET /monitoring/tonnage-5day | reconciliationStatus = "MATCHED" (within threshold) |
+| T6 | TPA weighbridge total surfaced | Trip netWeight=4000 kg; TpaInboundLog netWeight=4200 kg | GET /monitoring/tonnage-5day | Row includes `tpaInboundKg: 4200` (informational); no reconciliation field |
 | T7 | Cache invalidation | KPI cached; new trip recorded | POST /trips/:id/verify + GET /monitoring/kpi-overview within 2 sec | Dashboard reflects new trip |
 | T8 | Levy summary monthly | 5 levy records (May), 3 (June); amounts 500k, 600k, 700k (June) | GET /monitoring/levy-summary?dateFrom=2026-06-01&dateTo=2026-06-30 | June total = 1.8M IDR |
 | T9 | Active routes count | 7 routes defined; 4 have DONE/VERIFIED trips today | GET /monitoring/routes-active?dateFrom=today&dateTo=today | Response count = 4 |

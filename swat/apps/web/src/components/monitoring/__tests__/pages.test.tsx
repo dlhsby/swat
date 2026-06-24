@@ -49,22 +49,10 @@ beforeEach(() => {
 });
 
 describe('VolumePage', () => {
-  it('renders KPIs, the source donut legend, the site table, and reconciliation badges', async () => {
+  it('renders KPIs, the source donut legend, the daily table, and the by-site recap', async () => {
     api.tonnage5Day.mockResolvedValue([
-      {
-        date: '2026-06-01',
-        totalTonnageKg: 4000,
-        haulCount: 3,
-        tpaInboundKg: 4000,
-        reconciliationStatus: 'MATCHED',
-      },
-      {
-        date: '2026-06-02',
-        totalTonnageKg: 6000,
-        haulCount: 5,
-        tpaInboundKg: null,
-        reconciliationStatus: 'PENDING',
-      },
+      { date: '2026-06-01', totalTonnageKg: 4000, haulCount: 3, tpaInboundKg: 4000 },
+      { date: '2026-06-02', totalTonnageKg: 6000, haulCount: 5, tpaInboundKg: null },
     ]);
     api.tonnageBySource.mockResolvedValue([
       { wasteSourceId: 1, code: 'D', name: 'Dinas', totalTonnageKg: 7000, haulCount: 5 },
@@ -76,12 +64,10 @@ describe('VolumePage', () => {
 
     renderWithProviders(<VolumePage />);
 
-    // Summary tab (default): donut legend, reconciliation badges, month note.
+    // Summary tab (default): donut legend + month note.
     // DataTable renders a desktop table + a mobile card view, so cell text appears
     // more than once — assert presence, not uniqueness.
     expect((await screen.findAllByText('Pasar')).length).toBeGreaterThan(0); // donut legend
-    expect(screen.getAllByText('Sesuai').length).toBeGreaterThan(0); // MATCHED badge
-    expect(screen.getAllByText('Menunggu').length).toBeGreaterThan(0); // PENDING badge
     expect(screen.getAllByText(/diagregasi per bulan/i).length).toBeGreaterThan(0); // month note
 
     // The per-site recap table lives under the "Per Sumber & TPS" tab.

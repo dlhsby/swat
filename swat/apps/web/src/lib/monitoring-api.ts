@@ -6,7 +6,6 @@ import { apiClient } from './api-client';
  * the apiClient unwraps the response envelope to the bare payload.
  */
 
-export type ReconciliationStatus = 'MATCHED' | 'DISCREPANCY' | 'PENDING';
 export type FuelVarianceFlag = 'OK' | 'RED';
 /** Legacy Semua / Non-Swasta / Swasta tonnage filter (omit for Semua). */
 export type SourceGroup = 'NON_SWASTA' | 'SWASTA';
@@ -20,8 +19,8 @@ export interface DailyTonnageRow {
   readonly date: string;
   readonly totalTonnageKg: number;
   readonly haulCount: number;
+  /** Landfill weighbridge total for the day (informational); null if none posted. */
   readonly tpaInboundKg: number | null;
-  readonly reconciliationStatus: ReconciliationStatus;
 }
 
 export interface MonthlyTonnageRow {

@@ -26,7 +26,7 @@ a tabbed screen with one shared date-range filter and an **embedded xlsx/pdf exp
 
 | # | Page (route) | Tabs |
 |---|---|---|
-| 1 | **Tonase Sampah** (`/monitoring/volume`) | Ringkasan (KPIs, daily + monthly trend, source donut, reconciliation) · Per Sumber & TPS |
+| 1 | **Tonase Sampah** (`/monitoring/volume`) | Ringkasan (KPIs, daily + monthly trend, source donut, daily table w/ informational TPA total) · Per Sumber & TPS |
 | 2 | **Konsumsi BBM** (`/monitoring/fuel`) | Ringkasan (requested-vs-approved + variance) · Per Jenis BBM · Riwayat Pengisian |
 | 3 | **Pengangkutan** (`/monitoring/hauling`) | Peta (Google Maps) · Operasional (crew/vehicle/route + KM & time target-vs-actual) · Rekap |
 | 4 | **Retribusi** (`/monitoring/levy`) | Ringkasan (by-category + monthly trend) · Data (CRUD) |
@@ -50,26 +50,36 @@ a tabbed screen with one shared date-range filter and an **embedded xlsx/pdf exp
 - **Daily-tonnage `haul_count`** — raw query read `row.haulCount` from an un-aliased `haul_count`
   column → `undefined` → KPIs rendered `NaN`. Fixed (`"haul_count" AS "haulCount"`); `formatNumber`
   hardened to render `0` for non-finite input.
-- **Reconciliation** — reviewed (see §below); 5% tolerance, MATCHED/DISCREPANCY/PENDING, nightly job
-  at 23:30 WIB after the rollups. Correct.
 - **Date-range presets** — `last1m/3m/6m/1y` clamped to month length (a 31st no longer rolls forward).
 - **Demo data freshness** — `SYNTHETIC_END` and the levy anchor now track the seed run date, so the
   default (today / YTD for levy) views are populated; synthetic trips carry KM + time so the
   Operasional tab has data.
 
-## TPA reconciliation — how it works
+## Tonnage data sources — weighbridge primary, activity record fallback
 
-1. **Trip side:** the `daily_tonnage` rollup sums net weight of **realized DISPOSAL legs** (trip status
-   `DONE`/`VERIFIED`) per day.
-2. **Weighbridge side:** the TPA landfill scale feeds `tpa_inbound_log` (via the weighbridge
-   integration / Excel import); `tpaInboundByDate` sums its `net_weight` per day.
-3. **Compare** (`monitoring.math.reconciliationStatus`, tolerance `RECONCILIATION_TOLERANCE_PERCENT = 5`):
-   no weighbridge row → **PENDING** (`—`); `|trip − tpa| / trip ≤ 5%` (or both zero) → **MATCHED**;
-   otherwise → **DISCREPANCY** (anomali).
-4. **Two surfaces:** the monitoring API computes the per-day badge **on read** (`tonnage-5day`,
-   shown in the Rekonsiliasi table); `TpaReconciliationService` re-checks the trailing 7 days
-   **nightly at 23:30 WIB** (`@Cron`) and logs each discrepancy as the operational alert path — no
-   silent failures. Purpose: catch under/over-reporting, missing weighbridge entries, or tampering.
+A late review corrected an earlier misconception about the two tonnage sources:
+
+- **Weighbridge native-app POST** (`/weighbridge/post-weighing`) is the **primary** disposal capture.
+  It finds/creates the DISPOSAL **Trip**, fills its gross/tare/net (`net = gross − tare`, server-side),
+  marks it DONE/VERIFIED, **and** writes a linked `TpaInboundLog` row.
+- **Manual activity record** (`PUT /trips/:id`) is the **fallback** when the native app/weighbridge is
+  unavailable — it fills the same Trip but writes **no** `TpaInboundLog`.
+- Both land in **`Trip.netWeight`**, the single canonical tonnage all dashboards read — the same
+  "trip is canonical, weighbridge feeds it" pattern legacy used via its Excel sync into `trayek`.
+
+### Reconciliation feature — REMOVED
+
+A trip-vs-weighbridge reconciliation badge (`MATCHED/DISCREPANCY/PENDING`, 5% tolerance) + a nightly
+`TpaReconciliationService` cron were briefly added (originally Phase-2 T-211). They were **removed**
+because:
+- **Legacy has no such feature.** Legacy's only "selisih" compares the day's tonnage to a *hardcoded
+  1.2M kg target*; its weighbridge table (`sampahmasuktpa`, manual Excel only) was **merged into**
+  `trayek`, never compared.
+- Given the weighbridge POST writes **both** the Trip and the log from the same numbers, a
+  "reconciliation" mostly re-measured weighbridge-fed trips; a gap really just meant "tonnage entered
+  via the manual fallback / not yet weighed," not under-reporting.
+
+The `TpaInboundLog` daily total is kept as an **informational column** on the tonnage dashboard.
 
 ## Backend changes
 
@@ -92,6 +102,8 @@ a tabbed screen with one shared date-range filter and an **embedded xlsx/pdf exp
   steppers, hover preview, today ring).
 - **T-607** Correctness fixes (haul_count alias, preset day-clamp) + demo-seed freshness.
 - **T-608** Spec + Postman sync.
+- **T-609** Remove the trip-vs-weighbridge reconciliation badge + nightly `TpaReconciliationService`
+  (not legacy behaviour); keep the `TpaInboundLog` daily total as an informational column.
 
 ## Deferred / accepted
 

@@ -67,7 +67,7 @@ describe('MonitoringService', () => {
   });
 
   describe('tonnage5Day', () => {
-    it('merges TPA inbound and derives the reconciliation status per day', async () => {
+    it('merges the informational TPA weighbridge total per day (null when none)', async () => {
       repo.dailyTonnage.mockResolvedValue([
         { date: parseDateOnly('2026-06-01'), totalTonnageKg: 4000, haulCount: 3 },
         { date: parseDateOnly('2026-06-02'), totalTonnageKg: 5000, haulCount: 4 },
@@ -79,20 +79,8 @@ describe('MonitoringService', () => {
       const result = await service.tonnage5Day(RANGE);
 
       expect(result).toEqual([
-        {
-          date: '2026-06-01',
-          totalTonnageKg: 4000,
-          haulCount: 3,
-          tpaInboundKg: 4100,
-          reconciliationStatus: 'MATCHED',
-        },
-        {
-          date: '2026-06-02',
-          totalTonnageKg: 5000,
-          haulCount: 4,
-          tpaInboundKg: null,
-          reconciliationStatus: 'PENDING',
-        },
+        { date: '2026-06-01', totalTonnageKg: 4000, haulCount: 3, tpaInboundKg: 4100 },
+        { date: '2026-06-02', totalTonnageKg: 5000, haulCount: 4, tpaInboundKg: null },
       ]);
     });
   });
