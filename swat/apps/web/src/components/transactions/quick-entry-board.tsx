@@ -8,6 +8,7 @@ import { ProtectedAction } from '@/components/auth/protected-action';
 import { auditColumns, hiddenIdColumn } from '@/components/crud/crud-list-shell';
 import { RowActions } from '@/components/crud/row-actions';
 import { ActivityEditDialog } from '@/components/transactions/activity-edit-dialog';
+import { CctvTpaCell } from '@/components/transactions/cctv-tpa-cell';
 import {
   Button,
   Card,
@@ -75,6 +76,14 @@ const RECORD_PERMISSION: Record<ActivityKind, string> = {
   PICKUP: 'trip:record-pickup',
   DISPOSAL: 'trip:record-disposal',
   REFUEL: 'trip:record-fuel',
+};
+
+/** Label for the realization-time field/column, named per activity kind. */
+const TIME_LABEL: Record<ActivityKind, string> = {
+  POOL: 'Waktu Aktivitas',
+  PICKUP: 'Waktu Pengambilan',
+  DISPOSAL: 'Waktu Pembuangan',
+  REFUEL: 'Waktu Pengisian',
 };
 
 /** One flattened trip row of the day, enriched with its vehicle + driver. */
@@ -238,9 +247,16 @@ export function QuickEntryBoard({
             vehicles.length === 0 ||
             (sourceCodesByVehicle.get(h.vehicleId)?.includes(DINAS_SOURCE_CODE) ?? false),
         )
-        .map((h) => ({ value: h.vehicleId, label: h.vehiclePlate }))
+        // Label as "Nopol - Tipe - Model" so the picker shows what's being chosen.
+        .map((h) => {
+          const v = vehicleById.get(h.vehicleId);
+          const label = [h.vehiclePlate, v?.vehicleTypeName, v?.modelBrand]
+            .filter(Boolean)
+            .join(' - ');
+          return { value: h.vehicleId, label };
+        })
         .sort((a, b) => a.label.localeCompare(b.label)),
-    [day, poolVehicleIds, kind, vehicles.length, sourceCodesByVehicle],
+    [day, poolVehicleIds, kind, vehicles.length, sourceCodesByVehicle, vehicleById],
   );
 
   // Clear a selected vehicle that's no longer offered after the pool filter narrows.
@@ -340,7 +356,13 @@ export function QuickEntryBoard({
       cell: ({ row }) => <span className="tabular-nums">{num(row.original[key])}</span>,
     });
 
-    // Kind-specific middle columns (legacy wording).
+    // Vehicle Tipe / Model — shown on every kind, right after Nopol.
+    const vehicleCols: ColumnDef<ActivityRow, unknown>[] = [
+      textCol('Tipe', (r) => vehicleById.get(r.vehicleId)?.vehicleTypeName ?? ''),
+      textCol('Model', (r) => vehicleById.get(r.vehicleId)?.modelBrand ?? ''),
+    ];
+
+    // Kind-specific middle columns (legacy wording), after Pengemudi.
     const middle: ColumnDef<ActivityRow, unknown>[] =
       kind === 'POOL'
         ? [
@@ -350,11 +372,7 @@ export function QuickEntryBoard({
             textCol('Lokasi Pool', tripLocation),
           ]
         : kind === 'REFUEL'
-          ? [
-              textCol('Tipe', (r) => vehicleById.get(r.vehicleId)?.vehicleTypeName ?? ''),
-              textCol('Model', (r) => vehicleById.get(r.vehicleId)?.modelBrand ?? ''),
-              textCol('Bahan Bakar', (r) => vehicleById.get(r.vehicleId)?.fuelTypeName ?? ''),
-            ]
+          ? [textCol('Bahan Bakar', (r) => vehicleById.get(r.vehicleId)?.fuelTypeName ?? '')]
           : [textCol('TPS', tripLocation)];
 
     // Kind-specific measures (legacy wording).
@@ -364,7 +382,15 @@ export function QuickEntryBoard({
             measureCol('grossWeight', 'Berat Kotor'),
             measureCol('tareWeight', 'Berat Kosong'),
             measureCol('netWeight', 'Berat Bersih'),
-            textCol('CCTV TPA', (r) => r.cctvReference ?? ''),
+            {
+              id: 'CCTV TPA',
+              accessorFn: (r) => r.cctvReference ?? '',
+              header: 'CCTV TPA',
+              enableSorting: false,
+              enableColumnFilter: false,
+              meta: { label: 'CCTV TPA' },
+              cell: ({ row }) => <CctvTpaCell reference={row.original.cctvReference} />,
+            },
           ]
         : kind === 'REFUEL'
           ? [
@@ -431,8 +457,11 @@ export function QuickEntryBoard({
         meta: { label: 'Nopol' },
         cell: ({ row }) => <span className="font-mono">{row.original.vehiclePlate}</span>,
       },
+      ...vehicleCols,
       { accessorKey: 'driverName', header: 'Pengemudi', meta: { label: 'Pengemudi' } },
       ...middle,
+      ...measures,
+      ...odometer,
       {
         accessorKey: 'operationDate',
         header: 'Tanggal',
@@ -444,12 +473,10 @@ export function QuickEntryBoard({
       {
         id: 'time',
         accessorFn: (r) => r.actualTime ?? '',
-        header: 'Waktu',
-        meta: { label: 'Waktu' },
+        header: TIME_LABEL[kind],
+        meta: { label: TIME_LABEL[kind] },
         cell: ({ row }) => <span className="tabular-nums">{clock(row.original.actualTime)}</span>,
       },
-      ...odometer,
-      ...measures,
       {
         accessorKey: 'notes',
         header: 'Keterangan',
@@ -484,6 +511,8 @@ export function QuickEntryBoard({
     const head: ExportColumn<ActivityRow>[] = [
       { header: 'No.', value: (r) => r.seq, numeric: true },
       { header: 'Nopol', value: (r) => r.vehiclePlate },
+      { header: 'Tipe', value: (r) => vehicleById.get(r.vehicleId)?.vehicleTypeName ?? '' },
+      { header: 'Model', value: (r) => vehicleById.get(r.vehicleId)?.modelBrand ?? '' },
       { header: 'Pengemudi', value: (r) => r.driverName },
     ];
     const middle: ExportColumn<ActivityRow>[] =
@@ -497,8 +526,6 @@ export function QuickEntryBoard({
           ]
         : kind === 'REFUEL'
           ? [
-              { header: 'Tipe', value: (r) => vehicleById.get(r.vehicleId)?.vehicleTypeName ?? '' },
-              { header: 'Model', value: (r) => vehicleById.get(r.vehicleId)?.modelBrand ?? '' },
               {
                 header: 'Bahan Bakar',
                 value: (r) => vehicleById.get(r.vehicleId)?.fuelTypeName ?? '',
@@ -507,7 +534,7 @@ export function QuickEntryBoard({
           : [{ header: 'TPS', value: tripLocation }];
     const timing: ExportColumn<ActivityRow>[] = [
       { header: 'Tanggal', value: (r) => formatDateDisplay(r.operationDate) },
-      { header: 'Waktu', value: (r) => (r.actualTime ? formatTime(r.actualTime) : '') },
+      { header: TIME_LABEL[kind], value: (r) => (r.actualTime ? formatTime(r.actualTime) : '') },
     ];
     const odometer: ExportColumn<ActivityRow>[] =
       kind === 'DISPOSAL'
@@ -540,9 +567,9 @@ export function QuickEntryBoard({
     return [
       ...head,
       ...middle,
-      ...timing,
-      ...odometer,
       ...measures,
+      ...odometer,
+      ...timing,
       { header: 'Keterangan', value: (r) => r.notes ?? '' },
       { header: 'Status', value: (r) => r.status },
     ];
@@ -828,18 +855,19 @@ export function QuickEntryBoard({
                   Optional for the other kinds too. */}
               {kind !== 'DISPOSAL' ? (
                 <div className="space-y-1.5">
-                  <Label>Odometer (opsional)</Label>
+                  <Label>Odometer</Label>
                   <NumberInput
                     value={odometer}
                     onValueChange={(v) => setOdometer(Number.isNaN(v) ? '' : v)}
                     unit="km"
                     min={0}
+                    placeholder="Opsional"
                   />
                 </div>
               ) : null}
 
               <div className="space-y-1.5">
-                <Label required>Waktu Realisasi</Label>
+                <Label required>{TIME_LABEL[kind]}</Label>
                 <DateTimePicker
                   className="w-full"
                   disableFuture

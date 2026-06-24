@@ -122,7 +122,7 @@ export function AddTripDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Nama (opsional)</Label>
+            <Label>Nama</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}

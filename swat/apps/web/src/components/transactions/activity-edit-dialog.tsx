@@ -21,7 +21,7 @@ import { ApiError } from '@/lib/api-error';
 import { combineDateTimeWIB, nowTimeWIB, timeOfWIB } from '@/lib/dates';
 import { formatNumber } from '@/lib/format';
 import { type RecordTripInput, recordTrip } from '@/lib/transactions-api';
-import { type TripDto } from '@/lib/types/transactions';
+import { type RouteCategory, type TripDto } from '@/lib/types/transactions';
 
 export interface ActivityEditDialogProps {
   /** The recorded activity row to edit (null = closed). */
@@ -36,6 +36,15 @@ const TITLES: Record<string, string> = {
   REFUEL: 'Ubah Pengisian BBM',
   DEPART_POOL: 'Ubah Aktivitas Pool',
   RETURN_POOL: 'Ubah Aktivitas Pool',
+};
+
+/** Realization-time field label, named per activity kind (matches the grid). */
+const TIME_LABELS: Record<RouteCategory, string> = {
+  PICKUP: 'Waktu Pengambilan',
+  DISPOSAL: 'Waktu Pembuangan',
+  REFUEL: 'Waktu Pengisian',
+  DEPART_POOL: 'Waktu Aktivitas',
+  RETURN_POOL: 'Waktu Aktivitas',
 };
 
 /**
@@ -130,11 +139,6 @@ export function ActivityEditDialog({
         ) : null}
 
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label required>Waktu Realisasi</Label>
-            <TimePicker value={time} onValueChange={setTime} presets={false} />
-          </div>
-
           {isRefuel ? (
             <div className="space-y-1.5">
               <Label required>Jumlah Isi BBM</Label>
@@ -197,15 +201,21 @@ export function ActivityEditDialog({
           {/* Odometer — optional, omitted for disposal (sent as -1). */}
           {!isDisposal ? (
             <div className="space-y-1.5">
-              <Label>Odometer (opsional)</Label>
+              <Label>Odometer</Label>
               <NumberInput
                 value={odometer}
                 onValueChange={(v) => setOdometer(Number.isNaN(v) ? '' : v)}
                 unit="km"
                 min={0}
+                placeholder="Opsional"
               />
             </div>
           ) : null}
+
+          <div className="space-y-1.5">
+            <Label required>{TIME_LABELS[category]}</Label>
+            <TimePicker value={time} onValueChange={setTime} presets={false} />
+          </div>
 
           <div className="space-y-1.5">
             <Label>Keterangan</Label>
