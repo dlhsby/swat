@@ -683,9 +683,12 @@ const LEVY_MONTHS = 24;
 async function seedLevies(): Promise<void> {
   const rng = makeRng(20260610);
   const admin = await prisma.user.findUnique({ where: { username: 'admin' } });
-  // 24 monthly anchors (first-of-month) ending 2026-06, i.e. 2024-07 … 2026-06.
+  // 24 monthly anchors (first-of-month) ending in the run month, so the trend is
+  // always current (e.g. seeded in 2026-06 → 2024-07 … 2026-06).
+  const endMonth = SYNTHETIC_END.getUTCMonth();
+  const endYear = SYNTHETIC_END.getUTCFullYear();
   for (let m = 0; m < LEVY_MONTHS; m += 1) {
-    const date = dateOnly(2024, 6 + m, 1);
+    const date = dateOnly(endYear, endMonth - (LEVY_MONTHS - 1 - m), 1);
     for (const category of LEVY_CATEGORIES) {
       const existing = await prisma.levy.findFirst({
         where: { categoryName: category.name, date },
@@ -724,8 +727,17 @@ function dateOnly(year: number, monthIndex: number, day: number): Date {
   return new Date(Date.UTC(year, monthIndex, day));
 }
 
+/** Today as a UTC date-only anchor, so the demo window always ends on the run
+ *  date (the dashboards default to the last 7 days — a fixed past anchor would
+ *  leave that window empty). Determinism of the *values* comes from the seeded
+ *  RNG, which is independent of this date. */
+function todayUtc(): Date {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
 const SYNTHETIC_DAYS = 365;
-const SYNTHETIC_END = dateOnly(2026, 5, 8); // project "today"
+const SYNTHETIC_END = todayUtc(); // anchored to the run date so default views show data
 
 interface DemoVehicleRef {
   id: string;
@@ -906,6 +918,14 @@ async function seedDemoTransactions(fleet: DemoFleet): Promise<{ from: Date; to:
       for (let i = 0; i < tripCount; i += 1) {
         const netWeight = 2000 + Math.floor(rng() * 6000); // 2..8 ton
         vehicleNet += netWeight;
+        // Operational target-vs-realisasi (KM + time) for the Pengangkutan view.
+        // Derived deterministically from (offset, vi, i) — NO rng() calls — so the
+        // existing tuned tonnage/fuel/reconciliation distributions stay identical.
+        const targetTime = new Date(opDate);
+        targetTime.setUTCHours(6 + (i % 10), (vi * 7) % 60, 0, 0);
+        const actualTime = new Date(targetTime.getTime() + (((offset + i + vi) % 25) - 5) * 60_000);
+        const targetOdometer = 100_000 + (SYNTHETIC_DAYS - offset) * 45 + i * 14 + vi * 3;
+        const actualOdometer = targetOdometer + ((vi + i) % 9);
         trips.push({
           haulAssignmentId: assignmentId,
           routeId: disposalRouteId,
@@ -916,6 +936,10 @@ async function seedDemoTransactions(fleet: DemoFleet): Promise<{ from: Date; to:
           grossWeight: v.tareWeight + netWeight,
           netWeight,
           wasteVolume: 6 + Math.floor(rng() * 6),
+          targetTime,
+          actualTime,
+          targetOdometer,
+          actualOdometer,
         });
       }
 

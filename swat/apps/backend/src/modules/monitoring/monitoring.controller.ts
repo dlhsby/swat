@@ -18,6 +18,7 @@ import {
   type LevyTrendRow,
   type MonthlyTonnageRow,
   type RouteActivityRow,
+  type RouteMapResponse,
   type TonnageBySiteRow,
   type TonnageBySourceRow,
   type TripSummaryRow,
@@ -82,6 +83,12 @@ export class MonitoringController {
     @Query() query: TripSummaryQueryDto,
   ): Promise<{ data: TripSummaryRow[]; meta: PaginationMeta }> {
     return this.monitoring.tripSummary(query);
+  }
+
+  @Get('route-map')
+  @ApiOperation({ summary: 'Active routes + site coordinates for the hauling map' })
+  routeMap(@Query() query: DateRangeQueryDto): Promise<RouteMapResponse> {
+    return this.monitoring.routeMap(query);
   }
 
   @Get('kpi-overview')

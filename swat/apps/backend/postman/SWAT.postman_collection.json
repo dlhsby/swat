@@ -3752,6 +3752,39 @@
           }
         },
         {
+          "name": "Route Map",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/monitoring/route-map?dateFrom=2025-06-09&dateTo=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["monitoring", "route-map"],
+              "query": [
+                {
+                  "key": "dateFrom",
+                  "value": "2025-06-09"
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2026-06-08"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Tonnage (5-day)",
           "event": [
             {

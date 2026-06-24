@@ -20,6 +20,7 @@ import {
   type LevyTrendRow,
   type MonthlyTonnageRow,
   type RouteActivityRow,
+  type RouteMapResponse,
   type TonnageBySiteRow,
   type TonnageBySourceRow,
   type TripSummaryRow,
@@ -151,7 +152,7 @@ export class MonitoringService {
     const cacheKey = this.key(
       'trip-summary',
       query,
-      `${query.status ?? 'ALL'}:${query.routeId ?? 'ALL'}:${query.page}:${query.limit}`,
+      `${query.status ?? 'ALL'}:${query.routeId ?? 'ALL'}:${query.vehicleId ?? 'ALL'}:${query.driverId ?? 'ALL'}:${query.page}:${query.limit}`,
     );
     return this.cached(cacheKey, TTL_TRIPS, async () => {
       const { rows, total } = await this.repo.tripSummary({
@@ -159,11 +160,20 @@ export class MonitoringService {
         to,
         status: query.status,
         routeId: query.routeId,
+        vehicleId: query.vehicleId,
+        driverId: query.driverId,
         page: query.page,
         limit: query.limit,
       });
       return { data: rows, meta: { total, page: query.page, limit: query.limit } };
     });
+  }
+
+  async routeMap(query: DateRangeQueryDto): Promise<RouteMapResponse> {
+    const { monthFrom, monthTo } = this.monthRange(query);
+    return this.cached(this.key('route-map', query), TTL_DEFAULT, () =>
+      this.repo.routeMap(monthFrom, monthTo),
+    );
   }
 
   async kpiOverview(query: DateRangeQueryDto): Promise<KpiOverview> {

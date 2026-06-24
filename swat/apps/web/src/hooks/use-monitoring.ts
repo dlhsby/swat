@@ -2,7 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { type DateRange, type SourceGroup, monitoringApi } from '@/lib/monitoring-api';
+import {
+  type DateRange,
+  type SourceGroup,
+  type TripQuery,
+  monitoringApi,
+} from '@/lib/monitoring-api';
 
 /**
  * TanStack Query hooks for the monitoring dashboards. Query keys are namespaced
@@ -33,6 +38,13 @@ export function useTonnageBySource(range: DateRange, group?: SourceGroup) {
   });
 }
 
+export function useTonnageMonthly(range: DateRange) {
+  return useQuery({
+    queryKey: [KEY, 'tonnage-monthly', range],
+    queryFn: () => monitoringApi.tonnageMonthly(range),
+  });
+}
+
 export function useTonnageBySite(range: DateRange) {
   return useQuery({
     queryKey: [KEY, 'tonnage-by-site', range],
@@ -40,10 +52,17 @@ export function useTonnageBySite(range: DateRange) {
   });
 }
 
-export function useFuelConsumption(range: DateRange) {
+export function useFuelConsumption(range: DateRange, vehicleId?: string) {
   return useQuery({
-    queryKey: [KEY, 'fuel-consumption', range],
-    queryFn: () => monitoringApi.fuelConsumption(range),
+    queryKey: [KEY, 'fuel-consumption', range, vehicleId ?? 'ALL'],
+    queryFn: () => monitoringApi.fuelConsumption(range, vehicleId),
+  });
+}
+
+export function useFuelByType(range: DateRange) {
+  return useQuery({
+    queryKey: [KEY, 'fuel-by-type', range],
+    queryFn: () => monitoringApi.fuelByType(range),
   });
 }
 
@@ -51,6 +70,20 @@ export function useRoutesActive(range: DateRange) {
   return useQuery({
     queryKey: [KEY, 'routes-active', range],
     queryFn: () => monitoringApi.routesActive(range),
+  });
+}
+
+export function useRouteMap(range: DateRange) {
+  return useQuery({
+    queryKey: [KEY, 'route-map', range],
+    queryFn: () => monitoringApi.routeMap(range),
+  });
+}
+
+export function useTripSummary(range: DateRange, query: TripQuery = {}) {
+  return useQuery({
+    queryKey: [KEY, 'trip-summary', range, query],
+    queryFn: () => monitoringApi.tripSummary(range, query),
   });
 }
 

@@ -68,8 +68,43 @@ export interface TripSummaryRow {
   readonly name: string;
   readonly status: string;
   readonly routeId: string | null;
+  /** `Origin → Destination` site names, or null when the trip has no route. */
+  readonly routeName: string | null;
   readonly netWeightKg: number | null;
   readonly plateNumber: string;
+  /** Crew: the assigned driver's name. */
+  readonly driverName: string;
+  readonly targetOdometer: number;
+  readonly actualOdometer: number;
+  /** ISO timestamps (target vs realisasi), or null when unset. */
+  readonly targetTime: string | null;
+  readonly actualTime: string | null;
+  readonly fuelApprovedLiters: number | null;
+  readonly fuelRequestedLiters: number | null;
+}
+
+/** A site with usable coordinates, for the Pengangkutan map markers. */
+export interface RouteMapSite {
+  readonly id: string;
+  readonly name: string;
+  readonly type: string;
+  readonly latitude: number;
+  readonly longitude: number;
+}
+
+/** An active route edge (≥1 trip) linking two sites, weighted by trip count. */
+export interface RouteMapEdge {
+  readonly routeId: string;
+  readonly category: string;
+  readonly originSiteId: string;
+  readonly destinationSiteId: string;
+  readonly tripCount: number;
+}
+
+/** Map payload: distinct coordinate-bearing sites + the active route edges between them. */
+export interface RouteMapResponse {
+  readonly sites: RouteMapSite[];
+  readonly edges: RouteMapEdge[];
 }
 
 export interface LevySummaryRow {

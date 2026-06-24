@@ -202,7 +202,8 @@ See [`07-api-spec.md`](../07-api-spec.md) for endpoint paths and response format
 | GET | `/api/v1/monitoring/fuel-consumption` | `monitoring:read` | Σ fuel (requested, approved) per vehicle, date range |
 | GET | `/api/v1/monitoring/fuel-by-type` | `monitoring:read` | Σ fuel by Fuel.name, date range |
 | GET | `/api/v1/monitoring/routes-active` | `monitoring:read` | List of routes with ≥1 trip today |
-| GET | `/api/v1/monitoring/trip-summary` | `monitoring:read` | Paginated trip list, filterable by date/status/route |
+| GET | `/api/v1/monitoring/route-map` | `monitoring:read` | Active route edges + coordinate-bearing sites for the Pengangkutan map (`{sites, edges}`) |
+| GET | `/api/v1/monitoring/trip-summary` | `monitoring:read` | Paginated operational trip list (crew/vehicle/route + KM & time target-vs-actual), filterable by date/status/route/vehicle/driver |
 | GET | `/api/v1/monitoring/levy-summary` | `monitoring:read` | Σ levy by category, date range |
 | GET | `/api/v1/monitoring/levy-trend` | `monitoring:read` | Σ levy per calendar month, date range |
 | GET | `/api/v1/monitoring/kpi-overview` | `monitoring:read` | Combined KPI object: 5-day tonnage, monthly trend, fuel, active vehicles, completed hauls |
@@ -214,7 +215,8 @@ See [`07-api-spec.md`](../07-api-spec.md) for endpoint paths and response format
 - `?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD` — filter by date range (required for most)
 - `?wasteSourceId=<id>` or `?wasteSourceCode=<code>` — filter by source
 - `?siteId=<id>` — filter by TPS or TPA
-- `?vehicleId=<id>` — filter by vehicle
+- `?vehicleId=<id>` — filter by vehicle (fuel-consumption, trip-summary)
+- `?driverId=<id>` — filter by driver/crew (trip-summary)
 - `?page=1&limit=50` — pagination (for trip-summary)
 
 **Response shape (example tonnage-5day):**

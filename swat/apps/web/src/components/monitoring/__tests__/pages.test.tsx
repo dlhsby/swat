@@ -1,19 +1,24 @@
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import FuelPage from '@/app/[locale]/(app)/monitoring/fuel/page';
+import HaulingPage from '@/app/[locale]/(app)/monitoring/hauling/page';
 import LevyPage from '@/app/[locale]/(app)/monitoring/levy/page';
-import RoutesPage from '@/app/[locale]/(app)/monitoring/routes/page';
 import VolumePage from '@/app/[locale]/(app)/monitoring/volume/page';
 import type * as MonitoringApi from '@/lib/monitoring-api';
 import { renderWithProviders } from '@/test-utils/render';
 
 const api = vi.hoisted(() => ({
   tonnage5Day: vi.fn(),
+  tonnageMonthly: vi.fn(),
   tonnageBySource: vi.fn(),
   tonnageBySite: vi.fn(),
   fuelConsumption: vi.fn(),
+  fuelByType: vi.fn(),
   routesActive: vi.fn(),
+  routeMap: vi.fn(),
+  tripSummary: vi.fn(),
   levySummary: vi.fn(),
   levyTrend: vi.fn(),
   kpiOverview: vi.fn(),
@@ -24,8 +29,23 @@ vi.mock('@/lib/monitoring-api', async (importOriginal) => {
   return { ...actual, monitoringApi: api };
 });
 
+// The embedded ExportMenu is permission-gated (usePermissions → useAuth). These
+// page tests render outside an AuthProvider, so stub the permission hook to grant
+// access — the export control is exercised separately.
+vi.mock('@/hooks/use-permissions', () => ({
+  usePermissions: () => ({
+    permissions: [],
+    can: () => true,
+    canAny: () => true,
+    canAll: () => true,
+  }),
+}));
+
 beforeEach(() => {
   Object.values(api).forEach((fn) => fn.mockReset().mockResolvedValue([]));
+  // Object-shaped endpoints need their own default (not the [] array default).
+  api.routeMap.mockResolvedValue({ sites: [], edges: [] });
+  api.tripSummary.mockResolvedValue({ data: [], meta: { total: 0, page: 1, limit: 100 } });
 });
 
 describe('VolumePage', () => {
@@ -56,13 +76,17 @@ describe('VolumePage', () => {
 
     renderWithProviders(<VolumePage />);
 
+    // Summary tab (default): donut legend, reconciliation badges, month note.
     // DataTable renders a desktop table + a mobile card view, so cell text appears
     // more than once — assert presence, not uniqueness.
-    expect((await screen.findAllByText('TPS Mawar')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Pasar').length).toBeGreaterThan(0); // donut legend
+    expect((await screen.findAllByText('Pasar')).length).toBeGreaterThan(0); // donut legend
     expect(screen.getAllByText('Sesuai').length).toBeGreaterThan(0); // MATCHED badge
     expect(screen.getAllByText('Menunggu').length).toBeGreaterThan(0); // PENDING badge
     expect(screen.getAllByText(/diagregasi per bulan/i).length).toBeGreaterThan(0); // month note
+
+    // The per-site recap table lives under the "Per Sumber & TPS" tab.
+    await userEvent.click(screen.getByRole('tab', { name: /per sumber/i }));
+    expect((await screen.findAllByText('TPS Mawar')).length).toBeGreaterThan(0);
   });
 });
 
@@ -87,8 +111,8 @@ describe('FuelPage', () => {
   });
 });
 
-describe('RoutesPage', () => {
-  it('renders the active-routes table and the monthly-grain note', async () => {
+describe('HaulingPage', () => {
+  it('renders KPIs + tabs, and the route recap table once its tab is active', async () => {
     api.routesActive.mockResolvedValue([
       {
         routeId: 1,
@@ -100,10 +124,19 @@ describe('RoutesPage', () => {
       },
     ]);
 
-    renderWithProviders(<RoutesPage />);
+    renderWithProviders(<HaulingPage />);
 
+    // KPI + the three domain tabs render on the default (map) view.
+    expect(await screen.findByText('Rute Aktif')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /peta/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /operasional/i })).toBeInTheDocument();
+    const recapTab = screen.getByRole('tab', { name: /rekap/i });
+    expect(recapTab).toBeInTheDocument();
+
+    // Switch to the recap tab; the active-routes table + monthly note appear.
+    await userEvent.click(recapTab);
     expect((await screen.findAllByText('TPS Mawar → TPA Benowo')).length).toBeGreaterThan(0);
-    expect(screen.getByText(/diagregasi per bulan/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/diagregasi per bulan/i).length).toBeGreaterThan(0);
   });
 });
 

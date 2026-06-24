@@ -24,6 +24,13 @@ export interface DailyTonnageRow {
   readonly reconciliationStatus: ReconciliationStatus;
 }
 
+export interface MonthlyTonnageRow {
+  /** Calendar month as `YYYY-MM`. */
+  readonly month: string;
+  readonly totalTonnageKg: number;
+  readonly haulCount: number;
+}
+
 export interface TonnageBySourceRow {
   readonly wasteSourceId: string;
   readonly code: string;
@@ -49,6 +56,13 @@ export interface FuelConsumptionRow {
   readonly flag: FuelVarianceFlag;
 }
 
+export interface FuelByTypeRow {
+  readonly fuelId: string;
+  readonly fuelName: string;
+  readonly totalApprovedLiters: number;
+  readonly totalRequestedLiters: number;
+}
+
 export interface RouteActivityRow {
   readonly routeId: string;
   readonly category: string;
@@ -56,6 +70,61 @@ export interface RouteActivityRow {
   readonly destinationSiteName: string;
   readonly distanceKm: number;
   readonly tripCount: number;
+}
+
+/** One operational trip row for the Pengangkutan table (crew + KM/time realisasi). */
+export interface TripSummaryRow {
+  readonly id: string;
+  readonly operationDate: string;
+  readonly name: string;
+  readonly status: string;
+  readonly routeId: string | null;
+  readonly routeName: string | null;
+  readonly netWeightKg: number | null;
+  readonly plateNumber: string;
+  readonly driverName: string;
+  readonly targetOdometer: number;
+  readonly actualOdometer: number;
+  readonly targetTime: string | null;
+  readonly actualTime: string | null;
+  readonly fuelApprovedLiters: number | null;
+  readonly fuelRequestedLiters: number | null;
+}
+
+export interface PaginationMeta {
+  readonly total: number;
+  readonly page: number;
+  readonly limit: number;
+}
+
+export interface RouteMapSite {
+  readonly id: string;
+  readonly name: string;
+  readonly type: string;
+  readonly latitude: number;
+  readonly longitude: number;
+}
+
+export interface RouteMapEdge {
+  readonly routeId: string;
+  readonly category: string;
+  readonly originSiteId: string;
+  readonly destinationSiteId: string;
+  readonly tripCount: number;
+}
+
+export interface RouteMapResponse {
+  readonly sites: RouteMapSite[];
+  readonly edges: RouteMapEdge[];
+}
+
+/** Optional filters for the operational trip query. */
+export interface TripQuery {
+  readonly status?: string;
+  readonly vehicleId?: string;
+  readonly driverId?: string;
+  readonly page?: number;
+  readonly limit?: number;
 }
 
 export interface LevySummaryRow {
@@ -102,14 +171,37 @@ export const monitoringApi = {
   tonnageBySource: (range: DateRange, group?: SourceGroup): Promise<TonnageBySourceRow[]> =>
     apiClient.get(`/monitoring/tonnage-by-source?${monitoringQuery(range, { group })}`),
 
+  tonnageMonthly: (range: DateRange): Promise<MonthlyTonnageRow[]> =>
+    apiClient.get(`/monitoring/tonnage-monthly?${monitoringQuery(range)}`),
+
   tonnageBySite: (range: DateRange): Promise<TonnageBySiteRow[]> =>
     apiClient.get(`/monitoring/tonnage-by-site?${monitoringQuery(range)}`),
 
-  fuelConsumption: (range: DateRange): Promise<FuelConsumptionRow[]> =>
-    apiClient.get(`/monitoring/fuel-consumption?${monitoringQuery(range)}`),
+  fuelConsumption: (range: DateRange, vehicleId?: string): Promise<FuelConsumptionRow[]> =>
+    apiClient.get(`/monitoring/fuel-consumption?${monitoringQuery(range, { vehicleId })}`),
+
+  fuelByType: (range: DateRange): Promise<FuelByTypeRow[]> =>
+    apiClient.get(`/monitoring/fuel-by-type?${monitoringQuery(range)}`),
 
   routesActive: (range: DateRange): Promise<RouteActivityRow[]> =>
     apiClient.get(`/monitoring/routes-active?${monitoringQuery(range)}`),
+
+  routeMap: (range: DateRange): Promise<RouteMapResponse> =>
+    apiClient.get(`/monitoring/route-map?${monitoringQuery(range)}`),
+
+  tripSummary: (
+    range: DateRange,
+    query: TripQuery = {},
+  ): Promise<{ data: TripSummaryRow[]; meta: PaginationMeta }> =>
+    apiClient.get(
+      `/monitoring/trip-summary?${monitoringQuery(range, {
+        status: query.status,
+        vehicleId: query.vehicleId,
+        driverId: query.driverId,
+        page: String(query.page ?? 1),
+        limit: String(query.limit ?? 100),
+      })}`,
+    ),
 
   levySummary: (range: DateRange): Promise<LevySummaryRow[]> =>
     apiClient.get(`/monitoring/levy-summary?${monitoringQuery(range)}`),

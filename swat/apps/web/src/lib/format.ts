@@ -92,9 +92,10 @@ export function formatTonnage(ton: number): string {
   return `${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(ton)} ton`;
 }
 
-/** Plain integer with id-ID grouping (e.g. `1.250`). */
+/** Plain integer with id-ID grouping (e.g. `1.250`). Non-finite input (NaN from
+ *  an empty-range division, Infinity) renders as `0` rather than a raw "NaN". */
 export function formatNumber(value: number): string {
-  return integerFormatter.format(value);
+  return integerFormatter.format(Number.isFinite(value) ? value : 0);
 }
 
 /** Initials for an avatar fallback — first letters of the first two words. */

@@ -3,7 +3,7 @@ import { Prisma, type TripStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
-import { type TripSummaryRow } from './monitoring.types';
+import { type RouteMapEdge, type RouteMapSite, type TripSummaryRow } from './monitoring.types';
 
 /** Source-group filter from the Semua / Non-Swasta / Swasta toggle (by `code`). */
 export type SourceGroupFilter = 'NON_SWASTA' | 'SWASTA' | undefined;
@@ -35,7 +35,7 @@ export class MonitoringRepository {
     const rows = await this.prisma.$queryRaw<
       Array<{ date: Date; amount: bigint; haulCount: number }>
     >`
-      SELECT "date", "amount", "haul_count"
+      SELECT "date", "amount", "haul_count" AS "haulCount"
       FROM "daily_tonnage"
       WHERE "date" >= ${from}::date AND "date" <= ${to}::date
       ORDER BY "date" ASC
@@ -364,19 +364,30 @@ export class MonitoringRepository {
     }));
   }
 
-  /** Paginated trip rows from the partitioned Trip table, pruned by operationDate. */
+  /**
+   * Paginated trip rows from the partitioned Trip table, pruned by operationDate.
+   * Carries the operational detail the Pengangkutan view needs — crew (driver),
+   * vehicle, route, and KM/time target-vs-realisasi. Vehicle/driver filters reach
+   * through the HaulAssignment → Haul relation.
+   */
   async tripSummary(args: {
     from: Date;
     to: Date;
     status: TripStatus | undefined;
     routeId: string | undefined;
+    vehicleId: string | undefined;
+    driverId: string | undefined;
     page: number;
     limit: number;
   }): Promise<{ rows: TripSummaryRow[]; total: number }> {
+    const haulAssignment: Prisma.HaulAssignmentWhereInput = {};
+    if (args.driverId) haulAssignment.driverId = args.driverId;
+    if (args.vehicleId) haulAssignment.haul = { is: { vehicleId: args.vehicleId } };
     const where: Prisma.TripWhereInput = {
       operationDate: { gte: args.from, lte: args.to },
       ...(args.status ? { status: args.status } : {}),
       ...(args.routeId ? { routeId: args.routeId } : {}),
+      ...(Object.keys(haulAssignment).length > 0 ? { haulAssignment } : {}),
     };
     const [records, total] = await Promise.all([
       this.prisma.trip.findMany({
@@ -391,8 +402,23 @@ export class MonitoringRepository {
           status: true,
           routeId: true,
           netWeight: true,
+          targetOdometer: true,
+          actualOdometer: true,
+          targetTime: true,
+          actualTime: true,
+          fuelApprovedLiters: true,
+          fuelRequestedLiters: true,
+          route: {
+            select: {
+              originSite: { select: { name: true } },
+              destinationSite: { select: { name: true } },
+            },
+          },
           haulAssignment: {
-            select: { haul: { select: { vehicle: { select: { plateNumber: true } } } } },
+            select: {
+              driver: { select: { name: true } },
+              haul: { select: { vehicle: { select: { plateNumber: true } } } },
+            },
           },
         },
       }),
@@ -404,9 +430,93 @@ export class MonitoringRepository {
       name: trip.name,
       status: trip.status,
       routeId: trip.routeId,
+      routeName: trip.route
+        ? `${trip.route.originSite.name} → ${trip.route.destinationSite.name}`
+        : null,
       netWeightKg: trip.netWeight,
       plateNumber: trip.haulAssignment.haul.vehicle.plateNumber,
+      driverName: trip.haulAssignment.driver.name,
+      targetOdometer: trip.targetOdometer,
+      actualOdometer: trip.actualOdometer,
+      targetTime: trip.targetTime ? trip.targetTime.toISOString() : null,
+      actualTime: trip.actualTime ? trip.actualTime.toISOString() : null,
+      fuelApprovedLiters: trip.fuelApprovedLiters === null ? null : Number(trip.fuelApprovedLiters),
+      fuelRequestedLiters:
+        trip.fuelRequestedLiters === null ? null : Number(trip.fuelRequestedLiters),
     }));
     return { rows, total };
+  }
+
+  /**
+   * Active route edges (≥1 trip) over the months intersecting `[monthFrom, monthTo]`,
+   * with the distinct coordinate-bearing sites they connect — the data the
+   * Pengangkutan Google-Maps view plots (markers + origin→destination polylines).
+   * Sites without coordinates are dropped (the map can't place them).
+   */
+  async routeMap(
+    monthFrom: Date,
+    monthTo: Date,
+  ): Promise<{ sites: RouteMapSite[]; edges: RouteMapEdge[] }> {
+    const edgeRows = await this.prisma.$queryRaw<
+      Array<{
+        routeId: string;
+        category: string;
+        originSiteId: string;
+        destinationSiteId: string;
+        trips: bigint;
+      }>
+    >`
+      SELECT r."id"                  AS "routeId",
+             r."category"::text      AS "category",
+             r."origin_site_id"      AS "originSiteId",
+             r."destination_site_id" AS "destinationSiteId",
+             COALESCE(SUM(m."trip_count"), 0)::bigint AS "trips"
+      FROM "monthly_route_activity" m
+      JOIN "route" r ON r."id" = m."route_id"
+      WHERE m."month" >= ${monthFrom}::date AND m."month" <= ${monthTo}::date
+      GROUP BY r."id", r."category", r."origin_site_id", r."destination_site_id"
+      HAVING SUM(m."trip_count") > 0
+      ORDER BY "trips" DESC
+    `;
+    const edges: RouteMapEdge[] = edgeRows.map((row) => ({
+      routeId: row.routeId,
+      category: row.category,
+      originSiteId: row.originSiteId,
+      destinationSiteId: row.destinationSiteId,
+      tripCount: Number(row.trips),
+    }));
+
+    const siteIds = [
+      ...new Set(edges.flatMap((edge) => [edge.originSiteId, edge.destinationSiteId])),
+    ];
+    if (siteIds.length === 0) {
+      return { sites: [], edges };
+    }
+    const siteRows = await this.prisma.$queryRaw<
+      Array<{ id: string; name: string; type: string; latitude: number; longitude: number }>
+    >`
+      SELECT "id",
+             "name",
+             "type"::text          AS "type",
+             "latitude"::float8    AS "latitude",
+             "longitude"::float8   AS "longitude"
+      FROM "site"
+      WHERE "id"::text IN (${Prisma.join(siteIds)})
+        AND "latitude" IS NOT NULL
+        AND "longitude" IS NOT NULL
+    `;
+    const sites: RouteMapSite[] = siteRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      type: row.type,
+      latitude: row.latitude,
+      longitude: row.longitude,
+    }));
+    // Keep only edges whose both endpoints have plottable coordinates.
+    const placeable = new Set(sites.map((site) => site.id));
+    const plottableEdges = edges.filter(
+      (edge) => placeable.has(edge.originSiteId) && placeable.has(edge.destinationSiteId),
+    );
+    return { sites, edges: plottableEdges };
   }
 }

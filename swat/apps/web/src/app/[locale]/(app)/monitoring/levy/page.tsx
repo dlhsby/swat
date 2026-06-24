@@ -14,6 +14,7 @@ import { ChartCard } from '@/components/monitoring/chart-card';
 import { LevyByCategory } from '@/components/monitoring/charts/levy-by-category';
 import { LevyTrend } from '@/components/monitoring/charts/levy-trend';
 import { DateRangeControl } from '@/components/monitoring/date-range-control';
+import { ExportMenu } from '@/components/monitoring/export-menu';
 import { PageHead } from '@/components/shell/page-head';
 import {
   EmptyState,
@@ -64,7 +65,9 @@ function ChartState({
 
 function SummaryTab(): JSX.Element {
   const t = useTranslations('monitoring.levy');
-  const { range, setRange, today } = useMonitoringRange();
+  // Levy is recorded monthly (first-of-month), so a 7-day window is usually
+  // empty — default to year-to-date so the summary + trend have data.
+  const { range, setRange, today } = useMonitoringRange('ytd');
   const summary = useLevySummary(range);
   const trend = useLevyTrend(range);
 
@@ -74,7 +77,10 @@ function SummaryTab(): JSX.Element {
 
   return (
     <div className="space-y-4">
-      <DateRangeControl value={range} today={today} onChange={setRange} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <DateRangeControl value={range} today={today} onChange={setRange} />
+        <ExportMenu type="levy" range={range} />
+      </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard

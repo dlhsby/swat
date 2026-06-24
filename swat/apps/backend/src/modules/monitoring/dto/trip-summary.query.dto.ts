@@ -25,4 +25,14 @@ export class TripSummaryQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID(undefined, { message: 'Route id harus berupa UUID' })
   routeId?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by vehicle id (UUID)' })
+  @IsOptional()
+  @IsUUID(undefined, { message: 'Vehicle id harus berupa UUID' })
+  vehicleId?: string;
+
+  @ApiPropertyOptional({ description: 'Filter by driver id (UUID)' })
+  @IsOptional()
+  @IsUUID(undefined, { message: 'Driver id harus berupa UUID' })
+  driverId?: string;
 }

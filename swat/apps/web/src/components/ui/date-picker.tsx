@@ -2,7 +2,7 @@
 
 import { format, isValid, parse } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/lib/cn';
@@ -21,6 +21,8 @@ export interface DatePickerProps {
   className?: string;
   /** Disallow any date after today (calendar greys them out; typed dates revert). */
   disableFuture?: boolean;
+  /** Show prev/next-day stepper buttons flanking the field (off by default). */
+  nav?: boolean;
   /** Form-control wiring (id + aria) forwarded onto the input. */
   id?: string;
   'aria-describedby'?: string;
@@ -73,6 +75,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
     error,
     className,
     disableFuture,
+    nav = false,
     id: controlId,
     'aria-describedby': ariaDescribedBy,
     'aria-invalid': ariaInvalid,
@@ -84,6 +87,17 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
   const [focused, setFocused] = useState(false);
   const selected = parseIso(value);
   const todayIso = format(new Date(), 'yyyy-MM-dd');
+
+  /** Step the value by ±1 day (UTC-anchored). Next is clamped under disableFuture. */
+  const step = (delta: number): void => {
+    if (!value) return;
+    const [y, m, d] = value.split('-').map(Number);
+    if (!y || !m || !d) return;
+    const next = new Date(Date.UTC(y, m - 1, d + delta)).toISOString().slice(0, 10);
+    if (delta > 0 && disableFuture && next > todayIso) return;
+    onValueChange?.(next);
+  };
+  const canStepNext = !!value && !(disableFuture && value >= todayIso);
 
   useEffect(() => {
     if (!focused) setText(toDisplay(value));
@@ -104,45 +118,76 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
     else setText(toDisplay(value));
   };
 
+  const stepButton =
+    'inline-flex h-10 w-9 shrink-0 items-center justify-center rounded-base border border-neutral-300 text-neutral-500 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40';
+
+  const field = (
+    <PopoverAnchor asChild>
+      <div ref={anchorRef} className="relative flex-1">
+        <Input
+          ref={ref}
+          id={controlId}
+          type="text"
+          inputMode="numeric"
+          autoComplete="off"
+          placeholder={placeholder}
+          disabled={disabled}
+          error={error}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={error || ariaInvalid || undefined}
+          value={text}
+          onFocus={() => {
+            setFocused(true);
+            setOpen(true);
+          }}
+          onChange={(e) => setText(maskDate(e.target.value))}
+          onBlur={() => {
+            setFocused(false);
+            commit();
+          }}
+          className={cn('pr-9', className)}
+        />
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            aria-label="Pilih tanggal"
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500 hover:text-neutral-700 disabled:cursor-not-allowed disabled:text-neutral-300"
+          >
+            <CalendarIcon className="h-4 w-4" aria-hidden />
+          </button>
+        </PopoverTrigger>
+      </div>
+    </PopoverAnchor>
+  );
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverAnchor asChild>
-        <div ref={anchorRef} className="relative">
-          <Input
-            ref={ref}
-            id={controlId}
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder={placeholder}
-            disabled={disabled}
-            error={error}
-            aria-describedby={ariaDescribedBy}
-            aria-invalid={error || ariaInvalid || undefined}
-            value={text}
-            onFocus={() => {
-              setFocused(true);
-              setOpen(true);
-            }}
-            onChange={(e) => setText(maskDate(e.target.value))}
-            onBlur={() => {
-              setFocused(false);
-              commit();
-            }}
-            className={cn('pr-9', className)}
-          />
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              disabled={disabled}
-              aria-label="Pilih tanggal"
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500 hover:text-neutral-700 disabled:cursor-not-allowed disabled:text-neutral-300"
-            >
-              <CalendarIcon className="h-4 w-4" aria-hidden />
-            </button>
-          </PopoverTrigger>
+      {nav ? (
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className={stepButton}
+            aria-label="Hari sebelumnya"
+            disabled={disabled || !value}
+            onClick={() => step(-1)}
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          </button>
+          {field}
+          <button
+            type="button"
+            className={stepButton}
+            aria-label="Hari berikutnya"
+            disabled={disabled || !canStepNext}
+            onClick={() => step(1)}
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
         </div>
-      </PopoverAnchor>
+      ) : (
+        field
+      )}
       <PopoverContent
         align="start"
         className="w-auto p-0"
