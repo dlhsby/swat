@@ -187,7 +187,18 @@
     "colVehicles": "Vehicles",
     "colTonnage": "Tonnage",
     "viewBoard": "View Board",
-    "emptyDays": "No schedule yet. Start with \"Create Today's Schedule\"."
+    "emptyDays": "No schedule yet. Start with \"Create Today's Schedule\".",
+    "monitoringSummary": "Monitoring Summary",
+    "monitoringSummarySub": "Month-to-date aggregates across all domains.",
+    "kpiTonnageMonth": "Tonnage This Month",
+    "kpiFuelMonth": "Fuel Approved This Month",
+    "kpiVehiclesMonth": "Vehicles in Operation",
+    "kpiLevyMonth": "Levy This Month",
+    "chartTonnageWeek": "Tonnage Trend — 7 Days",
+    "chartSourceMonth": "Composition by Source — This Month",
+    "viewAll": "View all",
+    "openMonitoring": "Open monitoring",
+    "emptyChart": "No data yet."
   },
   "monitoring": {
     "range": {

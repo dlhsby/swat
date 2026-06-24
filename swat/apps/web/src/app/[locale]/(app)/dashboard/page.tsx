@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
+import { MonitoringSummary } from '@/components/dashboard/monitoring-summary';
 import { PageHead } from '@/components/shell/page-head';
 import {
   Alert,
@@ -16,6 +17,7 @@ import {
   StatusPill,
   notify,
 } from '@/components/ui';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useRouter } from '@/i18n/navigation';
 import { ApiError } from '@/lib/api-error';
 import { cn } from '@/lib/cn';
@@ -48,6 +50,7 @@ export default function DashboardPage(): JSX.Element {
   const t = useTranslations('dashboard');
   const { user } = useAuth();
   const router = useRouter();
+  const { can } = usePermissions();
 
   const [day, setDay] = useState<TransactionDayDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -201,6 +204,10 @@ export default function DashboardPage(): JSX.Element {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cross-domain monitoring summary (month-to-date), gated by monitoring:read.
+          Mounted conditionally so its queries don't run for users without access. */}
+      {can('monitoring:read') ? <MonitoringSummary /> : null}
     </>
   );
 }

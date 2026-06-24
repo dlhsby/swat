@@ -187,7 +187,18 @@
     "colVehicles": "Kendaraan",
     "colTonnage": "Tonase",
     "viewBoard": "Lihat Angkut Sampah",
-    "emptyDays": "Belum ada jadwal. Mulai dengan \"Buat Jadwal Hari Ini\"."
+    "emptyDays": "Belum ada jadwal. Mulai dengan \"Buat Jadwal Hari Ini\".",
+    "monitoringSummary": "Ringkasan Pemantauan",
+    "monitoringSummarySub": "Agregat bulan ini di seluruh domain.",
+    "kpiTonnageMonth": "Tonase Bulan Ini",
+    "kpiFuelMonth": "BBM Disetujui Bulan Ini",
+    "kpiVehiclesMonth": "Kendaraan Beroperasi",
+    "kpiLevyMonth": "Retribusi Bulan Ini",
+    "chartTonnageWeek": "Tren Tonase — 7 Hari",
+    "chartSourceMonth": "Komposisi per Sumber — Bulan Ini",
+    "viewAll": "Lihat semua",
+    "openMonitoring": "Buka pemantauan",
+    "emptyChart": "Belum ada data."
   },
   "monitoring": {
     "range": {
