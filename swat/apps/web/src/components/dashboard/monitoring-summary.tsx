@@ -1,6 +1,15 @@
 'use client';
 
-import { FuelIcon, type LucideIcon, MapPin, Ticket, Truck, Wallet, Weight } from 'lucide-react';
+import {
+  AlertTriangle,
+  FuelIcon,
+  type LucideIcon,
+  MapPin,
+  Ticket,
+  Truck,
+  Wallet,
+  Weight,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 
@@ -9,15 +18,23 @@ import { SourceDonut } from '@/components/monitoring/charts/source-donut';
 import { TonnageColumns } from '@/components/monitoring/charts/tonnage-columns';
 import { Card, CardContent, MetricCard } from '@/components/ui';
 import {
+  useFuelConsumption,
   useKpiOverview,
   useLevySummary,
   useTonnage5Day,
   useTonnageBySource,
+  useTonnageMonthly,
 } from '@/hooks/use-monitoring';
 import { Link } from '@/i18n/navigation';
 import { todayWIB } from '@/lib/dates';
 import { formatFuel, formatNumber, formatRupiah } from '@/lib/format';
-import { datePresets, kgToTon, sourceComposition, tonnageTrend } from '@/lib/monitoring-charts';
+import {
+  datePresets,
+  kgToTon,
+  monthlyTonnageTrend,
+  sourceComposition,
+  tonnageTrend,
+} from '@/lib/monitoring-charts';
 
 /** A deep-link tile into one of the four monitoring domains. */
 function DomainLink({
@@ -73,20 +90,55 @@ export function MonitoringSummary(): JSX.Element {
     () => ({ dateFrom: presets.last7.dateFrom, dateTo: presets.last7.dateTo }),
     [presets],
   );
+  // Last-month-start → today, so the monthly trend yields this + previous month
+  // and we can read the month-over-month delta off the latest point.
+  const monthTrend = useMemo(
+    () => ({ dateFrom: presets.lastMonth.dateFrom, dateTo: presets.thisMonth.dateTo }),
+    [presets],
+  );
 
   const kpi = useKpiOverview(month);
   const levy = useLevySummary(month);
   const daily = useTonnage5Day(week);
   const bySource = useTonnageBySource(month);
+  const monthly = useTonnageMonthly(monthTrend);
+  const fuel = useFuelConsumption(month);
 
   const levyTotal = (levy.data ?? []).reduce((sum, row) => sum + row.totalAmount, 0);
   const trend = tonnageTrend(daily.data ?? []);
   const composition = sourceComposition(bySource.data ?? []);
+  const fuelAnomalies = (fuel.data ?? []).filter((row) => row.flag === 'RED').length;
+
+  // Month-over-month tonnage delta (latest monthly point vs the prior month).
+  const monthlyPoints = monthlyTonnageTrend(monthly.data ?? []);
+  const latest = monthlyPoints.at(-1);
+  const deltaPct = latest?.deltaPct ?? null;
+  const tonnageDelta =
+    deltaPct === null
+      ? undefined
+      : {
+          text: `${Math.abs(deltaPct).toLocaleString('id-ID', { maximumFractionDigits: 1 })}% ${t('vsLastMonth')}`,
+          tone: (deltaPct > 0 ? 'up' : deltaPct < 0 ? 'down' : 'neutral') as
+            | 'up'
+            | 'down'
+            | 'neutral',
+        };
 
   return (
     <section className="mt-8">
       <h2 className="text-h3 font-semibold text-neutral-900">{t('monitoringSummary')}</h2>
       <p className="mt-0.5 text-body-sm text-neutral-500">{t('monitoringSummarySub')}</p>
+
+      {fuelAnomalies > 0 ? (
+        <Link
+          href="/monitoring/fuel"
+          className="mt-3 flex items-center gap-2 rounded-base border border-warning-100 bg-warning-50 px-4 py-2.5 text-body-sm font-medium text-warning-700 transition-colors hover:bg-warning-100"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="flex-1">{t('fuelAnomalies', { count: fuelAnomalies })}</span>
+          <span aria-hidden>→</span>
+        </Link>
+      ) : null}
 
       <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard
@@ -94,6 +146,7 @@ export function MonitoringSummary(): JSX.Element {
           label={t('kpiTonnageMonth')}
           value={formatNumber(kgToTon(kpi.data?.totalTonnageKg ?? 0))}
           unit={t('unitTon')}
+          delta={tonnageDelta}
           loading={kpi.isLoading}
         />
         <MetricCard

@@ -198,7 +198,9 @@
     "chartSourceMonth": "Composition by Source — This Month",
     "viewAll": "View all",
     "openMonitoring": "Open monitoring",
-    "emptyChart": "No data yet."
+    "emptyChart": "No data yet.",
+    "vsLastMonth": "vs last month",
+    "fuelAnomalies": "{count} vehicles flagged for fuel this month"
   },
   "monitoring": {
     "range": {
