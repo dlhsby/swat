@@ -1,5 +1,7 @@
 import { type ComponentType } from 'react';
 
+import { cn } from '@/lib/cn';
+
 import { Card, CardContent } from './card';
 import { Skeleton } from './skeleton';
 
@@ -12,9 +14,17 @@ export interface MetricCardProps {
   readonly value: string;
   /** Unit suffix shown next to the value (e.g. "ton"). */
   readonly unit: string;
+  /** Optional period-over-period delta line (e.g. "12,3% vs bln lalu"). */
+  readonly delta?: { readonly text: string; readonly tone: 'up' | 'down' | 'neutral' };
   /** When true, renders a skeleton in place of the value. */
   readonly loading?: boolean;
 }
+
+const DELTA_TONE: Record<'up' | 'down' | 'neutral', { className: string; arrow: string }> = {
+  up: { className: 'text-success-700', arrow: '▲ ' },
+  down: { className: 'text-danger-600', arrow: '▼ ' },
+  neutral: { className: 'text-neutral-500', arrow: '' },
+};
 
 /**
  * Single KPI tile: tinted icon chip, label, and a large tabular value with unit.
@@ -26,6 +36,7 @@ export function MetricCard({
   label,
   value,
   unit,
+  delta,
   loading = false,
 }: MetricCardProps): JSX.Element {
   return (
@@ -42,6 +53,14 @@ export function MetricCard({
             {value} <span className="ml-1 text-[14px] font-medium text-neutral-500">{unit}</span>
           </p>
         )}
+        {!loading && delta ? (
+          <p
+            className={cn('text-[12px] font-medium tabular-nums', DELTA_TONE[delta.tone].className)}
+          >
+            {DELTA_TONE[delta.tone].arrow}
+            {delta.text}
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );

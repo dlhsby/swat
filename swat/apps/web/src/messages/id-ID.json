@@ -198,7 +198,9 @@
     "chartSourceMonth": "Komposisi per Sumber — Bulan Ini",
     "viewAll": "Lihat semua",
     "openMonitoring": "Buka pemantauan",
-    "emptyChart": "Belum ada data."
+    "emptyChart": "Belum ada data.",
+    "vsLastMonth": "vs bln lalu",
+    "fuelAnomalies": "{count} kendaraan BBM anomali bulan ini"
   },
   "monitoring": {
     "range": {
