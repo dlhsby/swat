@@ -115,6 +115,11 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
     patterns: [
       'site:read',
       'trip:read',
+      // `trip:update` lets the (bearer-authenticated) weighbridge operator attach
+      // the CCTV capture image to the weighing's trip via POST /trips/:id/photos
+      // — legacy `uploadgambar` → dokumentasitrayek parity. The weighing itself
+      // posts through weighbridge:post; this only adds trip-documentation rights.
+      'trip:update',
       'disposal-permit:read',
       'weighbridge:resolve',
       'weighbridge:post',
