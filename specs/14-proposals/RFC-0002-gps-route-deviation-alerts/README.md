@@ -1,9 +1,15 @@
 # RFC-0002 — Vehicle GPS + route-schedule deviation alerts
 
-- **Status:** Draft
+- **Status:** ✅ Accepted → graduated to [`../../09-modules/gps-tracking.md`](../../09-modules/gps-tracking.md)
+  and scheduled as **Phase 7** ([`../../11-development-plan/phase-7.md`](../../11-development-plan/phase-7.md)).
+  This folder remains as design history.
 - **Author:** TBD
 - **Created:** 2026-06-05
-- **Target phase:** extends Phase 8 (Field/GPS) or **Phase 9** (if schedule allows; TBD after Phase 8 assessment)
+- **Target phase:** **Phase 7** — executed via the **device-telematics path (GPS.id hardware webhook)**.
+  The driver-PWA location option is dropped (deferred to the future native field app,
+  [`../RFC-0003-native-field-app/`](../RFC-0003-native-field-app/)).
+- **Open decisions (D1–D5) resolved:** D1 = device telematics (GPS.id); D2 = 30 s push (vendor-fixed);
+  D3 = Google Maps everywhere; D4 = in-app SSE/WebSocket; D5 = raw 30 days hot → archive.
 - **Detailed design / planning:** [`design.md`](./design.md) · session notes in [`sessions/`](./sessions/)
 - **Relates to:** [`../RFC-0001-monitoring-revamp.md`](../RFC-0001-monitoring-revamp.md) (complementary live
   alerting; share alert-channel strategy), [`../../09-modules/scheduling.md`](../../09-modules/scheduling.md)

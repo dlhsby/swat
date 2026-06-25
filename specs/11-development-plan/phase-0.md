@@ -442,12 +442,12 @@
 - **Depends on:** T-015
 - **Files:**
   - `apps/web/public/manifest.json` (create) — PWA manifest.
-  - `apps/web/public/service-worker.ts` (create) — service worker skeleton (full offline support in Phase 8).
+  - `apps/web/public/service-worker.ts` (create) — service worker skeleton (full offline data capture deferred to the native app, RFC-0003).
   - `apps/web/src/app/layout.tsx` (modify) — link to manifest in <head>.
   - `apps/web/next.config.js` (modify) — next-pwa plugin config (if not done in T-016).
 - **Steps:**
   1. Create `public/manifest.json` with: name (SWAT), short_name, description, start_url (/id-ID/), display (standalone), theme_color, background_color, icons (placeholder icon), categories (productivity).
-  2. Create `public/service-worker.ts` stub (empty for now; Phase 8 adds offline sync).
+  2. Create `public/service-worker.ts` stub (empty for now; offline sync deferred to the native app, RFC-0003).
   3. Add <link rel="manifest"> in layout.tsx.
   4. Configure next-pwa plugin in `next.config.js` with automatic service worker injection.
   5. Test: manifest is served at `/manifest.json`; browser detects PWA capability.

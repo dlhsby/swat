@@ -275,7 +275,7 @@ Account-level preferences, reachable from the topbar avatar menu (which holds **
 - Cache app shell (HTML, CSS, JS) on install
 - Serve cached shell on network offline (show "Anda offline" banner)
 - Network-first for API calls (fall back to stale cache if offline)
-- Deferral: true offline data capture, sync, field GPS → Phase 8
+- Deferral: fleet GPS tracking → Phase 7; true offline data capture + sync → native app (RFC-0003)
 
 ### Install prompt
 - Auto-prompt after 30s on supported browsers

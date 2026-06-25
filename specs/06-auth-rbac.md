@@ -308,6 +308,15 @@ Examples:
 - `report:read`, `report:generate` — view & generate report exports (Phase 3)
 - `levy:read`, `levy:create`, `levy:update`, `levy:delete` — retribusi/levy management (Phase 3)
 
+**GPS tracking & route-deviation (Phase 7 — see [`09-modules/gps-tracking.md`](09-modules/gps-tracking.md)):**
+- `gps-device:read`, `gps-device:manage` — view / map GPS.id IMEI ↔ vehicle (incl. unmatched-IMEI queue)
+- `route-geometry:manage` — draw/edit route-corridor templates and per-day `Trip` overrides
+- `deviation-rule:manage` — tune deviation thresholds/hysteresis/severity
+- `deviation-alert:read`, `deviation-alert:acknowledge` — view / acknowledge live route-deviation alerts
+- `tracking:read` — view live fleet map, vehicle positions/tracks, and the realtime stream
+- The GPS.id inbound **webhook is not RBAC-gated** — it authenticates with a secret path token + IP
+  allowlist + rate-limit + audit (it carries no vendor signature). See `gps-tracking.md` §7.
+
 ## 2.2.1 Notes on `transaction-day` permissions
 
 - **`transaction-day:read`** — view transaction days, haul board, trip summaries
