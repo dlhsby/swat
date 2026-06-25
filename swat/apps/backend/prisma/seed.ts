@@ -29,6 +29,8 @@
  */
 import {
   type DayStatus,
+  type DeviationSeverity,
+  type DeviationType,
   type InspectionItemStatus,
   type InspectionResult,
   type MaintenanceStatus,
@@ -169,6 +171,32 @@ async function seedPermissions(): Promise<Map<string, string>> {
     idByKey.set(key, permission.id);
   }
   return idByKey;
+}
+
+/**
+ * Default deviation rules (Phase 7, T-709) — one per type, with sensible starting
+ * thresholds operators tune later. Always seeded (operational config, not synthetic
+ * demo data); idempotent upsert by type.
+ */
+async function seedDeviationRules(): Promise<void> {
+  const rules: ReadonlyArray<{
+    deviationType: DeviationType;
+    threshold: number | null;
+    hysteresisSec: number;
+    severity: DeviationSeverity;
+  }> = [
+    { deviationType: 'off_corridor', threshold: 150, hysteresisSec: 30, severity: 'WARNING' },
+    { deviationType: 'off_sequence', threshold: null, hysteresisSec: 0, severity: 'WARNING' },
+    { deviationType: 'dwell_too_long', threshold: 600, hysteresisSec: 0, severity: 'INFO' },
+    { deviationType: 'late_to_schedule', threshold: 900, hysteresisSec: 0, severity: 'INFO' },
+  ];
+  for (const rule of rules) {
+    await prisma.deviationRule.upsert({
+      where: { deviationType: rule.deviationType },
+      update: {},
+      create: { ...rule, enabled: true },
+    });
+  }
 }
 
 async function seedRoles(permissionIdByKey: Map<string, string>): Promise<Map<string, string>> {
@@ -1312,6 +1340,9 @@ async function main(): Promise<void> {
     throw new Error('Administrator role was not created');
   }
   await seedAdminUser(adminRoleId);
+  // Operational config (always seeded, like permissions/roles): Phase 7 default
+  // deviation rules so the matcher + rule-tuning API have a baseline.
+  await seedDeviationRules();
 
   // Legacy-migration target: seed ONLY the auth bootstrap (permissions, roles,
   // admin). All reference + master + transactional data comes from the legacy DB
