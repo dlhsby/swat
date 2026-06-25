@@ -7,6 +7,7 @@ import {
 import { type VehicleStatus } from '@prisma/client';
 
 import { formatDateOnly, parseDateOnly } from '../../../common/dates';
+import { deriveGpsCoverage, type GpsCoverage } from '../../../common/gps-coverage';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
 import { ActorNamesService } from '../../audit/actor-names.service';
@@ -39,6 +40,8 @@ export interface VehicleDto {
   readonly notes: string | null;
   /** Codes of the waste sources this vehicle serves (e.g. `['D']` = Dinas). */
   readonly wasteSourceCodes: string[];
+  /** Derived GPS-coverage badge (Phase 7): tracked online/offline, or untracked. */
+  readonly gpsCoverage: GpsCoverage;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -69,6 +72,7 @@ function toDto(vehicle: VehicleWithRefs): VehicleDto {
     taxExpiry: formatDateOnly(vehicle.taxExpiry),
     notes: vehicle.notes,
     wasteSourceCodes: vehicle.wasteSources.map((link) => link.wasteSource.code),
+    gpsCoverage: deriveGpsCoverage(vehicle.gpsDevices),
     createdAt: vehicle.createdAt.toISOString(),
     updatedAt: vehicle.updatedAt.toISOString(),
   };

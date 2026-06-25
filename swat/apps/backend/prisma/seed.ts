@@ -1233,6 +1233,76 @@ async function backfillRollups(range: { from: Date; to: Date }): Promise<void> {
   console.log(`Rollup backfill: ${days} hari + ${months} bulan diperbarui.`);
 }
 
+/**
+ * Demo GPS devices (Phase 7, T-704). Attaches hardware trackers to a subset of
+ * the demo fleet — most online, a couple offline — and leaves the rest
+ * intentionally UNTRACKED so the coverage badge + hybrid map exercise all states.
+ * Also parks one unknown IMEI in the unmatched-ping queue. Idempotent (upsert by
+ * deviceId; the queue row is reset each run). Surabaya-area last positions.
+ */
+async function seedDemoGpsDevices(vehicles: ReadonlyArray<{ id: string }>): Promise<void> {
+  const SURABAYA = { lat: -7.2575, lng: 112.7521 };
+  // First 10 of 15 get a tracker; indices 8–9 are offline; the last 5 stay untracked.
+  const TRACKED = 10;
+  const OFFLINE_FROM = 8;
+  const now = new Date();
+  const staleAt = new Date(now.getTime() - 60 * 60 * 1000); // 1h ago → offline
+
+  let online = 0;
+  let offline = 0;
+  for (let i = 0; i < Math.min(TRACKED, vehicles.length); i += 1) {
+    const vehicle = vehicles[i];
+    if (!vehicle) continue;
+    const isOffline = i >= OFFLINE_FROM;
+    const imei = `35000000000${String(i).padStart(4, '0')}`;
+    const data = {
+      deviceType: 'gps-hardware',
+      imei,
+      provider: 'gpsid',
+      priority: 0,
+      active: true,
+      status: isOffline ? 'offline' : 'online',
+      lastPingAt: isOffline ? staleAt : now,
+      lastLat: SURABAYA.lat + i * 0.004,
+      lastLng: SURABAYA.lng + i * 0.004,
+      lastSpeedKmh: isOffline ? 0 : 18 + i,
+      lastHeading: (i * 30) % 360,
+    };
+    await prisma.gpsDevice.upsert({
+      where: { deviceId: imei },
+      update: { ...data, vehicleId: vehicle.id },
+      create: { ...data, deviceId: imei, vehicleId: vehicle.id },
+    });
+    if (isOffline) {
+      offline += 1;
+    } else {
+      online += 1;
+    }
+  }
+
+  // One unknown IMEI parked in the queue (reset each run for idempotency).
+  const UNKNOWN_IMEI = '359999999999999';
+  await prisma.gpsUnmatchedPing.deleteMany({ where: { imei: UNKNOWN_IMEI } });
+  await prisma.gpsUnmatchedPing.createMany({
+    data: [
+      {
+        imei: UNKNOWN_IMEI,
+        payload: { Lat: SURABAYA.lat, Lon: SURABAYA.lng, VehicleNumber: 'L 9999 ZZ' },
+      },
+      {
+        imei: UNKNOWN_IMEI,
+        payload: { Lat: SURABAYA.lat, Lon: SURABAYA.lng, VehicleNumber: 'L 9999 ZZ' },
+      },
+    ],
+  });
+
+  const untracked = Math.max(0, vehicles.length - Math.min(TRACKED, vehicles.length));
+  // eslint-disable-next-line no-console
+  console.log(
+    `Demo GPS devices: ${online} online, ${offline} offline, ${untracked} untracked; 1 unmatched IMEI queued.`,
+  );
+}
+
 async function main(): Promise<void> {
   const permissionIdByKey = await seedPermissions();
   const roleIdByName = await seedRoles(permissionIdByKey);
@@ -1266,6 +1336,7 @@ async function main(): Promise<void> {
       const adminId = admin?.id ?? null;
 
       const fleet = await loadDemoFleet();
+      await seedDemoGpsDevices(fleet.vehicles);
       await linkDemoWasteSources(fleet.vehicles);
       await seedDemoPermits(fleet.vehicles, adminId);
       const range = await seedDemoTransactions(fleet);

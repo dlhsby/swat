@@ -15,6 +15,9 @@ const vehicleInclude = {
   },
   poolSite: { select: { id: true, name: true } },
   wasteSources: { include: { wasteSource: { select: { code: true } } } },
+  // GPS devices (Phase 7) — drives the derived coverage badge. Cheap: at most a
+  // couple of rows per vehicle (one active hardware tracker + future sources).
+  gpsDevices: { select: { active: true, deviceType: true, status: true } },
 } satisfies Prisma.VehicleInclude;
 
 export type VehicleWithRefs = Prisma.VehicleGetPayload<{ include: typeof vehicleInclude }>;
