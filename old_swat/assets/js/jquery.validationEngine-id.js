@@ -1,6 +1,6 @@
 (function($){
 	var base_url = "<?php echo base_url(); ?>";
-	var site_url = "http://dkp.surabaya.go.id/swat/index.php/";
+	var site_url = "http://localhost:8090/index.php/";
     $.fn.validationEngineLanguage = function(){
     };
     $.validationEngineLanguage = {

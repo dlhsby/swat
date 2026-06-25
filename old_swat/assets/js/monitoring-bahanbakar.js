@@ -1,5 +1,5 @@
 
-var base_url = "http://dkp.surabaya.go.id/swat/";
+var base_url = "http://localhost:8090/";
 var gauge = null;
 function getTotalBahanBakar(tanggal) {
     var hasil;

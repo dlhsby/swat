@@ -162,7 +162,7 @@ class Pdf extends FPDF {
 	{
 		
 	    $this->SetFont('Times',"",10);
-	    $this->Cell(0, 0.5, 'http://dkp.surabaya.go.id/swat/index.php/laporan/tonase/cetaklaporantonasepdf?tanggal='.$this->data,0,'LR','L');
+	    $this->Cell(0, 0.5, 'http://localhost:8090/index.php/laporan/tonase/cetaklaporantonasepdf?tanggal='.$this->data,0,'LR','L');
 		$this->Cell(0, 0.5, 'Laporan Pembuangan Sampah TPA Benowo '.indonesian_date($this->data, 'j F Y',""),0,'LR','R');
 	}
 
