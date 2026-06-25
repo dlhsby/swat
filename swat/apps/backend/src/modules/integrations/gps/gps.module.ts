@@ -6,10 +6,14 @@ import { AppConfigModule } from '../../../config';
 import { AppConfigService } from '../../../config/config.service';
 import { ApiAuditService } from '../api-audit.service';
 
+import { GpsDeviceOfflineJob } from './gps-device-offline.job';
 import { GpsDeviceController } from './gps-device.controller';
 import { GpsDeviceRepository } from './gps-device.repository';
 import { GpsDeviceService } from './gps-device.service';
 import { GpsIngestQueue } from './gps-ingest.queue';
+import { GpsIngestWorker } from './gps-ingest.worker';
+import { GpsPingRepository } from './gps-ping.repository';
+import { GpsPositionPublisher } from './gps-position.publisher';
 import { GpsWebhookController } from './gps-webhook.controller';
 import { GpsWebhookGuard } from './gps-webhook.guard';
 import { GPS_INGEST_QUEUE } from './gps.types';
@@ -38,6 +42,10 @@ import { GPS_INGEST_QUEUE } from './gps.types';
     GpsDeviceService,
     GpsDeviceRepository,
     GpsIngestQueue,
+    GpsIngestWorker,
+    GpsPingRepository,
+    GpsPositionPublisher,
+    GpsDeviceOfflineJob,
     GpsWebhookGuard,
     // Own ApiAuditService instance (stateless — just Prisma writes): GpsModule is
     // imported BY IntegrationsModule, so it cannot inject that module's provider.
