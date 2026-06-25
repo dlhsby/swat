@@ -1,4 +1,9 @@
 {
+  "tracking": {
+    "alertCenter": "Alert Center",
+    "noAlerts": "No active alerts.",
+    "acknowledge": "Acknowledge"
+  },
   "corridor": {
     "title": "Route Corridor",
     "mapPlaceholder": "Map not configured — set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to draw corridors.",

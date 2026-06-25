@@ -9,6 +9,7 @@ import { DateRangeControl } from '@/components/monitoring/date-range-control';
 import { ExportMenu } from '@/components/monitoring/export-menu';
 import { HaulingMap } from '@/components/monitoring/hauling-map';
 import { PageHead } from '@/components/shell/page-head';
+import { AlertCenter } from '@/components/tracking/alert-center';
 import {
   DataTable,
   MetricCard,
@@ -20,6 +21,8 @@ import {
 } from '@/components/ui';
 import { useRouteMap, useRoutesActive, useTripSummary } from '@/hooks/use-monitoring';
 import { useMonitoringRange } from '@/hooks/use-monitoring-range';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useFleetPositions } from '@/hooks/use-tracking';
 import { formatDateDisplay, formatDistance, formatNumber, formatTime } from '@/lib/format';
 import { type RouteActivityRow, type TripSummaryRow } from '@/lib/monitoring-api';
 
@@ -27,10 +30,16 @@ export default function HaulingPage(): JSX.Element {
   const t = useTranslations('monitoring.hauling');
   const tCommon = useTranslations('monitoring.common');
   const { range, setRange, today } = useMonitoringRange();
+  const { can } = usePermissions();
+  const canTrack = can('tracking:read');
+  const canAlerts = can('deviation-alert:read');
 
   const routes = useRoutesActive(range);
   const map = useRouteMap(range);
   const trips = useTripSummary(range);
+  // Live vehicle layer (Phase 7) — gated by tracking:read; the map + sites/routes
+  // still render for users without it (graceful degradation).
+  const fleet = useFleetPositions(canTrack);
 
   const routeRows = routes.data ?? [];
   const tripRows = trips.data?.data ?? [];
@@ -128,13 +137,17 @@ export default function HaulingPage(): JSX.Element {
         </TabsList>
 
         <TabsContent value="map">
-          <ChartCard title={t('mapTitle')}>
-            <HaulingMap
-              sites={map.data?.sites ?? []}
-              edges={map.data?.edges ?? []}
-              loading={map.isLoading}
-            />
-          </ChartCard>
+          <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+            <ChartCard title={t('mapTitle')}>
+              <HaulingMap
+                sites={map.data?.sites ?? []}
+                edges={map.data?.edges ?? []}
+                loading={map.isLoading}
+                vehicles={canTrack ? fleet.positions : []}
+              />
+            </ChartCard>
+            {canAlerts ? <AlertCenter enabled={canAlerts} /> : null}
+          </div>
         </TabsContent>
 
         <TabsContent value="operational">

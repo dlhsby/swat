@@ -10,7 +10,7 @@
 > - **Epic 7.2** — ✅ T-708, T-709, T-710¹, T-711
 > - **Epic 7.3** — ✅ T-712², T-713, T-714
 > - **Epic 7.4** — ✅ T-715, T-716
-> - **Epic 7.5** — ⬜ T-717, T-718
+> - **Epic 7.5** — ✅ T-717, T-718³
 > - **Epic 7.6** — ⬜ T-719, T-720, T-721
 > - **Epic 7.7** — ⬜ T-722, T-723, T-724
 >
@@ -20,6 +20,8 @@
 > ² T-712: `off_corridor` (PostGIS ST_DWithin + Redis hysteresis + auto-resolve) and
 >   `late_to_schedule` implemented; `dwell_too_long` (needs Site-geofence spatial
 >   check) and `off_sequence` (leg-sequence logic) are tracked follow-ups.
+> ³ T-718: alert center lives on the Pengangkutan → Peta tab (live SSE + REST,
+>   acknowledge); a global header-bell + filterable history view are follow-ups.
 
 ## Overview
 
