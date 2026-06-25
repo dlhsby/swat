@@ -30,6 +30,9 @@ import { GpsidClientService } from './gpsid-client.service';
 import { RouteGeometryController } from './route-geometry.controller';
 import { RouteGeometryRepository } from './route-geometry.repository';
 import { RouteGeometryService } from './route-geometry.service';
+import { VehiclePositionController } from './vehicle-position.controller';
+import { VehiclePositionRepository } from './vehicle-position.repository';
+import { VehiclePositionService } from './vehicle-position.service';
 
 /**
  * GPS tracking & route-deviation monitoring (Phase 7).
@@ -56,6 +59,7 @@ import { RouteGeometryService } from './route-geometry.service';
     RouteGeometryController,
     DeviationRuleController,
     DeviationAlertController,
+    VehiclePositionController,
   ],
   providers: [
     GpsDeviceService,
@@ -75,6 +79,8 @@ import { RouteGeometryService } from './route-geometry.service';
     DeviationAlertService,
     DeviationAlertRepository,
     GpsAlertPublisher,
+    VehiclePositionService,
+    VehiclePositionRepository,
     GpsWebhookGuard,
     // Own ApiAuditService instance (stateless — just Prisma writes): GpsModule is
     // imported BY IntegrationsModule, so it cannot inject that module's provider.
