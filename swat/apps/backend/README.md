@@ -53,7 +53,8 @@ Seed tracks (all idempotent, scope with `--filter @swat/backend`):
 After a legacy load, link migrated TPA logs to trips:
 `pnpm --filter @swat/backend run migrate:backfill-tpa`.
 
-> Clean reset (local): `pnpm exec prisma migrate reset --force --skip-seed`, then the seed track you want.
+> Clean reset (local): `pnpm exec prisma migrate reset --force` (Prisma 7 dropped `--skip-seed`, so
+> this re-runs the demo seed); run another seed track afterwards to replace it.
 
 ## Run
 
@@ -103,4 +104,6 @@ apps/backend/
   monthly RANGE partitions — always `migrate deploy`, never `migrate dev`.
 - **Prisma 7** uses driver adapters (`@prisma/adapter-pg`); `DATABASE_URL` lives in `prisma.config.ts`
   for the CLI and `.env.local` for runtime — keep them consistent.
-- Migration scripts run via `ts-node` and load env from `prisma/.env`/`.env.local` (or `.env.<SEED_ENV>`).
+- Migration scripts run via `ts-node`. Local (`seed:legacy`) loads `prisma/.env`/`.env.local`;
+  with `SEED_ENV` set (`seed:staging`/`production`) they trust `DATABASE_URL` + `LEGACY_DB_*` from
+  the process env (the dump helper decrypts `DATABASE_URL` from `infra/env/backend/.env.staging`).
