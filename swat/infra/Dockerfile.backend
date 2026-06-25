@@ -16,16 +16,19 @@ RUN pnpm install --frozen-lockfile || pnpm install
 FROM node:20-alpine AS build
 RUN corepack enable
 WORKDIR /app
+# Prisma 7's prisma.config.ts resolves `env('DATABASE_URL')` at config-load time and
+# throws if unset. The dev `prisma/.env` that supplies it is gitignored (absent in CI),
+# so set a build-only dummy — `prisma generate` (here and in the deploy postinstall)
+# never connects. The real URL comes from dotenvx at runtime.
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build?schema=public
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm --filter @swat/backend prisma:generate \
   && pnpm --filter @swat/backend build
-# Produce a self-contained PROD bundle. pnpm uses an isolated node_modules
-# (symlinks into .pnpm), so the runtime can't just copy the root tree — `pnpm
-# deploy` flattens the backend's prod deps (incl. injected workspace pkgs like
-# @swat/schemas) into /app/deploy/node_modules. Then regenerate the Prisma client
-# INTO that bundle (deploy rebuilds node_modules from the lockfile, dropping the
-# previously-generated client). prisma is a devDep, so fetch the CLI via npx.
+# Produce a self-contained PROD bundle. pnpm uses an isolated node_modules (symlinks
+# into .pnpm), so the runtime can't just copy the root tree — `pnpm deploy` flattens
+# the backend's prod deps into /app/deploy/node_modules. The client is regenerated into
+# the bundle in the runtime stage below (deploy rebuilds node_modules from the lockfile).
 RUN pnpm --filter @swat/backend deploy --prod /app/deploy
 
 # --- runtime ----------------------------------------------------------------
