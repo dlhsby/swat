@@ -51,6 +51,8 @@ import {
 import { pgAdapter } from '../src/common/prisma/pg-adapter';
 import { RollupRepository } from '../src/modules/analytics/rollup.repository';
 import { RollupService } from '../src/modules/analytics/rollup.service';
+import { GpsEfficiencyRepository } from '../src/modules/integrations/gps/gps-efficiency.repository';
+import { GpsEfficiencyService } from '../src/modules/integrations/gps/gps-efficiency.service';
 import { type PrismaService } from '../src/modules/prisma/prisma.service';
 
 import {
@@ -1268,7 +1270,16 @@ async function backfillRollups(range: { from: Date; to: Date }): Promise<void> {
  * Also parks one unknown IMEI in the unmatched-ping queue. Idempotent (upsert by
  * deviceId; the queue row is reset each run). Surabaya-area last positions.
  */
-async function seedDemoGpsDevices(vehicles: ReadonlyArray<{ id: string }>): Promise<void> {
+interface DemoTrackedDevice {
+  vehicleId: string;
+  imei: string;
+  lat: number;
+  lng: number;
+}
+
+async function seedDemoGpsDevices(
+  vehicles: ReadonlyArray<{ id: string }>,
+): Promise<DemoTrackedDevice[]> {
   const SURABAYA = { lat: -7.2575, lng: 112.7521 };
   // First 10 of 15 get a tracker; indices 8–9 are offline; the last 5 stay untracked.
   const TRACKED = 10;
@@ -1278,11 +1289,14 @@ async function seedDemoGpsDevices(vehicles: ReadonlyArray<{ id: string }>): Prom
 
   let online = 0;
   let offline = 0;
+  const onlineDevices: DemoTrackedDevice[] = [];
   for (let i = 0; i < Math.min(TRACKED, vehicles.length); i += 1) {
     const vehicle = vehicles[i];
     if (!vehicle) continue;
     const isOffline = i >= OFFLINE_FROM;
     const imei = `35000000000${String(i).padStart(4, '0')}`;
+    const lat = SURABAYA.lat + i * 0.004;
+    const lng = SURABAYA.lng + i * 0.004;
     const data = {
       deviceType: 'gps-hardware',
       imei,
@@ -1291,8 +1305,8 @@ async function seedDemoGpsDevices(vehicles: ReadonlyArray<{ id: string }>): Prom
       active: true,
       status: isOffline ? 'offline' : 'online',
       lastPingAt: isOffline ? staleAt : now,
-      lastLat: SURABAYA.lat + i * 0.004,
-      lastLng: SURABAYA.lng + i * 0.004,
+      lastLat: lat,
+      lastLng: lng,
       lastSpeedKmh: isOffline ? 0 : 18 + i,
       lastHeading: (i * 30) % 360,
     };
@@ -1305,6 +1319,7 @@ async function seedDemoGpsDevices(vehicles: ReadonlyArray<{ id: string }>): Prom
       offline += 1;
     } else {
       online += 1;
+      onlineDevices.push({ vehicleId: vehicle.id, imei, lat, lng });
     }
   }
 
@@ -1329,6 +1344,90 @@ async function seedDemoGpsDevices(vehicles: ReadonlyArray<{ id: string }>): Prom
   console.log(
     `Demo GPS devices: ${online} online, ${offline} offline, ${untracked} untracked; 1 unmatched IMEI queued.`,
   );
+  return onlineDevices;
+}
+
+/**
+ * Synthetic recent breadcrumb tracks (Phase 7, T-723) — a handful of pings per
+ * online device over the last few minutes, so the live map, the breadcrumb
+ * endpoint, and the efficiency odometer-delta have real data. Idempotent: clears
+ * each device's recent pings first. No MySQL/vendor needed.
+ */
+async function seedDemoTracks(devices: DemoTrackedDevice[]): Promise<void> {
+  if (devices.length === 0) return;
+  const now = Date.now();
+  const STEPS = 6;
+  const imeis = devices.map((d) => d.imei);
+  await prisma.gpsPing.deleteMany({
+    where: { imei: { in: imeis }, recordedAt: { gte: new Date(now - 60 * 60 * 1000) } },
+  });
+  const rows = devices.flatMap((d) =>
+    Array.from({ length: STEPS }, (_, k) => ({
+      vehicleId: d.vehicleId,
+      imei: d.imei,
+      latitude: d.lat + k * 0.0006,
+      longitude: d.lng + k * 0.0006,
+      speedKmh: 15 + k,
+      heading: 90,
+      engineOn: true,
+      odometerM: BigInt(1_000_000 + k * 250),
+      source: 'gpsid',
+      recordedAt: new Date(now - (STEPS - 1 - k) * 30_000), // every 30s, newest last
+    })),
+  );
+  await prisma.gpsPing.createMany({ data: rows, skipDuplicates: true });
+  // eslint-disable-next-line no-console
+  console.log(`Demo GPS tracks: ${rows.length} pings across ${devices.length} online vehicles.`);
+}
+
+/**
+ * One demo route corridor (Phase 7, T-723) — a LineString template so the
+ * Pengangkutan → Peta corridor overlay + the deviation matcher have geometry to
+ * work with. Picks the first route with origin+destination coords. Length is
+ * computed by PostGIS; the geography column is generated.
+ */
+async function seedDemoCorridor(): Promise<void> {
+  const route = await prisma.route.findFirst({
+    where: {
+      deletedAt: null,
+      // PICKUP/DISPOSAL legs run between two DISTINCT sites → a real corridor
+      // (pool round-trips share origin+destination → zero-length).
+      category: { in: ['PICKUP', 'DISPOSAL', 'REFUEL'] },
+      originSite: { latitude: { not: null }, longitude: { not: null } },
+      destinationSite: { latitude: { not: null }, longitude: { not: null } },
+    },
+    select: {
+      id: true,
+      originSite: { select: { latitude: true, longitude: true } },
+      destinationSite: { select: { latitude: true, longitude: true } },
+    },
+  });
+  if (!route?.originSite.latitude || !route.destinationSite.latitude) return;
+  const o = route.originSite;
+  const d = route.destinationSite;
+  const pathGeojson = {
+    type: 'LineString',
+    coordinates: [
+      [Number(o.longitude), Number(o.latitude)],
+      [Number(d.longitude), Number(d.latitude)],
+    ],
+  };
+  const len = await prisma.$queryRaw<Array<{ len: number }>>`
+    SELECT ROUND(ST_Length(ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(pathGeojson)}), 4326)::geography))::int AS "len"
+  `;
+  await prisma.routeGeometry.upsert({
+    where: { routeId: route.id },
+    update: { pathGeojson, lengthMeters: len[0]?.len ?? 0 },
+    create: {
+      routeId: route.id,
+      pathGeojson,
+      toleranceMeters: 150,
+      lengthMeters: len[0]?.len ?? 0,
+      source: 'google-maps',
+    },
+  });
+  // eslint-disable-next-line no-console
+  console.log(`Demo corridor: 1 route geometry (${len[0]?.len ?? 0} m).`);
 }
 
 async function main(): Promise<void> {
@@ -1367,7 +1466,15 @@ async function main(): Promise<void> {
       const adminId = admin?.id ?? null;
 
       const fleet = await loadDemoFleet();
-      await seedDemoGpsDevices(fleet.vehicles);
+      const trackedDevices = await seedDemoGpsDevices(fleet.vehicles);
+      await seedDemoTracks(trackedDevices);
+      await seedDemoCorridor();
+      // Populate today's efficiency rollup so the dashboard isn't empty pre-cron.
+      const effRows = await new GpsEfficiencyService(
+        new GpsEfficiencyRepository(prisma as unknown as PrismaService),
+      ).refreshForDate(new Date());
+      // eslint-disable-next-line no-console
+      console.log(`Demo efficiency rollup: ${effRows} vehicle rows for today.`);
       await linkDemoWasteSources(fleet.vehicles);
       await seedDemoPermits(fleet.vehicles, adminId);
       const range = await seedDemoTransactions(fleet);

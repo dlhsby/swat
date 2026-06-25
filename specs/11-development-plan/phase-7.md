@@ -12,7 +12,12 @@
 > - **Epic 7.4** — ✅ T-715, T-716
 > - **Epic 7.5** — ✅ T-717, T-718³
 > - **Epic 7.6** — ✅ T-719⁴, T-720, T-721
-> - **Epic 7.7** — ⬜ T-722, T-723, T-724
+> - **Epic 7.7** — ✅ T-722, T-723⁵, T-724
+>
+> **All 24 tasks implemented.** Deferred follow-ups (tracked above): per-day Trip
+> corridor UI wiring + snap-to-roads (¹), `dwell_too_long` + `off_sequence`
+> matcher checks (²), global alert-bell + history (³), `adherencePct`/`dwellMinutes`
+> efficiency (⁴), a live webhook→SSE E2E spec + load test (⁵).
 >
 > ¹ T-710: route-template corridor editor shipped + tested; per-day Trip-override
 >   UI wiring into the scheduling board and snap-to-roads (server-proxied Roads
@@ -26,6 +31,11 @@
 >   deviation count, internal wasted-fuel + nightly GPS.id mileage cross-check
 >   (T-720) + dashboard (T-721); `adherencePct`/`dwellMinutes` left NULL (need
 >   ping-vs-corridor replay + the deferred dwell logic) — tracked follow-up.
+> ⁵ T-723: docs (`docs/GPS-WEBHOOK-SECURITY.md`, `PRIVACY-NOTICE-GPS.md`,
+>   `GPSID-REGISTRATION.md`, `GPS-DEPLOYMENT.md`) + demo seed (corridor + synthetic
+>   tracks + efficiency rollup, alongside the online/offline/untracked devices)
+>   shipped; the webhook→ping→matcher→alert→SSE flow is covered end-to-end by unit
+>   tests — a live E2E spec + load test are a tracked follow-up.
 
 ## Overview
 
