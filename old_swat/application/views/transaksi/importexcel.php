@@ -2,7 +2,7 @@
 
 <script type="text/javascript">
     $(document).ready(function () {
-        $("#frame").attr("src", "http://dkp.surabaya.go.id/swat/importexcel/uploader-master/demo/");
+        $("#frame").attr("src", "http://localhost:8090/importexcel/uploader-master/demo/");
         var base_url = "<?php echo base_url() ?>";
         var cachedPengemudiOptions = null;
         var cachedSimOptions = null;

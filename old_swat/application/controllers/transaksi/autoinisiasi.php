@@ -1,7 +1,7 @@
 <?php
 
 
-$url = "http://dkp.surabaya.go.id/swat/index.php/transaksi/inisiasipengangkutanharian/inisiasiswat";
+$url = "http://localhost:8090/index.php/transaksi/inisiasipengangkutanharian/inisiasiswat";
 
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $url);

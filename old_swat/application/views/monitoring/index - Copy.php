@@ -11,7 +11,7 @@
             <button class="large primary" type="submit" id="btnLoadMonitoring">Lihat Monitoring</button>
         </div>
 		<div id="containerTanggal" class="col-sm-5 col-sm-offset-1" >
-			<h5>Detail Tonase Tahun 2016<a href="http://dkp.surabaya.go.id/swat/index.php/laporan/tonase"> Lihat Detail</a></h5> 
+			<h5>Detail Tonase Tahun 2016<a href="http://localhost:8090/index.php/laporan/tonase"> Lihat Detail</a></h5> 
 			
         </div>
 	</div>

@@ -36,7 +36,7 @@ class Fpdf_wrap_bulan extends FPDF {
 	{
 
 	    $this->SetFont('Times',"",10);
-	    $this->Cell(0, 14, 'http://dkp.surabaya.go.id/swat/index.php/laporan/tonase/cetaklaporantonasepdfbulan?bulan='.$this->bulan.'&tahun='.$this->tahun,0,'LR','L');
+	    $this->Cell(0, 14, 'http://localhost:8090/index.php/laporan/tonase/cetaklaporantonasepdfbulan?bulan='.$this->bulan.'&tahun='.$this->tahun,0,'LR','L');
 		$this->Cell(0, 14, 'Laporan Pembuangan Sampah TPA Benowo bulan ke '.$this->bulan.' tahun '.$this->tahun,0,'LR','R');
 	}
 

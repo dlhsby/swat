@@ -1,4 +1,4 @@
-var base_url = "http://dkp.surabaya.go.id/swat/";
+var base_url = "http://localhost:8090/";
 function getTotalJenisSampah(tanggal){
 	try{
 		var hasil;

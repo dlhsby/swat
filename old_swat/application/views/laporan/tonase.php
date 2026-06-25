@@ -84,7 +84,7 @@ $this->fpdf->Cell(3.5 , 1, "" , 0, 0, 'C');
 /* Footer*/
 $this->fpdf->SetY(-3);
 $this->fpdf->SetFont('Times',"",10);
-$this->fpdf->Cell(0, 0.5, 'http://dkp.surabaya.go.id/swat/index.php/laporan/tonase/cetaklaporantonasepdf?tanggal='.$tanggalHariIni,0,'LR','L');
+$this->fpdf->Cell(0, 0.5, 'http://localhost:8090/index.php/laporan/tonase/cetaklaporantonasepdf?tanggal='.$tanggalHariIni,0,'LR','L');
 $this->fpdf->Cell(0, 0.5, 'Page '.$this->fpdf->PageNo().'/{nb}',0,'LR','R');
 /* End Footer*/
 

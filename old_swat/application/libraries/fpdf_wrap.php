@@ -26,7 +26,7 @@ class Fpdf_wrap extends FPDF {
 	{
 		
 	    $this->SetFont('Times',"",10);
-	    $this->Cell(0, 14, 'http://dkp.surabaya.go.id/swat/index.php/laporan/tonase/cetaklaporantonasepdf?tanggal='.$this->todayDate,0,'LR','L');
+	    $this->Cell(0, 14, 'http://localhost:8090/index.php/laporan/tonase/cetaklaporantonasepdf?tanggal='.$this->todayDate,0,'LR','L');
 		$this->Cell(0, 14, 'Laporan Pembuangan Sampah TPA Benowo '.indonesian_date($this->todayDate, 'j F Y',""),0,'LR','R');
 	}
 
