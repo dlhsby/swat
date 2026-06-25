@@ -16,7 +16,7 @@
 # --- deps -------------------------------------------------------------------
 # Install the FULL workspace (all member manifests) so the isolated per-package
 # node_modules (e.g. apps/web/node_modules/.bin/next) exist — pnpm doesn't hoist.
-FROM node:20-alpine AS deps
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS deps
 RUN corepack enable
 WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml .npmrc turbo.json ./
@@ -26,7 +26,7 @@ COPY packages/ packages/
 RUN pnpm install --frozen-lockfile
 
 # --- build ------------------------------------------------------------------
-FROM node:20-alpine AS build
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS build
 RUN corepack enable
 WORKDIR /app
 # Complete installed tree (root + per-package node_modules), then overlay source.
@@ -50,15 +50,18 @@ RUN --mount=type=secret,id=dotenv_private_key,required=false \
 # --- runtime ----------------------------------------------------------------
 # Next standalone output (next.config.mjs `output: 'standalone'`): a self-contained
 # server with only its traced deps — no full node_modules, no pnpm at runtime.
-FROM node:20-alpine AS runtime
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS runtime
 ENV NODE_ENV=production
 ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
 WORKDIR /app
-# The standalone bundle (traced node_modules + server.js, monorepo-rooted).
-COPY --from=build /app/apps/web/.next/standalone ./
+# The standalone bundle (traced node_modules + server.js, monorepo-rooted). chown to
+# the non-root `node` user so any runtime cache writes under .next succeed.
+COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
 # Static assets + public dir are not traced into standalone; copy them alongside.
-COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=build /app/apps/web/public ./apps/web/public
+COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
+# Drop privileges.
+USER node
 EXPOSE 3001
 CMD ["node", "apps/web/server.js"]

@@ -6,7 +6,7 @@
 # --- deps -------------------------------------------------------------------
 # Install the FULL workspace (all member manifests) so the isolated per-package
 # node_modules (e.g. apps/backend/node_modules/.bin/nest) exist — pnpm doesn't hoist.
-FROM node:20-alpine AS deps
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS deps
 RUN corepack enable
 WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml .npmrc turbo.json ./
@@ -16,7 +16,7 @@ COPY packages/ packages/
 RUN pnpm install --frozen-lockfile
 
 # --- build ------------------------------------------------------------------
-FROM node:20-alpine AS build
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS build
 RUN corepack enable
 WORKDIR /app
 # Prisma 7's prisma.config.ts resolves `env('DATABASE_URL')` at config-load time and
@@ -37,7 +37,7 @@ RUN pnpm --filter @swat/backend prisma:generate \
 RUN pnpm --filter @swat/backend deploy --prod /app/deploy
 
 # --- runtime ----------------------------------------------------------------
-FROM node:20-alpine AS runtime
+FROM node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 # Flattened prod node_modules from the bundle (prisma is a prod dep, so the CLI +
@@ -61,5 +61,9 @@ COPY infra/env/backend/.env.stagin[g] ./
 # dotenvx CLI on PATH for the staging command (`dotenvx run -f .env.staging -- …`).
 # prisma is a bundled prod dep (node_modules/.bin/prisma), so no global prisma needed.
 RUN npm i -g @dotenvx/dotenvx@1.75.1
+# Drop privileges: the app reads its bundle + decrypts env in memory and never writes
+# to the local FS (storage→S3, sessions→Redis). The node:alpine `node` user (uid 1000)
+# owns nothing here but everything copied is world-readable.
+USER node
 EXPOSE 3000
 CMD ["node", "dist/main.js"]
