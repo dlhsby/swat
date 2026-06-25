@@ -39,6 +39,7 @@ Read in order for the full picture; jump to a module spec when implementing a fe
 | [`12-scalability-archiving.md`](./12-scalability-archiving.md) | **Data growth (since 2013), partitioning, archiving, caching, object storage** | Backend, DBA, DevOps |
 | [`13-design/`](./13-design/) | UI/UX: brief, **design system (28 components, light+dark)**, wireframes, hi-fi (21 screens) — **complete**, mirrors [`../designs/`](../designs/) | Frontend |
 | [`14-proposals/`](./14-proposals/) | **Future-feature RFCs & backlog** (not-yet-committed ideas) | PM, architects |
+| [`15-deployment.md`](./15-deployment.md) | **As-built deployment**: AWS staging (sekar pattern) + on-prem prod, CI/CD, secrets | DevOps, all engineers |
 
 > **Design is done.** The canonical visual source is the vendored Claude Design bundle in
 > [`../designs/`](../designs/) (tokens `swat-tokens.css`, 28 components, 21 hi-fi screens,

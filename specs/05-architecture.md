@@ -752,6 +752,12 @@ volumes:
 
 ## 6. Deployment topology
 
+> **As-built (2026-06):** the canonical, current deployment design lives in
+> [`15-deployment.md`](./15-deployment.md) — **AWS staging** (co-tenant on the shared `dlhsby`
+> EC2 host, RDS, ECR, S3 + instance role, Caddy TLS edge, GitHub OIDC → SSM deploy) with
+> **platform-agnostic on-prem production** (`infra/docker-compose.prod.yml`). The MVP notes below
+> are the original target and remain directionally accurate.
+
 ### Phase 1 (MVP)
 - **Single Docker host** (e.g. DigitalOcean Droplet, AWS EC2).
 - **Containerized:** backend + web + postgres + nginx reverse proxy.
@@ -781,41 +787,20 @@ volumes:
 
 ## 7. CI/CD outline
 
-### GitHub Actions workflow (`.github/workflows/`)
+**As-built** (see [`15-deployment.md`](./15-deployment.md) §CI/CD for the full detail). Three
+workflows under `.github/workflows/`:
 
-```yaml
-# test.yml
-name: Test
-on: [push, pull_request]
+- **`quality.yml`** — reusable (`workflow_call`) lint · typecheck · test · build over the pnpm+Turbo
+  monorepo; the single source of truth for the quality suite.
+- **`pr-gate.yml`** — runs `quality.yml` on every PR into `main`/`staging` and aggregates it into a
+  `gate` job; `gate` is the required status check for both branches.
+- **`deploy-staging.yml`** — triggers on push to `staging` (or manual dispatch). Re-runs the quality
+  gate, then builds + pushes images to ECR and deploys to the AWS box via SSM. Pauses **once** for
+  `staging` Environment approval (only `build-push` is environment-scoped), then deploys straight
+  through; OIDC auth, pre-deploy RDS snapshot, image-SHA verify, smoke tests.
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: pnpm/action-setup@v2
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'pnpm'
-      - run: pnpm install
-      - run: pnpm exec turbo run build
-      - run: pnpm exec turbo run lint
-      - run: pnpm exec turbo run test
-      - run: pnpm exec turbo run test:e2e
-```
+**Release flow:** feature branch → PR into `main` (gate must pass) → merge → PR `main` → `staging`
+→ merge → approve the staging deploy. Pushing to `main` never deploys (conserves Actions minutes).
 
 ## 8. Component diagram (Mermaid)
 

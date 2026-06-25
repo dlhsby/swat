@@ -116,8 +116,15 @@ From inner `swat/`:
 
 ## Git / GitHub
 
-- Remote: `git@github-personal:dlhsby/swat.git` (private). The `github-personal` SSH alias maps to
-  the **`wahyutrip`** account (admin of `dlhsby` org). For any `dlhsby/*` git or `gh` work:
-  `gh auth switch --user wahyutrip`. The `wahyutrip-gdp` account cannot push to org repos.
-- CI: `.github/workflows/ci.yml` runs on Node 24, actions at v6; `pnpm/action-setup` pinned to
-  `version: 9` (runs at repo root while `packageManager` lives in inner `swat/package.json`).
+- Remote: `git@github-personal:dlhsby/swat.git` (**temporarily public** — `dlhsby` org Actions
+  billing; safe because committed env is dotenvx ciphertext; reverts to private next cycle). The
+  `github-personal` SSH alias maps to the **`wahyutrip`** account (admin of `dlhsby` org). For any
+  `dlhsby/*` git or `gh` work: `gh auth switch --user wahyutrip`. The `wahyutrip-gdp` account cannot
+  push to org repos.
+- CI/CD (Node 24, actions v6, `pnpm/action-setup` v9 at repo root): `quality.yml` (reusable suite) ·
+  `pr-gate.yml` (required `gate` check on PRs to main/staging) · `deploy-staging.yml` (push to
+  `staging`/dispatch → AWS deploy, one approval). **Flow: PR branch → `main` → `staging`** (pushing
+  to `main` never deploys). On-prem prod stays platform-agnostic.
+- **Deployment**: canonical spec [`specs/15-deployment.md`](specs/15-deployment.md); operational
+  runbook `swat/infra/aws/README.md`. Staging = AWS (shared `dlhsby` box, RDS db `swat_staging`, ECR,
+  S3+instance-role, Caddy, OIDC→SSM); prod = `infra/docker-compose.prod.yml`.
