@@ -21,6 +21,9 @@ coverage/
 # DATABASE_URL + LEGACY_DB_* secrets; only the *.example templates are committed.
 .env.staging
 .env.production
+# Temp env written by infra/seed-legacy-from-dump.sh (DATABASE_URL + ephemeral
+# LEGACY_DB_* creds); auto-removed on exit, ignored as a safety net.
+.env.legacydump
 !.env.staging.example
 !.env.production.example
 apps/backend/prisma/.env

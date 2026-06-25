@@ -79,17 +79,48 @@ Pushing to `main` never deploys (saves Actions minutes). The flow:
    `--wait`, verifies the running image SHA, and smoke-tests both domains — straight
    through.
 
-## First-run data (demo seed)
+## First-run data (legacy master seed)
 
-The demo seed is synthetic (no legacy MySQL), idempotent, and auto-runs the rollup
-backfill. It uses `ts-node`, which the slim runtime image omits — so run it from a
-**full checkout** (where `infra/env/backend/.env.keys` exists) against the staging
-DB. The staging RDS security group must admit your source IP on 5432 (or run from
-the box / a bastion that it already admits):
+Staging is seeded with the **real legacy SWAT master data** — users,
+roles/permissions (reconciled to the current app's permission catalog), sites,
+routes, vehicles, drivers, schedule + trip templates — and **no transactions**
+(real transactional history is imported later). This replaces the old synthetic
+demo seed, which manufactured a year of dummy `DONE` scheduling days.
+
+The migrator (`migrate:legacy`) needs `ts-node` (omitted from the slim runtime
+image) plus a legacy MySQL source. Since we run no legacy MySQL in the cloud, the
+committed dump (`old_swat/db_backup/`) is replayed through a throwaway MySQL by
+`infra/seed-legacy-from-dump.sh`. Run it from a **full checkout** with Docker,
+where the staging Postgres is reachable (the box, or locally via an SSM/SSH
+tunnel to the staging RDS on 5432):
 
 ```bash
 cd swat
-dotenvx run -f infra/env/backend/.env.staging -- pnpm --filter @swat/backend run seed:demo
+# DATABASE_URL = staging Postgres (decrypt from infra/env/backend/.env.staging,
+# or use the RDS creds in SSM). Master + users only — NO transactions:
+STAGING_DATABASE_URL='postgresql://USER:PASS@HOST:5432/swat?schema=public' \
+  bash infra/seed-legacy-from-dump.sh
+
+# Later — import the real legacy transactional history:
+STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh --with-transactions
+```
+
+With a live legacy MySQL instead of the dump, fill `apps/backend/.env.staging`
+and run `pnpm --filter @swat/backend run seed:staging` (then
+`seed:staging:transactions` later).
+
+**Reseeding a dirty staging** (e.g. clearing the old synthetic demo data — its
+dummy `DONE` scheduling days, demo users, etc. — before the legacy load). The
+migrator is idempotent by `legacyId` but does NOT delete pre-existing rows, so
+wipe to a clean schema first, then seed:
+
+```bash
+cd swat
+# Destructive: drops all data + re-applies migrations on the STAGING DB.
+DATABASE_URL='postgresql://USER:PASS@HOST:5432/swat?schema=public' \
+  pnpm --filter @swat/backend exec prisma migrate reset --force --skip-seed
+STAGING_DATABASE_URL='postgresql://USER:PASS@HOST:5432/swat?schema=public' \
+  bash infra/seed-legacy-from-dump.sh
 ```
 
 Migrations themselves need no full deps and are applied automatically on every deploy
@@ -106,6 +137,10 @@ Migrations themselves need no full deps and are applied automatically on every d
   different subdomains. On-prem prod keeps the same-origin defaults unchanged.
 - **Capacity**: t3.micro is tight even with KPI gone — add a swapfile on the box and
   keep the per-container `mem_limit`s in `compose.staging.yml`.
-- **Legacy seed** (`seed:staging`, real MySQL `dkp_swat`) is NOT wired here; staging
-  uses the demo seed. The gitignored `apps/backend/.env.staging` (legacy migration
-  config) is a different file from the encrypted `infra/env/backend/.env.staging`.
+- **Legacy seed**: staging is seeded with real legacy master data + users (no
+  transactions) via `infra/seed-legacy-from-dump.sh` (replays the committed dump
+  through an ephemeral MySQL) — see _First-run data_ above. Note the two distinct
+  files: the gitignored `apps/backend/.env.staging` (legacy migration config:
+  DATABASE*URL + LEGACY_DB*\*) vs. the encrypted, committed
+  `infra/env/backend/.env.staging` (runtime env). The seed helper writes its own
+  temp `apps/backend/.env.legacydump` and removes it on exit.
