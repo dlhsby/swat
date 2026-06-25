@@ -91,29 +91,20 @@ import {
   trimOrNull,
 } from './lib/transforms';
 
-// Target-environment config. `seed:staging` / `seed:production` set SEED_ENV so
-// the per-env migration dotenv file (.env.migrate.staging / .env.migrate.production,
-// holding DATABASE_URL + LEGACY_DB_*) is loaded before the Prisma client reads
-// DATABASE_URL. Named `.env.migrate.*` so it never collides with the deploy-runtime
-// `infra/env/backend/.env.staging`. The local `seed:legacy` track leaves SEED_ENV
-// unset and uses the ambient shell/.env. (The dump helper sets SEED_ENV=legacydump.)
+// Target-environment config. For staging/production the caller provides DATABASE_URL +
+// LEGACY_DB_* in the process environment: `infra/seed-legacy-from-dump.sh` decrypts
+// DATABASE_URL from the encrypted `infra/env/backend/.env.staging` (the SAME file the
+// runtime uses — no separate seed env file) and sets LEGACY_DB_* for the throwaway MySQL.
+// SEED_ENV is just a flag that says "trust the ambient env; do NOT loadScriptEnv()", whose
+// prisma/.env (dev) DATABASE_URL would otherwise shadow the target. The local `seed:legacy`
+// track leaves SEED_ENV unset and uses prisma/.env / .env.local.
 const seedEnv = process.env.SEED_ENV;
 if (seedEnv) {
-  // Staging/production: load ONLY the per-env file so DATABASE_URL (read eagerly
-  // by the Prisma 7 pg adapter below) points at the right database. Do NOT also
-  // run loadScriptEnv() here — its prisma/.env (dev) load could shadow it.
-  const envFile = `.env.migrate.${seedEnv}`;
-  const loadEnvFile = (process as NodeJS.Process & { loadEnvFile?: (path: string) => void })
-    .loadEnvFile;
-  try {
-    if (typeof loadEnvFile !== 'function') {
-      throw new Error('process.loadEnvFile is unavailable (needs Node ≥ 20.12).');
-    }
-    loadEnvFile(envFile);
-  } catch (err) {
+  if (!process.env.DATABASE_URL || !process.env.LEGACY_DB_HOST) {
     throw new Error(
-      `SEED_ENV=${seedEnv} but ${envFile} could not be loaded from ${process.cwd()}: ` +
-        (err instanceof Error ? err.message : String(err)),
+      `SEED_ENV=${seedEnv} requires DATABASE_URL + LEGACY_DB_* in the environment. ` +
+        `Use infra/seed-legacy-from-dump.sh (it decrypts DATABASE_URL from ` +
+        `infra/env/backend/.env.staging and stands up the legacy MySQL), or export them yourself.`,
     );
   }
 } else {

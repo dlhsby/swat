@@ -85,8 +85,8 @@ docker compose --env-file infra/docker-compose.env up -d
 pnpm db:migrate
 pnpm db:seed                    # = db:seed:demo — synthetic dev data + a year of trips + auto rollup backfill
 #   pnpm db:seed:legacy         # real legacy masters from MySQL (no transactions); needs LEGACY_DB_* env
-#   pnpm db:seed:staging        # legacy + transactional history → staging DB (SEED_ENV=staging / .env.migrate.staging)
-#   pnpm db:seed:production      # the real cutover → production DB (.env.migrate.production; needs --confirm-production)
+#   pnpm db:seed:staging        # legacy + transactional history → staging DB (SEED_ENV=staging / infra/env/backend/.env.staging)
+#   pnpm db:seed:production      # the real cutover → production DB (infra/env/backend/.env.production; needs --confirm-production)
 
 # 5. Run both apps
 pnpm dev

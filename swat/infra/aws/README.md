@@ -118,8 +118,10 @@ STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh --with-transactions
 ```
 
 (Or run the helper **on the box**, where RDS is directly reachable — but it spins up MySQL, so
-mind the t3.micro's memory.) With a live legacy MySQL instead of the dump, fill
-`apps/backend/.env.migrate.staging` and run `pnpm --filter @swat/backend run seed:staging`.
+mind the t3.micro's memory.) The helper decrypts the target `DATABASE_URL` from the encrypted
+`infra/env/backend/.env.staging` when `STAGING_DATABASE_URL` is unset, so there's no separate seed
+env file. To seed from a live legacy MySQL instead of the dump, `export DATABASE_URL` +
+`LEGACY_DB_*` yourself and run `pnpm --filter @swat/backend run seed:staging`.
 
 > Don't reach for `prisma migrate reset` to wipe first: Prisma 7 has no `--skip-seed` (so it would
 > re-run the demo seed), and `DROP SCHEMA … CASCADE` overflows `max_locks_per_transaction` on the
@@ -140,9 +142,8 @@ Migrations themselves need no full deps and are applied automatically on every d
 - **Capacity**: t3.micro is tight even with KPI gone — add a swapfile on the box and
   keep the per-container `mem_limit`s in `compose.staging.yml`.
 - **Legacy seed**: staging is seeded with real legacy master data + users (no
-  transactions) via `infra/seed-legacy-from-dump.sh` (replays the committed dump
-  through an ephemeral MySQL) — see _First-run data_ above. Note the two distinct
-  files: the gitignored `apps/backend/.env.migrate.staging` (legacy migration config:
-  DATABASE*URL + LEGACY_DB*\*) vs. the encrypted, committed
-  `infra/env/backend/.env.staging` (runtime env). The seed helper writes its own
-  temp `apps/backend/.env.migrate.legacydump` and removes it on exit.
+  transactions) via `infra/seed-legacy-from-dump.sh` (replays the committed dump through an
+  ephemeral MySQL) — see _First-run data_ above. There's a **single** `.env.staging`: the
+  encrypted, committed `infra/env/backend/.env.staging` (runtime). The seed reuses it for the
+  target `DATABASE_URL` (decrypted), and gets `LEGACY_DB_*` from the throwaway MySQL — no separate
+  seed env file, nothing written to disk.

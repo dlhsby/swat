@@ -84,15 +84,16 @@ From inner `swat/`:
   - **`seed:staging`** — same engine **+ transactional history** (`--include-transactions`:
     haritransaksi→TransactionDay, transaksiangkutsampah→Haul, detail→HaulAssignment, trayek→Trip,
     sampahmasuktpa→TpaInboundLog, keyset-batched + watermarked). Targets the staging DB via
-    `SEED_ENV=staging` → loads `apps/backend/.env.migrate.staging`. For UAT.
-  - **`seed:production`** — same as staging but `SEED_ENV=production` (`.env.migrate.production`) and requires
+    `SEED_ENV=staging`, which trusts `DATABASE_URL` + `LEGACY_DB_*` from the process env. For UAT.
+  - **`seed:production`** — same as staging but `SEED_ENV=production` and requires
     `--confirm-production` (the engine refuses a production run without it). The real cutover.
   - `seed:auth` (`SEED_AUTH_ONLY=true`) stays as an internal bootstrap utility (permissions + roles +
     admin only). Legacy users get `LEGACY_SEED_PASSWORD` (default `Password123!`) with a forced
     first-login reset; a legacy username colliding with `admin` is suffixed. Legacy tracks need
     `DATABASE_URL` + `LEGACY_DB_*` (legacy MySQL `dkp_swat` on host `:13306`, user `AdminDKP`) — for
-    staging/production these live in the gitignored `.env.migrate.staging`/`.env.migrate.production` (see the committed
-    `.example` templates). For a clean legacy-only reseed use `infra/seed-legacy-from-dump.sh`
+    staging/production the **target `DATABASE_URL` is decrypted from the encrypted
+    `infra/env/backend/.env.staging`** (no separate seed env file) and `LEGACY_DB_*` come from the
+    legacy source (the dump helper's throwaway MySQL). For a clean legacy-only reseed use `infra/seed-legacy-from-dump.sh`
     (self-cleaning) — **not** `prisma migrate reset`: Prisma 7 has no `--skip-seed`, and `DROP SCHEMA`
     overflows the partitioned tables' `max_locks_per_transaction`.
 - Scope one package: `pnpm --filter @swat/backend run <script>`
@@ -102,9 +103,10 @@ From inner `swat/`:
 - **Dev/local**: root `.env.local` (backend + shared, also fed to web by `scripts/start.sh`) ←
   `.env.example`; `apps/web/.env.local` ← `apps/web/.env.example` (standalone web); `apps/backend/prisma/.env`
   (Prisma CLI) ← `prisma/.env.example`.
-- **Legacy-migration seed**: `apps/backend/.env.migrate.<env>` (`SEED_ENV=<env>` → staging/production/legacydump),
-  gitignored; `*.example` committed. Renamed from `.env.staging` so it never collides with the runtime file.
-- **Deploy/runtime (encrypted)**: `infra/env/{backend,web}/.env.staging` — dotenvx ciphertext, committed; key in SSM/GitHub.
+- **Deploy/runtime + staging seed (encrypted)**: `infra/env/{backend,web}/.env.staging` — dotenvx
+  ciphertext, committed; key in SSM/GitHub. The runtime decrypts it at boot; the legacy seed
+  (`SEED_ENV=staging`) decrypts `DATABASE_URL` from the same file (so there's ONE `.env.staging`).
+  `LEGACY_DB_*` (the legacy MySQL source) come from the env — the dump helper sets them.
 - **Infra stack**: `infra/docker-compose*.env` ← `*.example`.
 
 ## Gotchas
