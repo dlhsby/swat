@@ -41,6 +41,16 @@ export class AppConfigService {
     return this.get('JWT_SECRET');
   }
 
+  /** Cookie `Domain` for the session cookie; `undefined` → host-only (default). */
+  get sessionCookieDomain(): string | undefined {
+    return this.get('SESSION_COOKIE_DOMAIN');
+  }
+
+  /** Cookie `SameSite` policy for the session cookie (default `strict`). */
+  get sessionCookieSameSite(): Env['SESSION_COOKIE_SAMESITE'] {
+    return this.get('SESSION_COOKIE_SAMESITE');
+  }
+
   get logLevel(): Env['LOG_LEVEL'] {
     return this.get('LOG_LEVEL');
   }
@@ -57,6 +67,7 @@ export class AppConfigService {
     accessKey: string;
     secretKey: string;
     forcePathStyle: boolean;
+    useInstanceRole: boolean;
   } {
     return {
       endpoint: this.get('S3_ENDPOINT'),
@@ -66,6 +77,7 @@ export class AppConfigService {
       accessKey: this.get('S3_ACCESS_KEY'),
       secretKey: this.get('S3_SECRET_KEY'),
       forcePathStyle: this.get('S3_FORCE_PATH_STYLE'),
+      useInstanceRole: this.get('S3_USE_INSTANCE_ROLE'),
     };
   }
 

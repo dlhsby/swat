@@ -1,7 +1,17 @@
+# syntax=docker/dockerfile:1.7
 # Multi-stage production image for the SWAT Next.js web app.
 # Scaffolded in Phase 0; used for deployment from Phase 1+.
 # Build context = repo root (the inner `swat/` monorepo).
 #   docker build -f infra/Dockerfile.web -t swat-web .
+#
+# NEXT_PUBLIC_* are inlined at build time. For AWS staging, pass the dotenvx
+# private key as a BuildKit secret so the committed, ENCRYPTED
+# infra/env/web/.env.staging is decrypted into the build env (bakes
+# NEXT_PUBLIC_API_BASE_URL=https://api.swat.wahyutrip.com):
+#   docker build -f infra/Dockerfile.web \
+#     --secret id=dotenv_private_key,env=WEB_DOTENV_PRIVATE_KEY -t swat-web .
+# Without the secret (on-prem prod / local), the build falls back to a plain
+# `pnpm build`, keeping the image platform-agnostic.
 
 # --- deps -------------------------------------------------------------------
 FROM node:20-alpine AS deps
@@ -18,7 +28,20 @@ RUN corepack enable
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm --filter @swat/web build
+# Which encrypted env to decrypt NEXT_PUBLIC_* from: `staging` (CI) or `production`.
+ARG DOTENV_ENV=staging
+# dotenvx installed globally so the CLI is on PATH (pnpm isolates package bins).
+RUN npm i -g @dotenvx/dotenvx@1.75.1
+# With the dotenvx key (BuildKit secret), decrypt infra/env/web/.env.${DOTENV_ENV}
+# into the build env so NEXT_PUBLIC_* inline. Without it, plain build (on-prem/local).
+RUN --mount=type=secret,id=dotenv_private_key,required=false \
+  if [ -f /run/secrets/dotenv_private_key ]; then \
+    DOTENV_PRIVATE_KEY_STAGING="$(cat /run/secrets/dotenv_private_key)" \
+    DOTENV_PRIVATE_KEY_PRODUCTION="$(cat /run/secrets/dotenv_private_key)" \
+    dotenvx run -f "infra/env/web/.env.${DOTENV_ENV}" -- pnpm --filter @swat/web build; \
+  else \
+    pnpm --filter @swat/web build; \
+  fi
 
 # --- runtime ----------------------------------------------------------------
 # Next standalone output (next.config.mjs `output: 'standalone'`): a self-contained

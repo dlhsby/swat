@@ -43,13 +43,17 @@ export class SessionRedis implements OnModuleDestroy {
 
 /**
  * Build the session middleware. Cookie hardening per specs/06-auth-rbac.md /
- * 07-api-spec.md: httpOnly, SameSite=Strict, Secure in production, 8h rolling
- * inactivity window.
+ * 07-api-spec.md: httpOnly, SameSite (Strict by default), Secure in production,
+ * 8h rolling inactivity window. `domain`/`sameSite` are config-driven so the
+ * same image runs same-origin on-prem prod (host-only, Strict) and the AWS
+ * staging split (`Domain=.swat.wahyutrip.com`, SameSite=Lax) — see
+ * SESSION_COOKIE_DOMAIN / SESSION_COOKIE_SAMESITE.
  */
 export function buildSessionMiddleware(
   config: AppConfigService,
   client: RedisClientType,
 ): RequestHandler {
+  const domain = config.sessionCookieDomain;
   return session({
     store: new RedisStore({ client, prefix: 'swat:sess:' }),
     name: 'swat.sid',
@@ -59,9 +63,10 @@ export function buildSessionMiddleware(
     rolling: true,
     cookie: {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: config.sessionCookieSameSite,
       secure: config.isProduction,
       maxAge: EIGHT_HOURS_MS,
+      ...(domain ? { domain } : {}),
     },
   });
 }

@@ -1,0 +1,114 @@
+# SWAT — AWS staging stack (co-tenant on the shared dlhsby EC2 host with sekar).
+#
+# This is NOT the self-hosted on-prem stack (see docker-compose.prod.yml for that,
+# which keeps its own Postgres/Redis/MinIO/Nginx and stays platform-agnostic).
+# Staging reuses the box's existing Caddy (owned by sekar's compose) as the TLS
+# edge and AWS RDS as the database; only the two app containers + a small Redis
+# run here.
+#
+#   - Postgres        -> AWS RDS  (managed; instance `dlhsby`, database `swat_staging`)
+#   - Object storage  -> AWS S3   (via the EC2 instance role; no keys on the host)
+#   - TLS / 80,443    -> the box's shared Caddy on the external `edge` network
+#                        (SWAT's blocks live in infra/Caddyfile.staging; the deploy
+#                         merges them into the served box Caddyfile)
+#   - Redis           -> small in-stack container (sessions + BullMQ report jobs)
+#
+# Runtime env is materialized to /opt/swat/.env by infra/seed-env-from-ssm.sh
+# (the single dotenvx private key, pulled from SSM at deploy time); everything else
+# lives in the committed, ENCRYPTED infra/env/backend/.env.staging baked into the
+# backend image and decrypted at boot via `dotenvx run`.
+#
+# Usage on the box:
+#   IMAGE_TAG=<git-sha> docker compose -f compose.staging.yml pull
+#   IMAGE_TAG=<git-sha> docker compose -f compose.staging.yml up -d --wait
+
+name: swat-staging
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
+services:
+  backend:
+    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-backend:${IMAGE_TAG:-staging}
+    container_name: swat-backend
+    # Decrypt the baked .env.staging (key from env_file) into process.env, then boot.
+    command: ['sh', '-c', 'dotenvx run -f .env.staging -- node dist/main.js']
+    env_file:
+      - /opt/swat/.env
+    # Service-name overrides win over the encrypted file so the in-stack Redis resolves.
+    environment:
+      NODE_ENV: production
+      BE_PORT: '3000'
+      REDIS_URL: redis://redis:6379
+    expose:
+      - '3000' # internal only; reached via the shared Caddy on the edge network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    mem_limit: 448m
+    mem_reservation: 320m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [edge, internal]
+
+  web:
+    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-web:${IMAGE_TAG:-staging}
+    container_name: swat-web
+    environment:
+      NODE_ENV: production
+      PORT: '3001'
+      HOSTNAME: '0.0.0.0'
+    expose:
+      - '3001' # internal only; reached via the shared Caddy on the edge network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3001/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    mem_limit: 256m
+    mem_reservation: 160m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [edge]
+
+  redis:
+    image: redis:7-alpine
+    container_name: swat-redis
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    mem_limit: 96m
+    mem_reservation: 48m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [internal]
+
+networks:
+  # Shared bridge so the box's Caddy reaches swat-backend/swat-web by container name.
+  # Created on the box (`docker network create edge`) and declared external here.
+  edge:
+    external: true
+  # Private to SWAT; isolates Redis from the edge.
+  internal:
+    driver: bridge
+
+volumes:
+  redis-data:

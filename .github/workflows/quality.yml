@@ -1,57 +1,44 @@
-name: CI
+name: Quality
+
+# Reusable quality suite (single source of truth) — lint, typecheck, test, build
+# across the pnpm + Turbo monorepo. Called by pr-gate.yml (on PRs) and by
+# deploy-staging.yml (as the final gate on the release commit). SWAT is one unified
+# monorepo, so there's a single suite — no per-component path filtering needed.
+#
+# The pnpm monorepo lives in the inner `swat/` dir.
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_call:
 
-# The pnpm monorepo lives in the inner `swat/` directory.
 defaults:
   run:
     working-directory: swat
 
 jobs:
-  build:
+  checks:
     name: Lint · Typecheck · Test · Build
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       # Dummy values so Prisma can resolve the datasource env during generate.
       DATABASE_URL: postgresql://swat:swat@localhost:5432/swat?schema=public
       SESSION_SECRET: ci-session-secret-placeholder
       JWT_SECRET: ci-jwt-secret-placeholder
-
     steps:
       - uses: actions/checkout@v6
-
-      # version is set explicitly: the action runs at the repo root, but the
-      # monorepo (with the "packageManager" field) lives in inner `swat/`.
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
         with:
           version: 9
-
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
           cache-dependency-path: swat/pnpm-lock.yaml
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: pnpm --filter @swat/backend run prisma:generate
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @swat/backend run prisma:generate
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build

@@ -42,6 +42,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.687.0",
     "@aws-sdk/s3-request-presigner": "^3.687.0",
+    "@dotenvx/dotenvx": "^1.75.1",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.27",
     "@nestjs/config": "^4.0.4",

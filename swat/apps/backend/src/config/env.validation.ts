@@ -16,6 +16,15 @@ export const envSchema = z.object({
   SESSION_SECRET: z.string().min(16, 'SESSION_SECRET must be at least 16 chars'),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 chars'),
 
+  // Session cookie scoping. Defaults preserve the same-origin on-prem prod
+  // behaviour (host-only cookie, SameSite=Strict). For the AWS staging split —
+  // web on `swat.wahyutrip.com`, API on `api.swat.wahyutrip.com` — set
+  // SESSION_COOKIE_DOMAIN=.swat.wahyutrip.com so the cookie is sent to both
+  // subdomains, and SESSION_COOKIE_SAMESITE=lax so cross-subdomain navigation
+  // and credentialed XHR carry it (Secure is still derived from NODE_ENV).
+  SESSION_COOKIE_DOMAIN: z.string().min(1).optional(),
+  SESSION_COOKIE_SAMESITE: z.enum(['strict', 'lax', 'none']).default('strict'),
+
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
   // Cache
@@ -33,6 +42,14 @@ export const envSchema = z.object({
   S3_FORCE_PATH_STYLE: z
     .enum(['true', 'false'])
     .default('true')
+    .transform((v) => v === 'true'),
+  // When true, the S3 client drops the static endpoint + access/secret keys so
+  // the AWS SDK resolves credentials from the ambient provider chain (the EC2
+  // instance IAM role on AWS staging). Leave false for MinIO (dev / on-prem prod),
+  // which needs the endpoint + keys above and S3_FORCE_PATH_STYLE=true.
+  S3_USE_INSTANCE_ROLE: z
+    .enum(['true', 'false'])
+    .default('false')
     .transform((v) => v === 'true'),
 
   // Weighbridge integration (Phase 4). Per-minute rate limit applied to a USER
