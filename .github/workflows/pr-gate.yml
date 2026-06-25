@@ -11,6 +11,10 @@ on:
   pull_request:
     branches: [main, staging]
 
+# Least privilege: PRs only read the repo.
+permissions:
+  contents: read
+
 concurrency:
   group: pr-gate-${{ github.ref }}
   cancel-in-progress: true
@@ -24,12 +28,17 @@ jobs:
     needs: [quality]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
     steps:
+      # `needs.quality.result` is a controlled enum (success/failure/…), but pass it via
+      # env rather than interpolating into the shell — keeps the injection surface zero.
       - name: Aggregate required quality gate
+        env:
+          QUALITY_RESULT: ${{ needs.quality.result }}
         run: |
-          q='${{ needs.quality.result }}'
-          echo "quality=$q"
-          case "$q" in
+          echo "quality=$QUALITY_RESULT"
+          case "$QUALITY_RESULT" in
             success) echo "Quality gate passed." ;;
-            *) echo "::error::quality suite did not pass ($q)"; exit 1 ;;
+            *) echo "::error::quality suite did not pass ($QUALITY_RESULT)"; exit 1 ;;
           esac

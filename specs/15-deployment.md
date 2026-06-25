@@ -59,11 +59,31 @@ required reviewer), then builds + pushes to ECR, snapshots RDS, and deploys via 
 Pushing to `main` never deploys. The repo is temporarily **public** (org Actions billing) — safe
 because all committed env is dotenvx ciphertext.
 
+**Branch protection:** both `main` and `staging` require a PR + the `gate` status check + linear
+history, and block force-push/deletion. The deploy only fires from the protected `staging` branch.
+
+## Security hardening
+
+- **OIDC trust is scoped** to `repo:dlhsby/swat:ref:refs/heads/staging` + `…:environment:staging`
+  (not `…:*`) — fork/PR refs can never assume the deploy role even though the repo is public.
+- **IAM least-privilege**: the deploy role's ECR push is scoped to the two `swat-*` repos, `ssm:SendCommand`
+  to the box + the `AWS-RunShellScript` document, `rds:CreateDBSnapshot` to the `dlhsby` instance +
+  `swat-staging-predeploy-*` snapshots. The EC2 instance role's S3 access is scoped to the swat buckets.
+- **GitHub Actions**: workflows default to `permissions: {}` (jobs opt in to `id-token`/`contents:read`
+  only); third-party + first-party actions are **pinned to commit SHAs**; the SSM payload is built with
+  `jq`; no secret transits the SSM document (the dotenvx key is fetched on-box via the instance role).
+- **Containers** run **non-root** (`USER node`); base images are **digest-pinned**; the web dotenvx key
+  is a BuildKit secret (never a layer).
+
 ## First-run data
 
-Staging is seeded with the synthetic **demo** track (`seed:demo`, no legacy MySQL); idempotent and
-auto-runs the rollup backfill. Run it from a full checkout against the staging `DATABASE_URL` (the
-slim runtime image omits `ts-node`). The legacy migration (`seed:staging`) is not wired for staging.
+Staging holds the **real legacy master data** loaded via `seed:staging` from the committed
+`old_swat/db_backup/dkp_swat_*.sql` dump (934 sites, 4,897 routes, 1,463 vehicles, …; Hauls/Trips = 0
+because the dump's transaction tables are empty). Because RDS is private (box-only) and the slim
+runtime image omits `ts-node`, the seed runs on the box via a one-off `node:20` container that restores
+the dump into a throwaway `mysql:5.7`, points `LEGACY_DB_*` at it, and runs
+`migrate:legacy --include-transactions --force-reset` (clears any prior demo data). Re-run `seed:demo`
+instead for synthetic data. This mirrors the local `seed:staging` flow (local `dkp_swat` on `:13306`).
 
 ## Capacity & coupling notes
 

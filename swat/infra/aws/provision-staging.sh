@@ -82,12 +82,18 @@ fi
 
 say "GitHub Actions OIDC deploy role ($ROLE_NAME)"
 OIDC_ARN="arn:aws:iam::${ACCOUNT_ID}:oidc-provider/token.actions.githubusercontent.com"
+# Trust is scoped to the staging branch + the staging Environment only (NOT `repo:…:*`):
+# the deploy runs on push to `staging` (sub=ref:refs/heads/staging) and its build-push job
+# is environment-scoped (sub=environment:staging). With a PUBLIC repo this blocks fork/PR
+# refs from ever assuming the role.
 TRUST=$(cat <<JSON
 {"Version":"2012-10-17","Statement":[{"Effect":"Allow",
  "Principal":{"Federated":"${OIDC_ARN}"},
  "Action":"sts:AssumeRoleWithWebIdentity",
  "Condition":{"StringEquals":{"token.actions.githubusercontent.com:aud":"sts.amazonaws.com"},
-   "StringLike":{"token.actions.githubusercontent.com:sub":"repo:${GITHUB_REPO}:*"}}}]}
+   "StringLike":{"token.actions.githubusercontent.com:sub":[
+     "repo:${GITHUB_REPO}:ref:refs/heads/staging",
+     "repo:${GITHUB_REPO}:environment:staging"]}}}]}
 JSON
 )
 if aws iam get-role --role-name "$ROLE_NAME" >/dev/null 2>&1; then
@@ -97,15 +103,25 @@ else
   aws iam create-role --role-name "$ROLE_NAME" --assume-role-policy-document "$TRUST" >/dev/null
   echo "created: $ROLE_NAME (ensure the GitHub OIDC provider exists — sekar already created it)"
 fi
+# Least privilege: ECR push only to the two swat repos; SendCommand only to the box +
+# the AWS-RunShellScript doc; snapshots only on the dlhsby instance with the predeploy
+# name prefix. GetAuthorizationToken / GetCommandInvocation are account-level virtual
+# actions and stay on "*".
 aws iam put-role-policy --role-name "$ROLE_NAME" --policy-name swat-gha-deploy --policy-document "$(cat <<JSON
 {"Version":"2012-10-17","Statement":[
-  {"Sid":"Ecr","Effect":"Allow","Action":[
-    "ecr:GetAuthorizationToken","ecr:BatchCheckLayerAvailability","ecr:InitiateLayerUpload",
-    "ecr:UploadLayerPart","ecr:CompleteLayerUpload","ecr:PutImage","ecr:BatchGetImage"],
-   "Resource":"*"},
-  {"Sid":"Ssm","Effect":"Allow","Action":["ssm:SendCommand","ssm:GetCommandInvocation"],
-   "Resource":"*"},
-  {"Sid":"RdsSnapshot","Effect":"Allow","Action":["rds:CreateDBSnapshot"],"Resource":"*"}
+  {"Sid":"EcrAuth","Effect":"Allow","Action":"ecr:GetAuthorizationToken","Resource":"*"},
+  {"Sid":"EcrPush","Effect":"Allow",
+   "Action":["ecr:BatchCheckLayerAvailability","ecr:InitiateLayerUpload","ecr:UploadLayerPart",
+     "ecr:CompleteLayerUpload","ecr:PutImage","ecr:BatchGetImage","ecr:GetDownloadUrlForLayer"],
+   "Resource":["arn:aws:ecr:${REGION}:${ACCOUNT_ID}:repository/swat-backend",
+     "arn:aws:ecr:${REGION}:${ACCOUNT_ID}:repository/swat-web"]},
+  {"Sid":"SsmSendToInstance","Effect":"Allow","Action":"ssm:SendCommand",
+   "Resource":["arn:aws:ec2:${REGION}:${ACCOUNT_ID}:instance/${EC2_INSTANCE_ID}",
+     "arn:aws:ssm:${REGION}::document/AWS-RunShellScript"]},
+  {"Sid":"SsmReadInvocation","Effect":"Allow","Action":["ssm:GetCommandInvocation","ssm:ListCommandInvocations"],"Resource":"*"},
+  {"Sid":"RdsSnapshot","Effect":"Allow","Action":"rds:CreateDBSnapshot",
+   "Resource":["arn:aws:rds:${REGION}:${ACCOUNT_ID}:db:dlhsby",
+     "arn:aws:rds:${REGION}:${ACCOUNT_ID}:snapshot:swat-staging-predeploy-*"]}
 ]}
 JSON
 )" >/dev/null
