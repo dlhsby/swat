@@ -92,15 +92,17 @@ import {
 } from './lib/transforms';
 
 // Target-environment config. `seed:staging` / `seed:production` set SEED_ENV so
-// the per-env dotenv file (.env.staging / .env.production, holding DATABASE_URL +
-// LEGACY_DB_*) is loaded before the Prisma client reads DATABASE_URL. The local
-// `seed:legacy` track leaves SEED_ENV unset and uses the ambient shell/.env.
+// the per-env migration dotenv file (.env.migrate.staging / .env.migrate.production,
+// holding DATABASE_URL + LEGACY_DB_*) is loaded before the Prisma client reads
+// DATABASE_URL. Named `.env.migrate.*` so it never collides with the deploy-runtime
+// `infra/env/backend/.env.staging`. The local `seed:legacy` track leaves SEED_ENV
+// unset and uses the ambient shell/.env. (The dump helper sets SEED_ENV=legacydump.)
 const seedEnv = process.env.SEED_ENV;
 if (seedEnv) {
   // Staging/production: load ONLY the per-env file so DATABASE_URL (read eagerly
   // by the Prisma 7 pg adapter below) points at the right database. Do NOT also
   // run loadScriptEnv() here — its prisma/.env (dev) load could shadow it.
-  const envFile = `.env.${seedEnv}`;
+  const envFile = `.env.migrate.${seedEnv}`;
   const loadEnvFile = (process as NodeJS.Process & { loadEnvFile?: (path: string) => void })
     .loadEnvFile;
   try {

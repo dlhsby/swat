@@ -78,8 +78,8 @@ Seeding is split into independent, re-runnable tracks:
 | --------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `seed:demo` (default) | synthetic    | Demo users + per-role logins + a **slim curated master subset** (`prisma/demo-fixtures.ts`) + a year of synthetic transactions + 24-mo levies + inspections/maintenance/photos, then an **auto rollup backfill**. No MySQL. |
 | `seed:legacy`         | legacy MySQL | Full master + auth + scheduling + aggregates. **No transactions, no synthetic.** Local pre-UAT testing on real masters. Self-sufficient (bootstraps its own permissions + `admin`).                                         |
-| `seed:staging`        | legacy MySQL | Same engine **+ transactional history** (`--include-transactions`). Targets the staging DB via `SEED_ENV=staging` (`.env.staging`). For UAT.                                                                                |
-| `seed:production`     | legacy MySQL | Same as staging but `SEED_ENV=production` (`.env.production`) + requires `--confirm-production` (the engine refuses otherwise). The real cutover.                                                                           |
+| `seed:staging`        | legacy MySQL | Same engine **+ transactional history** (`--include-transactions`). Targets the staging DB via `SEED_ENV=staging` (`.env.migrate.staging`). For UAT.                                                                        |
+| `seed:production`     | legacy MySQL | Same as staging but `SEED_ENV=production` (`.env.migrate.production`) + requires `--confirm-production` (the engine refuses otherwise). The real cutover.                                                                   |
 | `seed:auth`           | —            | Internal bootstrap utility: permissions + `admin` + the Administrator role only.                                                                                                                                            |
 
 - **Two distinct RBACs.** `seed:demo` assigns each role a hand-authored permission set
@@ -112,9 +112,9 @@ pnpm --filter @swat/backend run migrate:discovery
 # 2. Load master + auth + scheduling + aggregates (idempotent; re-run safe).
 #    Local pre-UAT (no transactions):
 pnpm --filter @swat/backend run seed:legacy
-#    Staging/UAT (+ transactional history), env from .env.staging:
+#    Staging/UAT (+ transactional history), env from .env.migrate.staging:
 pnpm --filter @swat/backend run seed:staging
-#    Production cutover (+ transactions, guarded), env from .env.production:
+#    Production cutover (+ transactions, guarded), env from .env.migrate.production:
 pnpm --filter @swat/backend run seed:production
 #    Re-run after a failure:        … run migrate:legacy --include-transactions --resume
 #    Wipe & re-load (dev/test):     … run migrate:legacy --force-reset
