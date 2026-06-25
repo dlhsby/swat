@@ -26,6 +26,13 @@ coverage/
 apps/backend/prisma/.env
 infra/docker-compose.env
 
+# dotenvx deploy runtime env — the infra/env/** files are ENCRYPTED ciphertext and
+# ARE committed (safe); only the dotenvx private keys (.env.keys) must never be.
+!infra/env/backend/.env.staging
+!infra/env/web/.env.staging
+.env.keys
+infra/env/**/.env.keys
+
 # Prisma generated client
 apps/backend/prisma/generated/
 

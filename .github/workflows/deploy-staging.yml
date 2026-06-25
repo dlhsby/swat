@@ -1,0 +1,230 @@
+name: Deploy staging (AWS)
+
+# Builds the SWAT backend + web production images, pushes them to ECR, snapshots
+# the shared RDS, then deploys to the shared EC2 host via SSM Run Command (no SSH).
+# Auth uses GitHub OIDC — no long-lived AWS keys in GitHub. Mirrors the sekar
+# pattern: staging on AWS, on-prem prod stays platform-agnostic (docker-compose.prod.yml).
+#
+# Release flow (mirrors sekar — pushing to `main` NEVER deploys, to conserve
+# Actions minutes):
+#   feature branch → PR into `main` → pr-gate.yml `gate` check must pass → merge.
+#   When `main` is UAT-ready, open a PR `main` → `staging` and merge it (or run this
+#   workflow via "Run workflow"). A push to `staging` triggers THIS workflow: it
+#   re-runs the quality gate, then pauses ONCE at `build-push` for `staging`
+#   Environment approval, after which it builds + deploys straight through.
+#
+# The pnpm monorepo lives in the inner `swat/` dir; the git repo root (and this
+# workflow) sit at the OUTER dir, so Docker build contexts are `./swat`.
+#
+# Required repo Variables (Settings → Secrets and variables → Actions → Variables):
+#   AWS_REGION        ap-southeast-3
+#   AWS_ROLE_ARN      arn:aws:iam::659828096624:role/swat-gha-deploy
+#   ECR_BACKEND       659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-backend
+#   ECR_WEB           659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-web
+#   EC2_INSTANCE_ID   i-08edccdc966c0985e
+#   RDS_INSTANCE_ID   dlhsby
+# Required Environment Secret (staging environment):
+#   WEB_DOTENV_PRIVATE_KEY   dotenvx key decrypting infra/env/web/.env.staging at build
+# The `staging` Environment must have a Required reviewer (repo owner) so deploys are
+# gated. Backend staging config lives in the encrypted infra/env/backend/.env.staging
+# baked into the image; the box decrypts it at runtime with DOTENV_PRIVATE_KEY_STAGING
+# fetched from SSM (/swat/staging/BE_DOTENV_PRIVATE_KEY).
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: swat
+
+jobs:
+  # Final safety gate on the release commit — the SAME reusable suite the PR gate
+  # runs (single source of truth). PRs into main/staging are already gated by
+  # pr-gate.yml; this re-runs it on the merge commit before any image is built.
+  quality:
+    uses: ./.github/workflows/quality.yml
+
+  build-push:
+    needs: quality
+    runs-on: ubuntu-latest
+    # Scoped to the staging environment so it can read WEB_DOTENV_PRIVATE_KEY. This is
+    # the SINGLE approval gate for a release — the deploy job below is NOT environment-
+    # scoped (it uses only repo Variables + OIDC), so the whole release is approved once,
+    # here, before any image is built.
+    environment: staging
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      sha: ${{ steps.vars.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - id: vars
+        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+        working-directory: .
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./swat
+          file: ./swat/infra/Dockerfile.backend
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ vars.ECR_BACKEND }}:staging
+            ${{ vars.ECR_BACKEND }}:${{ steps.vars.outputs.sha }}
+          cache-from: type=gha,scope=swat-backend
+          cache-to: type=gha,mode=max,scope=swat-backend
+
+      - name: Build & push web
+        uses: docker/build-push-action@v6
+        with:
+          context: ./swat
+          file: ./swat/infra/Dockerfile.web
+          platforms: linux/amd64
+          push: true
+          # NEXT_PUBLIC_* are decrypted from the committed encrypted
+          # infra/env/web/.env.staging by dotenvx during `next build`. The private key
+          # is a BuildKit secret — mounted only for the build RUN, never in a layer.
+          build-args: |
+            DOTENV_ENV=staging
+          secrets: |
+            dotenv_private_key=${{ secrets.WEB_DOTENV_PRIVATE_KEY }}
+          tags: |
+            ${{ vars.ECR_WEB }}:staging
+            ${{ vars.ECR_WEB }}:${{ steps.vars.outputs.sha }}
+          cache-from: type=gha,scope=swat-web
+          cache-to: type=gha,mode=max,scope=swat-web
+
+  deploy:
+    needs: build-push
+    runs-on: ubuntu-latest
+    # NOT environment-scoped on purpose: it only uses repo Variables + OIDC (no env-level
+    # secrets), and the OIDC trust is `repo:dlhsby/swat:*`. Keeping it off the environment
+    # means a release is approved ONCE (at build-push), not twice.
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      SHA: ${{ needs.build-push.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Pre-deploy RDS snapshot
+        run: |
+          set -euo pipefail
+          SNAP="swat-staging-predeploy-${SHA}-$(date +%Y%m%d%H%M%S)"
+          aws rds create-db-snapshot \
+            --db-instance-identifier "${{ vars.RDS_INSTANCE_ID }}" \
+            --db-snapshot-identifier "$SNAP" >/dev/null
+          echo "Snapshot initiated: $SNAP"
+
+      - name: Deploy via SSM (merge Caddy, seed env, pull, migrate, up --wait)
+        run: |
+          set -euo pipefail
+          COMPOSE_B64=$(base64 -w0 infra/compose.staging.yml)
+          SEED_B64=$(base64 -w0 infra/seed-env-from-ssm.sh)
+          CADDY_B64=$(base64 -w0 infra/Caddyfile.staging)
+          ECR_BACKEND="${{ vars.ECR_BACKEND }}"
+
+          BOX=$(cat <<EOF
+          set -e
+          mkdir -p ~/swat/infra
+          echo $COMPOSE_B64 | base64 -d > ~/swat/infra/compose.staging.yml
+          echo $SEED_B64 | base64 -d > ~/swat/infra/seed-env-from-ssm.sh
+          echo $CADDY_B64 | base64 -d > ~/swat/infra/Caddyfile.staging
+          docker network create edge 2>/dev/null || true
+
+          # Merge SWAT's Caddy blocks into the box's served Caddyfile (owned by sekar's
+          # compose since KPI was decommissioned). Idempotent: strip any prior
+          # SWAT-BEGIN..SWAT-END region, then append the fresh blocks. Restart the caddy
+          # container (inode swap → a plain reload would miss the bind-mounted file).
+          BOXCADDY=~/sekar/infra/Caddyfile
+          if [ -f "\$BOXCADDY" ]; then
+            awk '/# === SWAT-BEGIN/{s=1} !s{print} /# === SWAT-END/{s=0}' "\$BOXCADDY" > /tmp/caddy.base
+            cat /tmp/caddy.base ~/swat/infra/Caddyfile.staging > /tmp/caddy.merged
+            cp /tmp/caddy.merged "\$BOXCADDY"
+            docker restart sekar-caddy || true
+          else
+            echo "WARN: \$BOXCADDY not found — add SWAT blocks to the box Caddy manually"
+          fi
+
+          bash ~/swat/infra/seed-env-from-ssm.sh
+          cd ~/swat/infra
+          export IMAGE_TAG=$SHA
+          docker compose -f compose.staging.yml pull --quiet
+          # -T: no TTY/stdin (compose run would otherwise consume the rest of the script).
+          # Apply Prisma migrations (deploy — never migrate dev on partitioned tables),
+          # decrypting DATABASE_URL from the baked encrypted .env.staging.
+          docker compose -f compose.staging.yml run --rm --no-deps -T backend \
+            sh -c "dotenvx run -f .env.staging -- npx prisma migrate deploy"
+          docker compose -f compose.staging.yml up -d --force-recreate --wait
+          docker image prune -f
+          RUNNING_BE=\$(docker inspect swat-backend --format '{{.Config.Image}}')
+          EXPECT_BE="${ECR_BACKEND}:\$IMAGE_TAG"
+          echo "running backend image: \$RUNNING_BE (expected \$EXPECT_BE)"
+          test "\$RUNNING_BE" = "\$EXPECT_BE"
+          echo "DEPLOY-VERIFIED \$IMAGE_TAG"
+          EOF
+          )
+          RUN_B64=$(printf '%s' "$BOX" | base64 -w0)
+          printf '{"commands":["runuser -l ec2-user -c \\"echo %s | base64 -d > /tmp/swat-deploy.sh && bash /tmp/swat-deploy.sh\\""]}' "$RUN_B64" > params.json
+
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy-staging ${SHA}" \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)
+          echo "SSM command: $CMD_ID"
+          STATUS=InProgress
+          for i in $(seq 1 84); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in Success|Failed|Cancelled|TimedOut) break;; esac
+            sleep 5
+          done
+          echo "::group::stdout"
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query StandardOutputContent --output text | tail -60
+          echo "::endgroup::"
+          echo "::group::stderr"
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query StandardErrorContent --output text | tail -60
+          echo "::endgroup::"
+          echo "Deploy status: $STATUS"
+          test "$STATUS" = "Success"
+
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 10); do
+            if curl -fsS --retry 3 https://api.swat.wahyutrip.com/health >/dev/null; then
+              echo "API healthy"; break
+            fi
+            echo "waiting for API... ($i)"; sleep 6
+          done
+          curl -fsS https://api.swat.wahyutrip.com/health
+          curl -fsSI --retry 5 --retry-delay 6 https://swat.wahyutrip.com/ | head -1

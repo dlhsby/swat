@@ -9,6 +9,8 @@ const ENV: Env = {
   DATABASE_URL: 'postgresql://swat:pw@localhost:5432/swat',
   SESSION_SECRET: 'a-long-enough-session-secret',
   JWT_SECRET: 'a-long-enough-jwt-secret-value',
+  SESSION_COOKIE_DOMAIN: undefined,
+  SESSION_COOKIE_SAMESITE: 'strict',
   LOG_LEVEL: 'info',
   REDIS_URL: 'redis://localhost:6379',
   S3_ENDPOINT: 'http://localhost:9000',
@@ -18,6 +20,7 @@ const ENV: Env = {
   S3_ACCESS_KEY: 'swat',
   S3_SECRET_KEY: 'swat-secret',
   S3_FORCE_PATH_STYLE: true,
+  S3_USE_INSTANCE_ROLE: false,
   WEIGHBRIDGE_RATE_LIMIT_PER_MIN: 500,
 };
 
@@ -50,6 +53,25 @@ describe('AppConfigService', () => {
       accessKey: ENV.S3_ACCESS_KEY,
       secretKey: ENV.S3_SECRET_KEY,
       forcePathStyle: true,
+      useInstanceRole: false,
     });
+  });
+
+  it('exposes session-cookie scoping (defaults: host-only, Strict)', () => {
+    expect(service.sessionCookieDomain).toBeUndefined();
+    expect(service.sessionCookieSameSite).toBe('strict');
+  });
+
+  it('surfaces a configured cross-subdomain cookie domain + SameSite', () => {
+    const stagedEnv: Env = {
+      ...ENV,
+      SESSION_COOKIE_DOMAIN: '.swat.wahyutrip.com',
+      SESSION_COOKIE_SAMESITE: 'lax',
+    };
+    const staged = new AppConfigService({
+      get: <K extends keyof Env>(key: K): Env[K] => stagedEnv[key],
+    } as unknown as ConfigService<Env, true>);
+    expect(staged.sessionCookieDomain).toBe('.swat.wahyutrip.com');
+    expect(staged.sessionCookieSameSite).toBe('lax');
   });
 });

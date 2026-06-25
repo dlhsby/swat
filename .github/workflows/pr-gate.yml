@@ -1,0 +1,35 @@
+name: PR Gate
+
+# The single REQUIRED status check for merging into main/staging. Always runs the
+# reusable quality suite (quality.yml) and aggregates the result into the `gate` job.
+# Make `gate` the required check in branch protection for both branches.
+#
+# SWAT is one unified pnpm+Turbo monorepo, so the suite always runs (no path-filtered
+# components to skip) — `gate` is simply green when quality passes, red otherwise.
+
+on:
+  pull_request:
+    branches: [main, staging]
+
+concurrency:
+  group: pr-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    uses: ./.github/workflows/quality.yml
+
+  gate:
+    name: gate
+    needs: [quality]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate required quality gate
+        run: |
+          q='${{ needs.quality.result }}'
+          echo "quality=$q"
+          case "$q" in
+            success) echo "Quality gate passed." ;;
+            *) echo "::error::quality suite did not pass ($q)"; exit 1 ;;
+          esac

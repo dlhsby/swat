@@ -22,14 +22,20 @@ export class StorageService {
   private readonly client: S3Client;
   private readonly bucket: string;
 
-  constructor(private readonly config: AppConfigService) {
-    const { endpoint, region, bucket, accessKey, secretKey, forcePathStyle } = config.storage;
+  constructor(config: AppConfigService) {
+    const { endpoint, region, bucket, accessKey, secretKey, forcePathStyle, useInstanceRole } =
+      config.storage;
     this.bucket = bucket;
+    // Instance-role mode (AWS staging): omit the static endpoint + credentials so
+    // the SDK uses the default endpoint for the region and resolves creds from the
+    // ambient provider chain (EC2 instance IAM role). MinIO mode (dev / on-prem
+    // prod): pass the explicit endpoint + access/secret keys with path-style URLs.
     this.client = new S3Client({
-      endpoint,
       region,
       forcePathStyle,
-      credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
+      ...(useInstanceRole
+        ? {}
+        : { endpoint, credentials: { accessKeyId: accessKey, secretAccessKey: secretKey } }),
     });
   }
 

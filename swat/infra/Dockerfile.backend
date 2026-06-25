@@ -29,5 +29,16 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/apps/backend/dist ./dist
 COPY --from=build /app/apps/backend/prisma ./prisma
 COPY --from=build /app/apps/backend/package.json ./package.json
+# AWS-staging only: the committed, dotenvx-ENCRYPTED runtime env (ciphertext). The
+# default CMD ignores it; the staging compose overrides the command with
+# `dotenvx run -f .env.staging -- …`, decrypting with DOTENV_PRIVATE_KEY_STAGING
+# (from SSM). Harmless for on-prem prod, which keeps its own env_file and this CMD.
+# The bracket-glob makes the COPY optional: builds succeed before the operator has
+# created the encrypted file (the staging command only runs once it exists).
+COPY infra/env/backend/.env.stagin[g] ./
+# dotenvx CLI for the staging command (`dotenvx run -f .env.staging -- …`). Installed
+# globally so it's on PATH regardless of the pnpm-isolated node_modules layout; the
+# default on-prem CMD below never invokes it.
+RUN npm i -g @dotenvx/dotenvx@1.75.1
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

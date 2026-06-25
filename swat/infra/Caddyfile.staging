@@ -1,0 +1,32 @@
+# SWAT staging — Caddy route blocks (source of truth for SWAT's two subdomains).
+#
+# The box's Caddy is owned by sekar's compose.staging.yml (the `caddy` service)
+# since project KPI was decommissioned. SWAT is a co-tenant: it does NOT run its
+# own Caddy (80/443 are already bound). Instead the SWAT deploy MERGES the two
+# blocks below into the box's served Caddyfile (between the SWAT-BEGIN/SWAT-END
+# markers, idempotently) and force-recreates / restarts the caddy container so the
+# new file (inode swap) + recreated upstream IPs are picked up.
+#
+# UAT runs over HTTPS — bare hostnames tell Caddy to auto-provision a free
+# Let's Encrypt cert and redirect HTTP->HTTPS (DNS A records for both names point
+# at the shared Elastic IP 16.79.124.63; 80/443 are open).
+#
+# The app containers join the shared external `edge` network (compose.staging.yml),
+# so Caddy reaches them by container name.
+
+# === SWAT-BEGIN (managed by SWAT deploy — do not edit between the markers) ===
+
+# API — NestJS backend. Global prefix /api/v1; /health + /health/ready are at root
+# for probes; Swagger at /api/docs.
+api.swat.wahyutrip.com {
+	encode gzip
+	reverse_proxy swat-backend:3000
+}
+
+# Web dashboard — Next.js (standalone). Default locale id-ID.
+swat.wahyutrip.com {
+	encode gzip
+	reverse_proxy swat-web:3001
+}
+
+# === SWAT-END ===
