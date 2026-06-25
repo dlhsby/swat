@@ -90,38 +90,40 @@ demo seed, which manufactured a year of dummy `DONE` scheduling days.
 The migrator (`migrate:legacy`) needs `ts-node` (omitted from the slim runtime
 image) plus a legacy MySQL source. Since we run no legacy MySQL in the cloud, the
 committed dump (`old_swat/db_backup/`) is replayed through a throwaway MySQL by
-`infra/seed-legacy-from-dump.sh`. Run it from a **full checkout** with Docker,
-where the staging Postgres is reachable (the box, or locally via an SSM/SSH
-tunnel to the staging RDS on 5432):
+`infra/seed-legacy-from-dump.sh`. Run it from a **full checkout** with Docker. The helper is
+**self-cleaning** — it `--force-reset`s the master tables AND truncates the transaction tables —
+so it's safe to re-run on a dirty staging (it clears the old synthetic `DONE` days).
+
+**Reaching the private RDS.** Staging RDS is `PubliclyAccessible=false`. From a laptop, open an
+SSM port-forward through the box (needs `session-manager-plugin`):
+
+```bash
+aws ssm start-session --profile sekar --region ap-southeast-3 \
+  --target i-08edccdc966c0985e \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters host=dlhsby.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com,portNumber=5432,localPortNumber=15433
+```
+
+Use local port **15433** — NOT 5432 (local swat-postgres) or 15432 (local sekar-postgres). Then:
 
 ```bash
 cd swat
-# DATABASE_URL = staging Postgres (decrypt from infra/env/backend/.env.staging,
-# or use the RDS creds in SSM). Master + users only — NO transactions:
-STAGING_DATABASE_URL='postgresql://USER:PASS@HOST:5432/swat?schema=public' \
+# Decrypt the password: pnpm dlx @dotenvx/dotenvx get DATABASE_URL -f infra/env/backend/.env.staging
+# Master + users only, NO transactions. Keep &uselibpqcompat=true (pg 8.16 vs the RDS CA chain):
+STAGING_DATABASE_URL='postgresql://swat:PASS@127.0.0.1:15433/swat_staging?schema=public&sslmode=require&uselibpqcompat=true' \
   bash infra/seed-legacy-from-dump.sh
 
 # Later — import the real legacy transactional history:
 STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh --with-transactions
 ```
 
-With a live legacy MySQL instead of the dump, fill `apps/backend/.env.staging`
-and run `pnpm --filter @swat/backend run seed:staging` (then
-`seed:staging:transactions` later).
+(Or run the helper **on the box**, where RDS is directly reachable — but it spins up MySQL, so
+mind the t3.micro's memory.) With a live legacy MySQL instead of the dump, fill
+`apps/backend/.env.staging` and run `pnpm --filter @swat/backend run seed:staging`.
 
-**Reseeding a dirty staging** (e.g. clearing the old synthetic demo data — its
-dummy `DONE` scheduling days, demo users, etc. — before the legacy load). The
-migrator is idempotent by `legacyId` but does NOT delete pre-existing rows, so
-wipe to a clean schema first, then seed:
-
-```bash
-cd swat
-# Destructive: drops all data + re-applies migrations on the STAGING DB.
-DATABASE_URL='postgresql://USER:PASS@HOST:5432/swat?schema=public' \
-  pnpm --filter @swat/backend exec prisma migrate reset --force --skip-seed
-STAGING_DATABASE_URL='postgresql://USER:PASS@HOST:5432/swat?schema=public' \
-  bash infra/seed-legacy-from-dump.sh
-```
+> Don't reach for `prisma migrate reset` to wipe first: Prisma 7 has no `--skip-seed` (so it would
+> re-run the demo seed), and `DROP SCHEMA … CASCADE` overflows `max_locks_per_transaction` on the
+> partitioned tables. The helper's `--force-reset` + TRUNCATE is the supported clean reseed.
 
 Migrations themselves need no full deps and are applied automatically on every deploy
 (`prisma migrate deploy` from the runtime image).

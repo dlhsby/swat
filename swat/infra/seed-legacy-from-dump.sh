@@ -33,7 +33,8 @@ STRUCTURE_SQL="$DUMP_DIR/dkp_swat_2026_05_18_structure.sql"
 DATA_SQL="$DUMP_DIR/dkp_swat_2026_05_18_data.sql"
 
 MYSQL_CONTAINER="swat-legacy-dump-mysql"
-MYSQL_PORT="${LEGACY_DB_PORT:-13306}"
+# 13307 (not 13306) avoids colliding with a local legacy `dkp_swat` dev MySQL on :13306.
+MYSQL_PORT="${LEGACY_DB_PORT:-13307}"
 MYSQL_ROOT_PW="legacydump"
 MYSQL_DB="dkp_swat"
 TMP_ENV="$BACKEND_DIR/.env.legacydump" # gitignored; cleaned up on exit
@@ -67,14 +68,18 @@ docker run -d --name "$MYSQL_CONTAINER" \
   -e MYSQL_ROOT_PASSWORD="$MYSQL_ROOT_PW" \
   -e MYSQL_DATABASE="$MYSQL_DB" \
   -p "127.0.0.1:${MYSQL_PORT}:3306" \
-  mysql:8.0 --default-authentication-plugin=mysql_native_password >/dev/null
+  mysql:5.7 >/dev/null
+# mysql:5.7 (NOT 8.0): the dump is a MySQL 5.6 latin1 mysqldump; 8.0 is stricter and silently
+# fails some CREATE TABLEs (e.g. aplikasikendaraan), so the ETL later errors on a missing table.
 
-echo "==> Waiting for MySQL to accept connections…"
-for i in $(seq 1 60); do
-  if docker exec "$MYSQL_CONTAINER" mysqladmin ping -uroot -p"$MYSQL_ROOT_PW" --silent >/dev/null 2>&1; then
+echo "==> Waiting for MySQL to accept AUTHENTICATED connections…"
+# Probe with a real query, NOT `mysqladmin ping`: ping succeeds against the image's init-phase
+# temp server before the root password is active, so the import would hit "Access denied".
+for i in $(seq 1 90); do
+  if docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PW" -e 'SELECT 1' >/dev/null 2>&1; then
     break
   fi
-  [[ "$i" == "60" ]] && { echo "ERROR: MySQL did not become ready in time." >&2; exit 1; }
+  [[ "$i" == "90" ]] && { echo "ERROR: MySQL did not become ready in time." >&2; exit 1; }
   sleep 2
 done
 
@@ -93,11 +98,22 @@ LEGACY_DB_NAME=$MYSQL_DB
 LEGACY_SEED_PASSWORD=${LEGACY_SEED_PASSWORD:-Password123!}
 EOF
 
-echo "==> Running migrate:legacy ${INCLUDE_TRANSACTIONS:-(master + users, no transactions)}…"
-# SEED_ENV=legacydump makes migrate-legacy load .env.legacydump (DATABASE_URL +
-# LEGACY_DB_*) instead of the operator's .env.staging.
+echo "==> Running migrate:legacy --force-reset ${INCLUDE_TRANSACTIONS:-(master + users, no transactions)}…"
+# --force-reset truncates + reloads the migrated MASTER tables, so reseeding a dirty target is
+# clean. SEED_ENV=legacydump loads .env.legacydump (DATABASE_URL + LEGACY_DB_*), not the
+# operator's .env.staging.
 ( cd "$REPO_ROOT" && \
-  SEED_ENV=legacydump pnpm --filter @swat/backend run migrate:legacy -- ${INCLUDE_TRANSACTIONS} )
+  SEED_ENV=legacydump pnpm --filter @swat/backend run migrate:legacy -- --force-reset ${INCLUDE_TRANSACTIONS} )
+
+# Master-only: --force-reset only truncates the phases it runs, so the (skipped) transaction
+# tables keep any pre-existing rows — e.g. old synthetic demo days. Clear them so a master-only
+# target is genuinely transaction-free. (Prisma 7 `migrate reset` can't skip the seed, and
+# DROP SCHEMA CASCADE overflows the partitioned tables' lock budget — TRUNCATE is the right tool.)
+if [[ -z "$INCLUDE_TRANSACTIONS" ]]; then
+  echo "==> Clearing transaction tables (master-only target)…"
+  echo "TRUNCATE TABLE transaction_day, haul, haul_assignment, trip, tpa_inbound_log RESTART IDENTITY CASCADE;" \
+    | ( cd "$REPO_ROOT" && DATABASE_URL="$STAGING_DATABASE_URL" pnpm --filter @swat/backend exec prisma db execute --stdin )
+fi
 
 echo "==> Done. Legacy master + users loaded into the target database."
-echo "    Transactions: ${INCLUDE_TRANSACTIONS:+IMPORTED}${INCLUDE_TRANSACTIONS:-SKIPPED (import later with --with-transactions).}"
+echo "    Transactions: ${INCLUDE_TRANSACTIONS:+IMPORTED}${INCLUDE_TRANSACTIONS:-CLEARED (none; import later with --with-transactions).}"
