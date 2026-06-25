@@ -29,8 +29,8 @@ For the legacy/staging/production seed tracks, also create the gitignored env fi
 with the legacy MySQL + target DB creds:
 
 ```bash
-cp apps/backend/.env.staging.example    apps/backend/.env.staging
-cp apps/backend/.env.production.example  apps/backend/.env.production
+cp apps/backend/.env.migrate.staging.example    apps/backend/.env.migrate.staging
+cp apps/backend/.env.migrate.production.example  apps/backend/.env.migrate.production
 ```
 
 ## Setup the database
@@ -43,13 +43,13 @@ pnpm db:seed                # demo data (synthetic dev data + a year of trips + 
 
 Seed tracks (all idempotent, scope with `--filter @swat/backend`):
 
-| Command                         | What                                                                      |
-| ------------------------------- | ------------------------------------------------------------------------- |
-| `pnpm db:seed` / `db:seed:demo` | Synthetic dev/demo data + auto rollup backfill (no MySQL needed)          |
-| `pnpm db:seed:legacy`           | Real legacy **masters** from MySQL (no transactions); needs `LEGACY_DB_*` |
-| `pnpm db:seed:staging`          | Legacy + **transactional history** → staging DB (`SEED_ENV=staging`)      |
-| `pnpm db:seed:production`       | Production cutover (`.env.production`, needs `--confirm-production`)      |
-| `pnpm db:seed:auth`             | Permissions + roles + admin only                                          |
+| Command                         | What                                                                         |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `pnpm db:seed` / `db:seed:demo` | Synthetic dev/demo data + auto rollup backfill (no MySQL needed)             |
+| `pnpm db:seed:legacy`           | Real legacy **masters** from MySQL (no transactions); needs `LEGACY_DB_*`    |
+| `pnpm db:seed:staging`          | Legacy + **transactional history** → staging DB (`SEED_ENV=staging`)         |
+| `pnpm db:seed:production`       | Production cutover (`.env.migrate.production`, needs `--confirm-production`) |
+| `pnpm db:seed:auth`             | Permissions + roles + admin only                                             |
 
 After a legacy load, link migrated TPA logs to trips:
 `pnpm --filter @swat/backend run migrate:backfill-tpa`.

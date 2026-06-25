@@ -37,7 +37,7 @@ MYSQL_CONTAINER="swat-legacy-dump-mysql"
 MYSQL_PORT="${LEGACY_DB_PORT:-13307}"
 MYSQL_ROOT_PW="legacydump"
 MYSQL_DB="dkp_swat"
-TMP_ENV="$BACKEND_DIR/.env.legacydump" # gitignored; cleaned up on exit
+TMP_ENV="$BACKEND_DIR/.env.migrate.legacydump" # gitignored; cleaned up on exit
 INCLUDE_TRANSACTIONS=""
 
 for arg in "$@"; do
@@ -100,8 +100,8 @@ EOF
 
 echo "==> Running migrate:legacy --force-reset ${INCLUDE_TRANSACTIONS:-(master + users, no transactions)}…"
 # --force-reset truncates + reloads the migrated MASTER tables, so reseeding a dirty target is
-# clean. SEED_ENV=legacydump loads .env.legacydump (DATABASE_URL + LEGACY_DB_*), not the
-# operator's .env.staging.
+# clean. SEED_ENV=legacydump loads .env.migrate.legacydump (DATABASE_URL + LEGACY_DB_*),
+# not the operator's .env.migrate.staging.
 ( cd "$REPO_ROOT" && \
   SEED_ENV=legacydump pnpm --filter @swat/backend run migrate:legacy -- --force-reset ${INCLUDE_TRANSACTIONS} )
 

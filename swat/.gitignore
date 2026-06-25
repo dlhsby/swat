@@ -17,15 +17,16 @@ coverage/
 .env
 .env.local
 .env.*.local
-# Per-target migration env (seed:staging / seed:production) — real files hold
-# DATABASE_URL + LEGACY_DB_* secrets; only the *.example templates are committed.
+# Legacy-migration env: SEED_ENV=<env> loads `.env.migrate.<env>` (seed:staging →
+# .env.migrate.staging, seed:production → .env.migrate.production, the dump helper →
+# .env.migrate.legacydump). Real files hold DATABASE_URL + LEGACY_DB_* secrets; only
+# the *.example templates are committed. Named `.env.migrate.*` so they never collide
+# with the deploy-runtime `infra/env/*/.env.staging` below.
+.env.migrate.*
+!.env.migrate.*.example
+# Safety net: no stray plaintext .env.staging/.env.production outside infra/env/.
 .env.staging
 .env.production
-# Temp env written by infra/seed-legacy-from-dump.sh (DATABASE_URL + ephemeral
-# LEGACY_DB_* creds); auto-removed on exit, ignored as a safety net.
-.env.legacydump
-!.env.staging.example
-!.env.production.example
 apps/backend/prisma/.env
 infra/docker-compose.env
 

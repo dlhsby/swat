@@ -119,7 +119,7 @@ STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh --with-transactions
 
 (Or run the helper **on the box**, where RDS is directly reachable — but it spins up MySQL, so
 mind the t3.micro's memory.) With a live legacy MySQL instead of the dump, fill
-`apps/backend/.env.staging` and run `pnpm --filter @swat/backend run seed:staging`.
+`apps/backend/.env.migrate.staging` and run `pnpm --filter @swat/backend run seed:staging`.
 
 > Don't reach for `prisma migrate reset` to wipe first: Prisma 7 has no `--skip-seed` (so it would
 > re-run the demo seed), and `DROP SCHEMA … CASCADE` overflows `max_locks_per_transaction` on the
@@ -142,7 +142,7 @@ Migrations themselves need no full deps and are applied automatically on every d
 - **Legacy seed**: staging is seeded with real legacy master data + users (no
   transactions) via `infra/seed-legacy-from-dump.sh` (replays the committed dump
   through an ephemeral MySQL) — see _First-run data_ above. Note the two distinct
-  files: the gitignored `apps/backend/.env.staging` (legacy migration config:
+  files: the gitignored `apps/backend/.env.migrate.staging` (legacy migration config:
   DATABASE*URL + LEGACY_DB*\*) vs. the encrypted, committed
   `infra/env/backend/.env.staging` (runtime env). The seed helper writes its own
-  temp `apps/backend/.env.legacydump` and removes it on exit.
+  temp `apps/backend/.env.migrate.legacydump` and removes it on exit.
