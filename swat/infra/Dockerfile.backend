@@ -20,15 +20,29 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm --filter @swat/backend prisma:generate \
   && pnpm --filter @swat/backend build
+# Produce a self-contained PROD bundle. pnpm uses an isolated node_modules
+# (symlinks into .pnpm), so the runtime can't just copy the root tree — `pnpm
+# deploy` flattens the backend's prod deps (incl. injected workspace pkgs like
+# @swat/schemas) into /app/deploy/node_modules. Then regenerate the Prisma client
+# INTO that bundle (deploy rebuilds node_modules from the lockfile, dropping the
+# previously-generated client). prisma is a devDep, so fetch the CLI via npx.
+RUN pnpm --filter @swat/backend deploy --prod /app/deploy
 
 # --- runtime ----------------------------------------------------------------
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=build /app/node_modules ./node_modules
+# Flattened prod node_modules from the bundle (prisma is a prod dep, so the CLI +
+# `prisma/config` resolve locally); dist/prisma/config from the build.
+COPY --from=build /app/deploy/node_modules ./node_modules
 COPY --from=build /app/apps/backend/dist ./dist
 COPY --from=build /app/apps/backend/prisma ./prisma
+COPY --from=build /app/apps/backend/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/apps/backend/package.json ./package.json
+# Regenerate the Prisma client INTO this bundle's node_modules (pnpm deploy rebuilds
+# node_modules from the lockfile, dropping the build-stage-generated client). A dummy
+# URL satisfies prisma.config.ts; generate never connects.
+RUN cd /app && DATABASE_URL=postgresql://x:x@localhost:5432/x ./node_modules/.bin/prisma generate
 # AWS-staging only: the committed, dotenvx-ENCRYPTED runtime env (ciphertext). The
 # default CMD ignores it; the staging compose overrides the command with
 # `dotenvx run -f .env.staging -- …`, decrypting with DOTENV_PRIVATE_KEY_STAGING
@@ -36,9 +50,8 @@ COPY --from=build /app/apps/backend/package.json ./package.json
 # The bracket-glob makes the COPY optional: builds succeed before the operator has
 # created the encrypted file (the staging command only runs once it exists).
 COPY infra/env/backend/.env.stagin[g] ./
-# dotenvx CLI for the staging command (`dotenvx run -f .env.staging -- …`). Installed
-# globally so it's on PATH regardless of the pnpm-isolated node_modules layout; the
-# default on-prem CMD below never invokes it.
+# dotenvx CLI on PATH for the staging command (`dotenvx run -f .env.staging -- …`).
+# prisma is a bundled prod dep (node_modules/.bin/prisma), so no global prisma needed.
 RUN npm i -g @dotenvx/dotenvx@1.75.1
 EXPOSE 3000
 CMD ["node", "dist/main.js"]
