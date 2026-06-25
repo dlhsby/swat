@@ -153,6 +153,32 @@ export class ApiAuditService {
     });
   }
 
+  /**
+   * Record a machine WEBHOOK call (GPS.id ingest, Phase 7) — success or failure.
+   * The caller is unauthenticated machine-to-machine (token + IP secured), so
+   * there is no UUID principal: principalId is null, principalName labels the
+   * source. Used for every webhook call so spoof/flood attempts are auditable.
+   */
+  async logWebhook(entry: {
+    request: Request;
+    statusCode: number;
+    principalName: string;
+    requestSummary?: string | null;
+  }): Promise<void> {
+    await this.persist({
+      principalType: 'SERVICE_ACCOUNT',
+      principalId: null,
+      principalName: entry.principalName,
+      method: entry.request.method,
+      endpoint: endpointOf(entry.request),
+      statusCode: entry.statusCode,
+      requestSummary: truncate(entry.requestSummary ?? null),
+      responseSummary: null,
+      ipAddress: ipOf(entry.request),
+      userAgent: (entry.request.headers['user-agent'] ?? '').slice(0, MAX_SUMMARY),
+    });
+  }
+
   private async persist(row: ApiAuditRow): Promise<void> {
     try {
       await this.prisma.apiAuditLog.create({ data: row });
