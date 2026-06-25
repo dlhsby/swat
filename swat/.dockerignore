@@ -1,0 +1,21 @@
+# Keep the Docker build context clean and identical to a fresh CI checkout — never
+# leak a developer's local install/build artifacts (which mask CI-only failures) or
+# dev env files. Images install deps themselves; the encrypted infra/env/**/.env.staging
+# is intentionally NOT ignored (the backend image bakes it).
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.log
+.git
+.github
+# Dev-only env files (the runtime gets real values from dotenvx / the env_file).
+.env
+.env.local
+.env.*.local
+apps/backend/.env
+apps/backend/.env.local
+apps/backend/.env.staging
+apps/backend/.env.production
+apps/backend/prisma/.env
