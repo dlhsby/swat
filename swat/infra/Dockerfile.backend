@@ -4,13 +4,16 @@
 #   docker build -f infra/Dockerfile.backend -t swat-backend .
 
 # --- deps -------------------------------------------------------------------
+# Install the FULL workspace (all member manifests) so the isolated per-package
+# node_modules (e.g. apps/backend/node_modules/.bin/nest) exist — pnpm doesn't hoist.
 FROM node:20-alpine AS deps
 RUN corepack enable
 WORKDIR /app
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml* .npmrc ./
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml .npmrc turbo.json ./
 COPY apps/backend/package.json apps/backend/
+COPY apps/web/package.json apps/web/
 COPY packages/ packages/
-RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm install --frozen-lockfile
 
 # --- build ------------------------------------------------------------------
 FROM node:20-alpine AS build
@@ -21,7 +24,9 @@ WORKDIR /app
 # so set a build-only dummy — `prisma generate` (here and in the deploy postinstall)
 # never connects. The real URL comes from dotenvx at runtime.
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build?schema=public
-COPY --from=deps /app/node_modules ./node_modules
+# Bring the COMPLETE installed tree (root + per-package node_modules), then overlay
+# source (node_modules is .dockerignored, so it isn't clobbered).
+COPY --from=deps /app ./
 COPY . .
 RUN pnpm --filter @swat/backend prisma:generate \
   && pnpm --filter @swat/backend build
