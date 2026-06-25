@@ -24,6 +24,7 @@ import { OperationsModule } from './modules/operations/operations.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { PersonnelModule } from './modules/personnel/personnel.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { SchedulingModule } from './modules/scheduling/scheduling.module';
@@ -71,6 +72,7 @@ import { SessionModule } from './session.module';
     ReportsModule,
     ServiceAccountsModule,
     IntegrationsModule,
+    RealtimeModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },

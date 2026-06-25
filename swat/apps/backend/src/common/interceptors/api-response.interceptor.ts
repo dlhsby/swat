@@ -4,8 +4,10 @@ import {
   Injectable,
   type NestInterceptor,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { type Observable, map } from 'rxjs';
 
+import { SKIP_ENVELOPE } from '../decorators/raw-response.decorator';
 import { type ApiResponse, type PaginationMeta, successResponse } from '../types/api-response';
 
 /**
@@ -34,8 +36,18 @@ function isPaginated<T>(value: unknown): value is PaginatedResult<T> {
  * filter, not here.
  */
 @Injectable()
-export class ApiResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {
-  intercept(_context: ExecutionContext, next: CallHandler<T>): Observable<ApiResponse<T>> {
+export class ApiResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T> | T> {
+  constructor(private readonly reflector: Reflector) {}
+
+  intercept(context: ExecutionContext, next: CallHandler<T>): Observable<ApiResponse<T> | T> {
+    // Streaming routes (SSE) opt out — each emission must reach the client raw.
+    const skip = this.reflector.getAllAndOverride<boolean>(SKIP_ENVELOPE, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (skip) {
+      return next.handle();
+    }
     return next.handle().pipe(
       map((payload) => {
         if (isPaginated<T>(payload)) {
