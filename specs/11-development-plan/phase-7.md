@@ -1,5 +1,26 @@
 # Phase 7 — Fleet GPS Tracking & Route-Deviation Monitoring
 
+> ## Implementation status (live tracker)
+> Built on branch `feat/phase-7-gps-foundation` (one PR for the whole phase). Each
+> task verified (typecheck + lint + tests, live PostGIS/Redis where relevant) and
+> committed as a checkpoint.
+>
+> - **Epic 7.0** — ✅ T-701, T-702
+> - **Epic 7.1** — ✅ T-703, T-704, T-705, T-706, T-707
+> - **Epic 7.2** — ✅ T-708, T-709, T-710¹, T-711
+> - **Epic 7.3** — ✅ T-712², T-713, T-714
+> - **Epic 7.4** — ⬜ T-715, T-716
+> - **Epic 7.5** — ⬜ T-717, T-718
+> - **Epic 7.6** — ⬜ T-719, T-720, T-721
+> - **Epic 7.7** — ⬜ T-722, T-723, T-724
+>
+> ¹ T-710: route-template corridor editor shipped + tested; per-day Trip-override
+>   UI wiring into the scheduling board and snap-to-roads (server-proxied Roads
+>   key) are tracked follow-ups (backend + FE geometry API already support both).
+> ² T-712: `off_corridor` (PostGIS ST_DWithin + Redis hysteresis + auto-resolve) and
+>   `late_to_schedule` implemented; `dwell_too_long` (needs Site-geofence spatial
+>   check) and `off_sequence` (leg-sequence logic) are tracked follow-ups.
+
 ## Overview
 
 Track the operational fleet in **real time** using the **hardware GPS trackers (GPS.id) already installed

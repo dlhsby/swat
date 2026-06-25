@@ -7,9 +7,14 @@ import { AppConfigService } from '../../../config/config.service';
 import { ApiAuditService } from '../api-audit.service';
 
 import { CorridorRepository } from './corridor.repository';
+import { DeviationAlertController } from './deviation-alert.controller';
+import { DeviationAlertRepository } from './deviation-alert.repository';
+import { DeviationAlertService } from './deviation-alert.service';
+import { DeviationMatcherService } from './deviation-matcher.service';
 import { DeviationRuleController } from './deviation-rule.controller';
 import { DeviationRuleRepository } from './deviation-rule.repository';
 import { DeviationRuleService } from './deviation-rule.service';
+import { GpsAlertPublisher } from './gps-alert.publisher';
 import { GpsDeviceOfflineJob } from './gps-device-offline.job';
 import { GpsDeviceController } from './gps-device.controller';
 import { GpsDeviceRepository } from './gps-device.repository';
@@ -50,6 +55,7 @@ import { RouteGeometryService } from './route-geometry.service';
     GpsWebhookController,
     RouteGeometryController,
     DeviationRuleController,
+    DeviationAlertController,
   ],
   providers: [
     GpsDeviceService,
@@ -65,6 +71,10 @@ import { RouteGeometryService } from './route-geometry.service';
     CorridorRepository,
     DeviationRuleService,
     DeviationRuleRepository,
+    DeviationMatcherService,
+    DeviationAlertService,
+    DeviationAlertRepository,
+    GpsAlertPublisher,
     GpsWebhookGuard,
     // Own ApiAuditService instance (stateless — just Prisma writes): GpsModule is
     // imported BY IntegrationsModule, so it cannot inject that module's provider.

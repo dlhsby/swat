@@ -1,5 +1,6 @@
 import { type Job } from 'bullmq';
 
+import { type DeviationMatcherService } from './deviation-matcher.service';
 import { GpsIngestWorker } from './gps-ingest.worker';
 import { type GpsPingRepository, type DeviceRef } from './gps-ping.repository';
 import { type GpsPositionPublisher } from './gps-position.publisher';
@@ -38,6 +39,7 @@ describe('GpsIngestWorker', () => {
     updateDevicePosition: jest.Mock;
   };
   let publisher: { publishPosition: jest.Mock };
+  let matcher: { match: jest.Mock };
   let worker: GpsIngestWorker;
 
   const deviceMap = (refs: DeviceRef[]): Map<string, DeviceRef> =>
@@ -54,9 +56,11 @@ describe('GpsIngestWorker', () => {
       updateDevicePosition: jest.fn().mockResolvedValue(undefined),
     };
     publisher = { publishPosition: jest.fn().mockResolvedValue(undefined) };
+    matcher = { match: jest.fn().mockResolvedValue(undefined) };
     worker = new GpsIngestWorker(
       repo as unknown as GpsPingRepository,
       publisher as unknown as GpsPositionPublisher,
+      matcher as unknown as DeviationMatcherService,
     );
   });
 

@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { type Prisma } from '@prisma/client';
 import { type Job } from 'bullmq';
 
+import { DeviationMatcherService } from './deviation-matcher.service';
 import { GpsPingRepository, type DeviceRef } from './gps-ping.repository';
 import { GpsPositionPublisher } from './gps-position.publisher';
 import { type CanonicalPing, type GpsIngestJobData, GPS_INGEST_QUEUE } from './gps.types';
@@ -24,6 +25,7 @@ export class GpsIngestWorker extends WorkerHost {
   constructor(
     private readonly repo: GpsPingRepository,
     private readonly publisher: GpsPositionPublisher,
+    private readonly matcher: DeviationMatcherService,
   ) {
     super();
   }
@@ -95,6 +97,19 @@ export class GpsIngestWorker extends WorkerHost {
         recordedAt: ping.recordedAt,
         source: ping.source,
       });
+      // Deviation matching is best-effort: the ping is already persisted, so a
+      // matcher error must not fail (and retry) the whole ingest job.
+      try {
+        await this.matcher.match({
+          vehicleId: device.vehicleId,
+          latitude: ping.latitude,
+          longitude: ping.longitude,
+          speedKmh: ping.speedKmh,
+          recordedAt: new Date(ping.recordedAt),
+        });
+      } catch (err) {
+        this.logger.warn(`Deviation match failed for vehicle ${device.vehicleId}: ${String(err)}`);
+      }
     }
 
     this.logger.debug(
