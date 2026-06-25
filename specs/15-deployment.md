@@ -59,8 +59,14 @@ required reviewer), then builds + pushes to ECR, snapshots RDS, and deploys via 
 Pushing to `main` never deploys. The repo is temporarily **public** (org Actions billing) — safe
 because all committed env is dotenvx ciphertext.
 
-**Branch protection:** both `main` and `staging` require a PR + the `gate` status check + linear
-history, and block force-push/deletion. The deploy only fires from the protected `staging` branch.
+**Branch governance (repository ruleset, not classic protection):** `main` + `staging` are governed
+by the ruleset `protected-branches (main + staging)` (active) — rules: `pull_request` (0 approvals,
+thread-resolution required) · `required_status_checks` (**gate**) · `required_linear_history` ·
+`non_fast_forward` · `deletion`. The **Repository Admin role is a bypass actor** (`bypass_mode:
+always`), so a break-glass merge is sanctioned and **auditable** (Settings → Rules → Rule Insights)
+rather than toggling enforcement on/off. Classic branch protection is intentionally removed — its
+`enforce_admins` would otherwise override the ruleset bypass (most-restrictive wins). The deploy only
+fires from the governed `staging` branch.
 
 ## Security hardening
 
