@@ -118,6 +118,24 @@ enum ApiPrincipalType {
   SERVICE_ACCOUNT
 }
 
+// GPS route-deviation taxonomy (Phase 7). Closed sets, coupled to the matcher
+// code, so they are real enums (DB-enforced). The multi-source tags
+// (GpsDevice.deviceType, GpsPing.source, DailyVehicleEfficiency.positionSource)
+// are intentionally plain strings instead — new sources (e.g. a phone app) must
+// plug in WITHOUT a schema migration, per the forward-compatibility design.
+enum DeviationType {
+  off_corridor
+  off_sequence
+  dwell_too_long
+  late_to_schedule
+}
+
+enum DeviationSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
 // ===========================================================================
 // Auth
 // ===========================================================================
@@ -407,6 +425,13 @@ model Vehicle {
   wasteSources       VehicleWasteSource[]
   maintenance        MaintenanceRecord[]
   inspections        VehicleInspection[]
+  // GPS tracking (Phase 7). A vehicle may have zero devices (untracked — valid),
+  // one hardware tracker (the common case; enforced by a partial unique index),
+  // and later a mobile-app source. The `Vehicle` master itself gains no GPS
+  // columns — coverage is derived from the device's status.
+  gpsDevices         GpsDevice[]
+  gpsPings           GpsPing[]
+  deviationAlerts    DeviationAlert[]
 
   createdById String? @map("created_by_id") @db.Uuid
   updatedById String? @map("updated_by_id") @db.Uuid
@@ -496,6 +521,10 @@ model Site {
   address           String           @db.VarChar(512)
   latitude          Decimal?         @db.Decimal(11, 6)
   longitude         Decimal?         @db.Decimal(11, 6)
+  // GPS dwell exclusion (Phase 7). Dwelling within this many metres of the site
+  // is legitimate (loading/dumping) and must NOT raise a dwell alert. Null →
+  // the deviation matcher falls back to a configurable default (≈100 m).
+  geofenceRadiusM   Int?             @map("geofence_radius_m")
   createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt         DateTime?        @map("deleted_at") @db.Timestamptz(6)
@@ -529,6 +558,10 @@ model Route {
   deletedAt         DateTime?      @map("deleted_at") @db.Timestamptz(6)
   trips             Trip[]
   tripTemplates     TripTemplate[]
+  // GPS corridor template (Phase 7) — at most one per route; a day's Trip may
+  // override it (Trip.geometryOverride). Opt-in: a route without geometry is
+  // tracked but not corridor-checked.
+  geometry          RouteGeometry?
 
   createdById String? @map("created_by_id") @db.Uuid
   updatedById String? @map("updated_by_id") @db.Uuid
@@ -773,6 +806,11 @@ model Trip {
   // legacy `jatahKitir` linkage, persisted for historical auditability.
   disposalPermitId    String?         @map("disposal_permit_id") @db.Uuid
   disposalPermit      DisposalPermit? @relation("TripDisposalPermit", fields: [disposalPermitId], references: [id])
+  // Per-day GPS corridor override (Phase 7). When set, it wins over the route's
+  // RouteGeometry template for this trip only; resolved at match time (no eager
+  // copy). `geometryToleranceM` overrides the template buffer width in metres.
+  geometryOverride    Json?           @map("geometry_override")
+  geometryToleranceM  Int?            @map("geometry_tolerance_m")
 
   @@index([haulAssignmentId])
   @@index([routeId])
@@ -1100,4 +1138,177 @@ model ReportJob {
   @@index([createdAt])
   @@index([expiresAt])
   @@map("report_job")
+}
+
+// ===========================================================================
+// GPS tracking & route-deviation monitoring (Phase 7)
+//
+// Spatial columns are PROVISIONED IN RAW SQL, not here: PostGIS `geography`
+// types and partitioning are invisible to the Prisma datamodel (Prisma 7 has no
+// geometry type). The models below carry only the portable columns; a follow-up
+// raw-SQL migration adds the `geography` columns (GENERATED) + GiST indexes,
+// repartitions `gps_ping` (monthly RANGE on recorded_at, PK (recorded_at, id)),
+// and adds the partial unique index on `gps_device`. All spatial reads go
+// through `$queryRaw`. Mirror of the trip/haul partitioning approach — manage
+// with `migrate deploy`, NEVER `migrate dev` (would report drift).
+// ===========================================================================
+
+/// One telematics source per row. NOT locked 1:1 to a vehicle: `deviceId` is
+/// globally unique, but a partial unique index (raw SQL) enforces only "one
+/// ACTIVE hardware tracker per vehicle", leaving room for a future mobile-app
+/// source on the same vehicle. `deviceType`/`provider`/`status` are plain
+/// strings (forward-compatible — a new source needs no migration).
+model GpsDevice {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  vehicleId    String    @map("vehicle_id") @db.Uuid
+  vehicle      Vehicle   @relation(fields: [vehicleId], references: [id])
+  deviceType   String    @default("gps-hardware") @map("device_type") @db.VarChar(20)
+  deviceId     String    @unique @map("device_id") @db.VarChar(64)
+  imei         String?   @db.VarChar(20)
+  provider     String    @default("gpsid") @db.VarChar(20)
+  priority     Int       @default(0)
+  active       Boolean   @default(true)
+  status       String    @default("offline") @db.VarChar(12)
+  lastPingAt   DateTime? @map("last_ping_at") @db.Timestamptz(6)
+  lastLat      Decimal?  @map("last_lat") @db.Decimal(11, 6)
+  lastLng      Decimal?  @map("last_lng") @db.Decimal(11, 6)
+  lastSpeedKmh Decimal?  @map("last_speed_kmh") @db.Decimal(5, 2)
+  lastHeading  Int?      @map("last_heading")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  createdById String? @map("created_by_id") @db.Uuid
+  updatedById String? @map("updated_by_id") @db.Uuid
+
+  @@index([vehicleId])
+  @@index([imei])
+  @@map("gps_device")
+}
+
+/// High-volume append-only position log. Monthly RANGE-partitioned by
+/// `recordedAt` (device event time) with PK (recorded_at, id) + DEFAULT
+/// partition — applied in raw SQL, so the `@id` here is on `id` alone (mirrors
+/// Trip/Haul). Dedup on the unique (recordedAt, imei) via INSERT … ON CONFLICT.
+/// A maintained `geography(Point,4326)` column + GiST index live in raw SQL.
+model GpsPing {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  vehicleId  String   @map("vehicle_id") @db.Uuid
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id])
+  imei       String   @db.VarChar(20)
+  latitude   Decimal  @db.Decimal(11, 6)
+  longitude  Decimal  @db.Decimal(11, 6)
+  speedKmh   Decimal  @default(0) @map("speed_kmh") @db.Decimal(5, 2)
+  heading    Int?
+  engineOn   Boolean  @default(false) @map("engine_on")
+  odometerM  BigInt   @default(0) @map("odometer_m")
+  source     String   @default("gpsid") @db.VarChar(20)
+  accuracyM  Int?     @map("accuracy_m")
+  recordedAt DateTime @map("recorded_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([recordedAt, imei], map: "gps_ping_recorded_at_imei_key")
+  @@index([vehicleId, recordedAt])
+  @@map("gps_ping")
+}
+
+/// Pings whose IMEI maps to no registered device — parked here (never dropped)
+/// so ops can map the unknown IMEI to a vehicle in one action (Tracking admin).
+model GpsUnmatchedPing {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  imei       String   @db.VarChar(20)
+  payload    Json
+  receivedAt DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  @@index([imei])
+  @@index([receivedAt])
+  @@map("gps_unmatched_ping")
+}
+
+/// Route corridor template (one per Route). `pathGeojson` is the portable
+/// GeoJSON LineString; a maintained `geography(LineString,4326)` column + GiST
+/// index (raw SQL) back the spatial queries. `lengthMeters` is server-computed
+/// (ST_Length). A day's Trip.geometryOverride can override this template.
+model RouteGeometry {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  routeId         String   @unique @map("route_id") @db.Uuid
+  route           Route    @relation(fields: [routeId], references: [id])
+  pathGeojson     Json     @map("path_geojson")
+  toleranceMeters Int      @default(150) @map("tolerance_meters")
+  lengthMeters    Int      @default(0) @map("length_meters")
+  source          String   @default("google-maps") @db.VarChar(20)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  createdById String? @map("created_by_id") @db.Uuid
+  updatedById String? @map("updated_by_id") @db.Uuid
+
+  @@map("route_geometry")
+}
+
+/// Tunable deviation rule, one per type (route-specific overrides deferred).
+/// `threshold` is metres or seconds depending on the type; `hysteresisSec`
+/// debounces transient GPS noise so a single off-corridor ping never alerts.
+model DeviationRule {
+  id            String            @id @default(uuid(7)) @db.Uuid
+  deviationType DeviationType     @unique @map("deviation_type")
+  threshold     Int?
+  hysteresisSec Int               @default(30) @map("hysteresis_sec")
+  severity      DeviationSeverity @default(WARNING)
+  enabled       Boolean           @default(true)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("deviation_rule")
+}
+
+/// One confirmed deviation event (after hysteresis/coalescing). `tripId` is a
+/// plain column (no FK — Trip is range-partitioned). `acknowledgedById` follows
+/// the audit-stamp convention (plain Uuid, no relation). Retained indefinitely.
+model DeviationAlert {
+  id               String            @id @default(uuid(7)) @db.Uuid
+  vehicleId        String            @map("vehicle_id") @db.Uuid
+  vehicle          Vehicle           @relation(fields: [vehicleId], references: [id])
+  tripId           String?           @map("trip_id") @db.Uuid
+  alertType        DeviationType     @map("alert_type")
+  severity         DeviationSeverity @default(WARNING)
+  latitude         Decimal           @db.Decimal(11, 6)
+  longitude        Decimal           @db.Decimal(11, 6)
+  distanceM        Int?              @map("distance_m")
+  pingCount        Int               @default(1) @map("ping_count")
+  isAcknowledged   Boolean           @default(false) @map("is_acknowledged")
+  acknowledgedAt   DateTime?         @map("acknowledged_at") @db.Timestamptz(6)
+  acknowledgedById String?           @map("acknowledged_by_id") @db.Uuid
+  resolvedAt       DateTime?         @map("resolved_at") @db.Timestamptz(6)
+  notes            String?           @db.VarChar(512)
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([vehicleId, createdAt])
+  @@index([tripId])
+  @@index([isAcknowledged])
+  @@map("deviation_alert")
+}
+
+/// Per-vehicle/day efficiency rollup (denormalized — plain `vehicleId`, like the
+/// other rollups). `positionSource` records how the row was computed; `gps`-only
+/// metrics (`adherencePct`/`dwellMinutes`) are NULLABLE — null = "not measurable
+/// for an untracked vehicle", distinct from 0 = "measured and zero".
+model DailyVehicleEfficiency {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  date             DateTime @db.Date
+  vehicleId        String   @map("vehicle_id") @db.Uuid
+  positionSource   String   @map("position_source") @db.VarChar(12)
+  plannedMeters    Int      @default(0) @map("planned_meters")
+  actualMeters     Int      @default(0) @map("actual_meters")
+  adherencePct     Decimal? @map("adherence_pct") @db.Decimal(5, 2)
+  dwellMinutes     Decimal? @map("dwell_minutes") @db.Decimal(8, 2)
+  lateMinutes      Int      @default(0) @map("late_minutes")
+  wastedFuelLiters Decimal  @default(0) @map("wasted_fuel_liters") @db.Decimal(8, 2)
+  gpsidFuelLiters  Decimal? @map("gpsid_fuel_liters") @db.Decimal(8, 2)
+  deviationCount   Int      @default(0) @map("deviation_count")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([date, vehicleId], map: "daily_vehicle_efficiency_date_vehicle_key")
+  @@index([vehicleId])
+  @@map("daily_vehicle_efficiency")
 }

@@ -49,4 +49,34 @@ describe('validateEnv', () => {
   it('rejects a too-short session secret', () => {
     expect(() => validateEnv({ ...VALID, SESSION_SECRET: 'short' })).toThrow(/SESSION_SECRET/);
   });
+
+  it('applies GPS ingestion defaults (token optional in dev)', () => {
+    const env = validateEnv(VALID);
+    expect(env.GPS_WEBHOOK_TOKEN).toBeUndefined();
+    expect(env.GPS_WEBHOOK_ALLOWED_IPS).toBe('');
+    expect(env.GPS_INGEST_RATE_LIMIT_PER_MIN).toBe(600);
+    expect(env.GPS_DEVICE_OFFLINE_MINUTES).toBe(10);
+  });
+
+  it('rejects a too-short GPS webhook token', () => {
+    expect(() => validateEnv({ ...VALID, GPS_WEBHOOK_TOKEN: 'short' })).toThrow(
+      /GPS_WEBHOOK_TOKEN/,
+    );
+  });
+
+  it('requires GPS_WEBHOOK_TOKEN in production', () => {
+    expect(() => validateEnv({ ...VALID, NODE_ENV: 'production' })).toThrow(/GPS_WEBHOOK_TOKEN/);
+    // …and accepts production once a valid token is supplied.
+    expect(
+      validateEnv({
+        ...VALID,
+        NODE_ENV: 'production',
+        GPS_WEBHOOK_TOKEN: 'a-long-enough-gps-webhook-token',
+      }).GPS_WEBHOOK_TOKEN,
+    ).toBe('a-long-enough-gps-webhook-token');
+  });
+
+  it('rejects a malformed GPS.id base URL', () => {
+    expect(() => validateEnv({ ...VALID, GPSID_BASE_URL: 'not-a-url' })).toThrow(/GPSID_BASE_URL/);
+  });
 });

@@ -1,0 +1,13 @@
+-- ===========================================================================
+-- Enable PostGIS (Phase 7 GPS tracking).
+--
+-- The dev/CI/prod Postgres images were swapped to `postgis/postgis:15-3.4`,
+-- which ships the PostGIS shared libraries. This migration enables the
+-- extension so later spatial migrations can add `geography` columns + GiST
+-- indexes and the matcher can run `ST_DWithin` / `ST_Length` queries.
+--
+-- Idempotent: `IF NOT EXISTS` so a re-run (or a cluster where the extension
+-- is already present) is a no-op. Must run BEFORE any migration that creates
+-- a `geography` column.
+-- ===========================================================================
+CREATE EXTENSION IF NOT EXISTS postgis;

@@ -100,6 +100,13 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
       'trip:record-fuel',
       'fuel:approve',
       'transaction-day:manage',
+      // GPS tracking admin (Phase 7) — manage the device registry, draw route
+      // corridors, tune deviation rules, and acknowledge alerts. (`*:read`
+      // already grants gps-device:read / deviation-alert:read / tracking:read.)
+      'gps-device:manage',
+      'route-geometry:manage',
+      'deviation-rule:manage',
+      'deviation-alert:acknowledge',
     ],
   },
   { name: 'Checker', patterns: ['vehicle:read', 'driver:read', 'trip:read', 'trip:verify'] },
@@ -136,7 +143,16 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
   },
   {
     name: 'Supervisor',
-    patterns: ['*:read', 'monitoring:read', 'report:read', 'report:export', 'transaction-day:read'],
+    patterns: [
+      '*:read',
+      'monitoring:read',
+      'report:read',
+      'report:export',
+      'transaction-day:read',
+      // GPS tracking (Phase 7) — watch the live fleet + acknowledge route
+      // deviations. (`*:read` already grants tracking:read / deviation-alert:read.)
+      'deviation-alert:acknowledge',
+    ],
   },
 ];
 

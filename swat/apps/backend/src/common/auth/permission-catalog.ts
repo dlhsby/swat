@@ -143,6 +143,17 @@ export const PERMISSION_KEYS: readonly string[] = [
   'weighbridge:post',
   'weighbridge:update',
   'weighbridge:read',
+  // GPS tracking & route-deviation monitoring (Phase 7). Device registry +
+  // corridor authoring are admin (DataAdmin); live tracking + alert handling go
+  // to Supervisors. The GPS.id webhook itself is unauthenticated machine-to-
+  // machine (token + IP + rate-limit), so it needs no permission key.
+  'gps-device:read',
+  'gps-device:manage',
+  'route-geometry:manage',
+  'deviation-rule:manage',
+  'deviation-alert:read',
+  'deviation-alert:acknowledge',
+  'tracking:read',
 ];
 
 const ACTION_LABELS: Readonly<Record<string, string>> = {
@@ -156,6 +167,9 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   export: 'export',
   generate: 'generate',
   approve: 'approve',
+  acknowledge: 'acknowledge',
+  resolve: 'resolve',
+  post: 'post',
   'record-pickup': 'record pickup for',
   'record-disposal': 'record disposal for',
   'record-fuel': 'record fuel for',

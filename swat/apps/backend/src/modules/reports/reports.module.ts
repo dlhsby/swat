@@ -1,6 +1,7 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 
+import { bullRedisConnection } from '../../common/bull/bull-connection';
 import { AppConfigModule } from '../../config';
 import { AppConfigService } from '../../config/config.service';
 import { MonitoringModule } from '../monitoring/monitoring.module';
@@ -20,30 +21,6 @@ import { REPORTS_QUEUE } from './report.types';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 
-/** ioredis connection options derived from the REDIS_URL (BullMQ workers need
- * maxRetriesPerRequest=null). Supports `rediss://` (TLS) and an optional db index. */
-function redisConnection(url: string): {
-  host: string;
-  port: number;
-  password?: string;
-  username?: string;
-  db: number;
-  maxRetriesPerRequest: null;
-  tls?: Record<string, never>;
-} {
-  const parsed = new URL(url);
-  const db = parsed.pathname.length > 1 ? Number(parsed.pathname.slice(1)) || 0 : 0;
-  return {
-    host: parsed.hostname,
-    port: Number(parsed.port) || 6379,
-    username: parsed.username || undefined,
-    password: parsed.password ? decodeURIComponent(parsed.password) : undefined,
-    db,
-    maxRetriesPerRequest: null,
-    ...(parsed.protocol === 'rediss:' ? { tls: {} } : {}),
-  };
-}
-
 /**
  * Phase 3 report engine: async Excel/PDF generation. Reports are produced by a
  * BullMQ worker (data via {@link MonitoringService}, rollup-backed) and stored
@@ -55,7 +32,7 @@ function redisConnection(url: string): {
       imports: [AppConfigModule],
       inject: [AppConfigService],
       useFactory: (config: AppConfigService) => ({
-        connection: redisConnection(config.redisUrl),
+        connection: bullRedisConnection(config.redisUrl),
       }),
     }),
     BullModule.registerQueue({ name: REPORTS_QUEUE }),

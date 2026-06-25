@@ -85,4 +85,42 @@ export class AppConfigService {
   get weighbridgeRateLimitPerMin(): number {
     return this.get('WEIGHBRIDGE_RATE_LIMIT_PER_MIN');
   }
+
+  /**
+   * GPS.id webhook + ingestion settings (Phase 7). `webhookToken` is undefined
+   * when unset (dev/test) — the webhook guard then rejects every call rather than
+   * accepting an unauthenticated ingress. `allowedIps` is the parsed, trimmed,
+   * non-empty allowlist (empty array → allow any source, rely on the token).
+   */
+  get gps(): {
+    webhookToken: string | undefined;
+    allowedIps: readonly string[];
+    ingestRateLimitPerMin: number;
+    deviceOfflineMinutes: number;
+  } {
+    return {
+      webhookToken: this.get('GPS_WEBHOOK_TOKEN'),
+      allowedIps: this.get('GPS_WEBHOOK_ALLOWED_IPS')
+        .split(',')
+        .map((ip) => ip.trim())
+        .filter((ip) => ip.length > 0),
+      ingestRateLimitPerMin: this.get('GPS_INGEST_RATE_LIMIT_PER_MIN'),
+      deviceOfflineMinutes: this.get('GPS_DEVICE_OFFLINE_MINUTES'),
+    };
+  }
+
+  /**
+   * GPS.id pull-API credentials (Phase 7, nightly batch). Returns null when any
+   * credential is missing so callers fail loudly ("pull API not configured")
+   * instead of issuing an unauthenticated request. Never hardcode these.
+   */
+  get gpsidPullCredentials(): { baseUrl: string; username: string; password: string } | null {
+    const baseUrl = this.get('GPSID_BASE_URL');
+    const username = this.get('GPSID_USERNAME');
+    const password = this.get('GPSID_PASSWORD');
+    if (!baseUrl || !username || !password) {
+      return null;
+    }
+    return { baseUrl, username, password };
+  }
 }

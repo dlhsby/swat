@@ -22,6 +22,13 @@ const ENV: Env = {
   S3_FORCE_PATH_STYLE: true,
   S3_USE_INSTANCE_ROLE: false,
   WEIGHBRIDGE_RATE_LIMIT_PER_MIN: 500,
+  GPS_WEBHOOK_TOKEN: 'a-long-enough-gps-webhook-token',
+  GPS_WEBHOOK_ALLOWED_IPS: ' 203.0.113.10, 203.0.113.11 ,',
+  GPS_INGEST_RATE_LIMIT_PER_MIN: 600,
+  GPS_DEVICE_OFFLINE_MINUTES: 10,
+  GPSID_BASE_URL: 'https://gps.id/api',
+  GPSID_USERNAME: 'swat',
+  GPSID_PASSWORD: 'gpsid-secret',
 };
 
 describe('AppConfigService', () => {
@@ -73,5 +80,30 @@ describe('AppConfigService', () => {
     } as unknown as ConfigService<Env, true>);
     expect(staged.sessionCookieDomain).toBe('.swat.wahyutrip.com');
     expect(staged.sessionCookieSameSite).toBe('lax');
+  });
+
+  it('groups GPS settings and parses the IP allowlist (trimmed, no blanks)', () => {
+    expect(service.gps).toEqual({
+      webhookToken: 'a-long-enough-gps-webhook-token',
+      allowedIps: ['203.0.113.10', '203.0.113.11'],
+      ingestRateLimitPerMin: 600,
+      deviceOfflineMinutes: 10,
+    });
+  });
+
+  it('returns GPS.id pull credentials when all are set', () => {
+    expect(service.gpsidPullCredentials).toEqual({
+      baseUrl: 'https://gps.id/api',
+      username: 'swat',
+      password: 'gpsid-secret',
+    });
+  });
+
+  it('returns null GPS.id credentials when any is missing (fail loudly, never silent)', () => {
+    const partialEnv: Env = { ...ENV, GPSID_PASSWORD: undefined };
+    const partial = new AppConfigService({
+      get: <K extends keyof Env>(key: K): Env[K] => partialEnv[key],
+    } as unknown as ConfigService<Env, true>);
+    expect(partial.gpsidPullCredentials).toBeNull();
   });
 });
