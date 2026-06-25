@@ -87,7 +87,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: swat-redis
-    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
+    # noeviction (not allkeys-lru): BullMQ + sessions must never have keys evicted.
+    # maxmemory stays under the container mem_limit (96m) to avoid OOM.
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy noeviction
     volumes:
       - redis-data:/data
     healthcheck:
