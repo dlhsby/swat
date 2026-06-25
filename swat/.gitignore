@@ -17,14 +17,10 @@ coverage/
 .env
 .env.local
 .env.*.local
-# Legacy-migration env: SEED_ENV=<env> loads `.env.migrate.<env>` (seed:staging →
-# .env.migrate.staging, seed:production → .env.migrate.production, the dump helper →
-# .env.migrate.legacydump). Real files hold DATABASE_URL + LEGACY_DB_* secrets; only
-# the *.example templates are committed. Named `.env.migrate.*` so they never collide
-# with the deploy-runtime `infra/env/*/.env.staging` below.
-.env.migrate.*
-!.env.migrate.*.example
-# Safety net: no stray plaintext .env.staging/.env.production outside infra/env/.
+# Staging/production seeding reads DATABASE_URL from the encrypted infra/env/*/.env.staging
+# (decrypted by the dump helper); there is no separate plaintext seed env file. Safety net:
+# never commit a stray plaintext .env.staging/.env.production outside infra/env/ (the encrypted
+# runtime files there are re-included below).
 .env.staging
 .env.production
 apps/backend/prisma/.env

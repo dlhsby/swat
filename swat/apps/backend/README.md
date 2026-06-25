@@ -25,13 +25,12 @@ cp apps/backend/prisma/.env.example apps/backend/prisma/.env # DATABASE_URL for 
 Key vars (see `.env.example` for all): `BE_PORT` (default 3000), `DATABASE_URL`,
 `REDIS_URL`, `S3_*`, `SESSION_SECRET`, `JWT_SECRET`, optional `CORS_ORIGIN`.
 
-For the legacy/staging/production seed tracks, also create the gitignored env files
-with the legacy MySQL + target DB creds:
-
-```bash
-cp apps/backend/.env.migrate.staging.example    apps/backend/.env.migrate.staging
-cp apps/backend/.env.migrate.production.example  apps/backend/.env.migrate.production
-```
+The staging/production seed tracks read the **target** `DATABASE_URL` from the encrypted
+`infra/env/backend/.env.staging` (the same file the runtime uses — no separate seed env file)
+and need `LEGACY_DB_*` (the legacy MySQL source) in the environment. The easiest path is
+`infra/seed-legacy-from-dump.sh`, which decrypts `DATABASE_URL` and stands up a throwaway MySQL
+from the committed dump. To run `seed:staging` directly against a live legacy MySQL, export
+`DATABASE_URL` + `LEGACY_DB_*` yourself first.
 
 ## Setup the database
 
@@ -43,13 +42,13 @@ pnpm db:seed                # demo data (synthetic dev data + a year of trips + 
 
 Seed tracks (all idempotent, scope with `--filter @swat/backend`):
 
-| Command                         | What                                                                         |
-| ------------------------------- | ---------------------------------------------------------------------------- |
-| `pnpm db:seed` / `db:seed:demo` | Synthetic dev/demo data + auto rollup backfill (no MySQL needed)             |
-| `pnpm db:seed:legacy`           | Real legacy **masters** from MySQL (no transactions); needs `LEGACY_DB_*`    |
-| `pnpm db:seed:staging`          | Legacy + **transactional history** → staging DB (`SEED_ENV=staging`)         |
-| `pnpm db:seed:production`       | Production cutover (`.env.migrate.production`, needs `--confirm-production`) |
-| `pnpm db:seed:auth`             | Permissions + roles + admin only                                             |
+| Command                         | What                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| `pnpm db:seed` / `db:seed:demo` | Synthetic dev/demo data + auto rollup backfill (no MySQL needed)          |
+| `pnpm db:seed:legacy`           | Real legacy **masters** from MySQL (no transactions); needs `LEGACY_DB_*` |
+| `pnpm db:seed:staging`          | Legacy + **transactional history** → staging DB (`SEED_ENV=staging`)      |
+| `pnpm db:seed:production`       | Production cutover (`SEED_ENV=production`, needs `--confirm-production`)  |
+| `pnpm db:seed:auth`             | Permissions + roles + admin only                                          |
 
 After a legacy load, link migrated TPA logs to trips:
 `pnpm --filter @swat/backend run migrate:backfill-tpa`.

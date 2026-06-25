@@ -37,7 +37,8 @@ MYSQL_CONTAINER="swat-legacy-dump-mysql"
 MYSQL_PORT="${LEGACY_DB_PORT:-13307}"
 MYSQL_ROOT_PW="legacydump"
 MYSQL_DB="dkp_swat"
-TMP_ENV="$BACKEND_DIR/.env.migrate.legacydump" # gitignored; cleaned up on exit
+DOTENVX="$BACKEND_DIR/node_modules/.bin/dotenvx"
+ENCRYPTED_ENV="$REPO_ROOT/infra/env/backend/.env.staging"
 INCLUDE_TRANSACTIONS=""
 
 for arg in "$@"; do
@@ -47,18 +48,27 @@ for arg in "$@"; do
   esac
 done
 
-if [[ -z "${STAGING_DATABASE_URL:-}" ]]; then
-  echo "ERROR: STAGING_DATABASE_URL is required (target PostgreSQL connection string)." >&2
-  exit 1
+# Target DATABASE_URL. An explicit STAGING_DATABASE_URL wins (e.g. a 127.0.0.1:15433 tunnel URL
+# from a laptop, since the RDS host is private). Otherwise decrypt it from the SAME encrypted
+# runtime env the deploy uses — infra/env/backend/.env.staging — so there's ONE .env.staging and
+# no separate seed env file. (On the box the decrypted RDS host is directly reachable.)
+DATABASE_URL="${STAGING_DATABASE_URL:-}"
+if [[ -z "$DATABASE_URL" ]]; then
+  [[ -x "$DOTENVX" && -f "$ENCRYPTED_ENV" ]] || {
+    echo "ERROR: set STAGING_DATABASE_URL, or ensure $ENCRYPTED_ENV + dotenvx exist to decrypt it." >&2; exit 1; }
+  DATABASE_URL="$("$DOTENVX" get DATABASE_URL -f "$ENCRYPTED_ENV" 2>/dev/null)"
+  [[ -n "$DATABASE_URL" ]] || {
+    echo "ERROR: could not decrypt DATABASE_URL from $ENCRYPTED_ENV (need the dotenvx private key)." >&2; exit 1; }
+  echo "==> DATABASE_URL decrypted from $ENCRYPTED_ENV"
 fi
+export DATABASE_URL
 for f in "$STRUCTURE_SQL" "$DATA_SQL"; do
   [[ -f "$f" ]] || { echo "ERROR: legacy dump not found: $f" >&2; exit 1; }
 done
 
 cleanup() {
-  echo "Tearing down ephemeral MySQL + temp env…"
+  echo "Tearing down ephemeral MySQL…"
   docker rm -f "$MYSQL_CONTAINER" >/dev/null 2>&1 || true
-  rm -f "$TMP_ENV"
 }
 trap cleanup EXIT
 
@@ -87,23 +97,21 @@ echo "==> Importing legacy schema + data…"
 docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PW" "$MYSQL_DB" < "$STRUCTURE_SQL"
 docker exec -i "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PW" "$MYSQL_DB" < "$DATA_SQL"
 
-echo "==> Writing temp migration env ($TMP_ENV)…"
-cat > "$TMP_ENV" <<EOF
-DATABASE_URL=$STAGING_DATABASE_URL
-LEGACY_DB_HOST=127.0.0.1
-LEGACY_DB_PORT=$MYSQL_PORT
-LEGACY_DB_USER=root
-LEGACY_DB_PASSWORD=$MYSQL_ROOT_PW
-LEGACY_DB_NAME=$MYSQL_DB
-LEGACY_SEED_PASSWORD=${LEGACY_SEED_PASSWORD:-Password123!}
-EOF
+# Source creds for the ephemeral MySQL, exported into the migrator's env. DATABASE_URL (target)
+# is already exported above. No env file is written.
+export LEGACY_DB_HOST=127.0.0.1
+export LEGACY_DB_PORT="$MYSQL_PORT"
+export LEGACY_DB_USER=root
+export LEGACY_DB_PASSWORD="$MYSQL_ROOT_PW"
+export LEGACY_DB_NAME="$MYSQL_DB"
+export LEGACY_SEED_PASSWORD="${LEGACY_SEED_PASSWORD:-Password123!}"
 
 echo "==> Running migrate:legacy --force-reset ${INCLUDE_TRANSACTIONS:-(master + users, no transactions)}…"
 # --force-reset truncates + reloads the migrated MASTER tables, so reseeding a dirty target is
-# clean. SEED_ENV=legacydump loads .env.migrate.legacydump (DATABASE_URL + LEGACY_DB_*),
-# not the operator's .env.migrate.staging.
+# clean. SEED_ENV=staging tells migrate:legacy to trust the exported DATABASE_URL + LEGACY_DB_*
+# (and NOT load prisma/.env, whose dev DATABASE_URL would shadow the target).
 ( cd "$REPO_ROOT" && \
-  SEED_ENV=legacydump pnpm --filter @swat/backend run migrate:legacy -- --force-reset ${INCLUDE_TRANSACTIONS} )
+  SEED_ENV=staging pnpm --filter @swat/backend run migrate:legacy -- --force-reset ${INCLUDE_TRANSACTIONS} )
 
 # Master-only: --force-reset only truncates the phases it runs, so the (skipped) transaction
 # tables keep any pre-existing rows — e.g. old synthetic demo days. Clear them so a master-only
@@ -112,7 +120,7 @@ echo "==> Running migrate:legacy --force-reset ${INCLUDE_TRANSACTIONS:-(master +
 if [[ -z "$INCLUDE_TRANSACTIONS" ]]; then
   echo "==> Clearing transaction tables (master-only target)…"
   echo "TRUNCATE TABLE transaction_day, haul, haul_assignment, trip, tpa_inbound_log RESTART IDENTITY CASCADE;" \
-    | ( cd "$REPO_ROOT" && DATABASE_URL="$STAGING_DATABASE_URL" pnpm --filter @swat/backend exec prisma db execute --stdin )
+    | ( cd "$REPO_ROOT" && pnpm --filter @swat/backend exec prisma db execute --stdin )
 fi
 
 echo "==> Done. Legacy master + users loaded into the target database."
