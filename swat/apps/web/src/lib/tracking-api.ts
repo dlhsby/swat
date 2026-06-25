@@ -53,8 +53,41 @@ function alertQuery(filter: AlertFilter): string {
   return params.toString();
 }
 
+export interface EfficiencyRow {
+  readonly date: string;
+  readonly vehicleId: string;
+  readonly plate: string;
+  readonly positionSource: string;
+  readonly plannedMeters: number;
+  readonly actualMeters: number;
+  readonly adherencePct: number | null;
+  readonly dwellMinutes: number | null;
+  readonly lateMinutes: number;
+  readonly wastedFuelLiters: number;
+  readonly gpsidFuelLiters: number | null;
+  readonly deviationCount: number;
+}
+
+export interface EfficiencyDashboard {
+  readonly kpis: {
+    readonly adherencePct: number | null;
+    readonly wastedFuelLiters: number;
+    readonly gpsidFuelLiters: number | null;
+    readonly lateMinutes: number;
+    readonly deviationCount: number;
+    readonly distanceKm: number;
+    readonly gpsCoverageRate: number;
+    readonly deviceOnline: number;
+    readonly deviceOffline: number;
+    readonly deviceOfflineRate: number;
+  };
+  readonly rows: EfficiencyRow[];
+}
+
 /** Phase 7 GPS tracking API — fleet positions, breadcrumb track, deviation alerts. */
 export const trackingApi = {
+  efficiency: (from: string, to: string): Promise<EfficiencyDashboard> =>
+    apiClient.get(`/monitoring/efficiency?from=${from}&to=${to}`),
   positions: (): Promise<VehiclePosition[]> => apiClient.get('/monitoring/fleet-positions'),
   track: (vehicleId: string, minutes = 60): Promise<TrackPoint[]> =>
     apiClient.get(`/gps/vehicles/${vehicleId}/track?minutes=${minutes}`),

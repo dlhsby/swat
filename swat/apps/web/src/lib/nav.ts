@@ -86,6 +86,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: Ticket,
         permission: 'monitoring:read',
       },
+      {
+        key: 'efficiency',
+        href: '/monitoring/efficiency',
+        icon: Gauge,
+        permission: 'monitoring:read',
+      },
     ],
   },
   {

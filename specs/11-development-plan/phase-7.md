@@ -11,7 +11,7 @@
 > - **Epic 7.3** — ✅ T-712², T-713, T-714
 > - **Epic 7.4** — ✅ T-715, T-716
 > - **Epic 7.5** — ✅ T-717, T-718³
-> - **Epic 7.6** — ⬜ T-719, T-720, T-721
+> - **Epic 7.6** — ✅ T-719⁴, T-720, T-721
 > - **Epic 7.7** — ⬜ T-722, T-723, T-724
 >
 > ¹ T-710: route-template corridor editor shipped + tested; per-day Trip-override
@@ -22,6 +22,10 @@
 >   check) and `off_sequence` (leg-sequence logic) are tracked follow-ups.
 > ³ T-718: alert center lives on the Pengangkutan → Peta tab (live SSE + REST,
 >   acknowledge); a global header-bell + filterable history view are follow-ups.
+> ⁴ T-719: efficiency rollup computes odometer-primary distance, late minutes,
+>   deviation count, internal wasted-fuel + nightly GPS.id mileage cross-check
+>   (T-720) + dashboard (T-721); `adherencePct`/`dwellMinutes` left NULL (need
+>   ping-vs-corridor replay + the deferred dwell logic) — tracked follow-up.
 
 ## Overview
 

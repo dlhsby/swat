@@ -19,6 +19,11 @@ import { GpsDeviceOfflineJob } from './gps-device-offline.job';
 import { GpsDeviceController } from './gps-device.controller';
 import { GpsDeviceRepository } from './gps-device.repository';
 import { GpsDeviceService } from './gps-device.service';
+import { GpsEfficiencyReadService } from './gps-efficiency-read.service';
+import { GpsEfficiencyController } from './gps-efficiency.controller';
+import { GpsEfficiencyJob } from './gps-efficiency.job';
+import { GpsEfficiencyRepository } from './gps-efficiency.repository';
+import { GpsEfficiencyService } from './gps-efficiency.service';
 import { GpsIngestQueue } from './gps-ingest.queue';
 import { GpsIngestWorker } from './gps-ingest.worker';
 import { GpsPingRepository } from './gps-ping.repository';
@@ -60,6 +65,7 @@ import { VehiclePositionService } from './vehicle-position.service';
     DeviationRuleController,
     DeviationAlertController,
     VehiclePositionController,
+    GpsEfficiencyController,
   ],
   providers: [
     GpsDeviceService,
@@ -81,6 +87,10 @@ import { VehiclePositionService } from './vehicle-position.service';
     GpsAlertPublisher,
     VehiclePositionService,
     VehiclePositionRepository,
+    GpsEfficiencyService,
+    GpsEfficiencyReadService,
+    GpsEfficiencyRepository,
+    GpsEfficiencyJob,
     GpsWebhookGuard,
     // Own ApiAuditService instance (stateless — just Prisma writes): GpsModule is
     // imported BY IntegrationsModule, so it cannot inject that module's provider.
