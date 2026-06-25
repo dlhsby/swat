@@ -1,4 +1,17 @@
 {
+  "corridor": {
+    "title": "Route Corridor",
+    "mapPlaceholder": "Map not configured — set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to draw corridors.",
+    "drawHint": "Click the map to add corridor points; drag a marker to move it.",
+    "pointCount": "{count} point(s)",
+    "undo": "Undo",
+    "clear": "Clear",
+    "tolerance": "Tolerance (metres)",
+    "toleranceHint": "Corridor width — a vehicle beyond this distance is off-corridor.",
+    "delete": "Delete corridor",
+    "cancel": "Cancel",
+    "save": "Save corridor"
+  },
   "common": {
     "appName": "SWAT",
     "appTagline": "Integrated Waste Transport System — DLH Surabaya",

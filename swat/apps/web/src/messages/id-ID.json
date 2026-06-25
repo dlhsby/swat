@@ -1,4 +1,17 @@
 {
+  "corridor": {
+    "title": "Koridor Rute",
+    "mapPlaceholder": "Peta belum dikonfigurasi — atur NEXT_PUBLIC_GOOGLE_MAPS_API_KEY untuk menggambar koridor.",
+    "drawHint": "Klik peta untuk menambah titik koridor; seret penanda untuk memindahkan.",
+    "pointCount": "{count} titik",
+    "undo": "Urungkan",
+    "clear": "Bersihkan",
+    "tolerance": "Toleransi (meter)",
+    "toleranceHint": "Lebar koridor — kendaraan di luar jarak ini dianggap menyimpang.",
+    "delete": "Hapus Koridor",
+    "cancel": "Batal",
+    "save": "Simpan Koridor"
+  },
   "common": {
     "appName": "SWAT",
     "appTagline": "Sistem Pengangkutan Sampah Terpadu — DLH Surabaya",

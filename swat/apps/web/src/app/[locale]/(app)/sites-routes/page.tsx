@@ -1,11 +1,13 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
+import { Spline } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ProtectedAction } from '@/components/auth/protected-action';
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
 import { CrudListShell } from '@/components/crud/crud-list-shell';
 import {
@@ -17,7 +19,11 @@ import {
 } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
 import { PageHead } from '@/components/shell/page-head';
-import { Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import {
+  type CorridorRoute,
+  RouteCorridorEditor,
+} from '@/components/tracking/route-corridor-editor';
+import { Badge, DropdownMenuItem, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { formatNumber } from '@/lib/format';
@@ -280,6 +286,7 @@ function RouteSiteFields({ sites }: { sites: readonly SiteDto[] }): JSX.Element 
 function RoutesTab(): JSX.Element {
   const manager = useResourceManager(routesApi, (r) => r.id);
   const { rows: sites } = useResourceList(sitesApi.list);
+  const [corridorRoute, setCorridorRoute] = useState<CorridorRoute | null>(null);
   const columns = useMemo<ColumnDef<RouteDto, unknown>[]>(
     () => [
       {
@@ -320,6 +327,14 @@ function RoutesTab(): JSX.Element {
               resource="route"
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
+              extra={
+                <ProtectedAction permission="route-geometry:manage">
+                  <DropdownMenuItem onSelect={() => setCorridorRoute(row.original)}>
+                    <Spline aria-hidden />
+                    Koridor
+                  </DropdownMenuItem>
+                </ProtectedAction>
+              }
             />
           </div>
         ),
@@ -350,6 +365,7 @@ function RoutesTab(): JSX.Element {
         <RouteSiteFields sites={sites} />
         <NumberField name="distanceKm" label="Jarak" required unit="km" min={0} />
       </CrudFormDialog>
+      <RouteCorridorEditor route={corridorRoute} onClose={() => setCorridorRoute(null)} />
     </CrudListShell>
   );
 }
