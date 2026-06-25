@@ -17,6 +17,7 @@ import { GpsPositionPublisher } from './gps-position.publisher';
 import { GpsWebhookController } from './gps-webhook.controller';
 import { GpsWebhookGuard } from './gps-webhook.guard';
 import { GPS_INGEST_QUEUE } from './gps.types';
+import { GpsidClientService } from './gpsid-client.service';
 
 /**
  * GPS tracking & route-deviation monitoring (Phase 7).
@@ -46,6 +47,7 @@ import { GPS_INGEST_QUEUE } from './gps.types';
     GpsPingRepository,
     GpsPositionPublisher,
     GpsDeviceOfflineJob,
+    GpsidClientService,
     GpsWebhookGuard,
     // Own ApiAuditService instance (stateless — just Prisma writes): GpsModule is
     // imported BY IntegrationsModule, so it cannot inject that module's provider.
