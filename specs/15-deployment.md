@@ -44,8 +44,9 @@ The runtime env for staging is committed **encrypted** at `infra/env/backend/.en
 image bakes the encrypted file and decrypts at boot via `dotenvx run` using
 `DOTENV_PRIVATE_KEY_STAGING` materialized from SSM by `infra/seed-env-from-ssm.sh`. The web image
 decrypts `NEXT_PUBLIC_*` at build time from a BuildKit secret (GitHub Environment secret
-`WEB_DOTENV_PRIVATE_KEY`). This is distinct from the legacy-seed `apps/backend/.env.staging`
-(plaintext, gitignored, used only by `seed:staging`).
+`WEB_DOTENV_PRIVATE_KEY`). This is distinct from the legacy-seed `apps/backend/.env.migrate.staging`
+(plaintext, gitignored, loaded by `migrate:legacy` when `SEED_ENV=staging`) — named `.env.migrate.*`
+so it never collides with this runtime `.env.staging`.
 
 ## CI/CD
 
@@ -83,13 +84,19 @@ fires from the governed `staging` branch.
 
 ## First-run data
 
-Staging holds the **real legacy master data** loaded via `seed:staging` from the committed
-`old_swat/db_backup/dkp_swat_*.sql` dump (934 sites, 4,897 routes, 1,463 vehicles, …; Hauls/Trips = 0
-because the dump's transaction tables are empty). Because RDS is private (box-only) and the slim
-runtime image omits `ts-node`, the seed runs on the box via a one-off `node:20` container that restores
-the dump into a throwaway `mysql:5.7`, points `LEGACY_DB_*` at it, and runs
-`migrate:legacy --include-transactions --force-reset` (clears any prior demo data). Re-run `seed:demo`
-instead for synthetic data. This mirrors the local `seed:staging` flow (local `dkp_swat` on `:13306`).
+Staging holds the **real legacy master data, no transactions** — users, roles/permissions
+(reconciled to the current app's permission catalog), sites, routes, vehicles, drivers, schedule +
+trip templates (934 sites, 4,897 routes, 1,463 vehicles, …). The transaction tables are **empty by
+design** (`transaction_day = haul = trip = 0`); real legacy transactions are imported later. This is
+what keeps `/scheduling` from showing fabricated `DONE` days — it replaced the old synthetic demo seed.
+
+`migrate:legacy` is a live-MySQL→Postgres ETL, so the loader `infra/seed-legacy-from-dump.sh` replays
+the committed `old_swat/db_backup/dkp_swat_*.sql` dump through a throwaway `mysql:5.7`, runs the master
+phase (`--force-reset` truncates + reloads master), and truncates the transaction tables — leaving a
+clean, transaction-free master. RDS is private (box-only), so run it from a full checkout over an SSM
+tunnel (local port 15433) or on the box. **Later**, import real transactions with `--with-transactions`
+(or `seed:staging:transactions` against a live legacy MySQL). `seed:demo` remains for synthetic data.
+See [`../swat/infra/aws/README.md`](../swat/infra/aws/README.md).
 
 ## Capacity & coupling notes
 
