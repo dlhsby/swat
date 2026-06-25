@@ -954,7 +954,7 @@ For each entity, build: list (table + filters + pagination), create (form + vali
   - `apps/web/test/sites.spec.tsx` (create)
 - **Steps:**
   1. **List page:** name, type (Pool/TPS/TPA/SPBU), address, coordinates.
-  2. Map view optional (Phase 8).
+  2. Map view optional (Phase 7).
   3. Create/edit/delete.
 - **Acceptance criteria:**
   - [ ] Site list + CRUD working.

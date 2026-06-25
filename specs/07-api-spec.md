@@ -535,7 +535,8 @@ Response 200:
 | GET | `/monitoring/fuel-consumption` | `monitoring:read` | Σ fuel (requested, approved) per vehicle, date range |
 | GET | `/monitoring/fuel-by-type` | `monitoring:read` | Σ fuel by Fuel.name, date range |
 | GET | `/monitoring/routes-active` | `monitoring:read` | List of routes with ≥1 trip today |
-| GET | `/monitoring/trip-summary` | `monitoring:read` | Paginated trip list, filterable by date/status/route (query: `?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD&status=DONE&page=1&limit=20`) |
+| GET | `/monitoring/route-map` | `monitoring:read` | Active route edges + the coordinate-bearing sites they connect, for the Pengangkutan map (`{sites:[{id,name,type,latitude,longitude}], edges:[{routeId,category,originSiteId,destinationSiteId,tripCount}]}`); date range |
+| GET | `/monitoring/trip-summary` | `monitoring:read` | Paginated operational trip list — crew (driverName), vehicle (plateNumber), route (routeName), KM target-vs-actual (target/actualOdometer), time target-vs-actual (target/actualTime), fuel, status. Filterable by date/status/route/vehicle/driver (query: `?dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD&status=DONE&routeId=…&vehicleId=…&driverId=…&page=1&limit=20`) |
 | GET | `/monitoring/levy-summary` | `monitoring:read` | Σ levy by categoryName, date range |
 | GET | `/monitoring/levy-trend` | `monitoring:read` | Σ levy per calendar month (`{month:"YYYY-MM", totalAmount}`), date range |
 | GET | `/monitoring/kpi-overview` | `monitoring:read` | Combined KPI object: 5-day tonnage, monthly trend, fuel, active vehicles, completed hauls |
@@ -732,6 +733,34 @@ Kitir bulk import is `POST /disposal-permits/bulk-import` (`disposal-permit:crea
   }
 }
 ```
+
+## 3a. GPS tracking & route-deviation (Phase 7)
+
+**FUTURE / Phase 7.** Full contract in [`09-modules/gps-tracking.md`](09-modules/gps-tracking.md) §6.
+
+| Method | Path | Permission | Description |
+|--------|------|-----------|---|
+| POST | `/integrations/gps/webhook/:token` | secret path token + IP allowlist (no RBAC) | GPS.id push ingest (single or batch ping); validates+normalizes, enqueues, returns `200 {accepted}` fast |
+| GET/POST/PATCH/DELETE | `/gps/devices` | `gps-device:read\|manage` | IMEI ↔ vehicle registry + unmatched-IMEI queue |
+| GET | `/monitoring/fleet-positions?date=today` | `tracking:read` | **whole active fleet** as `VehiclePosition[]` (`source: live-gps \| recorded-activity \| none`); powers the Pengangkutan → Peta map (live GPS vehicles + untracked vehicles placed from recorded realization activity) |
+| GET | `/gps/vehicles/:id/position` | `tracking:read` | latest known position (live or recorded) |
+| GET | `/gps/vehicles/:id/track?minutes=60` | `tracking:read` | live breadcrumb trail |
+| GET/PUT/DELETE | `/gps/routes/:routeId/geometry` | `route-geometry:manage` | route-corridor template (GeoJSON LineString + tolerance) |
+| PUT/DELETE | `/gps/trips/:tripId/geometry` | `route-geometry:manage` | per-day corridor override |
+| GET/POST/PUT | `/gps/deviation-rules` | `deviation-rule:manage` | tune deviation thresholds |
+| GET | `/gps/alerts` | `deviation-alert:read` | alert feed (filter vehicle/status/date) |
+| PATCH | `/gps/alerts/:id/acknowledge` | `deviation-alert:acknowledge` | acknowledge + notes |
+| GET | `/monitoring/efficiency` | `monitoring:read` | route adherence %, wasted time/fuel (cached) |
+| SSE/WS | `/realtime/fleet` | session + `tracking:read` | live positions + alerts (`vehicle-{id}` \| `all`) |
+
+> The GPS.id webhook carries **no vendor signature** — secured by an unguessable secret path token, an IP
+> allowlist, per-source rate-limiting, and full `ApiAuditLog`. All other endpoints use the standard
+> `ApiResponse<T>` envelope (§1.2).
+>
+> **Forward-compatible (not built in Phase 7):** ingestion is source-agnostic. A future native app will add
+> `POST /gps/mobile/pings` (per-user OAuth2 bearer) that normalizes to the **same canonical ping** and feeds
+> the **same** pipeline — to track vehicles without a hardware tracker or complement those that have one. See
+> [`09-modules/gps-tracking.md`](09-modules/gps-tracking.md) §1.3 and `RFC-0003`.
 
 ## 4. Conventions & documentation
 

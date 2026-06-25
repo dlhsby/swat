@@ -38,6 +38,10 @@ The geography module manages physical locations (pools, SPBU fuel stations, TPS 
   - `originSiteId` ≠ `destinationSiteId` (route endpoints distinct)
   - `distanceKm`: non-negative integer
   - Unique composite: `(originSiteId, destinationSiteId, category)` prevents duplicate routes
+- **Map-derived geometry (Phase 7):** a `Route` may carry an optional **`RouteGeometry`** (one per route) —
+  a buffered corridor polyline drawn on **Google Maps** and used as the **template** for GPS route-deviation
+  monitoring. A single day's `Trip` can override it. See
+  [`gps-tracking.md`](./gps-tracking.md). This supersedes the earlier "coordinates deferred" note.
 
 ## User Stories
 

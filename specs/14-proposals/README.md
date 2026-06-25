@@ -67,7 +67,7 @@ committed → 09-modules + phase.**
 | RFC | Title | Status | Target phase |
 |-----|-------|--------|--------------|
 | [RFC-0001](./RFC-0001-monitoring-revamp.md) | Monitoring revamp: live dashboards, configurable widgets, threshold alerts | Draft | Phase 2+ (follow-on to base monitoring) |
-| [RFC-0002](./RFC-0002-gps-route-deviation-alerts/) | Vehicle GPS + route-schedule deviation alerts | Draft | Phase 8+ / Phase 9 (TBD in planning) |
+| [RFC-0002](./RFC-0002-gps-route-deviation-alerts/) | Vehicle GPS + route-schedule deviation alerts | ✅ Accepted → graduated | Phase 7 (`09-modules/gps-tracking.md`) |
 
 ## RFC template
 

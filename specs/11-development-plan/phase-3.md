@@ -666,4 +666,4 @@ Phase 1 complete (Trip, Haul, HaulAssignment, Levy entities); Phase 2 complete (
 ---
 
 ## Milestone
-**End of Phase 3 — Reporting & Exports operational.** Management can export tonnage, fuel, route, and levy reports in Excel and PDF formats. Async job handling prevents UI blocking on large datasets. Reports read all years (including archived) via rollups. Artifacts cached 7 days with auto-cleanup. System ready for Phase 4 (Weighbridge integration) or Phase 8 (Field/Mobile).
+**End of Phase 3 — Reporting & Exports operational.** Management can export tonnage, fuel, route, and levy reports in Excel and PDF formats. Async job handling prevents UI blocking on large datasets. Reports read all years (including archived) via rollups. Artifacts cached 7 days with auto-cleanup. System ready for Phase 4 (Weighbridge integration) or Phase 7 (Fleet GPS tracking).

@@ -60,6 +60,7 @@ The Scheduling module defines how standing crew assignments (vehicle + driver + 
 
 **Business rules:**
 - **Route snapshot:** each leg denormalizes its route's category + origin + destination so the template stands on its own if the Route catalogue changes or is later replaced by map-derived geometry (origin/dest coordinates deferred to a future iteration).
+- **Route corridor (Phase 7):** the leg's `Route` may carry a `RouteGeometry` corridor (drawn on Google Maps) used as the **template** for GPS route-deviation monitoring; the materialized `Trip` for a given day can override it. The corridor is **separate from** the scheduling snapshot above and does not change the template-seeding flow. See [`gps-tracking.md`](./gps-tracking.md).
 - TripTemplates are ordered within a schedule by RouteCategory: DEPART_POOL → REFUEL → PICKUP → DISPOSAL → RETURN_POOL (the UI labels these *Berangkat / Isi BBM / Ambil Sampah / Buang Sampah / Kembali ke Pool*; "Rute" is the operator term for a leg).
 - **Endpoint derivation (server-side):** for a **DEPART_POOL** leg only the Pool is chosen and it is recorded Pool→Pool (origin must be a `POOL` site). Every other leg supplies only its destination — the origin is auto-derived from the **previous leg's destination**; a non-DEPART leg added before any DEPART_POOL leg is rejected.
 - Each TripTemplate maps to a `Trip` at daily init with `targetTime` and `targetOdometer` pre-populated.
