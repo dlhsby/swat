@@ -54,3 +54,44 @@ export function useDeleteRouteGeometry() {
     onError: (err) => notify.error(errorMessage(err, 'Gagal menghapus koridor.')),
   });
 }
+
+/** A single day's Trip corridor override (null path when none set). */
+export function useTripGeometry(tripId: string | null) {
+  return useQuery({
+    queryKey: [KEY, 'trip', tripId],
+    queryFn: () => geometryApi.getTripGeometry(tripId as string),
+    enabled: Boolean(tripId),
+  });
+}
+
+export function useSaveTripGeometry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      tripId: string;
+      pathGeojson: GeoJsonLineString;
+      toleranceMeters?: number;
+    }) =>
+      geometryApi.saveTripGeometry(input.tripId, {
+        pathGeojson: input.pathGeojson,
+        toleranceMeters: input.toleranceMeters,
+      }),
+    onSuccess: (_data, input) => {
+      notify.success('Koridor harian tersimpan.');
+      void queryClient.invalidateQueries({ queryKey: [KEY, 'trip', input.tripId] });
+    },
+    onError: (err) => notify.error(errorMessage(err, 'Gagal menyimpan koridor harian.')),
+  });
+}
+
+export function useDeleteTripGeometry() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (tripId: string) => geometryApi.deleteTripGeometry(tripId),
+    onSuccess: (_data, tripId) => {
+      notify.success('Override koridor harian dihapus.');
+      void queryClient.invalidateQueries({ queryKey: [KEY, 'trip', tripId] });
+    },
+    onError: (err) => notify.error(errorMessage(err, 'Gagal menghapus koridor harian.')),
+  });
+}

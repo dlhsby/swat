@@ -25,8 +25,11 @@
 >   Auto/Bebas (freehand) toggle for off-road segments, and persists the sparse
 >   control points (`route_geometry.waypoints`) so corridors re-open with handles.
 >   A **Lokasi (Site) map pin-picker** (drop/drag pin ⇄ lat/lng + address search)
->   shipped alongside. Remaining follow-up: wiring the per-day Trip-override editor
->   (`/gps/trips/:id/geometry`, backend ready) into the scheduling board.
+>   shipped alongside. The **per-day Trip-override editor** is now wired too: the
+>   shared `CorridorEditorCore` backs both the route-template editor and a
+>   `TripCorridorEditor` reachable from the record/quick-entry board ("Koridor
+>   harian", `/gps/trips/:id/geometry`). (Trip overrides don't persist waypoints, so
+>   re-opening seeds handles from the saved path — a minor refinement left open.)
 > ² T-712: `off_corridor` (PostGIS ST_DWithin + Redis hysteresis + auto-resolve) and
 >   `late_to_schedule` implemented; `dwell_too_long` (needs Site-geofence spatial
 >   check) and `off_sequence` (leg-sequence logic) are tracked follow-ups.
