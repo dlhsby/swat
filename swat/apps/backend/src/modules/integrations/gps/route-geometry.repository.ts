@@ -62,30 +62,44 @@ export class RouteGeometryRepository {
 
   // --- Per-day Trip override -----------------------------------------------
 
-  tripOverride(
-    tripId: string,
-  ): Promise<{ geometryOverride: Prisma.JsonValue; geometryToleranceM: number | null } | null> {
+  tripOverride(tripId: string): Promise<{
+    geometryOverride: Prisma.JsonValue;
+    geometryWaypoints: Prisma.JsonValue;
+    geometryToleranceM: number | null;
+  } | null> {
     return this.prisma.trip.findFirst({
       where: { id: tripId },
-      select: { geometryOverride: true, geometryToleranceM: true },
+      select: { geometryOverride: true, geometryWaypoints: true, geometryToleranceM: true },
     });
   }
 
   async setTripOverride(
     tripId: string,
-    geometryOverride: Prisma.InputJsonValue,
-    geometryToleranceM: number | null,
+    data: {
+      geometryOverride: Prisma.InputJsonValue;
+      waypoints: Prisma.InputJsonValue | null;
+      toleranceMeters: number | null;
+    },
   ): Promise<void> {
     await this.prisma.trip.update({
       where: { id: tripId },
-      data: { geometryOverride, geometryToleranceM },
+      data: {
+        geometryOverride: data.geometryOverride,
+        // `null` clears the column; Prisma requires the explicit JsonNull sentinel.
+        geometryWaypoints: data.waypoints ?? Prisma.JsonNull,
+        geometryToleranceM: data.toleranceMeters,
+      },
     });
   }
 
   async clearTripOverride(tripId: string): Promise<void> {
     await this.prisma.trip.update({
       where: { id: tripId },
-      data: { geometryOverride: Prisma.DbNull, geometryToleranceM: null },
+      data: {
+        geometryOverride: Prisma.DbNull,
+        geometryWaypoints: Prisma.DbNull,
+        geometryToleranceM: null,
+      },
     });
   }
 }

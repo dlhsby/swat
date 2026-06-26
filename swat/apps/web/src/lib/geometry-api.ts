@@ -31,6 +31,7 @@ export interface RouteGeometryDto {
 export interface TripGeometryDto {
   tripId: string;
   pathGeojson: GeoJsonLineString | null;
+  waypoints: CorridorWaypoint[] | null;
   toleranceMeters: number | null;
 }
 

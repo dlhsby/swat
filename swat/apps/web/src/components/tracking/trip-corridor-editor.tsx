@@ -16,8 +16,8 @@ export interface CorridorTrip {
 /**
  * Per-day Trip-override corridor editor (Phase 7). Draws a one-day corridor that
  * overrides the route template for this Trip only (the deviation matcher resolves
- * override → template → none). Reuses the shared editor core. Trip overrides do not
- * persist control waypoints, so re-opening seeds handles from the saved path.
+ * override → template → none). Reuses the shared editor core and persists control
+ * waypoints (Trip.geometryWaypoints), so re-opening restores the sparse handles.
  */
 export function TripCorridorEditor({
   trip,
@@ -33,7 +33,7 @@ export function TripCorridorEditor({
   const existing: CorridorData | null = data?.pathGeojson
     ? {
         pathGeojson: data.pathGeojson,
-        waypoints: null,
+        waypoints: data.waypoints,
         toleranceMeters: data.toleranceMeters ?? 150,
       }
     : null;
@@ -44,6 +44,7 @@ export function TripCorridorEditor({
       {
         tripId: trip.id,
         pathGeojson: payload.pathGeojson,
+        waypoints: payload.waypoints,
         toleranceMeters: payload.toleranceMeters,
       },
       { onSuccess: onClose },

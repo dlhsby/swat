@@ -28,8 +28,9 @@
 >   shipped alongside. The **per-day Trip-override editor** is now wired too: the
 >   shared `CorridorEditorCore` backs both the route-template editor and a
 >   `TripCorridorEditor` reachable from the record/quick-entry board ("Koridor
->   harian", `/gps/trips/:id/geometry`). (Trip overrides don't persist waypoints, so
->   re-opening seeds handles from the saved path — a minor refinement left open.)
+>   harian", `/gps/trips/:id/geometry`). Trip overrides now **persist control
+>   waypoints** too (`Trip.geometryWaypoints`), so a per-day override re-opens with
+>   its sparse handles just like a route template.
 > ² T-712: `off_corridor` (PostGIS ST_DWithin + Redis hysteresis + auto-resolve) and
 >   `late_to_schedule` implemented; `dwell_too_long` (needs Site-geofence spatial
 >   check) and `off_sequence` (leg-sequence logic) are tracked follow-ups.

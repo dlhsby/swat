@@ -70,10 +70,12 @@ export function useSaveTripGeometry() {
     mutationFn: (input: {
       tripId: string;
       pathGeojson: GeoJsonLineString;
+      waypoints?: CorridorWaypoint[];
       toleranceMeters?: number;
     }) =>
       geometryApi.saveTripGeometry(input.tripId, {
         pathGeojson: input.pathGeojson,
+        waypoints: input.waypoints,
         toleranceMeters: input.toleranceMeters,
       }),
     onSuccess: (_data, input) => {

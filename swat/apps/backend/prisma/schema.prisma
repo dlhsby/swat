@@ -810,6 +810,10 @@ model Trip {
   // RouteGeometry template for this trip only; resolved at match time (no eager
   // copy). `geometryToleranceM` overrides the template buffer width in metres.
   geometryOverride    Json?           @map("geometry_override")
+  // Editor control points the override path was built from ({ lng, lat, snapped }[]),
+  // so re-opening the per-day override restores the sparse handles (mirrors
+  // RouteGeometry.waypoints). Null when none drawn.
+  geometryWaypoints   Json?           @map("geometry_waypoints")
   geometryToleranceM  Int?            @map("geometry_tolerance_m")
 
   @@index([haulAssignmentId])

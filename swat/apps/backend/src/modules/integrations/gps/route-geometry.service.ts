@@ -20,6 +20,7 @@ export interface RouteGeometryDto {
 export interface TripGeometryDto {
   readonly tripId: string;
   readonly pathGeojson: unknown | null;
+  readonly waypoints: unknown | null;
   readonly toleranceMeters: number | null;
 }
 
@@ -79,6 +80,7 @@ export class RouteGeometryService {
     return {
       tripId,
       pathGeojson: trip.geometryOverride ?? null,
+      waypoints: trip.geometryWaypoints ?? null,
       toleranceMeters: trip.geometryToleranceM,
     };
   }
@@ -90,12 +92,17 @@ export class RouteGeometryService {
     }
     const line = this.validateGeometry(dto.pathGeojson);
     await this.lengthOrThrow(line); // validates via PostGIS
-    await this.repo.setTripOverride(
+    await this.repo.setTripOverride(tripId, {
+      geometryOverride: line as unknown as Prisma.InputJsonValue,
+      waypoints: (dto.waypoints ?? null) as Prisma.InputJsonValue | null,
+      toleranceMeters: dto.toleranceMeters ?? null,
+    });
+    return {
       tripId,
-      line as unknown as Prisma.InputJsonValue,
-      dto.toleranceMeters ?? null,
-    );
-    return { tripId, pathGeojson: line, toleranceMeters: dto.toleranceMeters ?? null };
+      pathGeojson: line,
+      waypoints: dto.waypoints ?? null,
+      toleranceMeters: dto.toleranceMeters ?? null,
+    };
   }
 
   async clearTripOverride(tripId: string): Promise<{ message: string }> {

@@ -45,9 +45,11 @@ describe('RouteGeometryService', () => {
       routeExists: jest.fn().mockResolvedValue({ id: ROUTE }),
       upsertTemplate: jest.fn().mockResolvedValue(geometryRow()),
       deleteTemplate: jest.fn().mockResolvedValue(true),
-      tripOverride: jest
-        .fn()
-        .mockResolvedValue({ geometryOverride: null, geometryToleranceM: null }),
+      tripOverride: jest.fn().mockResolvedValue({
+        geometryOverride: null,
+        geometryWaypoints: null,
+        geometryToleranceM: null,
+      }),
       setTripOverride: jest.fn().mockResolvedValue(undefined),
       clearTripOverride: jest.fn().mockResolvedValue(undefined),
     };
@@ -164,12 +166,18 @@ describe('RouteGeometryService', () => {
       await expect(service.clearTripOverride(TRIP)).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('sets a valid override', async () => {
-      await service.setTripOverride(TRIP, {
+    it('sets a valid override with waypoints', async () => {
+      const waypoints = [{ lng: 1, lat: 2, snapped: true }];
+      const result = await service.setTripOverride(TRIP, {
         pathGeojson: LINE as unknown as Record<string, unknown>,
         toleranceMeters: 120,
+        waypoints,
       });
-      expect(repo.setTripOverride).toHaveBeenCalledWith(TRIP, expect.any(Object), 120);
+      expect(repo.setTripOverride).toHaveBeenCalledWith(
+        TRIP,
+        expect.objectContaining({ toleranceMeters: 120, waypoints }),
+      );
+      expect(result.waypoints).toEqual(waypoints);
     });
 
     it('clears an override', async () => {
