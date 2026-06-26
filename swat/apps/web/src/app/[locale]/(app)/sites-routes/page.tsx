@@ -18,12 +18,21 @@ import {
   TextField,
 } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
+import { MapPicker, round6 } from '@/components/maps/map-picker';
 import { PageHead } from '@/components/shell/page-head';
 import {
   type CorridorRoute,
   RouteCorridorEditor,
 } from '@/components/tracking/route-corridor-editor';
-import { Badge, DropdownMenuItem, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  DropdownMenuItem,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { formatNumber } from '@/lib/format';
@@ -87,6 +96,45 @@ const siteToForm = (r: SiteDto): SiteValues => ({
   latitude: r.latitude ?? undefined,
   longitude: r.longitude ?? undefined,
 });
+
+/**
+ * Map pin bound to the form's `latitude`/`longitude` (rounded to 6dp to match the
+ * DB precision). Dropping/dragging the pin or searching an address sets BOTH fields
+ * together — honouring the both-or-neither rule — and the manual number inputs stay
+ * editable as the source of truth. "Hapus titik" clears the pair.
+ */
+function SiteMapPicker(): JSX.Element {
+  const form = useFormContext<SiteValues>();
+  const lat = form.watch('latitude');
+  const lng = form.watch('longitude');
+  const value = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;
+
+  const setPin = (p: { lat: number; lng: number }): void => {
+    form.setValue('latitude', round6(p.lat), { shouldValidate: true, shouldDirty: true });
+    form.setValue('longitude', round6(p.lng), { shouldValidate: true, shouldDirty: true });
+  };
+  const clearPin = (): void => {
+    form.setValue('latitude', undefined, { shouldValidate: true, shouldDirty: true });
+    form.setValue('longitude', undefined, { shouldValidate: true, shouldDirty: true });
+  };
+
+  return (
+    <div className="space-y-2">
+      <MapPicker value={value} onChange={setPin} />
+      {value ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-danger-600"
+          onClick={clearPin}
+        >
+          Hapus titik
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 function SitesTab(): JSX.Element {
   const manager = useResourceManager(sitesApi, (r) => r.id);
@@ -153,10 +201,11 @@ function SitesTab(): JSX.Element {
         <SelectField name="type" label="Jenis Lokasi" required options={SITE_TYPES} />
         <TextField name="name" label="Nama" required />
         <TextareaField name="address" label="Alamat" required />
-        <div className="grid gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <NumberField name="latitude" label="Lintang (opsional)" />
           <NumberField name="longitude" label="Bujur (opsional)" />
         </div>
+        <SiteMapPicker />
       </CrudFormDialog>
     </CrudListShell>
   );
