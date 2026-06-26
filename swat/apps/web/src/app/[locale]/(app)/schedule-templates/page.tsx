@@ -93,6 +93,7 @@ export default function ScheduleTemplatesPage(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="schedule-template"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
               extra={
@@ -127,6 +128,7 @@ export default function ScheduleTemplatesPage(): JSX.Element {
         title={{
           create: 'Tambah Template Jadwal Pengangkutan',
           edit: 'Ubah Template Jadwal Pengangkutan',
+          view: 'Lihat Template Jadwal Pengangkutan',
         }}
         className="max-w-[520px]"
       >

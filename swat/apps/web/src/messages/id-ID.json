@@ -329,6 +329,7 @@
       "createLabel": "Tambah Retribusi",
       "createTitle": "Tambah Retribusi",
       "editTitle": "Ubah Retribusi",
+      "viewTitle": "Lihat Retribusi",
       "fieldCategory": "Kategori",
       "fieldDate": "Tanggal",
       "fieldAmount": "Jumlah",
@@ -413,6 +414,7 @@
     "new": "Buat Baru",
     "save": "Simpan",
     "cancel": "Batal",
+    "close": "Tutup",
     "search": "Cari…",
     "allStatuses": "Semua status"
   },

@@ -140,6 +140,7 @@ export function VehicleModelsTab(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="vehicle-model"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -164,7 +165,7 @@ export function VehicleModelsTab(): JSX.Element {
         schema={schema}
         defaults={defaults}
         toForm={toForm}
-        title={{ create: 'Tambah Model', edit: 'Ubah Model' }}
+        title={{ create: 'Tambah Model', edit: 'Ubah Model', view: 'Lihat Model' }}
       >
         <TextField name="brand" label="Merek/Model" required placeholder="Hino Dutro" />
         <div className="grid grid-cols-1 gap-4">

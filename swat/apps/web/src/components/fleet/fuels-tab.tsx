@@ -57,6 +57,7 @@ export function FuelsTab(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="fuel"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -81,7 +82,11 @@ export function FuelsTab(): JSX.Element {
         schema={schema}
         defaults={defaults}
         toForm={toForm}
-        title={{ create: 'Tambah Bahan Bakar', edit: 'Ubah Bahan Bakar' }}
+        title={{
+          create: 'Tambah Bahan Bakar',
+          edit: 'Ubah Bahan Bakar',
+          view: 'Lihat Bahan Bakar',
+        }}
         className="max-w-[480px]"
       >
         <TextField name="name" label="Nama" required placeholder="Pertalite" />

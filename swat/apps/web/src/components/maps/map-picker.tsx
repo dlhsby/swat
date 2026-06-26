@@ -22,10 +22,12 @@ function PinLayer({
   value,
   onPick,
   onMapReady,
+  readOnly = false,
 }: {
   value: LatLng | null;
   onPick: (p: LatLng) => void;
   onMapReady: (map: google.maps.Map) => void;
+  readOnly?: boolean;
 }): null {
   const map = useMap();
   const markerRef = useRef<google.maps.Marker | null>(null);
@@ -35,14 +37,14 @@ function PinLayer({
     if (map) onMapReady(map);
   }, [map, onMapReady]);
 
-  // Click anywhere to (re)place the pin.
+  // Click anywhere to (re)place the pin — disabled in read-only preview.
   useEffect(() => {
-    if (!map) return undefined;
+    if (!map || readOnly) return undefined;
     const listener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
       if (e.latLng) onPick({ lat: e.latLng.lat(), lng: e.latLng.lng() });
     });
     return () => listener.remove();
-  }, [map, onPick]);
+  }, [map, onPick, readOnly]);
 
   // Marker mirrors `value`; created lazily, dragged updates flow back up.
   useEffect(() => {
@@ -53,16 +55,18 @@ function PinLayer({
       return undefined;
     }
     if (!markerRef.current) {
-      const marker = new google.maps.Marker({ map, position: value, draggable: true });
-      marker.addListener('dragend', (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) onPick({ lat: e.latLng.lat(), lng: e.latLng.lng() });
-      });
+      const marker = new google.maps.Marker({ map, position: value, draggable: !readOnly });
+      if (!readOnly) {
+        marker.addListener('dragend', (e: google.maps.MapMouseEvent) => {
+          if (e.latLng) onPick({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+        });
+      }
       markerRef.current = marker;
     } else {
       markerRef.current.setPosition(value);
     }
     return undefined;
-  }, [map, value, onPick]);
+  }, [map, value, onPick, readOnly]);
 
   // Center on the initial value exactly once (e.g. opening an existing site).
   useEffect(() => {
@@ -80,10 +84,12 @@ function MapPickerInner({
   value,
   onChange,
   height,
+  readOnly = false,
 }: {
   value: LatLng | null;
   onChange: (p: LatLng) => void;
   height: number;
+  readOnly?: boolean;
 }): JSX.Element {
   const geocodingLib = useMapsLibrary('geocoding');
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
@@ -151,39 +157,41 @@ function MapPickerInner({
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-2">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              void runSearch();
-            }
-          }}
-          placeholder="Cari alamat untuk memindahkan pin…"
-          aria-label="Cari alamat"
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => void runSearch()}
-          loading={searching}
-          aria-label="Cari"
-        >
-          <Search className="h-4 w-4" aria-hidden /> Cari
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={useMyLocation}
-          loading={locating}
-          aria-label="Gunakan lokasi saya"
-          title="Gunakan lokasi saya"
-        >
-          <LocateFixed className="h-4 w-4" aria-hidden />
-        </Button>
-      </div>
+      {!readOnly ? (
+        <div className="flex gap-2">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void runSearch();
+              }
+            }}
+            placeholder="Cari alamat untuk memindahkan pin…"
+            aria-label="Cari alamat"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void runSearch()}
+            loading={searching}
+            aria-label="Cari"
+          >
+            <Search className="h-4 w-4" aria-hidden /> Cari
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={useMyLocation}
+            loading={locating}
+            aria-label="Gunakan lokasi saya"
+            title="Gunakan lokasi saya"
+          >
+            <LocateFixed className="h-4 w-4" aria-hidden />
+          </Button>
+        </div>
+      ) : null}
       {searchError ? <p className="text-tiny text-danger-600">{searchError}</p> : null}
       <div className="overflow-hidden rounded-base border border-neutral-200" style={{ height }}>
         <GoogleMap
@@ -199,13 +207,15 @@ function MapPickerInner({
           fullscreenControl={false}
           style={{ width: '100%', height: '100%' }}
         >
-          <PinLayer value={value} onPick={onChange} onMapReady={onMapReady} />
+          <PinLayer value={value} onPick={onChange} onMapReady={onMapReady} readOnly={readOnly} />
         </GoogleMap>
       </div>
-      <p className="flex items-center gap-1.5 text-tiny text-neutral-500">
-        <Crosshair className="h-3.5 w-3.5" aria-hidden />
-        Klik peta atau seret pin untuk menetapkan titik.
-      </p>
+      {!readOnly ? (
+        <p className="flex items-center gap-1.5 text-tiny text-neutral-500">
+          <Crosshair className="h-3.5 w-3.5" aria-hidden />
+          Klik peta atau seret pin untuk menetapkan titik.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -220,10 +230,13 @@ export function MapPicker({
   value,
   onChange,
   height = 260,
+  readOnly = false,
 }: {
   value: LatLng | null;
   onChange: (p: LatLng) => void;
   height?: number;
+  /** Preview mode: show the pin but disable search, my-location, click + drag. */
+  readOnly?: boolean;
 }): JSX.Element {
   if (!isMapsConfigured) {
     return (
@@ -233,14 +246,16 @@ export function MapPicker({
       >
         <MapPinned className="h-7 w-7 text-neutral-400" aria-hidden />
         <p className="max-w-xs text-tiny text-neutral-500">
-          Peta belum dikonfigurasi. Masukkan lintang &amp; bujur secara manual.
+          {readOnly
+            ? 'Peta belum dikonfigurasi.'
+            : 'Peta belum dikonfigurasi. Masukkan lintang & bujur secara manual.'}
         </p>
       </div>
     );
   }
   return (
     <APIProvider apiKey={MAPS_API_KEY as string}>
-      <MapPickerInner value={value} onChange={onChange} height={height} />
+      <MapPickerInner value={value} onChange={onChange} height={height} readOnly={readOnly} />
     </APIProvider>
   );
 }

@@ -329,6 +329,7 @@
       "createLabel": "Add Levy",
       "createTitle": "Add Levy",
       "editTitle": "Edit Levy",
+      "viewTitle": "View Levy",
       "fieldCategory": "Category",
       "fieldDate": "Date",
       "fieldAmount": "Amount",
@@ -413,6 +414,7 @@
     "new": "New",
     "save": "Save",
     "cancel": "Cancel",
+    "close": "Close",
     "search": "Search…",
     "allStatuses": "All statuses"
   },

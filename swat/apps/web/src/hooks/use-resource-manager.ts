@@ -14,12 +14,15 @@ export interface ResourceManager<T> {
   loading: boolean;
   error: boolean;
   reload: () => Promise<void>;
-  /** The record being edited, or null when creating. */
+  /** The record being edited/viewed, or null when creating. */
   editing: T | null;
+  /** True when the dialog is open as a read-only "Lihat" view. */
+  readOnly: boolean;
   dialogOpen: boolean;
   setDialogOpen: (open: boolean) => void;
   openCreate: () => void;
   openEdit: (row: T) => void;
+  openView: (row: T) => void;
   saving: boolean;
   /** Create (when `editing` is null) or update the open record. */
   submit: (values: Record<string, unknown>) => Promise<void>;
@@ -42,6 +45,7 @@ export function useResourceManager<T>(
   const list = useResourceList<T>(api.list);
 
   const [editing, setEditing] = useState<T | null>(null);
+  const [readOnly, setReadOnly] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<T | null>(null);
@@ -52,10 +56,17 @@ export function useResourceManager<T>(
 
   const openCreate = (): void => {
     setEditing(null);
+    setReadOnly(false);
     setDialogOpen(true);
   };
   const openEdit = (row: T): void => {
     setEditing(row);
+    setReadOnly(false);
+    setDialogOpen(true);
+  };
+  const openView = (row: T): void => {
+    setEditing(row);
+    setReadOnly(true);
     setDialogOpen(true);
   };
 
@@ -102,10 +113,12 @@ export function useResourceManager<T>(
     error: list.error,
     reload: list.reload,
     editing,
+    readOnly,
     dialogOpen,
     setDialogOpen,
     openCreate,
     openEdit,
+    openView,
     saving,
     submit,
     deleteTarget,

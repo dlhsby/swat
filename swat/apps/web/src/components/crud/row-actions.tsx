@@ -41,10 +41,12 @@ export function RowActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {onView ? (
-          <DropdownMenuItem onSelect={onView}>
-            <Eye aria-hidden />
-            {t('view')}
-          </DropdownMenuItem>
+          <ProtectedAction permission={`${resource}:read`}>
+            <DropdownMenuItem onSelect={onView}>
+              <Eye aria-hidden />
+              {t('view')}
+            </DropdownMenuItem>
+          </ProtectedAction>
         ) : null}
         {onEdit ? (
           <ProtectedAction permission={`${resource}:update`}>

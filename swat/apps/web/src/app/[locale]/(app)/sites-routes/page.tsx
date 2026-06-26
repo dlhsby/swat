@@ -1,7 +1,7 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { Spline } from 'lucide-react';
+import { MapPin, Spline } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
@@ -27,6 +27,11 @@ import {
 import {
   Badge,
   Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   DropdownMenuItem,
   Tabs,
   TabsContent,
@@ -142,6 +147,52 @@ function SiteMapPicker(): JSX.Element {
   );
 }
 
+/**
+ * Datagrid coordinate cell: shows `(lat, lng)` plus a pin button that opens a
+ * read-only map preview of the point. Renders "—" when the site has no coordinates.
+ */
+function CoordinateCell({
+  lat,
+  lng,
+  name,
+}: {
+  lat: number | null;
+  lng: number | null;
+  name: string;
+}): JSX.Element {
+  const [open, setOpen] = useState(false);
+  if (lat == null || lng == null) {
+    return <span className="text-neutral-400">—</span>;
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="tabular-nums">
+        ({lat}, {lng})
+      </span>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Lihat di peta"
+        title="Lihat di peta"
+        className="text-primary-700 transition-colors hover:text-primary-800 dark:text-primary-400"
+      >
+        <MapPin className="h-4 w-4" aria-hidden />
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>{name}</DialogTitle>
+            <DialogDescription className="tabular-nums">
+              ({lat}, {lng})
+            </DialogDescription>
+          </DialogHeader>
+          <MapPicker value={{ lat, lng }} onChange={() => undefined} readOnly height={320} />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 function SitesTab(): JSX.Element {
   const manager = useResourceManager(sitesApi, (r) => r.id);
   const columns = useMemo<ColumnDef<SiteDto, unknown>[]>(
@@ -160,16 +211,17 @@ function SitesTab(): JSX.Element {
         cell: ({ row }) => row.original.address ?? '—',
       },
       {
-        accessorKey: 'latitude',
-        header: 'Lintang',
-        meta: { label: 'Lintang', defaultHidden: true, filterVariant: 'number' },
-        cell: ({ row }) => <span className="tabular-nums">{row.original.latitude ?? '—'}</span>,
-      },
-      {
-        accessorKey: 'longitude',
-        header: 'Bujur',
-        meta: { label: 'Bujur', defaultHidden: true, filterVariant: 'number' },
-        cell: ({ row }) => <span className="tabular-nums">{row.original.longitude ?? '—'}</span>,
+        id: 'coordinate',
+        header: 'Koordinat',
+        enableSorting: false,
+        meta: { label: 'Koordinat' },
+        cell: ({ row }) => (
+          <CoordinateCell
+            lat={row.original.latitude}
+            lng={row.original.longitude}
+            name={row.original.name}
+          />
+        ),
       },
       {
         id: 'actions',
@@ -181,6 +233,7 @@ function SitesTab(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="site"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -206,7 +259,7 @@ function SitesTab(): JSX.Element {
         schema={siteSchema}
         defaults={siteDefaults}
         toForm={siteToForm}
-        title={{ create: 'Tambah Lokasi', edit: 'Ubah Lokasi' }}
+        title={{ create: 'Tambah Lokasi', edit: 'Ubah Lokasi', view: 'Lihat Lokasi' }}
         className="max-w-[520px]"
       >
         <SelectField name="type" label="Jenis Lokasi" required options={SITE_TYPES} />
@@ -385,6 +438,7 @@ function RoutesTab(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="route"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
               extra={
@@ -418,7 +472,7 @@ function RoutesTab(): JSX.Element {
         schema={routeSchema}
         defaults={routeDefaults}
         toForm={routeToForm}
-        title={{ create: 'Tambah Rute', edit: 'Ubah Rute' }}
+        title={{ create: 'Tambah Rute', edit: 'Ubah Rute', view: 'Lihat Rute' }}
         className="max-w-[520px]"
       >
         <SelectField name="category" label="Jenis Rute" required options={ROUTE_CATEGORIES} />

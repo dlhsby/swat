@@ -175,6 +175,7 @@ function DataTab(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="levy"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -200,7 +201,7 @@ function DataTab(): JSX.Element {
         schema={schema}
         defaults={defaults}
         toForm={toForm}
-        title={{ create: t('createTitle'), edit: t('editTitle') }}
+        title={{ create: t('createTitle'), edit: t('editTitle'), view: t('viewTitle') }}
         className="max-w-[480px]"
       >
         <TextField name="categoryName" label={t('fieldCategory')} required />

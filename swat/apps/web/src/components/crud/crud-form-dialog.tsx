@@ -34,7 +34,7 @@ export interface CrudFormDialogProps<T, F extends FieldValues> {
   toForm: (row: T) => F;
   /** Transform form values into the request body (e.g. strip create-only fields on edit). */
   buildPayload?: (values: F, isEdit: boolean) => Record<string, unknown>;
-  title: { create: string; edit: string };
+  title: { create: string; edit: string; view?: string };
   /** The field components (read RHF context). */
   children: ReactNode;
   className?: string;
@@ -63,7 +63,7 @@ export function CrudFormDialog<T, F extends FieldValues>({
     defaultValues: defaults,
   });
 
-  const { dialogOpen, editing } = manager;
+  const { dialogOpen, editing, readOnly } = manager;
   useEffect(() => {
     if (dialogOpen) {
       form.reset(editing ? toForm(editing) : defaults);
@@ -89,7 +89,7 @@ export function CrudFormDialog<T, F extends FieldValues>({
     }
   };
 
-  const heading = editing ? title.edit : title.create;
+  const heading = editing ? (readOnly ? (title.view ?? title.edit) : title.edit) : title.create;
 
   return (
     <Dialog open={dialogOpen} onOpenChange={manager.setDialogOpen}>
@@ -101,19 +101,38 @@ export function CrudFormDialog<T, F extends FieldValues>({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* px/py gutter so a focused field's primary border (input + combobox
-                trigger) isn't clipped by the scroll container's overflow boundary. */}
-            <div className="max-h-[65vh] space-y-4 overflow-y-auto px-2 py-2">{children}</div>
+                trigger) isn't clipped by the scroll container's overflow boundary.
+                In read-only "Lihat" mode a disabled fieldset greys out + blocks every
+                native control (inputs, selects, switches, Radix triggers). */}
+            <fieldset
+              disabled={readOnly}
+              className="max-h-[65vh] space-y-4 overflow-y-auto px-2 py-2"
+            >
+              {children}
+            </fieldset>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => manager.setDialogOpen(false)}
-              >
-                {t('cancel')}
-              </Button>
-              <Button type="submit" loading={manager.saving}>
-                {t('save')}
-              </Button>
+              {readOnly ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => manager.setDialogOpen(false)}
+                >
+                  {t('close')}
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => manager.setDialogOpen(false)}
+                  >
+                    {t('cancel')}
+                  </Button>
+                  <Button type="submit" loading={manager.saving}>
+                    {t('save')}
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </form>
         </Form>

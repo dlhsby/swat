@@ -58,6 +58,7 @@ export default function WasteSourcesPage(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="waste-source"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -81,7 +82,11 @@ export default function WasteSourcesPage(): JSX.Element {
         schema={schema}
         defaults={defaults}
         toForm={toForm}
-        title={{ create: 'Tambah Sumber Sampah', edit: 'Ubah Sumber Sampah' }}
+        title={{
+          create: 'Tambah Sumber Sampah',
+          edit: 'Ubah Sumber Sampah',
+          view: 'Lihat Sumber Sampah',
+        }}
         className="max-w-[480px]"
       >
         <TextField name="code" label="Kode" required placeholder="TPS01" />
