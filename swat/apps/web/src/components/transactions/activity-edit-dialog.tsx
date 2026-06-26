@@ -24,10 +24,12 @@ import { type RecordTripInput, recordTrip } from '@/lib/transactions-api';
 import { type RouteCategory, type TripDto } from '@/lib/types/transactions';
 
 export interface ActivityEditDialogProps {
-  /** The recorded activity row to edit (null = closed). */
+  /** The recorded activity row to edit/view (null = closed). */
   trip: TripDto | null;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
+  /** Read-only "Lihat" mode: fields disabled, no save. */
+  readOnly?: boolean;
 }
 
 const TITLES: Record<string, string> = {
@@ -58,6 +60,7 @@ export function ActivityEditDialog({
   trip,
   onOpenChange,
   onSaved,
+  readOnly = false,
 }: ActivityEditDialogProps): JSX.Element {
   const { can } = usePermissions();
   const category = trip?.routeCategory ?? 'DEPART_POOL';
@@ -128,17 +131,21 @@ export function ActivityEditDialog({
     <Dialog open={trip !== null} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[460px]">
         <DialogHeader>
-          <DialogTitle>{TITLES[category] ?? 'Ubah Aktivitas'}</DialogTitle>
+          <DialogTitle>
+            {readOnly
+              ? (TITLES[category] ?? 'Lihat Aktivitas').replace('Ubah', 'Lihat')
+              : (TITLES[category] ?? 'Ubah Aktivitas')}
+          </DialogTitle>
           <DialogDescription>{trip?.routeLabel ?? trip?.name}</DialogDescription>
         </DialogHeader>
 
-        {lockedVerified ? (
+        {lockedVerified && !readOnly ? (
           <p className="text-body-sm text-danger-600">
             Trip telah diverifikasi — perlu izin override untuk mengubah.
           </p>
         ) : null}
 
-        <div className="space-y-4">
+        <fieldset disabled={readOnly} className="space-y-4">
           {isRefuel ? (
             <div className="space-y-1.5">
               <Label required>Jumlah Isi BBM</Label>
@@ -225,15 +232,23 @@ export function ActivityEditDialog({
               placeholder="Opsional"
             />
           </div>
-        </div>
+        </fieldset>
 
         <DialogFooter>
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-            Batal
-          </Button>
-          <Button onClick={() => void onSubmit()} loading={saving} disabled={!valid}>
-            Simpan
-          </Button>
+          {readOnly ? (
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+              Tutup
+            </Button>
+          ) : (
+            <>
+              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+                Batal
+              </Button>
+              <Button onClick={() => void onSubmit()} loading={saving} disabled={!valid}>
+                Simpan
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

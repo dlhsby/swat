@@ -65,6 +65,7 @@ export default function ServiceAccountsPage(): JSX.Element {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ServiceAccountDto | null>(null);
+  const [viewing, setViewing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [revokeTarget, setRevokeTarget] = useState<ServiceAccountDto | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -204,8 +205,14 @@ export default function ServiceAccountsPage(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="service-account"
+              onView={() => {
+                setEditing(row.original);
+                setViewing(true);
+                setDialogOpen(true);
+              }}
               onEdit={() => {
                 setEditing(row.original);
+                setViewing(false);
                 setDialogOpen(true);
               }}
               onDelete={row.original.active ? () => setRevokeTarget(row.original) : undefined}
@@ -231,6 +238,7 @@ export default function ServiceAccountsPage(): JSX.Element {
         <Button
           onClick={() => {
             setEditing(null);
+            setViewing(false);
             setDialogOpen(true);
           }}
         >
@@ -258,7 +266,13 @@ export default function ServiceAccountsPage(): JSX.Element {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[480px]">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Ubah Akun Layanan' : 'Tambah Akun Layanan'}</DialogTitle>
+            <DialogTitle>
+              {viewing
+                ? 'Lihat Akun Layanan'
+                : editing
+                  ? 'Ubah Akun Layanan'
+                  : 'Tambah Akun Layanan'}
+            </DialogTitle>
             <DialogDescription className="sr-only">Formulir akun layanan</DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -269,28 +283,38 @@ export default function ServiceAccountsPage(): JSX.Element {
                   secara aman.
                 </Alert>
               ) : null}
-              <TextField name="name" label="Nama" required placeholder="TPA Jembatan Timbang" />
-              <SelectField
-                name="roleId"
-                label="Peran"
-                required
-                options={roleOptions}
-                placeholder="Pilih peran"
-              />
-              <NumberField name="rateLimitPerMin" label="Batas permintaan / menit" required />
-              <TextField
-                name="allowedIPs"
-                label="Daftar IP yang diizinkan"
-                description="Pisahkan dengan koma. Kosongkan untuk mengizinkan semua IP."
-                placeholder="10.0.0.5, 10.0.0.6"
-              />
+              <fieldset disabled={viewing} className="space-y-4">
+                <TextField name="name" label="Nama" required placeholder="TPA Jembatan Timbang" />
+                <SelectField
+                  name="roleId"
+                  label="Peran"
+                  required
+                  options={roleOptions}
+                  placeholder="Pilih peran"
+                />
+                <NumberField name="rateLimitPerMin" label="Batas permintaan / menit" required />
+                <TextField
+                  name="allowedIPs"
+                  label="Daftar IP yang diizinkan"
+                  description="Pisahkan dengan koma. Kosongkan untuk mengizinkan semua IP."
+                  placeholder="10.0.0.5, 10.0.0.6"
+                />
+              </fieldset>
               <DialogFooter>
-                <Button type="button" variant="secondary" onClick={() => setDialogOpen(false)}>
-                  {tc('cancel')}
-                </Button>
-                <Button type="submit" loading={saving}>
-                  {tc('save')}
-                </Button>
+                {viewing ? (
+                  <Button type="button" variant="secondary" onClick={() => setDialogOpen(false)}>
+                    {tc('close')}
+                  </Button>
+                ) : (
+                  <>
+                    <Button type="button" variant="secondary" onClick={() => setDialogOpen(false)}>
+                      {tc('cancel')}
+                    </Button>
+                    <Button type="submit" loading={saving}>
+                      {tc('save')}
+                    </Button>
+                  </>
+                )}
               </DialogFooter>
             </form>
           </Form>

@@ -177,6 +177,7 @@ export function QuickEntryBoard({
 
   // Per-row edit / delete (delete = soft un-record).
   const [editTrip, setEditTrip] = useState<ActivityRow | null>(null);
+  const [viewTrip, setViewTrip] = useState<ActivityRow | null>(null);
   const [deleteTrip, setDeleteTrip] = useState<ActivityRow | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
@@ -427,6 +428,7 @@ export function QuickEntryBoard({
               <div className="text-right">
                 <RowActions
                   resource="trip"
+                  onView={() => setViewTrip(row.original)}
                   onEdit={() => setEditTrip(row.original)}
                   extra={
                     <DropdownMenuItem destructive onSelect={() => setDeleteTrip(row.original)}>
@@ -928,6 +930,12 @@ export function QuickEntryBoard({
         trip={editTrip}
         onOpenChange={(open) => !open && setEditTrip(null)}
         onSaved={() => void load()}
+      />
+      <ActivityEditDialog
+        trip={viewTrip}
+        readOnly
+        onOpenChange={(open) => !open && setViewTrip(null)}
+        onSaved={() => undefined}
       />
       <ConfirmDialog
         open={deleteTrip !== null}
