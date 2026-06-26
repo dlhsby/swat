@@ -1,6 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsObject, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 /**
  * Upsert a route's corridor template (T-709). `pathGeojson` is a GeoJSON
@@ -30,4 +39,14 @@ export class UpsertRouteGeometryDto {
   @IsString()
   @MaxLength(20)
   source?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Editor control points the path was built from: [{ lng, lat, snapped }]. Stored verbatim so the corridor re-opens with its sparse handles.',
+    type: 'array',
+    items: { type: 'object' },
+  })
+  @IsOptional()
+  @IsArray({ message: 'Waypoints harus berupa daftar titik.' })
+  waypoints?: Array<Record<string, unknown>>;
 }

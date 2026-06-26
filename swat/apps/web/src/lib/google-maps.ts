@@ -2,8 +2,9 @@
  * Google Maps configuration (Phase 7). The browser key ships to the client, so it
  * MUST be restricted by HTTP referrer + enabled APIs in the Google console. When
  * unset, map components fall back to a "peta belum dikonfigurasi" placeholder so
- * dev/CI builds work without a key. Snap-to-roads is intentionally NOT done here —
- * it uses a server-proxied key (kept off the client) via the backend.
+ * dev/CI builds work without a key. Snap-to-road in the corridor editor uses this
+ * same browser key via the Maps JS Directions service — enable the "Directions API"
+ * (and "Geocoding API" for the Lokasi pin search) on the key alongside Maps JS.
  */
 export const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 

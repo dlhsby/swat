@@ -1,10 +1,11 @@
 'use client';
 
-import { APIProvider, Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
-import { MapPinned, Undo2, Trash2 } from 'lucide-react';
+import { APIProvider, Map as GoogleMap, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import { MapPinned, Undo2, Trash2, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { round6 } from '@/components/maps/map-picker';
 import {
   Button,
   Input,
@@ -16,13 +17,14 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
+  Switch,
 } from '@/components/ui';
 import {
   useDeleteRouteGeometry,
   useRouteGeometry,
   useSaveRouteGeometry,
 } from '@/hooks/use-geometry';
-import { type GeoJsonLineString } from '@/lib/geometry-api';
+import { type CorridorWaypoint, type GeoJsonLineString } from '@/lib/geometry-api';
 import { isMapsConfigured, MAPS_API_KEY, SURABAYA } from '@/lib/google-maps';
 
 export interface CorridorRoute {
@@ -33,17 +35,28 @@ export interface CorridorRoute {
 
 type LatLng = google.maps.LatLngLiteral;
 
+/** Build state pushed up from the canvas after each road-route computation. */
+interface BuildResult {
+  readonly path: LatLng[];
+  readonly building: boolean;
+  readonly warning: boolean;
+}
+
+const toLatLng = (w: CorridorWaypoint): LatLng => ({ lat: w.lat, lng: w.lng });
+
 /**
- * Imperative drawing layer: click the map to append a corridor vertex, drag a
- * marker to move it. Mirrors the hauling-map pattern (core `google.maps` API, no
- * Map ID needed). Fits bounds ONCE when an existing corridor first loads.
+ * Drawing layer: renders the (road-snapped) corridor polyline plus a numbered,
+ * draggable handle per control node. Clicking the map appends a node; dragging a
+ * handle moves it. Mirrors the hauling-map pattern (core `google.maps`, no Map ID).
  */
 function CorridorDrawing({
-  points,
+  path,
+  nodes,
   onAddPoint,
   onMovePoint,
 }: {
-  points: readonly LatLng[];
+  path: readonly LatLng[];
+  nodes: readonly CorridorWaypoint[];
   onAddPoint: (p: LatLng) => void;
   onMovePoint: (index: number, p: LatLng) => void;
 }): null {
@@ -62,17 +75,19 @@ function CorridorDrawing({
     if (!map || typeof google === 'undefined') return undefined;
     const polyline = new google.maps.Polyline({
       map,
-      path: points as LatLng[],
+      path: path as LatLng[],
       strokeColor: '#0f766e',
       strokeOpacity: 0.9,
       strokeWeight: 4,
     });
-    const markers = points.map((position, index) => {
+    const markers = nodes.map((node, index) => {
       const marker = new google.maps.Marker({
-        position,
+        position: toLatLng(node),
         map,
         draggable: true,
+        // Freehand handles read differently from snapped ones.
         label: { text: String(index + 1), color: '#ffffff', fontSize: '11px' },
+        opacity: node.snapped ? 1 : 0.75,
       });
       marker.addListener('dragend', (e: google.maps.MapMouseEvent) => {
         if (e.latLng) onMovePoint(index, { lat: e.latLng.lat(), lng: e.latLng.lng() });
@@ -80,9 +95,9 @@ function CorridorDrawing({
       return marker;
     });
 
-    if (!fittedRef.current && points.length >= 2) {
+    if (!fittedRef.current && path.length >= 2) {
       const bounds = new google.maps.LatLngBounds();
-      points.forEach((p) => bounds.extend(p));
+      path.forEach((p) => bounds.extend(p));
       map.fitBounds(bounds, 64);
       fittedRef.current = true;
     }
@@ -91,17 +106,116 @@ function CorridorDrawing({
       polyline.setMap(null);
       markers.forEach((m) => m.setMap(null));
     };
-  }, [map, points, onMovePoint]);
+  }, [map, path, nodes, onMovePoint]);
 
   return null;
 }
 
 /**
- * Route corridor editor (Phase 7, T-710). A slide-out sheet to draw/edit a route's
- * corridor on Google Maps, set its tolerance (buffer width), and save it as the
- * route template (or clear it). Opens when `route` is set. Degrades to a
- * placeholder when the Maps key is unconfigured (dev/CI). Gated upstream by
- * `route-geometry:manage`.
+ * Map canvas + road-routing engine. Recomputes the dense corridor path whenever the
+ * control nodes change: each segment whose END node is `snapped` is routed along
+ * roads via Google Directions; a freehand (or failed) segment is a straight line.
+ * The result is lifted to the editor via `onBuilt` for drawing + saving.
+ */
+function CorridorCanvas({
+  nodes,
+  path,
+  onBuilt,
+  onAddPoint,
+  onMovePoint,
+}: {
+  nodes: readonly CorridorWaypoint[];
+  path: readonly LatLng[];
+  onBuilt: (result: BuildResult) => void;
+  onAddPoint: (p: LatLng) => void;
+  onMovePoint: (index: number, p: LatLng) => void;
+}): JSX.Element {
+  const routesLib = useMapsLibrary('routes');
+  const serviceRef = useRef<google.maps.DirectionsService | null>(null);
+
+  useEffect(() => {
+    if (routesLib) serviceRef.current = new routesLib.DirectionsService();
+  }, [routesLib]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const build = async (): Promise<void> => {
+      if (nodes.length < 2) {
+        onBuilt({ path: nodes.map(toLatLng), building: false, warning: false });
+        return;
+      }
+      // Show the straight skeleton immediately while road routes compute.
+      onBuilt({ path: nodes.map(toLatLng), building: true, warning: false });
+      const service = serviceRef.current;
+      const out: LatLng[] = [];
+      let warning = false;
+      let prev: CorridorWaypoint | undefined;
+      for (const node of nodes) {
+        if (!prev) {
+          out.push(toLatLng(node));
+          prev = node;
+          continue;
+        }
+        let routed = false;
+        if (node.snapped && service) {
+          try {
+            const res = await service.route({
+              origin: toLatLng(prev),
+              destination: toLatLng(node),
+              travelMode: google.maps.TravelMode.DRIVING,
+            });
+            const overview = res.routes[0]?.overview_path ?? [];
+            if (overview.length > 0) {
+              // Skip the first vertex — it duplicates `prev`, already in `out`.
+              overview.slice(1).forEach((pt) => out.push({ lat: pt.lat(), lng: pt.lng() }));
+              routed = true;
+            }
+          } catch {
+            routed = false;
+          }
+          if (!routed) warning = true;
+        }
+        if (!routed) out.push(toLatLng(node));
+        prev = node;
+      }
+      if (!cancelled) onBuilt({ path: out, building: false, warning });
+    };
+    void build();
+    return () => {
+      cancelled = true;
+    };
+  }, [nodes, routesLib, onBuilt]);
+
+  return (
+    <div className="h-[360px] overflow-hidden rounded-base border border-neutral-200">
+      <GoogleMap
+        defaultCenter={SURABAYA}
+        defaultZoom={12}
+        gestureHandling="greedy"
+        disableDefaultUI={false}
+        clickableIcons={false}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <CorridorDrawing
+          path={path}
+          nodes={nodes}
+          onAddPoint={onAddPoint}
+          onMovePoint={onMovePoint}
+        />
+      </GoogleMap>
+    </div>
+  );
+}
+
+/**
+ * Route corridor editor (Phase 7). A slide-out sheet to draw/edit a route's
+ * corridor on Google Maps and save it as the route template. Drop ordered control
+ * points; in "snap" mode each new segment auto-follows roads (Google Directions),
+ * and dragging a handle re-routes. Toggle snap off for a freehand (straight) segment
+ * — e.g. an unmapped access road inside a TPA. The dense road-snapped line is what
+ * deviation detection uses; the sparse control points are persisted as `waypoints`
+ * so re-opening restores the handles. Degrades to a placeholder when the Maps key is
+ * unconfigured (dev/CI). Gated upstream by `route-geometry:manage`.
  */
 export function RouteCorridorEditor({
   route,
@@ -116,38 +230,72 @@ export function RouteCorridorEditor({
   const save = useSaveRouteGeometry();
   const remove = useDeleteRouteGeometry();
 
-  const [points, setPoints] = useState<LatLng[]>([]);
+  const [nodes, setNodes] = useState<CorridorWaypoint[]>([]);
+  const [path, setPath] = useState<LatLng[]>([]);
   const [tolerance, setTolerance] = useState<number>(150);
+  const [building, setBuilding] = useState(false);
+  const [warning, setWarning] = useState(false);
 
-  // Hydrate from the loaded template each time a route opens / its data arrives.
+  // Snap mode for newly dropped points; a ref keeps the click handler stable.
+  const [snapMode, setSnapMode] = useState(true);
+  const snapModeRef = useRef(true);
+  useEffect(() => {
+    snapModeRef.current = snapMode;
+  }, [snapMode]);
+
+  // Hydrate when a route opens (or its saved geometry arrives). Prefer the saved
+  // control points; fall back to the dense path as freehand nodes for corridors
+  // drawn before snap-to-road (shape preserved exactly).
   useEffect(() => {
     if (!open) return;
-    if (existing?.pathGeojson) {
-      setPoints(existing.pathGeojson.coordinates.map(([lng, lat]) => ({ lat, lng })));
+    if (existing?.waypoints && existing.waypoints.length > 0) {
+      setNodes(existing.waypoints.map((w) => ({ lng: w.lng, lat: w.lat, snapped: w.snapped })));
+      setTolerance(existing.toleranceMeters);
+    } else if (existing?.pathGeojson) {
+      setNodes(
+        existing.pathGeojson.coordinates.map(([lng, lat]) => ({ lng, lat, snapped: false })),
+      );
       setTolerance(existing.toleranceMeters);
     } else {
-      setPoints([]);
+      setNodes([]);
       setTolerance(150);
     }
   }, [open, existing]);
 
-  const addPoint = useCallback((p: LatLng) => setPoints((prev) => [...prev, p]), []);
-  const movePoint = useCallback(
-    (index: number, p: LatLng) =>
-      setPoints((prev) => prev.map((existingPoint, i) => (i === index ? p : existingPoint))),
+  const onBuilt = useCallback((result: BuildResult) => {
+    setPath(result.path);
+    setBuilding(result.building);
+    setWarning(result.warning);
+  }, []);
+
+  const addPoint = useCallback(
+    (p: LatLng) =>
+      setNodes((prev) => [
+        ...prev,
+        { lng: round6(p.lng), lat: round6(p.lat), snapped: snapModeRef.current },
+      ]),
     [],
   );
-  const undo = useCallback(() => setPoints((prev) => prev.slice(0, -1)), []);
-  const clear = useCallback(() => setPoints([]), []);
+  const movePoint = useCallback(
+    (index: number, p: LatLng) =>
+      setNodes((prev) =>
+        prev.map((node, i) =>
+          i === index ? { ...node, lng: round6(p.lng), lat: round6(p.lat) } : node,
+        ),
+      ),
+    [],
+  );
+  const undo = useCallback(() => setNodes((prev) => prev.slice(0, -1)), []);
+  const clear = useCallback(() => setNodes([]), []);
 
   const handleSave = (): void => {
-    if (!route || points.length < 2) return;
+    if (!route || path.length < 2) return;
     const pathGeojson: GeoJsonLineString = {
       type: 'LineString',
-      coordinates: points.map((p) => [p.lng, p.lat]),
+      coordinates: path.map((p) => [round6(p.lng), round6(p.lat)]),
     };
     save.mutate(
-      { routeId: route.id, pathGeojson, toleranceMeters: tolerance },
+      { routeId: route.id, pathGeojson, waypoints: nodes, toleranceMeters: tolerance },
       { onSuccess: onClose },
     );
   };
@@ -176,35 +324,44 @@ export function RouteCorridorEditor({
           ) : (
             <>
               <p className="text-body-sm text-neutral-500">{t('drawHint')}</p>
-              <div className="h-[360px] overflow-hidden rounded-base border border-neutral-200">
-                <APIProvider apiKey={MAPS_API_KEY as string}>
-                  <GoogleMap
-                    defaultCenter={SURABAYA}
-                    defaultZoom={12}
-                    gestureHandling="greedy"
-                    disableDefaultUI={false}
-                    clickableIcons={false}
-                    style={{ width: '100%', height: '100%' }}
-                  >
-                    <CorridorDrawing
-                      points={points}
-                      onAddPoint={addPoint}
-                      onMovePoint={movePoint}
-                    />
-                  </GoogleMap>
-                </APIProvider>
+
+              <div className="flex items-center justify-between gap-3 rounded-base border border-neutral-200 px-3 py-2">
+                <div>
+                  <Label htmlFor="corridor-snap">{t('snapToggle')}</Label>
+                  <p className="text-tiny text-neutral-500">{t('snapHint')}</p>
+                </div>
+                <Switch id="corridor-snap" checked={snapMode} onCheckedChange={setSnapMode} />
               </div>
+
+              {/* Keyed by route so the fit-bounds runs once per opened corridor. */}
+              <APIProvider apiKey={MAPS_API_KEY as string}>
+                <CorridorCanvas
+                  key={route?.id ?? 'none'}
+                  nodes={nodes}
+                  path={path}
+                  onBuilt={onBuilt}
+                  onAddPoint={addPoint}
+                  onMovePoint={movePoint}
+                />
+              </APIProvider>
+
+              {building ? (
+                <p className="flex items-center gap-1.5 text-tiny text-neutral-500">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> {t('building')}
+                </p>
+              ) : null}
+              {warning ? <p className="text-tiny text-amber-600">{t('snapWarning')}</p> : null}
 
               <div className="flex items-center justify-between gap-2">
                 <span className="text-body-sm text-neutral-600">
-                  {t('pointCount', { count: points.length })}
+                  {t('pointCount', { count: nodes.length })}
                 </span>
                 <div className="flex gap-2">
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={undo}
-                    disabled={points.length === 0}
+                    disabled={nodes.length === 0}
                   >
                     <Undo2 className="h-4 w-4" aria-hidden /> {t('undo')}
                   </Button>
@@ -212,7 +369,7 @@ export function RouteCorridorEditor({
                     variant="secondary"
                     size="sm"
                     onClick={clear}
-                    disabled={points.length === 0}
+                    disabled={nodes.length === 0}
                   >
                     {t('clear')}
                   </Button>
@@ -252,7 +409,7 @@ export function RouteCorridorEditor({
           <Button
             onClick={handleSave}
             loading={save.isPending}
-            disabled={!isMapsConfigured || isLoading || points.length < 2}
+            disabled={!isMapsConfigured || isLoading || building || path.length < 2}
           >
             {t('save')}
           </Button>

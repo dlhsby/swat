@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notify } from '@/components/ui';
 import { ApiError } from '@/lib/api-error';
-import { type GeoJsonLineString, geometryApi } from '@/lib/geometry-api';
+import { type CorridorWaypoint, type GeoJsonLineString, geometryApi } from '@/lib/geometry-api';
 
 const KEY = 'gps-geometry';
 
@@ -27,10 +27,12 @@ export function useSaveRouteGeometry() {
     mutationFn: (input: {
       routeId: string;
       pathGeojson: GeoJsonLineString;
+      waypoints?: CorridorWaypoint[];
       toleranceMeters?: number;
     }) =>
       geometryApi.saveRouteGeometry(input.routeId, {
         pathGeojson: input.pathGeojson,
+        waypoints: input.waypoints,
         toleranceMeters: input.toleranceMeters,
       }),
     onSuccess: (_data, input) => {

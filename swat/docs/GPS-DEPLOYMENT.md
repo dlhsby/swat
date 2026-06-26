@@ -39,6 +39,12 @@ See `swat/.env.example`. Required for GPS: `GPS_WEBHOOK_TOKEN` (prod), optional
 `GPS_DEVICE_OFFLINE_MINUTES`; pull creds `GPSID_BASE_URL/USERNAME/PASSWORD`;
 web `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (restrict by HTTP referrer + enabled APIs).
 
+**Google Maps key — enable these APIs** on the single referrer-restricted browser
+key (no separate server key is used): **Maps JavaScript API** (fleet map + editors),
+**Directions API** (corridor snap-to-road), and **Geocoding API** (Lokasi pin
+address search). Missing the key degrades every map to a placeholder; missing
+Directions/Geocoding only disables snap/search (the editor still works manually).
+
 ## Recurring ops jobs (all `@Cron`, in-process)
 
 | Job                   | Schedule     | Purpose                                                                                                                                                              |

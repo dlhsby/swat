@@ -10,6 +10,7 @@ import { RouteGeometryRepository } from './route-geometry.repository';
 export interface RouteGeometryDto {
   readonly routeId: string;
   readonly pathGeojson: unknown;
+  readonly waypoints: unknown | null;
   readonly toleranceMeters: number;
   readonly lengthMeters: number;
   readonly source: string;
@@ -26,6 +27,7 @@ function toDto(g: RouteGeometry): RouteGeometryDto {
   return {
     routeId: g.routeId,
     pathGeojson: g.pathGeojson,
+    waypoints: g.waypoints ?? null,
     toleranceMeters: g.toleranceMeters,
     lengthMeters: g.lengthMeters,
     source: g.source,
@@ -52,6 +54,7 @@ export class RouteGeometryService {
     const lengthMeters = await this.lengthOrThrow(line);
     const geometry = await this.repo.upsertTemplate(routeId, {
       pathGeojson: line as unknown as Prisma.InputJsonValue,
+      waypoints: (dto.waypoints ?? null) as Prisma.InputJsonValue | null,
       toleranceMeters: dto.toleranceMeters ?? 150,
       lengthMeters,
       source: dto.source ?? 'google-maps',

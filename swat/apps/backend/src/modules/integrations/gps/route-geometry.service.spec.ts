@@ -95,6 +95,33 @@ describe('RouteGeometryService', () => {
       expect(result.lengthMeters).toBe(1200);
     });
 
+    it('persists editor waypoints and defaults them to null', async () => {
+      const waypoints = [
+        { lng: 1, lat: 2, snapped: true },
+        { lng: 3, lat: 4, snapped: false },
+      ];
+      repo.upsertTemplate.mockResolvedValue({ ...geometryRow(), waypoints });
+      const dto = {
+        pathGeojson: LINE as unknown as Record<string, unknown>,
+        waypoints,
+      };
+      const result = await service.upsertTemplate(ROUTE, dto);
+      expect(repo.upsertTemplate).toHaveBeenCalledWith(
+        ROUTE,
+        expect.objectContaining({ waypoints }),
+      );
+      expect(result.waypoints).toEqual(waypoints);
+
+      // Omitting waypoints passes null through (clears the column).
+      await service.upsertTemplate(ROUTE, {
+        pathGeojson: LINE as unknown as Record<string, unknown>,
+      });
+      expect(repo.upsertTemplate).toHaveBeenLastCalledWith(
+        ROUTE,
+        expect.objectContaining({ waypoints: null }),
+      );
+    });
+
     it('rejects an invalid LineString with 422', async () => {
       const dto = {
         pathGeojson: { type: 'Point', coordinates: [1, 2] } as Record<string, unknown>,

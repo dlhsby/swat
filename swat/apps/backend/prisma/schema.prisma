@@ -1233,6 +1233,10 @@ model RouteGeometry {
   routeId         String   @unique @map("route_id") @db.Uuid
   route           Route    @relation(fields: [routeId], references: [id])
   pathGeojson     Json     @map("path_geojson")
+  // Editor control points the road-snapped path was built from: a JSON array of
+  // { lng, lat, snapped } so re-opening the corridor restores the sparse handles
+  // (not the dense snapped line). Null for corridors drawn before snap-to-road.
+  waypoints       Json?    @map("waypoints")
   toleranceMeters Int      @default(150) @map("tolerance_meters")
   lengthMeters    Int      @default(0) @map("length_meters")
   source          String   @default("google-maps") @db.VarChar(20)

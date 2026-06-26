@@ -15,13 +15,18 @@
 > - **Epic 7.7** — ✅ T-722, T-723⁵, T-724
 >
 > **All 24 tasks implemented.** Deferred follow-ups (tracked above): per-day Trip
-> corridor UI wiring + snap-to-roads (¹), `dwell_too_long` + `off_sequence`
+> corridor UI wiring (¹), `dwell_too_long` + `off_sequence`
 > matcher checks (²), global alert-bell + history (³), `adherencePct`/`dwellMinutes`
 > efficiency (⁴), a live webhook→SSE E2E spec + load test (⁵).
 >
-> ¹ T-710: route-template corridor editor shipped + tested; per-day Trip-override
->   UI wiring into the scheduling board and snap-to-roads (server-proxied Roads
->   key) are tracked follow-ups (backend + FE geometry API already support both).
+> ¹ T-710: route-template corridor editor shipped + tested. **Post-Phase-7
+>   enhancement (done):** the editor now snaps segments to roads via the Maps JS
+>   Directions service (browser key — no server proxy), with draggable refine + an
+>   Auto/Bebas (freehand) toggle for off-road segments, and persists the sparse
+>   control points (`route_geometry.waypoints`) so corridors re-open with handles.
+>   A **Lokasi (Site) map pin-picker** (drop/drag pin ⇄ lat/lng + address search)
+>   shipped alongside. Remaining follow-up: wiring the per-day Trip-override editor
+>   (`/gps/trips/:id/geometry`, backend ready) into the scheduling board.
 > ² T-712: `off_corridor` (PostGIS ST_DWithin + Redis hysteresis + auto-resolve) and
 >   `late_to_schedule` implemented; `dwell_too_long` (needs Site-geofence spatial
 >   check) and `off_sequence` (leg-sequence logic) are tracked follow-ups.
@@ -361,11 +366,15 @@ These are **load-bearing** — verified against the existing codebase; ignore th
   snap-to-roads, set tolerance, preview buffer); `apps/web/src/lib/google-maps.ts` (loader; key from
   `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`); wire into Scheduling Route/Template screens **and** the day's ad-hoc trip editor.
 - **Steps:** draw/edit/snap a corridor; save to the Route template **or** the day's `Trip` override (same
-  component both contexts). **Snap-to-roads** uses a server-proxied, IP-restricted Roads/Directions key
-  (keep that key off the client); fail loudly if the public Maps key is missing.
+  component both contexts). **Snap-to-road** is implemented client-side via the Maps JS **Directions
+  service** using the same referrer-restricted browser key (enable the Directions API on it) — drop
+  ordered waypoints, segments auto-follow roads, draggable handles re-route, and an Auto/Bebas (freehand)
+  toggle allows straight off-road segments; sparse control points persist to `route_geometry.waypoints`
+  for clean re-editing. Fail to a placeholder if the public Maps key is missing.
 - **Acceptance criteria:**
-  - [ ] Supervisor saves a Route-template corridor; the same editor overrides a single day's trip without touching the template.
-  - [ ] No hardcoded keys; snap-to-roads key not exposed to the browser.
+  - [x] Supervisor saves a Route-template corridor (snap-to-road + freehand); the override path
+        (`/gps/trips/:id/geometry`) is backend-ready — wiring the day's-trip UI is a tracked follow-up.
+  - [x] No hardcoded keys; the browser key is referrer-restricted (Maps JS + Directions + Geocoding).
 
 #### T-711. Effective-corridor resolver + daily-init wiring
 

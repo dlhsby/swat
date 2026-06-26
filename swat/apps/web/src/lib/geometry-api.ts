@@ -8,9 +8,20 @@ export interface GeoJsonLineString {
   coordinates: GeoPosition[];
 }
 
+/**
+ * A corridor editor control point: `snapped` means the segment leading INTO it
+ * follows roads (Google Directions); `false` is a freehand (straight) segment.
+ */
+export interface CorridorWaypoint {
+  lng: number;
+  lat: number;
+  snapped: boolean;
+}
+
 export interface RouteGeometryDto {
   routeId: string;
   pathGeojson: GeoJsonLineString;
+  waypoints: CorridorWaypoint[] | null;
   toleranceMeters: number;
   lengthMeters: number;
   source: string;
@@ -33,6 +44,7 @@ export interface DeviationRuleDto {
 
 interface UpsertGeometryBody {
   pathGeojson: GeoJsonLineString;
+  waypoints?: CorridorWaypoint[];
   toleranceMeters?: number;
 }
 

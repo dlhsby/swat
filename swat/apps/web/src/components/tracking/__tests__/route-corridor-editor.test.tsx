@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,6 +18,8 @@ vi.mock('@vis.gl/react-google-maps', () => ({
   APIProvider: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Map: ({ children }: { children: ReactNode }) => <div data-testid="map">{children}</div>,
   useMap: () => ({ addListener: () => ({ remove: () => undefined }) }),
+  // No routes library in jsdom → snap falls back to straight segments (no google calls).
+  useMapsLibrary: () => undefined,
 }));
 
 const hooks = vi.hoisted(() => ({
@@ -51,7 +53,9 @@ describe('RouteCorridorEditor', () => {
     renderWithProviders(<RouteCorridorEditor route={ROUTE} onClose={() => undefined} />);
     expect(screen.getByText('Koridor Rute')).toBeInTheDocument();
     expect(screen.getByText('Pool A → TPA Benowo')).toBeInTheDocument();
-    expect(screen.getByText(/Klik peta untuk menambah titik/)).toBeInTheDocument();
+    expect(screen.getByText(/Klik peta untuk menjatuhkan titik/)).toBeInTheDocument();
+    // Snap-to-road toggle is on by default.
+    expect(screen.getByRole('switch') as HTMLInputElement).toBeChecked();
   });
 
   it('disables Save with fewer than 2 points (empty corridor)', () => {
@@ -62,11 +66,12 @@ describe('RouteCorridorEditor', () => {
     expect(screen.queryByRole('button', { name: /Hapus Koridor/ })).not.toBeInTheDocument();
   });
 
-  it('hydrates from an existing template: Save enabled + Delete shown', () => {
+  it('hydrates from an existing template: Save enabled + Delete shown', async () => {
     hooks.useRouteGeometry.mockReturnValue({
       data: {
         routeId: 'r1',
         pathGeojson: LINE,
+        waypoints: null,
         toleranceMeters: 200,
         lengthMeters: 1200,
         source: 'google-maps',
@@ -75,17 +80,21 @@ describe('RouteCorridorEditor', () => {
       isLoading: false,
     });
     renderWithProviders(<RouteCorridorEditor route={ROUTE} onClose={() => undefined} />);
-    expect(screen.getByText('2 titik')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Simpan Koridor/ })).toBeEnabled();
+    // Path builds asynchronously (straight, no routes lib) → 2 control points.
+    expect(await screen.findByText('2 titik')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Simpan Koridor/ })).toBeEnabled(),
+    );
     expect(screen.getByRole('button', { name: /Hapus Koridor/ })).toBeInTheDocument();
     expect((screen.getByLabelText('Toleransi (meter)') as HTMLInputElement).value).toBe('200');
   });
 
-  it('saves the drawn corridor as a GeoJSON LineString', async () => {
+  it('saves the drawn corridor as a GeoJSON LineString with waypoints', async () => {
     hooks.useRouteGeometry.mockReturnValue({
       data: {
         routeId: 'r1',
         pathGeojson: LINE,
+        waypoints: null,
         toleranceMeters: 150,
         lengthMeters: 1,
         source: 'google-maps',
@@ -94,11 +103,16 @@ describe('RouteCorridorEditor', () => {
       isLoading: false,
     });
     renderWithProviders(<RouteCorridorEditor route={ROUTE} onClose={() => undefined} />);
-    await userEvent.click(screen.getByRole('button', { name: /Simpan Koridor/ }));
+    const saveBtn = await screen.findByRole('button', { name: /Simpan Koridor/ });
+    await waitFor(() => expect(saveBtn).toBeEnabled());
+    await userEvent.click(saveBtn);
     expect(hooks.save.mutate).toHaveBeenCalledWith(
       expect.objectContaining({
         routeId: 'r1',
         pathGeojson: expect.objectContaining({ type: 'LineString' }),
+        waypoints: expect.arrayContaining([
+          expect.objectContaining({ snapped: expect.any(Boolean) }),
+        ]),
         toleranceMeters: 150,
       }),
       expect.any(Object),

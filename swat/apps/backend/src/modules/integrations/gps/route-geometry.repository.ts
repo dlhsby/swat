@@ -20,15 +20,19 @@ export class RouteGeometryRepository {
     routeId: string,
     data: {
       pathGeojson: Prisma.InputJsonValue;
+      waypoints: Prisma.InputJsonValue | null;
       toleranceMeters: number;
       lengthMeters: number;
       source: string;
     },
   ): Promise<RouteGeometry> {
+    // `null` clears the column; Prisma requires the explicit JsonNull sentinel.
+    const waypoints = data.waypoints ?? Prisma.JsonNull;
     return this.prisma.routeGeometry.upsert({
       where: { routeId },
       update: {
         pathGeojson: data.pathGeojson,
+        waypoints,
         toleranceMeters: data.toleranceMeters,
         lengthMeters: data.lengthMeters,
         source: data.source,
@@ -36,6 +40,7 @@ export class RouteGeometryRepository {
       create: {
         route: { connect: { id: routeId } },
         pathGeojson: data.pathGeojson,
+        waypoints,
         toleranceMeters: data.toleranceMeters,
         lengthMeters: data.lengthMeters,
         source: data.source,
