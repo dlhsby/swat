@@ -518,7 +518,7 @@ model Site {
   legacyId          Int?             @unique @map("legacy_id")
   type              SiteType
   name              String           @db.VarChar(256)
-  address           String           @db.VarChar(512)
+  address           String?          @db.VarChar(512)
   latitude          Decimal?         @db.Decimal(11, 6)
   longitude         Decimal?         @db.Decimal(11, 6)
   // GPS dwell exclusion (Phase 7). Dwelling within this many metres of the site

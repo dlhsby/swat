@@ -69,7 +69,7 @@ const siteSchema = z
   .object({
     type: z.enum(['POOL', 'SPBU', 'TPS', 'TPA']),
     name: z.string().min(1, 'Nama lokasi wajib diisi').max(256),
-    address: z.string().min(1, 'Alamat wajib diisi').max(512),
+    address: z.string().max(512, 'Alamat maksimal 512 karakter').optional(),
     latitude: z.coerce.number().min(-90, 'Lintang -90..90').max(90, 'Lintang -90..90').optional(),
     longitude: z.coerce
       .number()
@@ -92,7 +92,7 @@ const siteDefaults: SiteValues = {
 const siteToForm = (r: SiteDto): SiteValues => ({
   type: r.type,
   name: r.name,
-  address: r.address,
+  address: r.address ?? '',
   latitude: r.latitude ?? undefined,
   longitude: r.longitude ?? undefined,
 });
@@ -109,13 +109,19 @@ function SiteMapPicker(): JSX.Element {
   const lng = form.watch('longitude');
   const value = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;
 
+  // Set BOTH fields, then validate ONCE. Validating on each setValue separately
+  // races the async (zod) resolver: the lat-only pass can resolve last and leave a
+  // stale "both-or-neither" error even though both are now set. So the first set
+  // skips validation and the second triggers a single pass over the consistent pair.
   const setPin = (p: { lat: number; lng: number }): void => {
-    form.setValue('latitude', round6(p.lat), { shouldValidate: true, shouldDirty: true });
+    form.setValue('latitude', round6(p.lat), { shouldDirty: true });
     form.setValue('longitude', round6(p.lng), { shouldValidate: true, shouldDirty: true });
   };
   const clearPin = (): void => {
-    form.setValue('latitude', undefined, { shouldValidate: true, shouldDirty: true });
-    form.setValue('longitude', undefined, { shouldValidate: true, shouldDirty: true });
+    form.setValue('latitude', undefined, { shouldDirty: true });
+    form.setValue('longitude', undefined, { shouldDirty: true });
+    // Both cleared together is valid — drop any error the pair may have shown.
+    form.clearErrors(['latitude', 'longitude']);
   };
 
   return (
@@ -147,7 +153,12 @@ function SitesTab(): JSX.Element {
         meta: { label: 'Jenis' },
         cell: ({ row }) => <Badge appearance="count">{siteTypeLabel(row.original.type)}</Badge>,
       },
-      { accessorKey: 'address', header: 'Alamat', meta: { label: 'Alamat' } },
+      {
+        accessorKey: 'address',
+        header: 'Alamat',
+        meta: { label: 'Alamat' },
+        cell: ({ row }) => row.original.address ?? '—',
+      },
       {
         accessorKey: 'latitude',
         header: 'Lintang',
@@ -200,7 +211,7 @@ function SitesTab(): JSX.Element {
       >
         <SelectField name="type" label="Jenis Lokasi" required options={SITE_TYPES} />
         <TextField name="name" label="Nama" required />
-        <TextareaField name="address" label="Alamat" required />
+        <TextareaField name="address" label="Alamat (opsional)" />
         <div className="grid grid-cols-2 gap-4">
           <NumberField name="latitude" label="Lintang (opsional)" />
           <NumberField name="longitude" label="Bujur (opsional)" />

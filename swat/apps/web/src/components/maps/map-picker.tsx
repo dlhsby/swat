@@ -1,7 +1,7 @@
 'use client';
 
 import { APIProvider, Map as GoogleMap, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
-import { MapPinned, Search, Crosshair } from 'lucide-react';
+import { MapPinned, Search, Crosshair, LocateFixed } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button, Input } from '@/components/ui';
@@ -125,6 +125,30 @@ function MapPickerInner({
     }
   }, [query, onChange]);
 
+  const [locating, setLocating] = useState(false);
+  const useMyLocation = useCallback(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setSearchError('Geolokasi tidak didukung di peramban ini.');
+      return;
+    }
+    setLocating(true);
+    setSearchError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const picked = { lat: round6(pos.coords.latitude), lng: round6(pos.coords.longitude) };
+        onChange(picked);
+        mapRef.current?.panTo(picked);
+        mapRef.current?.setZoom(16);
+        setLocating(false);
+      },
+      () => {
+        setSearchError('Tidak bisa mengambil lokasi — izinkan akses lokasi peramban.');
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }, [onChange]);
+
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
@@ -149,6 +173,16 @@ function MapPickerInner({
         >
           <Search className="h-4 w-4" aria-hidden /> Cari
         </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={useMyLocation}
+          loading={locating}
+          aria-label="Gunakan lokasi saya"
+          title="Gunakan lokasi saya"
+        >
+          <LocateFixed className="h-4 w-4" aria-hidden />
+        </Button>
       </div>
       {searchError ? <p className="text-tiny text-danger-600">{searchError}</p> : null}
       <div className="overflow-hidden rounded-base border border-neutral-200" style={{ height }}>
@@ -158,6 +192,11 @@ function MapPickerInner({
           gestureHandling="greedy"
           disableDefaultUI={false}
           clickableIcons={false}
+          // Drop the Street View "pegman" + map-type + fullscreen chrome — this is a
+          // pin picker, not an explorer. Keep zoom + the my-location button below.
+          streetViewControl={false}
+          mapTypeControl={false}
+          fullscreenControl={false}
           style={{ width: '100%', height: '100%' }}
         >
           <PinLayer value={value} onPick={onChange} onMapReady={onMapReady} />

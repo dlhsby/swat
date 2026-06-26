@@ -194,6 +194,8 @@ function CorridorCanvas({
         gestureHandling="greedy"
         disableDefaultUI={false}
         clickableIcons={false}
+        streetViewControl={false}
+        fullscreenControl={false}
         style={{ width: '100%', height: '100%' }}
       >
         <CorridorDrawing
