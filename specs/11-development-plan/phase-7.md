@@ -22,9 +22,9 @@
 >   **T-728 (physical Route removal + reporting rewrite) is therefore CANCELLED, not deferred** —
 >   `Route` is retained by design, so there is no collapse/backfill to run before the import.
 >
-> **All 24 tasks implemented.** Deferred follow-ups (tracked above): per-day Trip
-> corridor UI wiring (¹), `dwell_too_long` + `off_sequence`
-> matcher checks (²), global alert-bell + history (³), `adherencePct`/`dwellMinutes`
+> **All 24 tasks implemented** (corridor authoring + per-day switch complete after the 7.8
+> revision — see ¹). Remaining deferred follow-ups (tracked above): `dwell_too_long` +
+> `off_sequence` matcher checks (²), global alert-bell + history (³), `adherencePct`/`dwellMinutes`
 > efficiency (⁴), a live webhook→SSE E2E spec + load test (⁵).
 >
 > ¹ T-710: route-template corridor editor shipped + tested. **Post-Phase-7
@@ -39,6 +39,13 @@
 >   harian", `/gps/trips/:id/geometry`). Trip overrides now **persist control
 >   waypoints** too (`Trip.geometryWaypoints`), so a per-day override re-opens with
 >   its sparse handles just like a route template.
+>   **Superseded by Epic 7.8 (done):** a **`Route` now owns 1..N `Corridor`s** — its
+>   **default corridor is auto-created and snapped to roads SERVER-SIDE**
+>   (`GoogleDirectionsService`, `GOOGLE_MAPS_SERVER_KEY`; straight-line fallback), with
+>   manual draws still snapping via the browser key. Both the **template-leg picker** and
+>   the **per-day "Koridor harian" picker** now select among the route's corridors
+>   (`PUT /gps/trips/:id/corridor` sets `Trip.corridorId`), keeping the freehand override as
+>   a one-off escape hatch. So "per-day Trip corridor wiring" is **complete**, not deferred.
 > ² T-712: `off_corridor` (PostGIS ST_DWithin + Redis hysteresis + auto-resolve) and
 >   `late_to_schedule` implemented; `dwell_too_long` (needs Site-geofence spatial
 >   check) and `off_sequence` (leg-sequence logic) are tracked follow-ups.
