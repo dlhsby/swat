@@ -1,16 +1,12 @@
+import { apiClient } from './api-client';
 import { type CorridorWaypoint, type GeoJsonLineString } from './geometry-api';
-import { type RouteCategoryValue } from './master-api';
-import { makeResourceApi } from './resource-api';
 
-/** A named, reusable corridor (Phase 7.8). Mirrors the backend `/corridors` DTO. */
+/** A drawn path owned by a route (Phase 7.8). Mirrors the backend Corridor DTO. */
 export interface CorridorDto {
   id: string;
+  routeId: string;
   name: string;
-  category: RouteCategoryValue | null;
-  originSiteId: string | null;
-  originSiteName: string | null;
-  destinationSiteId: string | null;
-  destinationSiteName: string | null;
+  isDefault: boolean;
   pathGeojson: GeoJsonLineString;
   waypoints: CorridorWaypoint[] | null;
   toleranceMeters: number;
@@ -20,18 +16,21 @@ export interface CorridorDto {
   updatedAt: string;
 }
 
-export const corridorsApi = makeResourceApi<CorridorDto>('/corridors');
-
-/** Build a `?origin=&destination=&category=` filter for the corridor picker. */
-export function corridorLegQuery(params: {
-  originSiteId?: string | null;
-  destinationSiteId?: string | null;
-  category?: RouteCategoryValue | null;
-}): string {
-  const q = new URLSearchParams();
-  if (params.originSiteId) q.set('originSiteId', params.originSiteId);
-  if (params.destinationSiteId) q.set('destinationSiteId', params.destinationSiteId);
-  if (params.category) q.set('category', params.category);
-  const s = q.toString();
-  return s ? `?${s}` : '';
+export interface UpsertCorridorBody {
+  name: string;
+  pathGeojson: GeoJsonLineString;
+  waypoints?: CorridorWaypoint[];
+  toleranceMeters?: number;
 }
+
+/** Route-scoped corridor CRUD: a route owns 1..N corridors (default first). */
+export const corridorApi = {
+  listForRoute: (routeId: string): Promise<CorridorDto[]> =>
+    apiClient.get<CorridorDto[]>(`/routes/${routeId}/corridors`),
+  create: (routeId: string, body: UpsertCorridorBody): Promise<CorridorDto> =>
+    apiClient.post<CorridorDto>(`/routes/${routeId}/corridors`, { ...body }),
+  update: (id: string, body: Partial<UpsertCorridorBody>): Promise<CorridorDto> =>
+    apiClient.patch<CorridorDto>(`/corridors/${id}`, { ...body }),
+  remove: (id: string): Promise<{ message: string }> =>
+    apiClient.delete<{ message: string }>(`/corridors/${id}`),
+};

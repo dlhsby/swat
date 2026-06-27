@@ -12,7 +12,6 @@ import {
   type LucideIcon,
   MapPin,
   ShieldCheck,
-  Spline,
   Ticket,
   Trash2,
   Truck,
@@ -104,7 +103,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { key: 'vehicles', href: '/vehicles', icon: Truck, permission: 'vehicle:read' },
       { key: 'drivers', href: '/drivers', icon: Users, permission: 'driver:read' },
       { key: 'sitesRoutes', href: '/sites-routes', icon: MapPin, permission: 'site:read' },
-      { key: 'corridors', href: '/corridors', icon: Spline, permission: 'corridor:read' },
       {
         key: 'wasteSources',
         href: '/waste-sources',
