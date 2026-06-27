@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { type SessionUser } from '../../../common/auth/session.types';
@@ -6,6 +6,7 @@ import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 import { type TripDto } from '../trips/trip.mapper';
 
+import { AddAssignmentDto, AddHaulDto } from './dto/add-assignment.dto';
 import { RecordDepartDto } from './dto/record-depart.dto';
 import { RecordReturnDto } from './dto/record-return.dto';
 import { type HaulAssignmentDto } from './haul-assignment.mapper';
@@ -45,5 +46,22 @@ export class HaulAssignmentsController {
   @ApiOperation({ summary: 'List the trips of a haul assignment' })
   listTrips(@Param('id') id: string): Promise<TripDto[]> {
     return this.haulAssignments.listTrips(id);
+  }
+
+  @Post()
+  @RequirePermissions('transaction-day:manage')
+  @ApiOperation({ summary: 'Add a driver-shift to an existing haul (second shift)' })
+  addAssignment(
+    @Body() dto: AddAssignmentDto,
+    @CurrentUser() user: SessionUser,
+  ): Promise<HaulAssignmentDto> {
+    return this.haulAssignments.addAssignment(dto, user);
+  }
+
+  @Post('with-new-haul')
+  @RequirePermissions('transaction-day:manage')
+  @ApiOperation({ summary: 'Add a vehicle (new haul + first shift) to a day' })
+  addHaul(@Body() dto: AddHaulDto, @CurrentUser() user: SessionUser): Promise<HaulAssignmentDto> {
+    return this.haulAssignments.addHaul(dto, user);
   }
 }

@@ -159,3 +159,28 @@ export async function uploadTripPhoto(tripId: string, file: File): Promise<TripP
     checksum,
   });
 }
+
+/** Add a driver-shift to an existing haul (Phase 7.8). */
+export interface AddAssignmentBody {
+  haulId: string;
+  driverId: string;
+  departTime?: string;
+  returnTime?: string;
+}
+
+export function addAssignment(body: AddAssignmentBody): Promise<HaulAssignmentDto> {
+  return apiClient.post<HaulAssignmentDto>('/haul-assignments', { ...body });
+}
+
+/** Add a vehicle (new haul + first shift) to an already-initialised day. */
+export interface AddHaulBody {
+  transactionDayId: string;
+  vehicleId: string;
+  driverId: string;
+  departTime?: string;
+  returnTime?: string;
+}
+
+export function addHaul(body: AddHaulBody): Promise<HaulAssignmentDto> {
+  return apiClient.post<HaulAssignmentDto>('/haul-assignments/with-new-haul', { ...body });
+}
