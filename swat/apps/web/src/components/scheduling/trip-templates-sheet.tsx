@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Trash2 } from 'lucide-react';
+import { ArrowRight, Spline, Trash2 } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
@@ -11,6 +11,7 @@ import {
   SheetFilterBar,
   useWindowedList,
 } from '@/components/crud/sheet-list';
+import { TripTemplateCorridorSheet } from '@/components/scheduling/trip-template-corridor-sheet';
 import {
   Badge,
   Button,
@@ -105,6 +106,7 @@ export function TripTemplatesSheet({
   const [templates, setTemplates] = useState<TripTemplateDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TripTemplateDto | null>(null);
+  const [corridorTarget, setCorridorTarget] = useState<TripTemplateDto | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL_FILTER);
 
   // Sites (not the full route catalogue) drive the picker: operators choose a leg
@@ -308,20 +310,37 @@ export function TripTemplatesSheet({
                           {tpl.fuelRequestedLiters ? (
                             <span>· {tpl.fuelRequestedLiters} L</span>
                           ) : null}
+                          <span className="inline-flex items-center gap-1">
+                            <Spline className="h-3 w-3" aria-hidden />
+                            {tpl.corridorName ?? 'Koridor utama'}
+                          </span>
                         </p>
                       </div>
                     </div>
-                    <ProtectedAction permission="trip-template:delete">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-danger-600"
-                        aria-label="Hapus rute"
-                        onClick={() => setDeleteTarget(tpl)}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden />
-                      </Button>
-                    </ProtectedAction>
+                    <div className="flex items-center gap-1">
+                      <ProtectedAction permission="trip-template:update">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          aria-label="Pilih koridor"
+                          onClick={() => setCorridorTarget(tpl)}
+                        >
+                          <Spline className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </ProtectedAction>
+                      <ProtectedAction permission="trip-template:delete">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-danger-600"
+                          aria-label="Hapus rute"
+                          onClick={() => setDeleteTarget(tpl)}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </ProtectedAction>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -458,6 +477,16 @@ export function TripTemplatesSheet({
         description="Template Trip terencana akan dihapus dari jadwal."
         confirmLabel="Hapus"
         onConfirm={() => void onDelete()}
+      />
+
+      <TripTemplateCorridorSheet
+        template={corridorTarget}
+        scheduleId={scheduleId}
+        onClose={() => setCorridorTarget(null)}
+        onMutated={() => {
+          void reload();
+          onMutated?.();
+        }}
       />
     </Sheet>
   );

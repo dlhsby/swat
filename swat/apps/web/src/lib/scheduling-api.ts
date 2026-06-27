@@ -26,6 +26,24 @@ export function createTripTemplate(
   });
 }
 
+export interface UpdateTripTemplateBody {
+  /** A corridor id selects it; `''` clears back to the route default. */
+  corridorId?: string;
+  targetTime?: string;
+  fuelRequestedLiters?: number;
+}
+
+export function updateTripTemplate(
+  scheduleId: string,
+  templateId: string,
+  body: UpdateTripTemplateBody,
+): Promise<TripTemplateDto> {
+  return apiClient.patch<TripTemplateDto>(
+    `/schedule-templates/${scheduleId}/trip-templates/${templateId}`,
+    { ...body },
+  );
+}
+
 export function deleteTripTemplate(
   scheduleId: string,
   templateId: string,
