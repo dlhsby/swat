@@ -36,7 +36,12 @@ vi.mock('@/hooks/use-corridors', () => ({
   useDeleteCorridor: () => hooks.remove,
 }));
 
-const ROUTE = { id: 'r1', originSiteName: 'Pool A', destinationSiteName: 'TPA Benowo' };
+const ROUTE = {
+  id: 'r1',
+  category: 'PICKUP',
+  originSiteName: 'Pool A',
+  destinationSiteName: 'TPA Benowo',
+};
 const LINE = {
   type: 'LineString' as const,
   coordinates: [
@@ -139,6 +144,22 @@ describe('RouteCorridorEditor', () => {
     expect(within(dialog).getByText(/Alternatif Tol/)).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Hapus' }));
     expect(hooks.remove.mutate).toHaveBeenCalledWith('c2', expect.any(Object));
+  });
+
+  it('is view-only for a "Berangkat dari Pool" route (no add/edit/delete)', () => {
+    hooks.useRouteCorridors.mockReturnValue({
+      data: [DEFAULT_CORRIDOR, ALT_CORRIDOR],
+      isLoading: false,
+    });
+    renderWithProviders(
+      <RouteCorridorEditor
+        route={{ ...ROUTE, category: 'DEPART_POOL' }}
+        onClose={() => undefined}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /Tambah koridor/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ubah Jalur Utama' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hapus Alternatif Tol' })).not.toBeInTheDocument();
   });
 
   it('calls onClose from the list footer', async () => {

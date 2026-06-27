@@ -33,6 +33,7 @@ import { type CorridorDto } from '@/lib/corridor-api';
 
 export interface CorridorRoute {
   readonly id: string;
+  readonly category: string;
   readonly originSiteName: string;
   readonly destinationSiteName: string;
 }
@@ -55,6 +56,9 @@ export function RouteCorridorEditor({
   onClose: () => void;
 }): JSX.Element {
   const routeId = route?.id ?? null;
+  // "Berangkat dari Pool" is a Pool→Pool kickoff with no real route — its corridor
+  // is a degenerate point, so it's view-only (no add/edit/delete).
+  const viewOnly = route?.category === 'DEPART_POOL';
   const { data: corridors = [], isLoading } = useRouteCorridors(routeId);
   const create = useCreateCorridor(routeId);
   const update = useUpdateCorridor(routeId);
@@ -125,8 +129,9 @@ export function RouteCorridorEditor({
 
           <SheetBody className="space-y-3">
             <p className="text-body-sm text-neutral-500">
-              Satu rute punya beberapa pilihan koridor. Koridor utama dibuat otomatis mengikuti
-              jalan; tambahkan alternatif bila perlu.
+              {viewOnly
+                ? 'Leg "Berangkat dari Pool" hanya titik awal harian — koridornya tidak diubah.'
+                : 'Satu rute punya beberapa pilihan koridor. Koridor utama dibuat otomatis mengikuti jalan; tambahkan alternatif bila perlu.'}
             </p>
 
             {isLoading ? (
@@ -144,17 +149,20 @@ export function RouteCorridorEditor({
                   <CorridorListItem
                     key={c.id}
                     corridor={c}
-                    onEdit={() => startEdit(c)}
-                    // The route's default is auto-managed — editable, but not deletable.
-                    onDelete={c.isDefault ? undefined : () => setDeleteTarget(c)}
+                    // Pool-kickoff routes are view-only; for the rest the default is
+                    // editable but not deletable (only alternates can be removed).
+                    onEdit={viewOnly ? undefined : () => startEdit(c)}
+                    onDelete={viewOnly || c.isDefault ? undefined : () => setDeleteTarget(c)}
                   />
                 ))}
               </ul>
             )}
 
-            <Button variant="secondary" onClick={startAdd} className="w-full">
-              <Plus className="h-4 w-4" aria-hidden /> Tambah koridor
-            </Button>
+            {!viewOnly ? (
+              <Button variant="secondary" onClick={startAdd} className="w-full">
+                <Plus className="h-4 w-4" aria-hidden /> Tambah koridor
+              </Button>
+            ) : null}
           </SheetBody>
 
           <SheetFooter>

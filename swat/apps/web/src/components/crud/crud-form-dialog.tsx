@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useEffect } from 'react';
+import { createContext, type ReactNode, useContext, useEffect } from 'react';
 import {
   type DefaultValues,
   type FieldValues,
@@ -25,6 +25,14 @@ import {
 import { type ResourceManager } from '@/hooks/use-resource-manager';
 import { ApiError } from '@/lib/api-error';
 import { cn } from '@/lib/cn';
+
+/**
+ * Read-only ("Lihat") state of the surrounding CRUD form, so custom field widgets
+ * (e.g. a map pin-picker) can HIDE their interactive controls — the disabled
+ * fieldset only greys native inputs, it can't remove a non-input button.
+ */
+const CrudFormReadOnlyContext = createContext(false);
+export const useCrudFormReadOnly = (): boolean => useContext(CrudFormReadOnlyContext);
 
 export interface CrudFormDialogProps<T, F extends FieldValues> {
   manager: ResourceManager<T>;
@@ -108,7 +116,9 @@ export function CrudFormDialog<T, F extends FieldValues>({
               disabled={readOnly}
               className="max-h-[65vh] space-y-4 overflow-y-auto px-2 py-2"
             >
-              {children}
+              <CrudFormReadOnlyContext.Provider value={readOnly}>
+                {children}
+              </CrudFormReadOnlyContext.Provider>
             </fieldset>
             <DialogFooter>
               {readOnly ? (

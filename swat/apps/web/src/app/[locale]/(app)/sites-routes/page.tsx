@@ -8,7 +8,7 @@ import { useFormContext } from 'react-hook-form';
 import { z } from 'zod';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
-import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
+import { CrudFormDialog, useCrudFormReadOnly } from '@/components/crud/crud-form-dialog';
 import { CrudListShell } from '@/components/crud/crud-list-shell';
 import {
   NumberField,
@@ -110,6 +110,9 @@ const siteToForm = (r: SiteDto): SiteValues => ({
  */
 function SiteMapPicker(): JSX.Element {
   const form = useFormContext<SiteValues>();
+  // In view ("Lihat") mode, show only the pin preview — no search, my-location,
+  // click/drag, or "Hapus titik" (the disabled fieldset can't hide a button).
+  const readOnly = useCrudFormReadOnly();
   const lat = form.watch('latitude');
   const lng = form.watch('longitude');
   const value = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;
@@ -131,8 +134,8 @@ function SiteMapPicker(): JSX.Element {
 
   return (
     <div className="space-y-2">
-      <MapPicker value={value} onChange={setPin} />
-      {value ? (
+      <MapPicker value={value} onChange={setPin} readOnly={readOnly} />
+      {value && !readOnly ? (
         <Button
           type="button"
           variant="ghost"
@@ -277,24 +280,37 @@ function SitesTab(): JSX.Element {
 
 /* ----------------------------- Routes tab ----------------------------- */
 
+const ROUTE_CATEGORY_VALUES = [
+  'DEPART_POOL',
+  'REFUEL',
+  'PICKUP',
+  'DISPOSAL',
+  'RETURN_POOL',
+] as const;
+
 const routeSchema = z
   .object({
-    category: z.enum(['DEPART_POOL', 'REFUEL', 'PICKUP', 'DISPOSAL', 'RETURN_POOL']),
+    // '' is the "not chosen yet" sentinel — the form opens with no default jenis
+    // rute; the first refine forces a real pick.
+    category: z.enum(ROUTE_CATEGORY_VALUES).or(z.literal('')),
     originSiteId: z.string().uuid('Lokasi asal wajib dipilih'),
-    destinationSiteId: z.string().uuid('Lokasi tujuan wajib dipilih'),
-    // 0 is allowed — legacy routes overwhelmingly carry distance 0.
-    distanceKm: z.coerce
-      .number()
-      .int('Jarak harus bilangan bulat (km)')
-      .min(0, 'Jarak tidak boleh negatif'),
+    // "Berangkat dari Pool" has no separate destination (it's the same pool) — the
+    // field is hidden and resolved to the origin on submit; every other category
+    // requires it (second refine).
+    destinationSiteId: z.string().optional(),
+  })
+  .refine((d) => d.category !== '', { message: 'Jenis rute wajib dipilih', path: ['category'] })
+  .refine((d) => d.category === 'DEPART_POOL' || Boolean(d.destinationSiteId), {
+    message: 'Lokasi tujuan wajib dipilih',
+    path: ['destinationSiteId'],
   })
   // Pool-anchored legs (berangkat/kembali ke pool) may share origin & destination;
   // every other category must run between two distinct sites.
   .refine(
     (d) =>
-      d.originSiteId !== d.destinationSiteId ||
       d.category === 'DEPART_POOL' ||
-      d.category === 'RETURN_POOL',
+      d.category === 'RETURN_POOL' ||
+      d.originSiteId !== d.destinationSiteId,
     {
       message: 'Lokasi asal dan tujuan harus berbeda.',
       path: ['destinationSiteId'],
@@ -302,16 +318,24 @@ const routeSchema = z
   );
 type RouteValues = z.infer<typeof routeSchema>;
 const routeDefaults: RouteValues = {
-  category: 'PICKUP',
+  category: '',
   originSiteId: '',
   destinationSiteId: '',
-  distanceKm: 0,
 };
 const routeToForm = (r: RouteDto): RouteValues => ({
   category: r.category,
   originSiteId: r.originSiteId,
   destinationSiteId: r.destinationSiteId,
-  distanceKm: r.distanceKm,
+});
+/**
+ * Form values → request body. "Berangkat dari Pool" is recorded as a Pool→Pool
+ * self-loop (destination = origin); `distanceKm` is omitted entirely — the backend
+ * derives it from the route's default corridor length.
+ */
+const buildRoutePayload = (v: RouteValues): Record<string, unknown> => ({
+  category: v.category,
+  originSiteId: v.originSiteId,
+  destinationSiteId: v.category === 'DEPART_POOL' ? v.originSiteId : v.destinationSiteId,
 });
 const siteOption = (s: SiteDto): SelectOption => ({ value: s.id, label: `${s.name} (${s.type})` });
 
@@ -332,16 +356,21 @@ const ROUTE_SITE_CONSTRAINTS: Record<
   RETURN_POOL: { destination: 'POOL' },
 };
 
+const EMPTY_CONSTRAINT: { origin?: SiteType; destination?: SiteType } = {};
+
 /**
  * Origin/destination pickers that narrow to the site type required by the chosen
  * route category, and clear a selection that the new category no longer allows.
+ * Shown only after a category is picked; "Berangkat dari Pool" displays only the
+ * Asal (it's a Pool→Pool kickoff, so there's no separate Tujuan).
  */
-function RouteSiteFields({ sites }: { sites: readonly SiteDto[] }): JSX.Element {
+function RouteSiteFields({ sites }: { sites: readonly SiteDto[] }): JSX.Element | null {
   const form = useFormContext<RouteValues>();
   const category = form.watch('category');
   const originSiteId = form.watch('originSiteId');
   const destinationSiteId = form.watch('destinationSiteId');
-  const constraint = ROUTE_SITE_CONSTRAINTS[category];
+  const constraint = category ? ROUTE_SITE_CONSTRAINTS[category] : EMPTY_CONSTRAINT;
+  const isDepart = category === 'DEPART_POOL';
 
   // Drop a now-invalid selection whenever the category changes.
   useEffect(() => {
@@ -368,11 +397,16 @@ function RouteSiteFields({ sites }: { sites: readonly SiteDto[] }): JSX.Element 
     [sites, constraint.destination],
   );
 
+  // Locations are chosen after the category (it constrains the allowed site types).
+  if (!category) {
+    return null;
+  }
+
   return (
     <div className="grid gap-4">
       <SelectField
         name="originSiteId"
-        label="Asal"
+        label={isDepart ? 'Lokasi Pool' : 'Asal'}
         required
         options={originOptions}
         placeholder="Pilih lokasi"
@@ -380,18 +414,20 @@ function RouteSiteFields({ sites }: { sites: readonly SiteDto[] }): JSX.Element 
           constraint.origin ? `Hanya lokasi ${siteTypeLabel(constraint.origin)}` : undefined
         }
       />
-      <SelectField
-        name="destinationSiteId"
-        label="Tujuan"
-        required
-        options={destinationOptions}
-        placeholder="Pilih lokasi"
-        description={
-          constraint.destination
-            ? `Hanya lokasi ${siteTypeLabel(constraint.destination)}`
-            : undefined
-        }
-      />
+      {!isDepart ? (
+        <SelectField
+          name="destinationSiteId"
+          label="Tujuan"
+          required
+          options={destinationOptions}
+          placeholder="Pilih lokasi"
+          description={
+            constraint.destination
+              ? `Hanya lokasi ${siteTypeLabel(constraint.destination)}`
+              : undefined
+          }
+        />
+      ) : null}
     </div>
   );
 }
@@ -472,12 +508,20 @@ function RoutesTab(): JSX.Element {
         schema={routeSchema}
         defaults={routeDefaults}
         toForm={routeToForm}
+        buildPayload={buildRoutePayload}
         title={{ create: 'Tambah Rute', edit: 'Ubah Rute', view: 'Lihat Rute' }}
         className="max-w-[520px]"
       >
-        <SelectField name="category" label="Jenis Rute" required options={ROUTE_CATEGORIES} />
+        <SelectField
+          name="category"
+          label="Jenis Rute"
+          required
+          options={ROUTE_CATEGORIES}
+          placeholder="Pilih jenis rute"
+        />
         <RouteSiteFields sites={sites} />
-        <NumberField name="distanceKm" label="Jarak" required unit="km" min={0} />
+        {/* Jarak is derived from the route's default corridor (server-side) — not
+            entered by hand. It still shows as a column in the grid. */}
       </CrudFormDialog>
       <RouteCorridorEditor route={corridorRoute} onClose={() => setCorridorRoute(null)} />
     </CrudListShell>

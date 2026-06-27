@@ -274,16 +274,23 @@ export function CorridorEditorCore({
   useEffect(() => {
     if (!open) return;
     if (existing?.waypoints && existing.waypoints.length > 0) {
-      setNodes(existing.waypoints.map((w) => ({ lng: w.lng, lat: w.lat, snapped: w.snapped })));
+      const nodes = existing.waypoints.map((w) => ({ lng: w.lng, lat: w.lat, snapped: w.snapped }));
+      setNodes(nodes);
       setTolerance(existing.toleranceMeters);
+      // Reflect the loaded corridor: the switch is ON only if every node is snapped.
+      setSnapMode(nodes.every((n) => n.snapped));
     } else if (existing?.pathGeojson) {
+      // A legacy corridor stored only its dense path (no control points) → load the
+      // vertices as freehand and show the switch OFF, so flipping it ON re-routes.
       setNodes(
         existing.pathGeojson.coordinates.map(([lng, lat]) => ({ lng, lat, snapped: false })),
       );
       setTolerance(existing.toleranceMeters);
+      setSnapMode(false);
     } else {
       setNodes([]);
       setTolerance(150);
+      setSnapMode(true);
     }
   }, [open, existing]);
 
@@ -346,7 +353,17 @@ export function CorridorEditorCore({
                   <Label htmlFor="corridor-snap">{t('snapToggle')}</Label>
                   <p className="text-tiny text-neutral-500">{t('snapHint')}</p>
                 </div>
-                <Switch id="corridor-snap" checked={snapMode} onCheckedChange={setSnapMode} />
+                <Switch
+                  id="corridor-snap"
+                  checked={snapMode}
+                  onCheckedChange={(next) => {
+                    setSnapMode(next);
+                    // Re-apply to EVERY node, not just new ones, so flipping the
+                    // switch re-routes the whole path (snap → follow roads; off →
+                    // straight). This is what makes a legacy straight corridor snap.
+                    setNodes((prev) => prev.map((node) => ({ ...node, snapped: next })));
+                  }}
+                />
               </div>
 
               {/* Keyed by target so the fit-bounds runs once per opened corridor. */}

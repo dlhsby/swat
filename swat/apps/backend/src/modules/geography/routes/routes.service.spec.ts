@@ -32,6 +32,7 @@ describe('RoutesService', () => {
     update: jest.Mock;
     softDelete: jest.Mock;
   };
+  let corridors: { createDefaultForRoute: jest.Mock; regenerateDefaultForRoute: jest.Mock };
   let service: RoutesService;
 
   beforeEach(() => {
@@ -45,14 +46,18 @@ describe('RoutesService', () => {
       update: jest.fn(),
       softDelete: jest.fn(),
     };
+    corridors = {
+      // Default: no corridor (e.g. a site without coords) → distance stays as-is.
+      createDefaultForRoute: jest.fn().mockResolvedValue(null),
+      regenerateDefaultForRoute: jest.fn().mockResolvedValue(null),
+    };
     service = new RoutesService(
       repo as unknown as RoutesRepository,
       {
         attach: async (_r: unknown, d: unknown[]) => d,
         resolve: async () => new Map<string, string>(),
       } as unknown as ActorNamesService,
-      // Auto-default-corridor on create is a no-op in these route tests.
-      { createDefaultForRoute: async () => null } as unknown as CorridorsService,
+      corridors as unknown as CorridorsService,
     );
   });
 
@@ -126,6 +131,16 @@ describe('RoutesService', () => {
         destinationSiteName: 'TPA',
       });
     });
+
+    it('derives distanceKm from the default corridor length (metres → km)', async () => {
+      repo.create.mockResolvedValue(buildRoute({ distanceKm: 0 }));
+      corridors.createDefaultForRoute.mockResolvedValue({ lengthMeters: 5400 });
+      repo.update.mockResolvedValue(buildRoute({ distanceKm: 5 }));
+      const result = await service.create(dto);
+      expect(corridors.createDefaultForRoute).toHaveBeenCalled();
+      expect(repo.update).toHaveBeenCalledWith(expect.any(String), { distanceKm: 5 });
+      expect(result.distanceKm).toBe(5);
+    });
   });
 
   describe('update', () => {
@@ -161,6 +176,24 @@ describe('RoutesService', () => {
       ).resolves.toMatchObject({
         distanceKm: 30,
       });
+      // No endpoint change → the default corridor is left alone.
+      expect(corridors.regenerateDefaultForRoute).not.toHaveBeenCalled();
+    });
+
+    it('regenerates the default corridor + re-derives distance when an endpoint changes', async () => {
+      const newDest = '550e8400-e29b-41d4-a716-446655440055';
+      repo.findById.mockResolvedValue(buildRoute());
+      repo.update
+        .mockResolvedValueOnce(buildRoute({ destinationSiteId: newDest })) // the endpoint write
+        .mockResolvedValueOnce(buildRoute({ destinationSiteId: newDest, distanceKm: 3 })); // distance sync
+      corridors.regenerateDefaultForRoute.mockResolvedValue({ lengthMeters: 3200 });
+      const result = await service.update('550e8400-e29b-41d4-a716-446655440001', {
+        destinationSiteId: newDest,
+      });
+      expect(corridors.regenerateDefaultForRoute).toHaveBeenCalledWith(
+        '550e8400-e29b-41d4-a716-446655440001',
+      );
+      expect(result.distanceKm).toBe(3);
     });
   });
 

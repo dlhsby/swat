@@ -95,12 +95,32 @@ export class RoutesService {
       category: dto.category,
       originSite: { connect: { id: dto.originSiteId } },
       destinationSite: { connect: { id: dto.destinationSiteId } },
-      distanceKm: dto.distanceKm,
+      distanceKm: dto.distanceKm ?? 0,
     });
-    // Every route gets a default corridor (straight line between its two sites);
-    // skipped silently when a site has no coordinates yet.
-    await this.corridors.createDefaultForRoute(route.id);
-    return toRouteDto(route);
+    // Every route gets a default corridor (road-snapped, else a straight line between
+    // its two sites); skipped silently when a site has no coordinates yet. The route
+    // distance is then derived from that corridor's length rather than typed by hand.
+    const corridor = await this.corridors.createDefaultForRoute(route.id);
+    return toRouteDto(await this.syncDistanceFromCorridor(route, corridor));
+  }
+
+  /**
+   * Set a route's `distanceKm` from its default corridor's length (metres → whole
+   * km), so the figure tracks the drawn path instead of manual entry. No-ops (keeps
+   * the existing distance) when the route has no corridor — e.g. a site lacks coords.
+   */
+  private async syncDistanceFromCorridor(
+    route: RouteWithSites,
+    corridor: { lengthMeters: number } | null,
+  ): Promise<RouteWithSites> {
+    if (!corridor) {
+      return route;
+    }
+    const distanceKm = Math.round(corridor.lengthMeters / 1000);
+    if (distanceKm === route.distanceKm) {
+      return route;
+    }
+    return this.repo.update(route.id, { distanceKm });
   }
 
   /**
@@ -146,6 +166,10 @@ export class RoutesService {
       throw new ConflictException('Rute dengan asal, tujuan, dan kategori ini sudah ada.');
     }
 
+    const sitesChanged =
+      (dto.originSiteId !== undefined && dto.originSiteId !== existing.originSiteId) ||
+      (dto.destinationSiteId !== undefined && dto.destinationSiteId !== existing.destinationSiteId);
+
     const route = await this.repo.update(id, {
       ...(dto.category !== undefined ? { category: dto.category } : {}),
       ...(dto.originSiteId !== undefined
@@ -156,6 +180,12 @@ export class RoutesService {
         : {}),
       ...(dto.distanceKm !== undefined ? { distanceKm: dto.distanceKm } : {}),
     });
+    // When the endpoints move, the auto-default corridor no longer matches — rebuild
+    // it and re-derive the distance from the new path.
+    if (sitesChanged) {
+      const corridor = await this.corridors.regenerateDefaultForRoute(id);
+      return toRouteDto(await this.syncDistanceFromCorridor(route, corridor));
+    }
     return toRouteDto(route);
   }
 

@@ -54,6 +54,13 @@ export class CorridorsRepository {
       .then((c) => c !== null);
   }
 
+  /** A route's active default corridor, if any. */
+  findDefault(routeId: string): Promise<Corridor | null> {
+    return this.prisma.corridor.findFirst({
+      where: { routeId, isDefault: true, deletedAt: null },
+    });
+  }
+
   create(routeId: string, data: CorridorWriteData, isDefault: boolean): Promise<Corridor> {
     return this.prisma.corridor.create({
       data: {

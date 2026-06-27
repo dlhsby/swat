@@ -47,6 +47,10 @@ export class CorridorsService {
 
   async listForRoute(routeId: string): Promise<CorridorDto[]> {
     await this.assertRoute(routeId);
+    // Lazily backfill the default corridor the first time a route is opened, so
+    // legacy/imported routes (created without going through `RoutesService.create`)
+    // also get one. Idempotent — skipped when the route already has corridors.
+    await this.ensureDefaultForRoute(routeId);
     const rows = await this.repo.listForRoute(routeId);
     return rows.map(toDto);
   }
@@ -143,6 +147,32 @@ export class CorridorsService {
       true,
     );
     return toDto(corridor);
+  }
+
+  /**
+   * Create the default corridor only when the route has none yet (idempotent) —
+   * used to lazily backfill legacy routes on first open. Returns null when a
+   * default already exists or neither site has coordinates.
+   */
+  async ensureDefaultForRoute(routeId: string): Promise<CorridorDto | null> {
+    if (await this.repo.hasAny(routeId)) {
+      return null;
+    }
+    return this.createDefaultForRoute(routeId);
+  }
+
+  /**
+   * Replace the route's default corridor with a fresh one — used when a route's
+   * endpoints change so the auto-default tracks the new sites. Soft-deletes the
+   * old default (alternates are kept) and recreates it. Returns null when neither
+   * site has coordinates.
+   */
+  async regenerateDefaultForRoute(routeId: string): Promise<CorridorDto | null> {
+    const existing = await this.repo.findDefault(routeId);
+    if (existing) {
+      await this.repo.softDelete(existing.id);
+    }
+    return this.createDefaultForRoute(routeId);
   }
 
   private async assertRoute(routeId: string): Promise<void> {

@@ -77,8 +77,17 @@ describe('CorridorsService', () => {
     });
 
     it('returns the route corridors (default first)', async () => {
+      repo.hasAny.mockResolvedValue(true); // already has corridors → no lazy create
       const rows = await service.listForRoute(ROUTE);
       expect(rows[0]).toMatchObject({ routeId: ROUTE, isDefault: true });
+      expect(repo.create).not.toHaveBeenCalled();
+    });
+
+    it('lazily backfills the default corridor when the route has none', async () => {
+      repo.hasAny.mockResolvedValue(false);
+      await service.listForRoute(ROUTE);
+      // ensureDefaultForRoute → createDefaultForRoute → repo.create(isDefault=true).
+      expect(repo.create).toHaveBeenCalledWith(ROUTE, expect.anything(), true);
     });
   });
 
