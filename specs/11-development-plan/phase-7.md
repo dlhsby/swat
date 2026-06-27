@@ -13,9 +13,13 @@
 > - **Epic 7.5** — ✅ T-717, T-718³
 > - **Epic 7.6** — ✅ T-719⁴, T-720, T-721
 > - **Epic 7.7** — ✅ T-722, T-723⁵, T-724
-> - **Epic 7.8** — 📋 planned (post-build design): T-725…T-730 — Corridor model
->   (multi-corridor per leg + road-class) + scheduling multi-driver shifts. **Must land
->   before the legacy transactional import.** See the Epic 7.8 section below.
+> - **Epic 7.8** — ✅ T-725, T-726, T-727, T-729, T-730 (on `feat/phase-7.8-corridor-model`):
+>   first-class `Corridor` + `corridorId` refs + resolver cascade + corridor library UI +
+>   template picker; multi-driver shifts (add-shift / add-vehicle). **T-728 partial:** Route is
+>   *demoted* in practice (corridors are the primary path; `route.geometry` is now only a legacy
+>   fallback) — the **destructive physical Route removal + reporting rewrite is deferred** (it
+>   risks the tonnage/BBM/weighbridge paths) until done as a careful, focused pass **before** the
+>   legacy transactional import.
 >
 > **All 24 tasks implemented.** Deferred follow-ups (tracked above): per-day Trip
 > corridor UI wiring (¹), `dwell_too_long` + `off_sequence`
