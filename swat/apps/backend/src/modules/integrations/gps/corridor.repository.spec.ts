@@ -71,13 +71,27 @@ describe('CorridorRepository', () => {
       prisma.trip.findFirst.mockResolvedValue({
         geometryOverride: null,
         geometryToleranceM: null,
-        corridor: { pathGeojson: LINE, toleranceMeters: 200 },
+        corridor: { pathGeojson: LINE, toleranceMeters: 200, deletedAt: null },
         route: { geometry: { pathGeojson: OVERRIDE, toleranceMeters: 150 } },
       });
       await expect(repo.resolveTripCorridor('t1')).resolves.toEqual({
         geojson: LINE,
         toleranceMeters: 200,
         source: 'corridor',
+      });
+    });
+
+    it('ignores a soft-deleted corridor and falls through to the template', async () => {
+      prisma.trip.findFirst.mockResolvedValue({
+        geometryOverride: null,
+        geometryToleranceM: null,
+        corridor: { pathGeojson: LINE, toleranceMeters: 200, deletedAt: new Date() },
+        route: { geometry: { pathGeojson: OVERRIDE, toleranceMeters: 150 } },
+      });
+      await expect(repo.resolveTripCorridor('t1')).resolves.toEqual({
+        geojson: OVERRIDE,
+        toleranceMeters: 150,
+        source: 'route-template',
       });
     });
 

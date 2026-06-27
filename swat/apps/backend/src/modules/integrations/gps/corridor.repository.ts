@@ -76,7 +76,7 @@ export class CorridorRepository {
       select: {
         geometryOverride: true,
         geometryToleranceM: true,
-        corridor: { select: { pathGeojson: true, toleranceMeters: true } },
+        corridor: { select: { pathGeojson: true, toleranceMeters: true, deletedAt: true } },
         // Legacy fallback for trips drawn before Phase 7.8 (retired in T-728).
         route: {
           select: { geometry: { select: { pathGeojson: true, toleranceMeters: true } } },
@@ -98,8 +98,10 @@ export class CorridorRepository {
         source: 'trip-override',
       };
     }
-    // 2. The day's chosen Corridor (copied from the template at daily-init).
-    if (trip.corridor) {
+    // 2. The day's chosen Corridor (copied from the template at daily-init). A
+    //    soft-deleted corridor is ignored (the FK SET NULL only fires on a hard
+    //    delete) → fall through to the legacy template.
+    if (trip.corridor && trip.corridor.deletedAt == null) {
       return {
         geojson: trip.corridor.pathGeojson,
         toleranceMeters: trip.corridor.toleranceMeters,
