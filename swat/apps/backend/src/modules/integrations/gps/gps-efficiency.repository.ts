@@ -47,7 +47,11 @@ export class GpsEfficiencyRepository {
     }));
   }
 
-  /** Today's trips per vehicle with planned distance (corridor length, else route km). */
+  /**
+   * Today's trips per vehicle with planned distance. Planned metres follow the same
+   * precedence as the deviation resolver: the day's chosen corridor → the route's
+   * default corridor → the legacy `route_geometry` → the route's `distanceKm`.
+   */
   async tripRealizations(operationDate: Date): Promise<DailyTripRealization[]> {
     const trips = await this.prisma.trip.findMany({
       where: { operationDate },
@@ -56,18 +60,33 @@ export class GpsEfficiencyRepository {
         actualTime: true,
         actualOdometer: true,
         haulAssignment: { select: { haul: { select: { vehicleId: true } } } },
+        corridor: { select: { lengthMeters: true, deletedAt: true } },
         route: {
-          select: { distanceKm: true, geometry: { select: { lengthMeters: true } } },
+          select: {
+            distanceKm: true,
+            geometry: { select: { lengthMeters: true } },
+            corridors: {
+              where: { isDefault: true, deletedAt: null },
+              select: { lengthMeters: true },
+              take: 1,
+            },
+          },
         },
       },
     });
-    return trips.map((t) => ({
-      vehicleId: t.haulAssignment.haul.vehicleId,
-      targetTime: t.targetTime,
-      actualTime: t.actualTime,
-      actualOdometer: t.actualOdometer,
-      plannedMeters: t.route?.geometry?.lengthMeters ?? (t.route?.distanceKm ?? 0) * 1000,
-    }));
+    return trips.map((t) => {
+      // A soft-deleted chosen corridor is ignored (parity with the resolver).
+      const chosen = t.corridor && t.corridor.deletedAt == null ? t.corridor.lengthMeters : null;
+      const corridorMeters =
+        chosen ?? t.route?.corridors[0]?.lengthMeters ?? t.route?.geometry?.lengthMeters ?? null;
+      return {
+        vehicleId: t.haulAssignment.haul.vehicleId,
+        targetTime: t.targetTime,
+        actualTime: t.actualTime,
+        actualOdometer: t.actualOdometer,
+        plannedMeters: corridorMeters ?? (t.route?.distanceKm ?? 0) * 1000,
+      };
+    });
   }
 
   /** Device-odometer min/max per vehicle for the day (the primary distance source). */

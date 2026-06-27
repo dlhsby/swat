@@ -1384,18 +1384,18 @@ async function seedDemoTracks(devices: DemoTrackedDevice[]): Promise<void> {
 }
 
 /**
- * One demo route corridor (Phase 7, T-723) — a LineString template so the
- * Pengangkutan → Peta corridor overlay + the deviation matcher have geometry to
- * work with. Picks the first route with origin+destination coords. Length is
- * computed by PostGIS; the geography column is generated.
+ * Default route corridors (Phase 7.8) — a `Corridor` row per route whose two Sites
+ * have coordinates, so the route Koridor manager, the template/per-day pickers, the
+ * Pengangkutan → Peta overlay, and the deviation matcher all have geometry to work
+ * with. Mirrors the runtime `createDefaultForRoute` no-server-key path: a straight
+ * line between the two Sites (`source: 'straight'`), length via PostGIS. Idempotent —
+ * a route that already has a default corridor is skipped. (At runtime, a
+ * `GOOGLE_MAPS_SERVER_KEY` upgrades new routes' defaults to road-snapped paths.)
  */
-async function seedDemoCorridor(): Promise<void> {
-  const route = await prisma.route.findFirst({
+async function seedDemoCorridors(): Promise<void> {
+  const routes = await prisma.route.findMany({
     where: {
       deletedAt: null,
-      // PICKUP/DISPOSAL legs run between two DISTINCT sites → a real corridor
-      // (pool round-trips share origin+destination → zero-length).
-      category: { in: ['PICKUP', 'DISPOSAL', 'REFUEL'] },
       originSite: { latitude: { not: null }, longitude: { not: null } },
       destinationSite: { latitude: { not: null }, longitude: { not: null } },
     },
@@ -1405,32 +1405,40 @@ async function seedDemoCorridor(): Promise<void> {
       destinationSite: { select: { latitude: true, longitude: true } },
     },
   });
-  if (!route?.originSite.latitude || !route.destinationSite.latitude) return;
-  const o = route.originSite;
-  const d = route.destinationSite;
-  const pathGeojson = {
-    type: 'LineString',
-    coordinates: [
-      [Number(o.longitude), Number(o.latitude)],
-      [Number(d.longitude), Number(d.latitude)],
-    ],
-  };
-  const len = await prisma.$queryRaw<Array<{ len: number }>>`
-    SELECT ROUND(ST_Length(ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(pathGeojson)}), 4326)::geography))::int AS "len"
-  `;
-  await prisma.routeGeometry.upsert({
-    where: { routeId: route.id },
-    update: { pathGeojson, lengthMeters: len[0]?.len ?? 0 },
-    create: {
-      routeId: route.id,
-      pathGeojson,
-      toleranceMeters: 150,
-      lengthMeters: len[0]?.len ?? 0,
-      source: 'google-maps',
-    },
-  });
+  let created = 0;
+  for (const route of routes) {
+    const existing = await prisma.corridor.findFirst({
+      where: { routeId: route.id, isDefault: true, deletedAt: null },
+      select: { id: true },
+    });
+    if (existing) continue;
+    const o = route.originSite;
+    const d = route.destinationSite;
+    const pathGeojson = {
+      type: 'LineString',
+      coordinates: [
+        [Number(o.longitude), Number(o.latitude)],
+        [Number(d.longitude), Number(d.latitude)],
+      ],
+    };
+    const len = await prisma.$queryRaw<Array<{ len: number }>>`
+      SELECT ROUND(ST_Length(ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(pathGeojson)}), 4326)::geography))::int AS "len"
+    `;
+    await prisma.corridor.create({
+      data: {
+        routeId: route.id,
+        name: 'Jalur Utama',
+        isDefault: true,
+        pathGeojson,
+        toleranceMeters: 150,
+        lengthMeters: len[0]?.len ?? 0,
+        source: 'straight',
+      },
+    });
+    created += 1;
+  }
   // eslint-disable-next-line no-console
-  console.log(`Demo corridor: 1 route geometry (${len[0]?.len ?? 0} m).`);
+  console.log(`Demo corridors: ${created} default route corridor(s).`);
 }
 
 async function main(): Promise<void> {
@@ -1471,7 +1479,7 @@ async function main(): Promise<void> {
       const fleet = await loadDemoFleet();
       const trackedDevices = await seedDemoGpsDevices(fleet.vehicles);
       await seedDemoTracks(trackedDevices);
-      await seedDemoCorridor();
+      await seedDemoCorridors();
       // Populate today's efficiency rollup so the dashboard isn't empty pre-cron.
       const effRows = await new GpsEfficiencyService(
         new GpsEfficiencyRepository(prisma as unknown as PrismaService),
