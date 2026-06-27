@@ -2,6 +2,7 @@ import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 
 import { type CorridorsRepository } from './corridors.repository';
 import { CorridorsService } from './corridors.service';
+import { type GoogleDirectionsService } from './google-directions.service';
 
 const ROUTE = '00000000-0000-0000-0000-0000000000r1';
 const ID = '00000000-0000-0000-0000-0000000000c1';
@@ -42,6 +43,7 @@ describe('CorridorsService', () => {
     softDelete: jest.Mock;
     computeLengthMeters: jest.Mock;
   };
+  let directions: { snapDrivingRoute: jest.Mock };
   let service: CorridorsService;
 
   beforeEach(() => {
@@ -60,7 +62,12 @@ describe('CorridorsService', () => {
       softDelete: jest.fn().mockResolvedValue(corridorRow()),
       computeLengthMeters: jest.fn().mockResolvedValue(6373),
     };
-    service = new CorridorsService(repo as unknown as CorridorsRepository);
+    // Default: no server key → straight-line fallback.
+    directions = { snapDrivingRoute: jest.fn().mockResolvedValue(null) };
+    service = new CorridorsService(
+      repo as unknown as CorridorsRepository,
+      directions as unknown as GoogleDirectionsService,
+    );
   });
 
   describe('listForRoute', () => {
@@ -111,12 +118,27 @@ describe('CorridorsService', () => {
   });
 
   describe('createDefaultForRoute', () => {
-    it('builds a straight line between the two sites', async () => {
+    it('falls back to a straight line when Directions has no server key', async () => {
+      directions.snapDrivingRoute.mockResolvedValue(null);
       const result = await service.createDefaultForRoute(ROUTE);
       expect(result?.isDefault).toBe(true);
       expect(repo.create).toHaveBeenCalledWith(
         ROUTE,
-        expect.objectContaining({ source: 'default' }),
+        expect.objectContaining({ source: 'straight' }),
+        true,
+      );
+    });
+
+    it('snaps the default to roads when Directions returns a path', async () => {
+      directions.snapDrivingRoute.mockResolvedValue([
+        [112.75, -7.25],
+        [112.755, -7.255],
+        [112.76, -7.26],
+      ]);
+      await service.createDefaultForRoute(ROUTE);
+      expect(repo.create).toHaveBeenCalledWith(
+        ROUTE,
+        expect.objectContaining({ source: 'directions' }),
         true,
       );
     });

@@ -6,6 +6,7 @@ import { assertLineString, InvalidGeometryError } from '../../integrations/gps/g
 import { CorridorsRepository } from './corridors.repository';
 import { type CreateCorridorDto } from './dto/create-corridor.dto';
 import { type UpdateCorridorDto } from './dto/update-corridor.dto';
+import { GoogleDirectionsService } from './google-directions.service';
 
 export interface CorridorDto {
   readonly id: string;
@@ -39,7 +40,10 @@ function toDto(c: Corridor): CorridorDto {
 
 @Injectable()
 export class CorridorsService {
-  constructor(private readonly repo: CorridorsRepository) {}
+  constructor(
+    private readonly repo: CorridorsRepository,
+    private readonly directions: GoogleDirectionsService,
+  ) {}
 
   async listForRoute(routeId: string): Promise<CorridorDto[]> {
     await this.assertRoute(routeId);
@@ -102,9 +106,10 @@ export class CorridorsService {
   }
 
   /**
-   * Auto-create a route's default corridor: a straight line between its two Sites'
-   * coordinates. Returns null (and creates nothing) when either site lacks coords —
-   * the route is still usable, just not corridor-checked until one is drawn.
+   * Auto-create a route's default corridor: a **road-snapped** path between its two
+   * Sites (Google Directions, server-side), falling back to a straight line when no
+   * server key is set or Directions fails. Returns null (creates nothing) when either
+   * site lacks coords — the route is still usable, just not corridor-checked.
    */
   async createDefaultForRoute(routeId: string): Promise<CorridorDto | null> {
     const ep = await this.repo.routeEndpoints(routeId);
@@ -116,23 +121,24 @@ export class CorridorsService {
     if (o.latitude == null || o.longitude == null || d.latitude == null || d.longitude == null) {
       return null;
     }
-    const line = {
-      type: 'LineString' as const,
-      coordinates: [
-        [Number(o.longitude), Number(o.latitude)],
-        [Number(d.longitude), Number(d.latitude)],
-      ] as Array<[number, number]>,
-    };
+    const origin = { lat: Number(o.latitude), lng: Number(o.longitude) };
+    const dest = { lat: Number(d.latitude), lng: Number(d.longitude) };
+    const snapped = await this.directions.snapDrivingRoute(origin, dest);
+    const coordinates: Array<[number, number]> = snapped ?? [
+      [origin.lng, origin.lat],
+      [dest.lng, dest.lat],
+    ];
+    const line = { type: 'LineString' as const, coordinates };
     const lengthMeters = await this.lengthOrThrow(line);
     const corridor = await this.repo.create(
       routeId,
       {
-        name: 'Jalur Langsung',
+        name: 'Jalur Utama',
         pathGeojson: line as unknown as Prisma.InputJsonValue,
         waypoints: null,
         toleranceMeters: 150,
         lengthMeters,
-        source: 'default',
+        source: snapped ? 'directions' : 'straight',
       },
       true,
     );
