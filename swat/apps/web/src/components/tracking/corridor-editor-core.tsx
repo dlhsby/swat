@@ -3,7 +3,7 @@
 import { APIProvider, Map as GoogleMap, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MapPinned, Undo2, Trash2, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { round6 } from '@/components/maps/map-picker';
 import {
@@ -233,6 +233,8 @@ export function CorridorEditorCore({
   onSave,
   onDelete,
   onClose,
+  extraFields,
+  canSave = true,
 }: {
   open: boolean;
   /** Changes per opened target so the canvas remounts + re-fits bounds. */
@@ -246,6 +248,10 @@ export function CorridorEditorCore({
   onSave: (payload: SaveCorridorPayload) => void;
   onDelete: () => void;
   onClose: () => void;
+  /** Caller-owned fields (e.g. name/leg metadata) rendered above the map. */
+  extraFields?: ReactNode;
+  /** Gate the Save button on caller-side validity (e.g. a required name). */
+  canSave?: boolean;
 }): JSX.Element {
   const t = useTranslations('corridor');
 
@@ -325,6 +331,7 @@ export function CorridorEditorCore({
         </SheetHeader>
 
         <SheetBody className="space-y-4">
+          {extraFields}
           {!isMapsConfigured ? (
             <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-base border border-dashed border-neutral-300 bg-neutral-50 text-center">
               <MapPinned className="h-8 w-8 text-neutral-400" aria-hidden />
@@ -418,7 +425,7 @@ export function CorridorEditorCore({
           <Button
             onClick={handleSave}
             loading={saving}
-            disabled={!isMapsConfigured || isLoading || building || path.length < 2}
+            disabled={!isMapsConfigured || isLoading || building || path.length < 2 || !canSave}
           >
             {t('save')}
           </Button>
