@@ -35,6 +35,7 @@ import {
 } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { ApiError } from '@/lib/api-error';
+import { type CorridorDto, corridorsApi } from '@/lib/corridor-api';
 import { formatNumber, formatTime } from '@/lib/format';
 import {
   type ScheduleTemplateDto,
@@ -117,7 +118,16 @@ export function TripTemplatesSheet({
   const [destinationSiteId, setDestinationSiteId] = useState('');
   const [targetTime, setTargetTime] = useState('');
   const [fuel, setFuel] = useState('');
+  const [corridorId, setCorridorId] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // The corridor library (named, reusable paths) — assigning one here copies it to
+  // each day's trip at init. Optional: a leg with no corridor is tracked, not checked.
+  const { rows: corridors } = useResourceList<CorridorDto>(corridorsApi.list);
+  const corridorOptions = useMemo(
+    () => corridors.map((c) => ({ value: c.id, label: c.name })),
+    [corridors],
+  );
 
   const scheduleId = schedule?.id ?? null;
   const constraint = category ? ROUTE_SITE_CONSTRAINTS[category] : {};
@@ -153,6 +163,7 @@ export function TripTemplatesSheet({
     setDestinationSiteId('');
     setTargetTime('');
     setFuel('');
+    setCorridorId('');
   }, []);
 
   const reload = useCallback(async (): Promise<void> => {
@@ -224,6 +235,7 @@ export function TripTemplatesSheet({
         // "Berangkat" sends only the Pool; every other leg sends only its
         // destination and the backend derives the start from the previous leg.
         ...(isDepart ? { originSiteId } : { destinationSiteId }),
+        ...(corridorId ? { corridorId } : {}),
         targetTime,
         fuelRequestedLiters: isRefuel && fuel ? Number(fuel) : undefined,
       });
@@ -439,6 +451,19 @@ export function TripTemplatesSheet({
                   />
                 </div>
               ) : null}
+
+              <div className="space-y-1.5">
+                <Label>Koridor (opsional)</Label>
+                <Combobox
+                  options={corridorOptions}
+                  value={corridorId}
+                  onValueChange={setCorridorId}
+                  placeholder="Tanpa koridor"
+                />
+                <p className="text-tiny text-neutral-500">
+                  Disalin ke trip setiap hari saat inisiasi; bisa diganti per hari.
+                </p>
+              </div>
 
               <Button type="submit" loading={saving} disabled={!canSubmit}>
                 <ArrowRight className="h-4 w-4" aria-hidden />

@@ -48,6 +48,13 @@ export class CreateTripTemplateDto {
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Jumlah BBM tidak valid' })
   @Min(0, { message: 'Jumlah BBM tidak boleh negatif' })
   fuelRequestedLiters?: number;
+
+  @ApiPropertyOptional({
+    description: 'Default Corridor for this leg (copied to the day at init); "" clears it',
+  })
+  @IsOptional()
+  @IsString()
+  corridorId?: string;
 }
 
 export class UpdateTripTemplateDto extends PartialType(CreateTripTemplateDto) {}

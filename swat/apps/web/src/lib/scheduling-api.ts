@@ -7,6 +7,8 @@ export interface CreateTripTemplateBody {
   originSiteId?: string;
   /** Required for every leg except DEPART_POOL. */
   destinationSiteId?: string;
+  /** Default corridor for this leg (Phase 7.8); copied to the day's trip at init. */
+  corridorId?: string;
   targetTime: string;
   fuelRequestedLiters?: number;
 }

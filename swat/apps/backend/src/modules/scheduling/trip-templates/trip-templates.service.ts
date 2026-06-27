@@ -15,6 +15,7 @@ const templateInclude = {
   // names are joined for display.
   originSite: { select: { id: true, name: true } },
   destinationSite: { select: { id: true, name: true } },
+  corridor: { select: { id: true, name: true } },
 } satisfies Prisma.TripTemplateInclude;
 
 type TemplateWithRoute = Prisma.TripTemplateGetPayload<{ include: typeof templateInclude }>;
@@ -29,6 +30,8 @@ export interface TripTemplateDto {
   readonly originSiteName: string;
   readonly destinationSiteId: string;
   readonly destinationSiteName: string;
+  readonly corridorId: string | null;
+  readonly corridorName: string | null;
   readonly targetTime: string;
   readonly fuelRequestedLiters: number | null;
   readonly createdAt: string;
@@ -46,6 +49,8 @@ function toDto(template: TemplateWithRoute): TripTemplateDto {
     originSiteName: template.originSite.name,
     destinationSiteId: template.destinationSite.id,
     destinationSiteName: template.destinationSite.name,
+    corridorId: template.corridorId,
+    corridorName: template.corridor?.name ?? null,
     targetTime: formatTimeOnly(template.targetTime),
     fuelRequestedLiters:
       template.fuelRequestedLiters === null ? null : Number(template.fuelRequestedLiters),
@@ -110,6 +115,7 @@ export class TripTemplatesService {
         routeCategory: dto.category,
         originSiteId,
         destinationSiteId,
+        ...(dto.corridorId ? { corridorId: dto.corridorId } : {}),
         targetTime: parseTimeOnly(dto.targetTime),
         ...(dto.fuelRequestedLiters !== undefined
           ? { fuelRequestedLiters: dto.fuelRequestedLiters }
@@ -159,6 +165,8 @@ export class TripTemplatesService {
               destinationSiteId: routeChange.destinationSiteId,
             }
           : {}),
+        // `corridorId: ''` clears the assignment; a uuid sets it.
+        ...(dto.corridorId !== undefined ? { corridorId: dto.corridorId || null } : {}),
         ...(dto.targetTime !== undefined ? { targetTime: parseTimeOnly(dto.targetTime) } : {}),
         ...(dto.fuelRequestedLiters !== undefined
           ? { fuelRequestedLiters: dto.fuelRequestedLiters }
