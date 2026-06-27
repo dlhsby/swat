@@ -109,6 +109,9 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
       // already grants gps-device:read / deviation-alert:read / tracking:read.)
       'gps-device:manage',
       'route-geometry:manage',
+      // A route owns 1..N corridors (Phase 7.8) — delete isn't covered by the
+      // `*:create/update/read` wildcards above, so grant it explicitly.
+      'corridor:delete',
       'deviation-rule:manage',
       'deviation-alert:acknowledge',
     ],
