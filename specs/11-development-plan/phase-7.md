@@ -14,12 +14,13 @@
 > - **Epic 7.6** — ✅ T-719⁴, T-720, T-721
 > - **Epic 7.7** — ✅ T-722, T-723⁵, T-724
 > - **Epic 7.8** — ✅ T-725, T-726, T-727, T-729, T-730 (on `feat/phase-7.8-corridor-model`):
->   first-class `Corridor` + `corridorId` refs + resolver cascade + corridor library UI +
->   template picker; multi-driver shifts (add-shift / add-vehicle). **T-728 partial:** Route is
->   *demoted* in practice (corridors are the primary path; `route.geometry` is now only a legacy
->   fallback) — the **destructive physical Route removal + reporting rewrite is deferred** (it
->   risks the tonnage/BBM/weighbridge paths) until done as a careful, focused pass **before** the
->   legacy transactional import.
+>   `corridorId` refs + resolver cascade + corridor UI + template/per-day pickers; multi-driver
+>   shifts (add-shift / add-vehicle). **Model REVISED 2026-06 (operator decision — see Epic 7.8
+>   note):** the original "collapse Route, make Corridor standalone" design was **inverted** — a
+>   **`Route` now OWNS 1..N `Corridor`s** (a snap-to-road default + alternates), keeping `Route` for
+>   back-compat + reporting. This solves the multi-corridor-per-leg gap **without** removing `Route`.
+>   **T-728 (physical Route removal + reporting rewrite) is therefore CANCELLED, not deferred** —
+>   `Route` is retained by design, so there is no collapse/backfill to run before the import.
 >
 > **All 24 tasks implemented.** Deferred follow-ups (tracked above): per-day Trip
 > corridor UI wiring (¹), `dwell_too_long` + `off_sequence`
@@ -649,7 +650,33 @@ These are **load-bearing** — verified against the existing codebase; ignore th
 BBM is on `Trip` fuel fields + `DisposalPermit` + `DailyFuelByVehicle`. So the Route collapse loses
 no operational history; only the route *label* (for "route activity" reports) must be preserved.
 
-### Target model — first-class, shareable Corridor
+### ⚠ REVISED 2026-06 — Route OWNS its corridors (supersedes the collapse below)
+
+> **Operator decision during the 7.8 build.** The "collapse `Route`, make `Corridor` a standalone
+> shareable entity" design in the rest of this section was **inverted**. Reason: a standalone corridor
+> *library* recreates the old-SWAT "route" concept (operators define a path up-front, detached from the
+> day's planning UX) — exactly what this phase set out to remove. The agreed model instead:
+>
+> - **A `Route` owns 1..N `Corridor`s** (`Corridor.routeId` FK + `isDefault`). Creating a Route
+>   **auto-creates a default corridor** snapped to the road between its two Sites (server-side Google
+>   Directions; straight-line fallback). Operators add **alternates** anchored to the same two Sites.
+> - **`Route` is KEPT** — it remains the leg identity (`@@unique(origin, destination, category)`), the
+>   reporting anchor, and the legacy `rute.RUTE_ID` bridge. No collapse, no denormalize-onto-`Trip`, no
+>   reporting rewrite. The multi-corridor-per-leg correctness gap (Why #1) is solved by the 1..N
+>   ownership, *not* by removing `Route`.
+> - **`TripTemplate.corridorId` / `Trip.corridorId`** still pick *which* of the route's corridors a leg
+>   follows (null ⇒ the route default); resolver cascade unchanged
+>   (`override → trip.corridor → route default → none`). `Trip.geometryOverride` stays the freehand
+>   per-day escape hatch.
+> - **UX:** the master `Lokasi & Rute → Rute` tab is **kept** (not dropped); its row gains a **Koridor**
+>   manager (list/add/edit/delete the route's corridors). The primary flow stays on **Template Trip /
+>   schedule** — pick the destination directions-style (origin = previous leg's end, route auto-resolved
+>   by `routes.resolveOrCreate`), then optionally pick/draw the corridor per leg and per day.
+>
+> Everything below (Why #2 "Route is middleware", the collapse diagram, T-728) is the **original,
+> now-superseded** design, retained for context.
+
+### Target model — first-class, shareable Corridor _(SUPERSEDED — see revision note above)_
 
 ```
 Corridor (named path)  ◄────many-to-one──── TripTemplate.corridorId   (default for that leg/vehicle)
@@ -697,24 +724,24 @@ Corridor (named path)  ◄────many-to-one──── TripTemplate.corri
   - [ ] Deviation matcher unchanged (consumes `resolveTripCorridor`); new cascade unit-tested.
   - [ ] No corridor geometry stored per `Trip` row (referenced, not copied).
 
-##### T-727. Web: corridor library + pickers + per-day switch
+##### T-727. Web: route corridor manager + template/per-day pickers _(REVISED — see Epic 7.8 note)_
 - **Size:** M · **Coverage:** ≥80%
-- **Files:** corridor-library page; corridor picker in the trip-template editor; per-day corridor
-  switch on the record/scheduling board (reuse `CorridorEditorCore`); **remove the standalone "Rute"
-  admin tab** from `sites-routes`.
+- **Files:** route **Koridor manager** on the kept `Lokasi & Rute → Rute` tab (`RouteCorridorEditor`,
+  list 1..N corridors, default badged + delete-protected); **template-trip corridor picker**
+  (`TripTemplateCorridorSheet`); per-day corridor switch on the record/scheduling board (reuse
+  `CorridorEditorCore`). The "Rute" admin tab is **kept** (the original "drop it" step is cancelled with
+  the Route collapse).
 - **Acceptance:**
-  - [ ] Define ≥2 corridors for one leg; assign different corridors to two vehicles' templates.
-  - [ ] Switch a single day's trip to an alternate corridor without touching the template.
+  - [x] Define ≥2 corridors for one route (default + alternate); pick a corridor per template leg.
+  - [x] Switch a single day's trip to an alternate corridor without touching the template.
 
-##### T-728. Route collapse + reporting backfill (run BEFORE the transactional import)
-- **Size:** M · **Coverage:** ≥80%
-- **Files:** denormalize leg label onto `Trip`; rewrite route-activity rollup + monitoring
-  (`rollup.repository.ts`, `monitoring.repository.ts`, `MonthlyRouteActivity`) to key on `corridorId`
-  / the denormalized label; demote or remove `Route`; legacy-bridge handling in `migrate-legacy.ts`.
-- **Acceptance:**
-  - [ ] Tonnage + BBM reports unchanged after the collapse (data sourced from `Trip`/aggregates).
-  - [ ] Route-activity report still produced (grouped by corridor / leg label).
-  - [ ] Legacy transactional seed maps `trayek` → `Trip` without a live `Route` master.
+##### ~~T-728. Route collapse + reporting backfill~~ — **CANCELLED 2026-06** (Route is retained by design)
+- **Status:** Cancelled. The 7.8 model was revised so a **`Route` owns its corridors** (see the Epic 7.8
+  revision note) — `Route` is **kept** as the leg identity, reporting anchor, and legacy bridge. There is
+  no collapse, no `Trip` label denormalization, and **no reporting rewrite**, so nothing here must run
+  before the transactional import. The legacy `trayek → Trip` seed maps against the retained `Route`
+  master exactly as before. The multi-corridor-per-leg gap that motivated this task is solved by the 1..N
+  Route→Corridor ownership instead.
 
 ### Scheduling refinements — multi-driver shifts (no schema change)
 
@@ -753,8 +780,8 @@ initialised day, and no driver edit — the "Edit/Rekalibrasi" dialog only write
 7.3 ──> 7.4 (T-715→T-716) ──> 7.5 (T-717, T-718)
 7.3 ──> 7.6 (T-719→T-720→T-721)
 all ──> 7.7 (T-722, T-723, T-724)
-7.2 + 7.3 (done) ──> 7.8 corridor (T-725→T-726→T-727→T-728)   ┐ BOTH before
-(model-only) ─────────────────> 7.8 shifts  (T-729→T-730)     ┘ seed:staging/production
+7.2 + 7.3 (done) ──> 7.8 corridor (T-725→T-726→T-727; T-728 CANCELLED)   ┐ shifts before
+(model-only) ─────────────────> 7.8 shifts  (T-729→T-730)                ┘ seed:staging/production
 ```
 Epics 7.1 and 7.2 run in parallel after 7.0. Pilot early on **10–20 vehicles with a handful of drawn
 corridors** before fleet-wide rollout; routes without corridors are tracked (position only) until drawn.
@@ -844,9 +871,9 @@ and fuel**. Corridors are drawn once as templates and tweaked per day. Live phon
 | T-722 | 7.7 | Webhook hardening + privacy note | S |
 | T-723 | 7.7 | E2E + load tests, seed data, deployment & registration runbook | M |
 | T-724 | 7.7 | Deferred-scope doc: native field app | S |
-| T-725 | 7.8 | Corridor entity + library API (RouteGeometry → named, shareable Corridor) | M |
-| T-726 | 7.8 | TripTemplate/Trip `corridorId` + resolver cascade (override → trip → template → none) | M |
-| T-727 | 7.8 | Web: corridor library + pickers + per-day switch; drop "Rute" admin tab | M |
-| T-728 | 7.8 | Route collapse + reporting backfill (before the transactional import) | M |
+| T-725 | 7.8 | Corridor entity + route-scoped API (Route owns 1..N corridors; default auto-snapped) | M |
+| T-726 | 7.8 | TripTemplate/Trip `corridorId` + resolver cascade (override → trip → route default → none) | M |
+| T-727 | 7.8 | Web: route corridor manager + template/per-day pickers (Rute tab kept) | M |
+| ~~T-728~~ | 7.8 | ~~Route collapse + reporting backfill~~ — **CANCELLED** (Route retained by design) | — |
 | T-729 | 7.8 | Add-shift / add-vehicle endpoints + assignment edit (multi-driver per vehicle/day) | M |
 | T-730 | 7.8 | Web: add-shift / add-vehicle UI on the scheduling day page | S |
