@@ -75,6 +75,12 @@ export const PERMISSION_KEYS: readonly string[] = [
   'route:create',
   'route:update',
   'route:delete',
+  // Corridor library (Phase 7.8): named, reusable drawn paths referenced by
+  // templates/trips. Master geography data — authored by DataAdmin, read widely.
+  'corridor:read',
+  'corridor:create',
+  'corridor:update',
+  'corridor:delete',
   // Waste
   'waste-source:read',
   'waste-source:create',

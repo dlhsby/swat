@@ -530,6 +530,8 @@ model Site {
   deletedAt         DateTime?        @map("deleted_at") @db.Timestamptz(6)
   originRoutes      Route[]          @relation("RouteOrigin")
   destinationRoutes Route[]          @relation("RouteDestination")
+  originCorridors      Corridor[]    @relation("CorridorOrigin")
+  destinationCorridors Corridor[]    @relation("CorridorDestination")
   originTripTemplates      TripTemplate[] @relation("TripTemplateOrigin")
   destinationTripTemplates TripTemplate[] @relation("TripTemplateDestination")
   pooledVehicles    Vehicle[]        @relation("VehiclePool")
@@ -1228,10 +1230,46 @@ model GpsUnmatchedPing {
   @@map("gps_unmatched_ping")
 }
 
+/// First-class, reusable corridor (Phase 7.8, T-725). A NAMED drawn path that
+/// templates/trips reference (many-to-one). `originSiteId`/`destinationSiteId`/
+/// `category` are optional leg metadata for filtering the library — NOT a unique
+/// key, so a leg may have several alternate corridors (road class, situation).
+/// `pathGeojson` is the portable GeoJSON LineString; a maintained
+/// `geography(LineString,4326)` column + GiST index (raw SQL) back spatial queries;
+/// `lengthMeters` is server-computed (ST_Length). Supersedes RouteGeometry, which is
+/// retired in T-728 once references move to `corridorId`.
+model Corridor {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  legacyId          Int?           @map("legacy_id")
+  name              String         @db.VarChar(120)
+  category          RouteCategory?
+  originSiteId      String?        @map("origin_site_id") @db.Uuid
+  originSite        Site?          @relation("CorridorOrigin", fields: [originSiteId], references: [id])
+  destinationSiteId String?        @map("destination_site_id") @db.Uuid
+  destinationSite   Site?          @relation("CorridorDestination", fields: [destinationSiteId], references: [id])
+  pathGeojson       Json           @map("path_geojson")
+  // Editor control points ({ lng, lat, snapped }[]) so re-opening restores handles.
+  waypoints         Json?          @map("waypoints")
+  toleranceMeters   Int            @default(150) @map("tolerance_meters")
+  lengthMeters      Int            @default(0) @map("length_meters")
+  source            String         @default("google-maps") @db.VarChar(20)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  createdById       String?        @map("created_by_id") @db.Uuid
+  updatedById       String?        @map("updated_by_id") @db.Uuid
+  deletedById       String?        @map("deleted_by_id") @db.Uuid
+
+  @@index([originSiteId, destinationSiteId, category])
+  @@index([deletedAt])
+  @@map("corridor")
+}
+
 /// Route corridor template (one per Route). `pathGeojson` is the portable
 /// GeoJSON LineString; a maintained `geography(LineString,4326)` column + GiST
 /// index (raw SQL) back the spatial queries. `lengthMeters` is server-computed
 /// (ST_Length). A day's Trip.geometryOverride can override this template.
+/// DEPRECATED by `Corridor` (T-725); retired in T-728.
 model RouteGeometry {
   id              String   @id @default(uuid(7)) @db.Uuid
   routeId         String   @unique @map("route_id") @db.Uuid
