@@ -67,10 +67,25 @@ describe('CorridorRepository', () => {
       });
     });
 
-    it('falls back to the route template when there is no override', async () => {
+    it("uses the trip's chosen Corridor over the legacy route template", async () => {
       prisma.trip.findFirst.mockResolvedValue({
         geometryOverride: null,
         geometryToleranceM: null,
+        corridor: { pathGeojson: LINE, toleranceMeters: 200 },
+        route: { geometry: { pathGeojson: OVERRIDE, toleranceMeters: 150 } },
+      });
+      await expect(repo.resolveTripCorridor('t1')).resolves.toEqual({
+        geojson: LINE,
+        toleranceMeters: 200,
+        source: 'corridor',
+      });
+    });
+
+    it('falls back to the route template when there is no override or corridor', async () => {
+      prisma.trip.findFirst.mockResolvedValue({
+        geometryOverride: null,
+        geometryToleranceM: null,
+        corridor: null,
         route: { geometry: { pathGeojson: LINE, toleranceMeters: 150 } },
       });
       await expect(repo.resolveTripCorridor('t1')).resolves.toEqual({

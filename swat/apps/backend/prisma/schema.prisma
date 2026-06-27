@@ -652,6 +652,10 @@ model TripTemplate {
   originSite          Site          @relation("TripTemplateOrigin", fields: [originSiteId], references: [id])
   destinationSiteId   String        @map("destination_site_id") @db.Uuid
   destinationSite     Site          @relation("TripTemplateDestination", fields: [destinationSiteId], references: [id])
+  // Default corridor for this leg/vehicle (Phase 7.8). Copied to Trip.corridorId at
+  // daily-init; many templates may point at one shared Corridor.
+  corridorId          String?       @map("corridor_id") @db.Uuid
+  corridor            Corridor?     @relation(fields: [corridorId], references: [id])
   targetTime          DateTime     @map("target_time") @db.Time
   fuelRequestedLiters Decimal?     @map("fuel_requested_liters") @db.Decimal(8, 2)
   createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -662,6 +666,7 @@ model TripTemplate {
   updatedById String?   @map("updated_by_id") @db.Uuid
   deletedById String?   @map("deleted_by_id") @db.Uuid
 
+  @@index([corridorId])
   @@map("trip_template")
 }
 
@@ -817,9 +822,14 @@ model Trip {
   // RouteGeometry.waypoints). Null when none drawn.
   geometryWaypoints   Json?           @map("geometry_waypoints")
   geometryToleranceM  Int?            @map("geometry_tolerance_m")
+  // The day's chosen corridor (Phase 7.8). Copied from the trip template at
+  // daily-init; switchable per day; `geometryOverride` still wins over it.
+  corridorId          String?         @map("corridor_id") @db.Uuid
+  corridor            Corridor?       @relation(fields: [corridorId], references: [id])
 
   @@index([haulAssignmentId])
   @@index([routeId])
+  @@index([corridorId])
   @@index([status])
   @@index([operationDate])
   @@index([legacyId])
@@ -1259,6 +1269,8 @@ model Corridor {
   createdById       String?        @map("created_by_id") @db.Uuid
   updatedById       String?        @map("updated_by_id") @db.Uuid
   deletedById       String?        @map("deleted_by_id") @db.Uuid
+  tripTemplates     TripTemplate[]
+  trips             Trip[]
 
   @@index([originSiteId, destinationSiteId, category])
   @@index([deletedAt])

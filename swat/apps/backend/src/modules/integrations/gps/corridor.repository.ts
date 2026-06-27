@@ -6,8 +6,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 export interface EffectiveCorridor {
   readonly geojson: unknown;
   readonly toleranceMeters: number;
-  /** Where it came from — a per-day Trip override or the Route template. */
-  readonly source: 'trip-override' | 'route-template';
+  /**
+   * Where it came from — a per-day Trip override, the Trip's chosen Corridor
+   * (Phase 7.8), or the legacy Route template (retired in T-728).
+   */
+  readonly source: 'trip-override' | 'corridor' | 'route-template';
 }
 
 /**
@@ -73,6 +76,8 @@ export class CorridorRepository {
       select: {
         geometryOverride: true,
         geometryToleranceM: true,
+        corridor: { select: { pathGeojson: true, toleranceMeters: true } },
+        // Legacy fallback for trips drawn before Phase 7.8 (retired in T-728).
         route: {
           select: { geometry: { select: { pathGeojson: true, toleranceMeters: true } } },
         },
@@ -81,13 +86,27 @@ export class CorridorRepository {
     if (!trip) {
       return null;
     }
+    // 1. Per-day freehand override wins.
     if (trip.geometryOverride != null) {
       return {
         geojson: trip.geometryOverride,
-        toleranceMeters: trip.geometryToleranceM ?? trip.route?.geometry?.toleranceMeters ?? 150,
+        toleranceMeters:
+          trip.geometryToleranceM ??
+          trip.corridor?.toleranceMeters ??
+          trip.route?.geometry?.toleranceMeters ??
+          150,
         source: 'trip-override',
       };
     }
+    // 2. The day's chosen Corridor (copied from the template at daily-init).
+    if (trip.corridor) {
+      return {
+        geojson: trip.corridor.pathGeojson,
+        toleranceMeters: trip.corridor.toleranceMeters,
+        source: 'corridor',
+      };
+    }
+    // 3. Legacy Route template (until T-728 backfills corridors).
     const template = trip.route?.geometry;
     if (template) {
       return {

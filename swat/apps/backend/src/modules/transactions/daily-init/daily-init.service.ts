@@ -136,6 +136,9 @@ export class DailyInitService {
               data: {
                 haulAssignmentId: assignment.id,
                 routeId: template.routeId,
+                // Copy the template's default corridor down to the day's trip
+                // (Phase 7.8); the day can later switch it (T-727).
+                ...(template.corridorId ? { corridorId: template.corridorId } : {}),
                 operationDate: date,
                 status: 'IN_PROGRESS',
                 name: tripName(template.route),
