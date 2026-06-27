@@ -3,6 +3,7 @@ import { NotFoundException, UnprocessableEntityException } from '@nestjs/common'
 import { type CorridorsRepository } from './corridors.repository';
 import { CorridorsService } from './corridors.service';
 
+const ROUTE = '00000000-0000-0000-0000-0000000000r1';
 const ID = '00000000-0000-0000-0000-0000000000c1';
 const LINE = {
   type: 'LineString',
@@ -15,13 +16,9 @@ const LINE = {
 function corridorRow(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: ID,
-    legacyId: null,
-    name: 'TPS A → Benowo via Mastrip',
-    category: 'DISPOSAL',
-    originSiteId: null,
-    originSite: null,
-    destinationSiteId: null,
-    destinationSite: null,
+    routeId: ROUTE,
+    name: 'Benowo via Mastrip',
+    isDefault: false,
     pathGeojson: LINE,
     waypoints: null,
     toleranceMeters: 150,
@@ -35,8 +32,11 @@ function corridorRow(overrides: Record<string, unknown> = {}): Record<string, un
 
 describe('CorridorsService', () => {
   let repo: {
-    list: jest.Mock;
+    routeExists: jest.Mock;
+    routeEndpoints: jest.Mock;
+    listForRoute: jest.Mock;
     findById: jest.Mock;
+    hasAny: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     softDelete: jest.Mock;
@@ -47,104 +47,104 @@ describe('CorridorsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repo = {
-      list: jest.fn().mockResolvedValue({ rows: [corridorRow()], total: 1 }),
+      routeExists: jest.fn().mockResolvedValue({ id: ROUTE }),
+      routeEndpoints: jest.fn().mockResolvedValue({
+        originSite: { latitude: -7.25, longitude: 112.75 },
+        destinationSite: { latitude: -7.26, longitude: 112.76 },
+      }),
+      listForRoute: jest.fn().mockResolvedValue([corridorRow({ isDefault: true })]),
       findById: jest.fn().mockResolvedValue(corridorRow()),
-      create: jest.fn().mockResolvedValue(corridorRow()),
+      hasAny: jest.fn().mockResolvedValue(false),
+      create: jest.fn((_routeId, _data, isDefault) => Promise.resolve(corridorRow({ isDefault }))),
       update: jest.fn().mockResolvedValue(corridorRow()),
-      softDelete: jest.fn().mockResolvedValue(true),
+      softDelete: jest.fn().mockResolvedValue(corridorRow()),
       computeLengthMeters: jest.fn().mockResolvedValue(6373),
     };
     service = new CorridorsService(repo as unknown as CorridorsRepository);
   });
 
-  describe('list', () => {
-    it('maps rows to DTOs (with site names)', async () => {
-      const result = await service.list({ page: 1, limit: 20 });
-      expect(result.data[0]).toMatchObject({ id: ID, name: 'TPS A → Benowo via Mastrip' });
-      expect(result.meta.total).toBe(1);
+  describe('listForRoute', () => {
+    it('404s an unknown route', async () => {
+      repo.routeExists.mockResolvedValue(null);
+      await expect(service.listForRoute(ROUTE)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('returns the route corridors (default first)', async () => {
+      const rows = await service.listForRoute(ROUTE);
+      expect(rows[0]).toMatchObject({ routeId: ROUTE, isDefault: true });
     });
   });
 
   describe('create', () => {
-    it('validates geometry, computes length, and normalizes the name', async () => {
-      const result = await service.create({
-        name: '  Benowo via Tol  ',
+    it("makes the route's first corridor the default", async () => {
+      repo.hasAny.mockResolvedValue(false);
+      const result = await service.create(ROUTE, {
+        name: '  Mastrip  ',
         pathGeojson: LINE as unknown as Record<string, unknown>,
-        category: 'DISPOSAL',
       });
-      expect(repo.computeLengthMeters).toHaveBeenCalled();
       expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: 'Benowo via Tol',
-          lengthMeters: 6373,
-          category: 'DISPOSAL',
-        }),
+        ROUTE,
+        expect.objectContaining({ name: 'Mastrip', lengthMeters: 6373 }),
+        true,
       );
-      expect(result.lengthMeters).toBe(6373);
+      expect(result.isDefault).toBe(true);
+    });
+
+    it('marks subsequent corridors non-default', async () => {
+      repo.hasAny.mockResolvedValue(true);
+      await service.create(ROUTE, {
+        name: 'Tol',
+        pathGeojson: LINE as unknown as Record<string, unknown>,
+      });
+      expect(repo.create).toHaveBeenCalledWith(ROUTE, expect.any(Object), false);
     });
 
     it('rejects a non-LineString with 422', async () => {
       await expect(
-        service.create({
+        service.create(ROUTE, {
           name: 'bad',
           pathGeojson: { type: 'Point', coordinates: [1, 2] } as Record<string, unknown>,
         }),
       ).rejects.toBeInstanceOf(UnprocessableEntityException);
       expect(repo.create).not.toHaveBeenCalled();
     });
+  });
 
-    it('maps a PostGIS rejection to 422', async () => {
-      repo.computeLengthMeters.mockRejectedValue(new Error('ST parse error'));
-      await expect(
-        service.create({ name: 'x', pathGeojson: LINE as unknown as Record<string, unknown> }),
-      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  describe('createDefaultForRoute', () => {
+    it('builds a straight line between the two sites', async () => {
+      const result = await service.createDefaultForRoute(ROUTE);
+      expect(result?.isDefault).toBe(true);
+      expect(repo.create).toHaveBeenCalledWith(
+        ROUTE,
+        expect.objectContaining({ source: 'default' }),
+        true,
+      );
     });
 
-    it('persists waypoints and defaults the optional fields', async () => {
-      const waypoints = [{ lng: 1, lat: 2, snapped: true }];
-      await service.create({
-        name: 'x',
-        pathGeojson: LINE as unknown as Record<string, unknown>,
-        waypoints,
+    it('skips (returns null) when a site has no coordinates', async () => {
+      repo.routeEndpoints.mockResolvedValue({
+        originSite: { latitude: null, longitude: null },
+        destinationSite: { latitude: -7.26, longitude: 112.76 },
       });
-      expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ waypoints, toleranceMeters: 150, source: 'google-maps' }),
-      );
+      await expect(service.createDefaultForRoute(ROUTE)).resolves.toBeNull();
+      expect(repo.create).not.toHaveBeenCalled();
     });
   });
 
-  describe('update', () => {
-    it('404s an unknown corridor', async () => {
+  describe('update / remove', () => {
+    it('404s an unknown corridor on update', async () => {
       repo.findById.mockResolvedValue(null);
       await expect(service.update(ID, { name: 'x' })).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('recomputes length only when the path changes', async () => {
-      await service.update(ID, { name: 'renamed' });
-      expect(repo.computeLengthMeters).not.toHaveBeenCalled();
-
+    it('recomputes length when the path changes', async () => {
       await service.update(ID, { pathGeojson: LINE as unknown as Record<string, unknown> });
       expect(repo.computeLengthMeters).toHaveBeenCalled();
-      expect(repo.update).toHaveBeenLastCalledWith(
-        ID,
-        expect.objectContaining({ lengthMeters: 6373 }),
-      );
-    });
-  });
-
-  describe('getById / remove', () => {
-    it('404s an unknown corridor on getById', async () => {
-      repo.findById.mockResolvedValue(null);
-      await expect(service.getById(ID)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('404s when there is nothing to delete', async () => {
-      repo.softDelete.mockResolvedValue(false);
+      repo.softDelete.mockResolvedValue(null);
       await expect(service.remove(ID)).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('returns a message when deleted', async () => {
-      await expect(service.remove(ID)).resolves.toEqual({ message: 'Koridor telah dihapus.' });
     });
   });
 });

@@ -1,22 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, RouteCategory } from '@prisma/client';
+import { Prisma, type Corridor } from '@prisma/client';
 
-import { toSkipTake, type PageParams } from '../../../common/pagination';
 import { PrismaService } from '../../prisma/prisma.service';
-
-const corridorInclude = {
-  originSite: { select: { id: true, name: true, type: true } },
-  destinationSite: { select: { id: true, name: true, type: true } },
-} satisfies Prisma.CorridorInclude;
-
-export type CorridorWithSites = Prisma.CorridorGetPayload<{ include: typeof corridorInclude }>;
-
-export interface ListCorridorsFilter extends PageParams {
-  readonly category?: RouteCategory;
-  readonly originSiteId?: string;
-  readonly destinationSiteId?: string;
-  readonly search?: string;
-}
 
 export interface CorridorWriteData {
   readonly name: string;
@@ -25,67 +10,66 @@ export interface CorridorWriteData {
   readonly toleranceMeters: number;
   readonly lengthMeters: number;
   readonly source: string;
-  readonly category: RouteCategory | null;
-  readonly originSiteId: string | null;
-  readonly destinationSiteId: string | null;
 }
 
 @Injectable()
 export class CorridorsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  private listWhere(filter: ListCorridorsFilter): Prisma.CorridorWhereInput {
-    return {
-      deletedAt: null,
-      ...(filter.category ? { category: filter.category } : {}),
-      ...(filter.originSiteId ? { originSiteId: filter.originSiteId } : {}),
-      ...(filter.destinationSiteId ? { destinationSiteId: filter.destinationSiteId } : {}),
-      ...(filter.search ? { name: { contains: filter.search, mode: 'insensitive' as const } } : {}),
-    };
-  }
-
-  async list(filter: ListCorridorsFilter): Promise<{ rows: CorridorWithSites[]; total: number }> {
-    const where = this.listWhere(filter);
-    const { skip, take } = toSkipTake(filter);
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.corridor.findMany({
-        where,
-        include: corridorInclude,
-        orderBy: { name: 'asc' },
-        skip,
-        take,
-      }),
-      this.prisma.corridor.count({ where }),
-    ]);
-    return { rows, total };
-  }
-
-  findById(id: string): Promise<CorridorWithSites | null> {
-    return this.prisma.corridor.findFirst({
-      where: { id, deletedAt: null },
-      include: corridorInclude,
+  routeExists(routeId: string): Promise<{ id: string } | null> {
+    return this.prisma.route.findFirst({
+      where: { id: routeId, deletedAt: null },
+      select: { id: true },
     });
   }
 
-  create(data: CorridorWriteData): Promise<CorridorWithSites> {
+  /** A route's site coordinates — for seeding the auto-created default corridor. */
+  routeEndpoints(routeId: string): Promise<{
+    originSite: { latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null };
+    destinationSite: { latitude: Prisma.Decimal | null; longitude: Prisma.Decimal | null };
+  } | null> {
+    return this.prisma.route.findFirst({
+      where: { id: routeId },
+      select: {
+        originSite: { select: { latitude: true, longitude: true } },
+        destinationSite: { select: { latitude: true, longitude: true } },
+      },
+    });
+  }
+
+  listForRoute(routeId: string): Promise<Corridor[]> {
+    return this.prisma.corridor.findMany({
+      where: { routeId, deletedAt: null },
+      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
+    });
+  }
+
+  findById(id: string): Promise<Corridor | null> {
+    return this.prisma.corridor.findFirst({ where: { id, deletedAt: null } });
+  }
+
+  hasAny(routeId: string): Promise<boolean> {
+    return this.prisma.corridor
+      .findFirst({ where: { routeId, deletedAt: null }, select: { id: true } })
+      .then((c) => c !== null);
+  }
+
+  create(routeId: string, data: CorridorWriteData, isDefault: boolean): Promise<Corridor> {
     return this.prisma.corridor.create({
       data: {
+        routeId,
+        isDefault,
         name: data.name,
         pathGeojson: data.pathGeojson,
-        // `null` clears the column; Prisma needs the explicit JsonNull sentinel.
         waypoints: data.waypoints ?? Prisma.JsonNull,
         toleranceMeters: data.toleranceMeters,
         lengthMeters: data.lengthMeters,
         source: data.source,
-        category: data.category,
-        originSiteId: data.originSiteId,
-        destinationSiteId: data.destinationSiteId,
       } satisfies Prisma.CorridorUncheckedCreateInput,
-      include: corridorInclude,
     });
   }
 
-  update(id: string, data: Partial<CorridorWriteData>): Promise<CorridorWithSites> {
+  update(id: string, data: Partial<CorridorWriteData>): Promise<Corridor> {
     const patch: Prisma.CorridorUncheckedUpdateInput = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.pathGeojson !== undefined) patch.pathGeojson = data.pathGeojson;
@@ -93,22 +77,18 @@ export class CorridorsRepository {
     if (data.toleranceMeters !== undefined) patch.toleranceMeters = data.toleranceMeters;
     if (data.lengthMeters !== undefined) patch.lengthMeters = data.lengthMeters;
     if (data.source !== undefined) patch.source = data.source;
-    if (data.category !== undefined) patch.category = data.category;
-    if (data.originSiteId !== undefined) patch.originSiteId = data.originSiteId;
-    if (data.destinationSiteId !== undefined) patch.destinationSiteId = data.destinationSiteId;
-    return this.prisma.corridor.update({ where: { id }, data: patch, include: corridorInclude });
+    return this.prisma.corridor.update({ where: { id }, data: patch });
   }
 
-  async softDelete(id: string): Promise<boolean> {
+  async softDelete(id: string): Promise<Corridor | null> {
     const existing = await this.prisma.corridor.findFirst({
       where: { id, deletedAt: null },
       select: { id: true },
     });
     if (!existing) {
-      return false;
+      return null;
     }
-    await this.prisma.corridor.update({ where: { id }, data: { deletedAt: new Date() } });
-    return true;
+    return this.prisma.corridor.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
   /** Corridor length in metres via PostGIS ST_Length (geodesic, WGS84). */

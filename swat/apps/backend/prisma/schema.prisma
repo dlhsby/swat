@@ -530,8 +530,6 @@ model Site {
   deletedAt         DateTime?        @map("deleted_at") @db.Timestamptz(6)
   originRoutes      Route[]          @relation("RouteOrigin")
   destinationRoutes Route[]          @relation("RouteDestination")
-  originCorridors      Corridor[]    @relation("CorridorOrigin")
-  destinationCorridors Corridor[]    @relation("CorridorDestination")
   originTripTemplates      TripTemplate[] @relation("TripTemplateOrigin")
   destinationTripTemplates TripTemplate[] @relation("TripTemplateDestination")
   pooledVehicles    Vehicle[]        @relation("VehiclePool")
@@ -560,9 +558,10 @@ model Route {
   deletedAt         DateTime?      @map("deleted_at") @db.Timestamptz(6)
   trips             Trip[]
   tripTemplates     TripTemplate[]
-  // GPS corridor template (Phase 7) — at most one per route; a day's Trip may
-  // override it (Trip.geometryOverride). Opt-in: a route without geometry is
-  // tracked but not corridor-checked.
+  // Drawn GPS corridors (Phase 7.8) — 1..N per route; the first is the auto-created
+  // straight-line `isDefault`. A route with no corridor is tracked, not checked.
+  corridors         Corridor[]
+  // Legacy 1:1 corridor (pre-7.8); superseded by `corridors`, kept for back-compat.
   geometry          RouteGeometry?
 
   createdById String? @map("created_by_id") @db.Uuid
@@ -1240,23 +1239,21 @@ model GpsUnmatchedPing {
   @@map("gps_unmatched_ping")
 }
 
-/// First-class, reusable corridor (Phase 7.8, T-725). A NAMED drawn path that
-/// templates/trips reference (many-to-one). `originSiteId`/`destinationSiteId`/
-/// `category` are optional leg metadata for filtering the library — NOT a unique
-/// key, so a leg may have several alternate corridors (road class, situation).
-/// `pathGeojson` is the portable GeoJSON LineString; a maintained
-/// `geography(LineString,4326)` column + GiST index (raw SQL) back spatial queries;
-/// `lengthMeters` is server-computed (ST_Length). Supersedes RouteGeometry, which is
-/// retired in T-728 once references move to `corridorId`.
+/// A drawn path that belongs to a Route (Phase 7.8 — revised). A Route owns one or
+/// more corridors: the first is the auto-generated `isDefault` straight line between
+/// the route's two Sites; users add alternates (road class, situation) whose
+/// endpoints stay anchored to those sites. `pathGeojson` is the portable GeoJSON
+/// LineString; a maintained `geography(LineString,4326)` column + GiST index (raw
+/// SQL) back spatial queries; `lengthMeters` is server-computed (ST_Length). Replaces
+/// the old 1:1 RouteGeometry.
 model Corridor {
   id                String         @id @default(uuid(7)) @db.Uuid
   legacyId          Int?           @map("legacy_id")
+  routeId           String         @map("route_id") @db.Uuid
+  route             Route          @relation(fields: [routeId], references: [id], onDelete: Cascade)
   name              String         @db.VarChar(120)
-  category          RouteCategory?
-  originSiteId      String?        @map("origin_site_id") @db.Uuid
-  originSite        Site?          @relation("CorridorOrigin", fields: [originSiteId], references: [id])
-  destinationSiteId String?        @map("destination_site_id") @db.Uuid
-  destinationSite   Site?          @relation("CorridorDestination", fields: [destinationSiteId], references: [id])
+  /** The route's auto-created straight-line default; exactly one per route. */
+  isDefault         Boolean        @default(false) @map("is_default")
   pathGeojson       Json           @map("path_geojson")
   // Editor control points ({ lng, lat, snapped }[]) so re-opening restores handles.
   waypoints         Json?          @map("waypoints")
@@ -1272,7 +1269,7 @@ model Corridor {
   tripTemplates     TripTemplate[]
   trips             Trip[]
 
-  @@index([originSiteId, destinationSiteId, category])
+  @@index([routeId])
   @@index([deletedAt])
   @@map("corridor")
 }

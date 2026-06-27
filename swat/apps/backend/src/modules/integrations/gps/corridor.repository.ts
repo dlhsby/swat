@@ -7,10 +7,10 @@ export interface EffectiveCorridor {
   readonly geojson: unknown;
   readonly toleranceMeters: number;
   /**
-   * Where it came from — a per-day Trip override, the Trip's chosen Corridor
-   * (Phase 7.8), or the legacy Route template (retired in T-728).
+   * Where it came from — a per-day Trip override, the Trip's chosen Corridor, or
+   * the route's default corridor (Phase 7.8).
    */
-  readonly source: 'trip-override' | 'corridor' | 'route-template';
+  readonly source: 'trip-override' | 'corridor' | 'route-default';
 }
 
 /**
@@ -77,15 +77,22 @@ export class CorridorRepository {
         geometryOverride: true,
         geometryToleranceM: true,
         corridor: { select: { pathGeojson: true, toleranceMeters: true, deletedAt: true } },
-        // Legacy fallback for trips drawn before Phase 7.8 (retired in T-728).
+        // Fall back to the route's default corridor when the trip has no chosen one.
         route: {
-          select: { geometry: { select: { pathGeojson: true, toleranceMeters: true } } },
+          select: {
+            corridors: {
+              where: { isDefault: true, deletedAt: null },
+              select: { pathGeojson: true, toleranceMeters: true },
+              take: 1,
+            },
+          },
         },
       },
     });
     if (!trip) {
       return null;
     }
+    const routeDefault = trip.route?.corridors[0] ?? null;
     // 1. Per-day freehand override wins.
     if (trip.geometryOverride != null) {
       return {
@@ -93,14 +100,13 @@ export class CorridorRepository {
         toleranceMeters:
           trip.geometryToleranceM ??
           trip.corridor?.toleranceMeters ??
-          trip.route?.geometry?.toleranceMeters ??
+          routeDefault?.toleranceMeters ??
           150,
         source: 'trip-override',
       };
     }
     // 2. The day's chosen Corridor (copied from the template at daily-init). A
-    //    soft-deleted corridor is ignored (the FK SET NULL only fires on a hard
-    //    delete) → fall through to the legacy template.
+    //    soft-deleted corridor is ignored → fall through to the route default.
     if (trip.corridor && trip.corridor.deletedAt == null) {
       return {
         geojson: trip.corridor.pathGeojson,
@@ -108,13 +114,12 @@ export class CorridorRepository {
         source: 'corridor',
       };
     }
-    // 3. Legacy Route template (until T-728 backfills corridors).
-    const template = trip.route?.geometry;
-    if (template) {
+    // 3. The route's default corridor.
+    if (routeDefault) {
       return {
-        geojson: template.pathGeojson,
-        toleranceMeters: template.toleranceMeters,
-        source: 'route-template',
+        geojson: routeDefault.pathGeojson,
+        toleranceMeters: routeDefault.toleranceMeters,
+        source: 'route-default',
       };
     }
     return null;

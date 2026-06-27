@@ -9,6 +9,7 @@ import { type RouteCategory } from '@prisma/client';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
 import { ActorNamesService } from '../../audit/actor-names.service';
+import { CorridorsService } from '../corridors/corridors.service';
 
 import { type CreateRouteDto } from './dto/create-route.dto';
 import { type ListRoutesQueryDto } from './dto/list-routes.query.dto';
@@ -54,6 +55,7 @@ export class RoutesService {
   constructor(
     private readonly repo: RoutesRepository,
     private readonly actorNames: ActorNamesService,
+    private readonly corridors: CorridorsService,
   ) {}
 
   async list(query: ListRoutesQueryDto): Promise<{ data: RouteDto[]; meta: PaginationMeta }> {
@@ -95,6 +97,9 @@ export class RoutesService {
       destinationSite: { connect: { id: dto.destinationSiteId } },
       distanceKm: dto.distanceKm,
     });
+    // Every route gets a default corridor (straight line between its two sites);
+    // skipped silently when a site has no coordinates yet.
+    await this.corridors.createDefaultForRoute(route.id);
     return toRouteDto(route);
   }
 

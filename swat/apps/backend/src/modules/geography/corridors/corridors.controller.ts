@@ -1,50 +1,39 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
-import { type PaginationMeta } from '../../../common/types/api-response';
 
 import { type CorridorDto, CorridorsService } from './corridors.service';
 import { CreateCorridorDto } from './dto/create-corridor.dto';
-import { ListCorridorsQueryDto } from './dto/list-corridors.query.dto';
 import { UpdateCorridorDto } from './dto/update-corridor.dto';
 
 @ApiTags('corridors')
-@Controller('corridors')
+@Controller()
 export class CorridorsController {
   constructor(private readonly corridors: CorridorsService) {}
 
-  @Get()
+  @Get('routes/:routeId/corridors')
   @RequirePermissions('corridor:read')
-  @ApiOperation({ summary: 'List corridors (paginated; filter by leg or name)' })
-  list(
-    @Query() query: ListCorridorsQueryDto,
-  ): Promise<{ data: CorridorDto[]; meta: PaginationMeta }> {
-    return this.corridors.list(query);
+  @ApiOperation({ summary: "List a route's corridors (default first)" })
+  listForRoute(@Param('routeId') routeId: string): Promise<CorridorDto[]> {
+    return this.corridors.listForRoute(routeId);
   }
 
-  @Get(':id')
-  @RequirePermissions('corridor:read')
-  @ApiOperation({ summary: 'Get a corridor by id' })
-  getById(@Param('id') id: string): Promise<CorridorDto> {
-    return this.corridors.getById(id);
-  }
-
-  @Post()
+  @Post('routes/:routeId/corridors')
   @RequirePermissions('corridor:create')
-  @ApiOperation({ summary: 'Create a corridor' })
-  create(@Body() dto: CreateCorridorDto): Promise<CorridorDto> {
-    return this.corridors.create(dto);
+  @ApiOperation({ summary: 'Add a corridor to a route' })
+  create(@Param('routeId') routeId: string, @Body() dto: CreateCorridorDto): Promise<CorridorDto> {
+    return this.corridors.create(routeId, dto);
   }
 
-  @Patch(':id')
+  @Patch('corridors/:id')
   @RequirePermissions('corridor:update')
   @ApiOperation({ summary: 'Update a corridor (re-validates geometry when changed)' })
   update(@Param('id') id: string, @Body() dto: UpdateCorridorDto): Promise<CorridorDto> {
     return this.corridors.update(id, dto);
   }
 
-  @Delete(':id')
+  @Delete('corridors/:id')
   @RequirePermissions('corridor:delete')
   @ApiOperation({ summary: 'Soft-delete a corridor' })
   remove(@Param('id') id: string): Promise<{ message: string }> {

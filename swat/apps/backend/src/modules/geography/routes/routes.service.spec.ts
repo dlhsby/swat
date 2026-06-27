@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { RouteCategory } from '@prisma/client';
 
 import { type ActorNamesService } from '../../audit/actor-names.service';
+import { type CorridorsService } from '../corridors/corridors.service';
 
 import { type RoutesRepository } from './routes.repository';
 import { RoutesService } from './routes.service';
@@ -50,6 +51,8 @@ describe('RoutesService', () => {
         attach: async (_r: unknown, d: unknown[]) => d,
         resolve: async () => new Map<string, string>(),
       } as unknown as ActorNamesService,
+      // Auto-default-corridor on create is a no-op in these route tests.
+      { createDefaultForRoute: async () => null } as unknown as CorridorsService,
     );
   });
 

@@ -1,23 +1,17 @@
 import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
-import { type Prisma, type RouteCategory } from '@prisma/client';
+import { type Corridor, type Prisma } from '@prisma/client';
 
-import { paginated } from '../../../common/pagination';
-import { type PaginationMeta } from '../../../common/types/api-response';
 import { assertLineString, InvalidGeometryError } from '../../integrations/gps/geojson';
 
-import { type CorridorWithSites, CorridorsRepository } from './corridors.repository';
+import { CorridorsRepository } from './corridors.repository';
 import { type CreateCorridorDto } from './dto/create-corridor.dto';
-import { type ListCorridorsQueryDto } from './dto/list-corridors.query.dto';
 import { type UpdateCorridorDto } from './dto/update-corridor.dto';
 
 export interface CorridorDto {
   readonly id: string;
+  readonly routeId: string;
   readonly name: string;
-  readonly category: RouteCategory | null;
-  readonly originSiteId: string | null;
-  readonly originSiteName: string | null;
-  readonly destinationSiteId: string | null;
-  readonly destinationSiteName: string | null;
+  readonly isDefault: boolean;
   readonly pathGeojson: unknown;
   readonly waypoints: unknown | null;
   readonly toleranceMeters: number;
@@ -27,15 +21,12 @@ export interface CorridorDto {
   readonly updatedAt: string;
 }
 
-function toDto(c: CorridorWithSites): CorridorDto {
+function toDto(c: Corridor): CorridorDto {
   return {
     id: c.id,
+    routeId: c.routeId,
     name: c.name,
-    category: c.category,
-    originSiteId: c.originSiteId,
-    originSiteName: c.originSite?.name ?? null,
-    destinationSiteId: c.destinationSiteId,
-    destinationSiteName: c.destinationSite?.name ?? null,
+    isDefault: c.isDefault,
     pathGeojson: c.pathGeojson,
     waypoints: c.waypoints ?? null,
     toleranceMeters: c.toleranceMeters,
@@ -50,40 +41,30 @@ function toDto(c: CorridorWithSites): CorridorDto {
 export class CorridorsService {
   constructor(private readonly repo: CorridorsRepository) {}
 
-  async list(query: ListCorridorsQueryDto): Promise<{ data: CorridorDto[]; meta: PaginationMeta }> {
-    const { rows, total } = await this.repo.list({
-      page: query.page,
-      limit: query.limit,
-      category: query.category,
-      originSiteId: query.originSiteId,
-      destinationSiteId: query.destinationSiteId,
-      search: query.search,
-    });
-    return paginated(rows.map(toDto), total, query);
+  async listForRoute(routeId: string): Promise<CorridorDto[]> {
+    await this.assertRoute(routeId);
+    const rows = await this.repo.listForRoute(routeId);
+    return rows.map(toDto);
   }
 
-  async getById(id: string): Promise<CorridorDto> {
-    const corridor = await this.repo.findById(id);
-    if (!corridor) {
-      throw new NotFoundException('Koridor tidak ditemukan.');
-    }
-    return toDto(corridor);
-  }
-
-  async create(dto: CreateCorridorDto): Promise<CorridorDto> {
+  async create(routeId: string, dto: CreateCorridorDto): Promise<CorridorDto> {
+    await this.assertRoute(routeId);
     const line = this.validateGeometry(dto.pathGeojson);
     const lengthMeters = await this.lengthOrThrow(line);
-    const corridor = await this.repo.create({
-      name: dto.name.trim(),
-      pathGeojson: line as unknown as Prisma.InputJsonValue,
-      waypoints: (dto.waypoints ?? null) as Prisma.InputJsonValue | null,
-      toleranceMeters: dto.toleranceMeters ?? 150,
-      lengthMeters,
-      source: dto.source ?? 'google-maps',
-      category: dto.category ?? null,
-      originSiteId: dto.originSiteId ?? null,
-      destinationSiteId: dto.destinationSiteId ?? null,
-    });
+    // The first corridor of a route becomes its default.
+    const isDefault = !(await this.repo.hasAny(routeId));
+    const corridor = await this.repo.create(
+      routeId,
+      {
+        name: dto.name.trim(),
+        pathGeojson: line as unknown as Prisma.InputJsonValue,
+        waypoints: (dto.waypoints ?? null) as Prisma.InputJsonValue | null,
+        toleranceMeters: dto.toleranceMeters ?? 150,
+        lengthMeters,
+        source: dto.source ?? 'google-maps',
+      },
+      isDefault,
+    );
     return toDto(corridor);
   }
 
@@ -92,7 +73,6 @@ export class CorridorsService {
     if (!existing) {
       throw new NotFoundException('Koridor tidak ditemukan.');
     }
-    // Recompute length only when the path changes.
     let lengthMeters: number | undefined;
     let pathGeojson: Prisma.InputJsonValue | undefined;
     if (dto.pathGeojson !== undefined) {
@@ -109,9 +89,6 @@ export class CorridorsService {
         : {}),
       ...(dto.toleranceMeters !== undefined ? { toleranceMeters: dto.toleranceMeters } : {}),
       ...(dto.source !== undefined ? { source: dto.source } : {}),
-      ...(dto.category !== undefined ? { category: dto.category } : {}),
-      ...(dto.originSiteId !== undefined ? { originSiteId: dto.originSiteId } : {}),
-      ...(dto.destinationSiteId !== undefined ? { destinationSiteId: dto.destinationSiteId } : {}),
     });
     return toDto(corridor);
   }
@@ -122,6 +99,50 @@ export class CorridorsService {
       throw new NotFoundException('Koridor tidak ditemukan.');
     }
     return { message: 'Koridor telah dihapus.' };
+  }
+
+  /**
+   * Auto-create a route's default corridor: a straight line between its two Sites'
+   * coordinates. Returns null (and creates nothing) when either site lacks coords —
+   * the route is still usable, just not corridor-checked until one is drawn.
+   */
+  async createDefaultForRoute(routeId: string): Promise<CorridorDto | null> {
+    const ep = await this.repo.routeEndpoints(routeId);
+    if (!ep) {
+      return null;
+    }
+    const o = ep.originSite;
+    const d = ep.destinationSite;
+    if (o.latitude == null || o.longitude == null || d.latitude == null || d.longitude == null) {
+      return null;
+    }
+    const line = {
+      type: 'LineString' as const,
+      coordinates: [
+        [Number(o.longitude), Number(o.latitude)],
+        [Number(d.longitude), Number(d.latitude)],
+      ] as Array<[number, number]>,
+    };
+    const lengthMeters = await this.lengthOrThrow(line);
+    const corridor = await this.repo.create(
+      routeId,
+      {
+        name: 'Jalur Langsung',
+        pathGeojson: line as unknown as Prisma.InputJsonValue,
+        waypoints: null,
+        toleranceMeters: 150,
+        lengthMeters,
+        source: 'default',
+      },
+      true,
+    );
+    return toDto(corridor);
+  }
+
+  private async assertRoute(routeId: string): Promise<void> {
+    if (!(await this.repo.routeExists(routeId))) {
+      throw new NotFoundException('Rute tidak ditemukan.');
+    }
   }
 
   private validateGeometry(geojson: unknown): ReturnType<typeof assertLineString> {
@@ -135,7 +156,6 @@ export class CorridorsService {
     }
   }
 
-  /** Compute corridor length; a geometry PostGIS rejects → 422. */
   private async lengthOrThrow(line: unknown): Promise<number> {
     try {
       return await this.repo.computeLengthMeters(line);
