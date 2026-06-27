@@ -41,8 +41,8 @@ export default function CorridorsPage(): JSX.Element {
       },
       {
         id: 'leg',
-        header: 'Ruas',
-        meta: { label: 'Ruas' },
+        header: 'Asal → Tujuan',
+        meta: { label: 'Asal → Tujuan' },
         cell: ({ row }) =>
           row.original.originSiteName || row.original.destinationSiteName ? (
             <span className="text-body-sm text-neutral-600">
