@@ -63,13 +63,48 @@ export class RouteGeometryRepository {
   // --- Per-day Trip override -----------------------------------------------
 
   tripOverride(tripId: string): Promise<{
+    routeId: string | null;
+    corridorId: string | null;
+    corridor: { name: string } | null;
     geometryOverride: Prisma.JsonValue;
     geometryWaypoints: Prisma.JsonValue;
     geometryToleranceM: number | null;
   } | null> {
     return this.prisma.trip.findFirst({
       where: { id: tripId },
-      select: { geometryOverride: true, geometryWaypoints: true, geometryToleranceM: true },
+      select: {
+        routeId: true,
+        corridorId: true,
+        corridor: { select: { name: true } },
+        geometryOverride: true,
+        geometryWaypoints: true,
+        geometryToleranceM: true,
+      },
+    });
+  }
+
+  /** A corridor that belongs to `routeId` and isn't soft-deleted, else null. */
+  corridorInRoute(corridorId: string, routeId: string): Promise<{ id: string } | null> {
+    return this.prisma.corridor.findFirst({
+      where: { id: corridorId, routeId, deletedAt: null },
+      select: { id: true },
+    });
+  }
+
+  /**
+   * Pick one of the route's corridors for this day. Setting a named corridor also
+   * clears any freehand override so the chosen corridor is the effective one
+   * (resolver: override → trip.corridor → route default).
+   */
+  async setTripCorridor(tripId: string, corridorId: string | null): Promise<void> {
+    await this.prisma.trip.update({
+      where: { id: tripId },
+      data: {
+        corridorId,
+        geometryOverride: Prisma.DbNull,
+        geometryWaypoints: Prisma.DbNull,
+        geometryToleranceM: null,
+      },
     });
   }
 

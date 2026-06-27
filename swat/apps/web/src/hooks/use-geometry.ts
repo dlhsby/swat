@@ -97,3 +97,17 @@ export function useDeleteTripGeometry() {
     onError: (err) => notify.error(errorMessage(err, 'Gagal menghapus koridor harian.')),
   });
 }
+
+/** Pick one of the trip's route corridors for the day (`corridorId: ''` ⇒ default). */
+export function useSetTripCorridor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { tripId: string; corridorId: string }) =>
+      geometryApi.setTripCorridor(input.tripId, input.corridorId),
+    onSuccess: (_data, input) => {
+      notify.success('Koridor harian diperbarui.');
+      void queryClient.invalidateQueries({ queryKey: [KEY, 'trip', input.tripId] });
+    },
+    onError: (err) => notify.error(errorMessage(err, 'Gagal memperbarui koridor harian.')),
+  });
+}

@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 
+import { SetTripCorridorDto } from './dto/set-trip-corridor.dto';
 import { UpsertRouteGeometryDto } from './dto/upsert-route-geometry.dto';
 import { UpsertTripGeometryDto } from './dto/upsert-trip-geometry.dto';
 import {
@@ -52,9 +53,19 @@ export class RouteGeometryController {
     return this.geometry.getTripOverride(tripId);
   }
 
+  @Put('trips/:tripId/corridor')
+  @RequirePermissions('route-geometry:manage')
+  @ApiOperation({ summary: "Pick one of the route's corridors for a single day" })
+  setTripCorridor(
+    @Param('tripId') tripId: string,
+    @Body() dto: SetTripCorridorDto,
+  ): Promise<TripGeometryDto> {
+    return this.geometry.setTripCorridor(tripId, dto.corridorId || null);
+  }
+
   @Put('trips/:tripId/geometry')
   @RequirePermissions('route-geometry:manage')
-  @ApiOperation({ summary: "Override a single day's trip corridor" })
+  @ApiOperation({ summary: "Override a single day's trip corridor (freehand)" })
   setTripOverride(
     @Param('tripId') tripId: string,
     @Body() dto: UpsertTripGeometryDto,

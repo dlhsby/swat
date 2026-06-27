@@ -30,6 +30,12 @@ export interface RouteGeometryDto {
 
 export interface TripGeometryDto {
   tripId: string;
+  routeId: string | null;
+  /** The route corridor chosen for this day (null ⇒ the route default applies). */
+  corridorId: string | null;
+  corridorName: string | null;
+  /** True when a one-off freehand override is set (it wins over the named corridor). */
+  hasOverride: boolean;
   pathGeojson: GeoJsonLineString | null;
   waypoints: CorridorWaypoint[] | null;
   toleranceMeters: number | null;
@@ -72,6 +78,9 @@ export const geometryApi = {
     apiClient.put(`/gps/trips/${tripId}/geometry`, asBody(body)),
   deleteTripGeometry: (tripId: string): Promise<{ message: string }> =>
     apiClient.delete(`/gps/trips/${tripId}/geometry`),
+  /** Pick one of the trip's route corridors for the day; `''` clears to the default. */
+  setTripCorridor: (tripId: string, corridorId: string): Promise<TripGeometryDto> =>
+    apiClient.put(`/gps/trips/${tripId}/corridor`, asBody({ corridorId })),
 
   listDeviationRules: (): Promise<DeviationRuleDto[]> => apiClient.get(`/gps/deviation-rules`),
   saveDeviationRule: (
