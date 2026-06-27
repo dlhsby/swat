@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, MapPinned, Pencil, Plus, Trash2 } from 'lucide-react';
+import { MapPinned, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import {
@@ -8,8 +8,8 @@ import {
   CorridorEditorCore,
   type SaveCorridorPayload,
 } from '@/components/tracking/corridor-editor-core';
+import { CorridorListItem } from '@/components/tracking/corridor-list-item';
 import {
-  Badge,
   Button,
   Sheet,
   SheetBody,
@@ -27,8 +27,6 @@ import {
   useSetTripCorridor,
   useTripGeometry,
 } from '@/hooks/use-geometry';
-import { cn } from '@/lib/cn';
-import { formatNumber } from '@/lib/format';
 
 export interface CorridorTrip {
   readonly id: string;
@@ -107,7 +105,7 @@ export function TripCorridorEditor({
   return (
     <>
       <Sheet open={trip !== null && !drawing} onOpenChange={(next) => !next && onClose()}>
-        <SheetContent side="right" className="w-[min(92vw,520px)]">
+        <SheetContent side="right" className="w-full sm:max-w-[560px]">
           <SheetHeader>
             <SheetTitle>Koridor harian</SheetTitle>
             <SheetDescription>{trip?.label ?? ''}</SheetDescription>
@@ -158,40 +156,16 @@ export function TripCorridorEditor({
               </div>
             ) : (
               <ul className="space-y-2">
-                {corridors.map((c) => {
-                  const isSelected = !hasOverride && selected === c.id;
-                  return (
-                    <li key={c.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelected(c.id)}
-                        aria-pressed={isSelected}
-                        className={cn(
-                          'flex w-full items-center justify-between gap-3 rounded-base border px-3 py-2.5 text-left transition-colors',
-                          isSelected
-                            ? 'border-primary-700 bg-primary-50 dark:text-primary-400'
-                            : 'border-neutral-200 hover:bg-neutral-50',
-                        )}
-                      >
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate text-body-sm font-medium">{c.name}</span>
-                            {c.isDefault ? <Badge appearance="count">Utama</Badge> : null}
-                          </div>
-                          <p className="text-tiny text-neutral-500 tabular-nums">
-                            {formatNumber(c.lengthMeters)} m
-                          </p>
-                        </div>
-                        {isSelected ? (
-                          <Check
-                            className="h-4 w-4 shrink-0 text-primary-700 dark:text-primary-400"
-                            aria-hidden
-                          />
-                        ) : null}
-                      </button>
-                    </li>
-                  );
-                })}
+                {corridors.map((c) => (
+                  <CorridorListItem
+                    key={c.id}
+                    corridor={c}
+                    selectable
+                    // A freehand override wins, so no named corridor reads as selected.
+                    selected={!hasOverride && selected === c.id}
+                    onSelect={() => setSelected(c.id)}
+                  />
+                ))}
               </ul>
             )}
 

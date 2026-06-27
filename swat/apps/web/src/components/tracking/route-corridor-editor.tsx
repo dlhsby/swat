@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPinned, Pencil, Plus, Trash2 } from 'lucide-react';
+import { MapPinned, Plus } from 'lucide-react';
 import { useState } from 'react';
 
 import {
@@ -8,8 +8,8 @@ import {
   CorridorEditorCore,
   type SaveCorridorPayload,
 } from '@/components/tracking/corridor-editor-core';
+import { CorridorListItem } from '@/components/tracking/corridor-list-item';
 import {
-  Badge,
   Button,
   ConfirmDialog,
   Input,
@@ -30,7 +30,6 @@ import {
   useUpdateCorridor,
 } from '@/hooks/use-corridors';
 import { type CorridorDto } from '@/lib/corridor-api';
-import { formatNumber } from '@/lib/format';
 
 export interface CorridorRoute {
   readonly id: string;
@@ -142,41 +141,13 @@ export function RouteCorridorEditor({
             ) : (
               <ul className="space-y-2">
                 {corridors.map((c) => (
-                  <li
+                  <CorridorListItem
                     key={c.id}
-                    className="flex items-center justify-between gap-3 rounded-base border border-neutral-200 px-3 py-2.5"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-body-sm font-medium">{c.name}</span>
-                        {c.isDefault ? <Badge appearance="count">Utama</Badge> : null}
-                      </div>
-                      <p className="text-tiny text-neutral-500 tabular-nums">
-                        {formatNumber(c.lengthMeters)} m
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => startEdit(c)}
-                        aria-label={`Ubah ${c.name}`}
-                      >
-                        <Pencil className="h-4 w-4" aria-hidden />
-                      </Button>
-                      {!c.isDefault ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-danger-600"
-                          onClick={() => setDeleteTarget(c)}
-                          aria-label={`Hapus ${c.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" aria-hidden />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </li>
+                    corridor={c}
+                    onEdit={() => startEdit(c)}
+                    // The route's default is auto-managed — editable, but not deletable.
+                    onDelete={c.isDefault ? undefined : () => setDeleteTarget(c)}
+                  />
                 ))}
               </ul>
             )}

@@ -60,6 +60,10 @@ export class GoogleDirectionsService {
       `&destination=${dest.lat},${dest.lng}&mode=driving&key=${key}`;
     try {
       const res = await fetch(url);
+      if (!res.ok) {
+        this.logger.warn(`Directions snap HTTP ${res.status}`);
+        return null;
+      }
       const data = (await res.json()) as {
         status?: string;
         routes?: Array<{ overview_polyline?: { points?: string } }>;
