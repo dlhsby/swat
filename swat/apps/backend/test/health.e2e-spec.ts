@@ -1,4 +1,5 @@
 import { type INestApplication } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 
@@ -24,7 +25,7 @@ describe('Health (e2e)', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalInterceptors(new ApiResponseInterceptor());
+    app.useGlobalInterceptors(new ApiResponseInterceptor(new Reflector()));
     await app.init();
   });
 

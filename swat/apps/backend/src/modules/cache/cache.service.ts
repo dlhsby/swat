@@ -77,6 +77,21 @@ export class CacheService implements OnModuleDestroy {
     }
   }
 
+  /**
+   * Publish a message to a Redis pub/sub channel (Phase 7 GPS realtime fan-out:
+   * `gps:positions`, `gps:alerts`). Best-effort: a Redis outage is logged and
+   * swallowed so the ingest path never fails on a publish error. Returns the
+   * subscriber count, or 0 when Redis is unreachable. (The subscriber side, in
+   * Epic 7.4, uses a DEDICATED connection — a subscribed client can't publish.)
+   */
+  async publish(channel: string, message: unknown): Promise<number> {
+    try {
+      return await this.client.publish(channel, JSON.stringify(message));
+    } catch {
+      return 0;
+    }
+  }
+
   /** Delete every key matching a glob pattern (e.g. `cache:reference:*`). */
   async invalidatePattern(pattern: string): Promise<number> {
     try {

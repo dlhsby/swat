@@ -171,6 +171,7 @@ export default function DriversPage(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="driver"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
               extra={
@@ -202,7 +203,7 @@ export default function DriversPage(): JSX.Element {
         schema={schema}
         defaults={defaults}
         toForm={toForm}
-        title={{ create: 'Tambah Pengemudi', edit: 'Ubah Pengemudi' }}
+        title={{ create: 'Tambah Pengemudi', edit: 'Ubah Pengemudi', view: 'Lihat Pengemudi' }}
         className="max-w-[640px]"
       >
         <div className="grid gap-4">

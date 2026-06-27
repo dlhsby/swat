@@ -97,6 +97,16 @@ describe('SitesService', () => {
         service.create({ type: 'POOL', name: 'Pool', address: 'A' } as never),
       ).resolves.toMatchObject({ latitude: null });
     });
+
+    it('treats a blank/omitted address as null', async () => {
+      repo.create.mockResolvedValue(buildSite({ address: null }));
+      await service.create({ type: 'POOL', name: 'Pool', address: '  ' } as never);
+      expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ address: null }));
+
+      repo.create.mockClear();
+      await service.create({ type: 'POOL', name: 'Pool' } as never);
+      expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ address: null }));
+    });
   });
 
   describe('update', () => {

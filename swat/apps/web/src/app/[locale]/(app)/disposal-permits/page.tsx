@@ -135,6 +135,7 @@ export default function DisposalPermitsPage(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="disposal-permit"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -170,7 +171,7 @@ export default function DisposalPermitsPage(): JSX.Element {
         defaults={defaults}
         toForm={toForm}
         buildPayload={buildPayload}
-        title={{ create: 'Terbitkan Kitir', edit: 'Ubah Kitir' }}
+        title={{ create: 'Terbitkan Kitir', edit: 'Ubah Kitir', view: 'Lihat Kitir' }}
         className="max-w-[520px]"
       >
         <div className="grid gap-4">

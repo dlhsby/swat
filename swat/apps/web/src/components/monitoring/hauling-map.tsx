@@ -6,10 +6,17 @@ import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 
 import { type RouteMapEdge, type RouteMapSite } from '@/lib/monitoring-api';
+import { type VehiclePosition } from '@/lib/tracking-api';
 
 /** Surabaya city centre — the default view before bounds are fit to the data. */
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
 const MAP_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+/** Marker fill for a vehicle by source + device status (Phase 7 vehicle layer). */
+function vehicleColor(v: VehiclePosition): string {
+  if (v.source === 'recorded-activity') return '#d97706'; // amber — placed from activity
+  return v.status === 'online' ? '#15803d' : '#9ca3af'; // green live / grey offline
+}
 
 /** Marker fill by site type (TPS pickup vs TPA disposal vs pool/other). */
 function markerColor(type: string): string {
@@ -26,9 +33,11 @@ function markerColor(type: string): string {
 function MapOverlays({
   sites,
   edges,
+  vehicles,
 }: {
   sites: readonly RouteMapSite[];
   edges: readonly RouteMapEdge[];
+  vehicles: readonly VehiclePosition[];
 }): null {
   const map = useMap();
 
@@ -72,17 +81,44 @@ function MapOverlays({
       ];
     });
 
-    if (sites.length > 0) {
+    // Vehicle layer (Phase 7): live-gps (green/grey) + recorded-activity (amber).
+    const vehicleMarkers = vehicles.map(
+      (v) =>
+        new google.maps.Marker({
+          position: { lat: v.latitude, lng: v.longitude },
+          map,
+          title:
+            `${v.plate} — ` +
+            (v.source === 'recorded-activity'
+              ? (v.legLabel ?? 'aktivitas tercatat')
+              : v.status === 'online'
+                ? 'live'
+                : 'offline'),
+          zIndex: 1000,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 7,
+            fillColor: vehicleColor(v),
+            fillOpacity: v.source === 'recorded-activity' ? 0.65 : 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 2,
+          },
+        }),
+    );
+
+    if (sites.length > 0 || vehicles.length > 0) {
       const bounds = new google.maps.LatLngBounds();
       sites.forEach((s) => bounds.extend({ lat: s.latitude, lng: s.longitude }));
+      vehicles.forEach((v) => bounds.extend({ lat: v.latitude, lng: v.longitude }));
       map.fitBounds(bounds, 48);
     }
 
     return () => {
       markers.forEach((m) => m.setMap(null));
       lines.forEach((l) => l.setMap(null));
+      vehicleMarkers.forEach((m) => m.setMap(null));
     };
-  }, [map, sites, edges]);
+  }, [map, sites, edges, vehicles]);
 
   return null;
 }
@@ -106,17 +142,19 @@ export function HaulingMap({
   sites,
   edges,
   loading,
+  vehicles = [],
 }: {
   sites: readonly RouteMapSite[];
   edges: readonly RouteMapEdge[];
   loading: boolean;
+  vehicles?: readonly VehiclePosition[];
 }): JSX.Element {
   const t = useTranslations('monitoring.hauling');
 
   if (!MAP_KEY) {
     return <MapNotice message={t('mapPlaceholder')} />;
   }
-  if (!loading && sites.length === 0) {
+  if (!loading && sites.length === 0 && vehicles.length === 0) {
     return <MapNotice message={t('mapEmpty')} />;
   }
 
@@ -130,7 +168,7 @@ export function HaulingMap({
           disableDefaultUI={false}
           style={{ width: '100%', height: '100%' }}
         >
-          <MapOverlays sites={sites} edges={edges} />
+          <MapOverlays sites={sites} edges={edges} vehicles={vehicles} />
         </GoogleMap>
       </APIProvider>
     </div>

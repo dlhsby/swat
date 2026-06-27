@@ -114,7 +114,7 @@ export interface SiteDto {
   id: string;
   type: SiteType;
   name: string;
-  address: string;
+  address: string | null;
   latitude: number | null;
   longitude: number | null;
   createdAt: string;

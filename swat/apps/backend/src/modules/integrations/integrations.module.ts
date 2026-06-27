@@ -5,6 +5,7 @@ import { TransactionsModule } from '../transactions/transactions.module';
 
 import { ApiAuditController } from './api-audit.controller';
 import { ApiAuditService } from './api-audit.service';
+import { GpsModule } from './gps/gps.module';
 import { WeighbridgeGuard } from './guards/weighbridge.guard';
 import { ApiAuditInterceptor } from './interceptors/api-audit.interceptor';
 import { RateLimitService } from './rate-limit.service';
@@ -26,7 +27,7 @@ import { WeighingImportService } from './weighbridge/weighing-import.service';
  * for API-key validation and {@link TransactionsModule} for the trip finder.
  */
 @Module({
-  imports: [ServiceAccountsModule, TransactionsModule],
+  imports: [ServiceAccountsModule, TransactionsModule, GpsModule],
   controllers: [WeighbridgeController, ApiAuditController],
   providers: [
     WeighbridgeGuard,

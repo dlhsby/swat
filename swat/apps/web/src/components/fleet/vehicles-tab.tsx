@@ -296,6 +296,7 @@ export function VehiclesTab(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="vehicle"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
               extra={
@@ -343,7 +344,7 @@ export function VehiclesTab(): JSX.Element {
         defaults={defaults}
         toForm={toForm}
         buildPayload={buildPayload}
-        title={{ create: 'Tambah Kendaraan', edit: 'Ubah Kendaraan' }}
+        title={{ create: 'Tambah Kendaraan', edit: 'Ubah Kendaraan', view: 'Lihat Kendaraan' }}
       >
         <SectionLabel>Data Dasar</SectionLabel>
         <div className="grid gap-4">

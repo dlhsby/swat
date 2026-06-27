@@ -1,13 +1,21 @@
 import { type CallHandler, type ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { lastValueFrom, of } from 'rxjs';
 
 import { ApiResponseInterceptor } from './api-response.interceptor';
 
+class StubHandlerHost {}
+function stubContext(): ExecutionContext {
+  return {
+    getHandler: () => StubHandlerHost.prototype.constructor,
+    getClass: () => StubHandlerHost,
+  } as unknown as ExecutionContext;
+}
+
 function runInterceptor<T>(payload: T) {
-  const interceptor = new ApiResponseInterceptor<T>();
-  const ctx = {} as ExecutionContext;
+  const interceptor = new ApiResponseInterceptor<T>(new Reflector());
   const next: CallHandler<T> = { handle: () => of(payload) };
-  return lastValueFrom(interceptor.intercept(ctx, next));
+  return lastValueFrom(interceptor.intercept(stubContext(), next));
 }
 
 describe('ApiResponseInterceptor', () => {
@@ -23,7 +31,11 @@ describe('ApiResponseInterceptor', () => {
   });
 
   it('treats a plain object without meta as data', async () => {
-    const result = await runInterceptor({ data: 'only-data-key' });
+    const result = (await runInterceptor({ data: 'only-data-key' })) as {
+      success: boolean;
+      data: unknown;
+      meta: unknown;
+    };
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ data: 'only-data-key' });
     expect(result.meta).toBeNull();

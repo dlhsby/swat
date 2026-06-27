@@ -1,4 +1,26 @@
 {
+  "tracking": {
+    "alertCenter": "Alert Center",
+    "noAlerts": "No active alerts.",
+    "acknowledge": "Acknowledge"
+  },
+  "corridor": {
+    "title": "Route Corridor",
+    "mapPlaceholder": "Map not configured — set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to draw corridors.",
+    "drawHint": "Click to drop points; segments follow roads automatically. Drag a marker to refine.",
+    "pointCount": "{count} point(s)",
+    "undo": "Undo",
+    "clear": "Clear",
+    "snapToggle": "Follow roads (snap)",
+    "snapHint": "On: new segments follow roads. Off (freehand): straight lines for areas without roads, e.g. inside a TPA.",
+    "building": "Computing road route…",
+    "snapWarning": "Some segments could not follow roads — using a straight line.",
+    "tolerance": "Tolerance (metres)",
+    "toleranceHint": "Corridor width — a vehicle beyond this distance is off-corridor.",
+    "delete": "Delete corridor",
+    "cancel": "Cancel",
+    "save": "Save corridor"
+  },
   "common": {
     "appName": "SWAT",
     "appTagline": "Integrated Waste Transport System — DLH Surabaya",
@@ -31,6 +53,7 @@
     "fuelMonitoring": "Fuel Consumption",
     "routes": "Route Activity",
     "levy": "Levy",
+    "efficiency": "Efficiency",
     "reports": "Reports",
     "masterData": "Master Data",
     "vehicles": "Vehicles",
@@ -306,6 +329,7 @@
       "createLabel": "Add Levy",
       "createTitle": "Add Levy",
       "editTitle": "Edit Levy",
+      "viewTitle": "View Levy",
       "fieldCategory": "Category",
       "fieldDate": "Date",
       "fieldAmount": "Amount",
@@ -390,6 +414,7 @@
     "new": "New",
     "save": "Save",
     "cancel": "Cancel",
+    "close": "Close",
     "search": "Search…",
     "allStatuses": "All statuses"
   },

@@ -23,11 +23,11 @@ export class CreateSiteDto {
   @MaxLength(256)
   name!: string;
 
-  @ApiProperty({ maxLength: 512 })
+  @ApiPropertyOptional({ maxLength: 512 })
+  @IsOptional()
   @IsString()
-  @MinLength(1, { message: 'Alamat wajib diisi' })
   @MaxLength(512)
-  address!: string;
+  address?: string;
 
   @ApiPropertyOptional({ minimum: -90, maximum: 90 })
   @IsOptional()

@@ -8,3 +8,5 @@ export * from './transaction-day.schema';
 export * from './haul-assignment.schema';
 export * from './trip.schema';
 export * from './weighbridge.schema';
+export * from './gps-device.schema';
+export * from './route-geometry.schema';

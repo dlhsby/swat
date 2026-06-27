@@ -35,6 +35,7 @@ export function VehicleTypesTab(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="vehicle-type"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -59,7 +60,11 @@ export function VehicleTypesTab(): JSX.Element {
         schema={schema}
         defaults={defaults}
         toForm={toForm}
-        title={{ create: 'Tambah Tipe Kendaraan', edit: 'Ubah Tipe Kendaraan' }}
+        title={{
+          create: 'Tambah Tipe Kendaraan',
+          edit: 'Ubah Tipe Kendaraan',
+          view: 'Lihat Tipe Kendaraan',
+        }}
         className="max-w-[440px]"
       >
         <TextField name="name" label="Nama Tipe Kendaraan" required placeholder="Compactor" />

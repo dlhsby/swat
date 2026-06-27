@@ -14,11 +14,17 @@ export interface SiteDto {
   readonly id: string;
   readonly type: Site['type'];
   readonly name: string;
-  readonly address: string;
+  readonly address: string | null;
   readonly latitude: number | null;
   readonly longitude: number | null;
   readonly createdAt: string;
   readonly updatedAt: string;
+}
+
+/** Treat a blank/whitespace address as "not set" so the column stays null. */
+function normalizeAddress(address?: string | null): string | null {
+  const trimmed = address?.trim();
+  return trimmed ? trimmed : null;
 }
 
 function toSiteDto(site: Site): SiteDto {
@@ -75,7 +81,7 @@ export class SitesService {
     const site = await this.repo.create({
       type: dto.type,
       name: dto.name,
-      address: dto.address,
+      address: normalizeAddress(dto.address),
       latitude: dto.latitude ?? null,
       longitude: dto.longitude ?? null,
     });
@@ -104,7 +110,7 @@ export class SitesService {
     const site = await this.repo.update(id, {
       ...(dto.type !== undefined ? { type: dto.type } : {}),
       ...(dto.name !== undefined ? { name: dto.name } : {}),
-      ...(dto.address !== undefined ? { address: dto.address } : {}),
+      ...(dto.address !== undefined ? { address: normalizeAddress(dto.address) } : {}),
       ...(dto.latitude !== undefined ? { latitude: dto.latitude } : {}),
       ...(dto.longitude !== undefined ? { longitude: dto.longitude } : {}),
     });

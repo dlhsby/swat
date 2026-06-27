@@ -3,7 +3,11 @@
 # Services: PostgreSQL 15, Adminer, Redis 7, MinIO (+ bucket bootstrap), nginx.
 services:
   postgres:
-    image: postgres:15-alpine
+    # PostGIS image (Phase 7 GPS tracking) — same PostgreSQL 15 engine as the
+    # stock image, plus the `postgis` extension the spatial migrations enable.
+    # Debian-based (not alpine); the entrypoint, env and command flags below are
+    # identical to the official postgres image.
+    image: postgis/postgis:15-3.4
     container_name: swat-postgres
     restart: unless-stopped
     # The transactional tables are monthly RANGE-partitioned (Trip/Haul/

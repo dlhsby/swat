@@ -1,12 +1,13 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { ChevronDown, Download, Trash2 } from 'lucide-react';
+import { ChevronDown, Download, Spline, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
 import { auditColumns, hiddenIdColumn } from '@/components/crud/crud-list-shell';
 import { RowActions } from '@/components/crud/row-actions';
+import { type CorridorTrip, TripCorridorEditor } from '@/components/tracking/trip-corridor-editor';
 import { ActivityEditDialog } from '@/components/transactions/activity-edit-dialog';
 import { CctvTpaCell } from '@/components/transactions/cctv-tpa-cell';
 import {
@@ -177,6 +178,8 @@ export function QuickEntryBoard({
 
   // Per-row edit / delete (delete = soft un-record).
   const [editTrip, setEditTrip] = useState<ActivityRow | null>(null);
+  const [viewTrip, setViewTrip] = useState<ActivityRow | null>(null);
+  const [corridorTrip, setCorridorTrip] = useState<CorridorTrip | null>(null);
   const [deleteTrip, setDeleteTrip] = useState<ActivityRow | null>(null);
 
   const load = useCallback(async (): Promise<void> => {
@@ -427,12 +430,28 @@ export function QuickEntryBoard({
               <div className="text-right">
                 <RowActions
                   resource="trip"
+                  onView={() => setViewTrip(row.original)}
                   onEdit={() => setEditTrip(row.original)}
                   extra={
-                    <DropdownMenuItem destructive onSelect={() => setDeleteTrip(row.original)}>
-                      <Trash2 aria-hidden />
-                      Hapus
-                    </DropdownMenuItem>
+                    <>
+                      <ProtectedAction permission="route-geometry:manage">
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            setCorridorTrip({
+                              id: row.original.id,
+                              label: row.original.routeLabel ?? row.original.name,
+                            })
+                          }
+                        >
+                          <Spline aria-hidden />
+                          Koridor harian
+                        </DropdownMenuItem>
+                      </ProtectedAction>
+                      <DropdownMenuItem destructive onSelect={() => setDeleteTrip(row.original)}>
+                        <Trash2 aria-hidden />
+                        Hapus
+                      </DropdownMenuItem>
+                    </>
                   }
                 />
               </div>
@@ -929,6 +948,14 @@ export function QuickEntryBoard({
         onOpenChange={(open) => !open && setEditTrip(null)}
         onSaved={() => void load()}
       />
+      <ActivityEditDialog
+        trip={viewTrip}
+        readOnly
+        onOpenChange={(open) => !open && setViewTrip(null)}
+        onSaved={() => undefined}
+      />
+      <TripCorridorEditor trip={corridorTrip} onClose={() => setCorridorTrip(null)} />
+
       <ConfirmDialog
         open={deleteTrip !== null}
         onOpenChange={(open) => !open && setDeleteTrip(null)}

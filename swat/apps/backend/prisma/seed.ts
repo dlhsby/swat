@@ -29,6 +29,8 @@
  */
 import {
   type DayStatus,
+  type DeviationSeverity,
+  type DeviationType,
   type InspectionItemStatus,
   type InspectionResult,
   type MaintenanceStatus,
@@ -49,6 +51,8 @@ import {
 import { pgAdapter } from '../src/common/prisma/pg-adapter';
 import { RollupRepository } from '../src/modules/analytics/rollup.repository';
 import { RollupService } from '../src/modules/analytics/rollup.service';
+import { GpsEfficiencyRepository } from '../src/modules/integrations/gps/gps-efficiency.repository';
+import { GpsEfficiencyService } from '../src/modules/integrations/gps/gps-efficiency.service';
 import { type PrismaService } from '../src/modules/prisma/prisma.service';
 
 import {
@@ -100,6 +104,13 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
       'trip:record-fuel',
       'fuel:approve',
       'transaction-day:manage',
+      // GPS tracking admin (Phase 7) — manage the device registry, draw route
+      // corridors, tune deviation rules, and acknowledge alerts. (`*:read`
+      // already grants gps-device:read / deviation-alert:read / tracking:read.)
+      'gps-device:manage',
+      'route-geometry:manage',
+      'deviation-rule:manage',
+      'deviation-alert:acknowledge',
     ],
   },
   { name: 'Checker', patterns: ['vehicle:read', 'driver:read', 'trip:read', 'trip:verify'] },
@@ -136,7 +147,16 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
   },
   {
     name: 'Supervisor',
-    patterns: ['*:read', 'monitoring:read', 'report:read', 'report:export', 'transaction-day:read'],
+    patterns: [
+      '*:read',
+      'monitoring:read',
+      'report:read',
+      'report:export',
+      'transaction-day:read',
+      // GPS tracking (Phase 7) — watch the live fleet + acknowledge route
+      // deviations. (`*:read` already grants tracking:read / deviation-alert:read.)
+      'deviation-alert:acknowledge',
+    ],
   },
 ];
 
@@ -153,6 +173,32 @@ async function seedPermissions(): Promise<Map<string, string>> {
     idByKey.set(key, permission.id);
   }
   return idByKey;
+}
+
+/**
+ * Default deviation rules (Phase 7, T-709) — one per type, with sensible starting
+ * thresholds operators tune later. Always seeded (operational config, not synthetic
+ * demo data); idempotent upsert by type.
+ */
+async function seedDeviationRules(): Promise<void> {
+  const rules: ReadonlyArray<{
+    deviationType: DeviationType;
+    threshold: number | null;
+    hysteresisSec: number;
+    severity: DeviationSeverity;
+  }> = [
+    { deviationType: 'off_corridor', threshold: 150, hysteresisSec: 30, severity: 'WARNING' },
+    { deviationType: 'off_sequence', threshold: null, hysteresisSec: 0, severity: 'WARNING' },
+    { deviationType: 'dwell_too_long', threshold: 600, hysteresisSec: 0, severity: 'INFO' },
+    { deviationType: 'late_to_schedule', threshold: 900, hysteresisSec: 0, severity: 'INFO' },
+  ];
+  for (const rule of rules) {
+    await prisma.deviationRule.upsert({
+      where: { deviationType: rule.deviationType },
+      update: {},
+      create: { ...rule, enabled: true },
+    });
+  }
 }
 
 async function seedRoles(permissionIdByKey: Map<string, string>): Promise<Map<string, string>> {
@@ -1217,6 +1263,173 @@ async function backfillRollups(range: { from: Date; to: Date }): Promise<void> {
   console.log(`Rollup backfill: ${days} hari + ${months} bulan diperbarui.`);
 }
 
+/**
+ * Demo GPS devices (Phase 7, T-704). Attaches hardware trackers to a subset of
+ * the demo fleet — most online, a couple offline — and leaves the rest
+ * intentionally UNTRACKED so the coverage badge + hybrid map exercise all states.
+ * Also parks one unknown IMEI in the unmatched-ping queue. Idempotent (upsert by
+ * deviceId; the queue row is reset each run). Surabaya-area last positions.
+ */
+interface DemoTrackedDevice {
+  vehicleId: string;
+  imei: string;
+  lat: number;
+  lng: number;
+}
+
+async function seedDemoGpsDevices(
+  vehicles: ReadonlyArray<{ id: string }>,
+): Promise<DemoTrackedDevice[]> {
+  const SURABAYA = { lat: -7.2575, lng: 112.7521 };
+  // First 10 of 15 get a tracker; indices 8–9 are offline; the last 5 stay untracked.
+  const TRACKED = 10;
+  const OFFLINE_FROM = 8;
+  const now = new Date();
+  const staleAt = new Date(now.getTime() - 60 * 60 * 1000); // 1h ago → offline
+
+  let online = 0;
+  let offline = 0;
+  const onlineDevices: DemoTrackedDevice[] = [];
+  for (let i = 0; i < Math.min(TRACKED, vehicles.length); i += 1) {
+    const vehicle = vehicles[i];
+    if (!vehicle) continue;
+    const isOffline = i >= OFFLINE_FROM;
+    const imei = `35000000000${String(i).padStart(4, '0')}`;
+    const lat = SURABAYA.lat + i * 0.004;
+    const lng = SURABAYA.lng + i * 0.004;
+    const data = {
+      deviceType: 'gps-hardware',
+      imei,
+      provider: 'gpsid',
+      priority: 0,
+      active: true,
+      status: isOffline ? 'offline' : 'online',
+      lastPingAt: isOffline ? staleAt : now,
+      lastLat: lat,
+      lastLng: lng,
+      lastSpeedKmh: isOffline ? 0 : 18 + i,
+      lastHeading: (i * 30) % 360,
+    };
+    await prisma.gpsDevice.upsert({
+      where: { deviceId: imei },
+      update: { ...data, vehicleId: vehicle.id },
+      create: { ...data, deviceId: imei, vehicleId: vehicle.id },
+    });
+    if (isOffline) {
+      offline += 1;
+    } else {
+      online += 1;
+      onlineDevices.push({ vehicleId: vehicle.id, imei, lat, lng });
+    }
+  }
+
+  // One unknown IMEI parked in the queue (reset each run for idempotency).
+  const UNKNOWN_IMEI = '359999999999999';
+  await prisma.gpsUnmatchedPing.deleteMany({ where: { imei: UNKNOWN_IMEI } });
+  await prisma.gpsUnmatchedPing.createMany({
+    data: [
+      {
+        imei: UNKNOWN_IMEI,
+        payload: { Lat: SURABAYA.lat, Lon: SURABAYA.lng, VehicleNumber: 'L 9999 ZZ' },
+      },
+      {
+        imei: UNKNOWN_IMEI,
+        payload: { Lat: SURABAYA.lat, Lon: SURABAYA.lng, VehicleNumber: 'L 9999 ZZ' },
+      },
+    ],
+  });
+
+  const untracked = Math.max(0, vehicles.length - Math.min(TRACKED, vehicles.length));
+  // eslint-disable-next-line no-console
+  console.log(
+    `Demo GPS devices: ${online} online, ${offline} offline, ${untracked} untracked; 1 unmatched IMEI queued.`,
+  );
+  return onlineDevices;
+}
+
+/**
+ * Synthetic recent breadcrumb tracks (Phase 7, T-723) — a handful of pings per
+ * online device over the last few minutes, so the live map, the breadcrumb
+ * endpoint, and the efficiency odometer-delta have real data. Idempotent: clears
+ * each device's recent pings first. No MySQL/vendor needed.
+ */
+async function seedDemoTracks(devices: DemoTrackedDevice[]): Promise<void> {
+  if (devices.length === 0) return;
+  const now = Date.now();
+  const STEPS = 6;
+  const imeis = devices.map((d) => d.imei);
+  await prisma.gpsPing.deleteMany({
+    where: { imei: { in: imeis }, recordedAt: { gte: new Date(now - 60 * 60 * 1000) } },
+  });
+  const rows = devices.flatMap((d) =>
+    Array.from({ length: STEPS }, (_, k) => ({
+      vehicleId: d.vehicleId,
+      imei: d.imei,
+      latitude: d.lat + k * 0.0006,
+      longitude: d.lng + k * 0.0006,
+      speedKmh: 15 + k,
+      heading: 90,
+      engineOn: true,
+      odometerM: BigInt(1_000_000 + k * 250),
+      source: 'gpsid',
+      recordedAt: new Date(now - (STEPS - 1 - k) * 30_000), // every 30s, newest last
+    })),
+  );
+  await prisma.gpsPing.createMany({ data: rows, skipDuplicates: true });
+  // eslint-disable-next-line no-console
+  console.log(`Demo GPS tracks: ${rows.length} pings across ${devices.length} online vehicles.`);
+}
+
+/**
+ * One demo route corridor (Phase 7, T-723) — a LineString template so the
+ * Pengangkutan → Peta corridor overlay + the deviation matcher have geometry to
+ * work with. Picks the first route with origin+destination coords. Length is
+ * computed by PostGIS; the geography column is generated.
+ */
+async function seedDemoCorridor(): Promise<void> {
+  const route = await prisma.route.findFirst({
+    where: {
+      deletedAt: null,
+      // PICKUP/DISPOSAL legs run between two DISTINCT sites → a real corridor
+      // (pool round-trips share origin+destination → zero-length).
+      category: { in: ['PICKUP', 'DISPOSAL', 'REFUEL'] },
+      originSite: { latitude: { not: null }, longitude: { not: null } },
+      destinationSite: { latitude: { not: null }, longitude: { not: null } },
+    },
+    select: {
+      id: true,
+      originSite: { select: { latitude: true, longitude: true } },
+      destinationSite: { select: { latitude: true, longitude: true } },
+    },
+  });
+  if (!route?.originSite.latitude || !route.destinationSite.latitude) return;
+  const o = route.originSite;
+  const d = route.destinationSite;
+  const pathGeojson = {
+    type: 'LineString',
+    coordinates: [
+      [Number(o.longitude), Number(o.latitude)],
+      [Number(d.longitude), Number(d.latitude)],
+    ],
+  };
+  const len = await prisma.$queryRaw<Array<{ len: number }>>`
+    SELECT ROUND(ST_Length(ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(pathGeojson)}), 4326)::geography))::int AS "len"
+  `;
+  await prisma.routeGeometry.upsert({
+    where: { routeId: route.id },
+    update: { pathGeojson, lengthMeters: len[0]?.len ?? 0 },
+    create: {
+      routeId: route.id,
+      pathGeojson,
+      toleranceMeters: 150,
+      lengthMeters: len[0]?.len ?? 0,
+      source: 'google-maps',
+    },
+  });
+  // eslint-disable-next-line no-console
+  console.log(`Demo corridor: 1 route geometry (${len[0]?.len ?? 0} m).`);
+}
+
 async function main(): Promise<void> {
   const permissionIdByKey = await seedPermissions();
   const roleIdByName = await seedRoles(permissionIdByKey);
@@ -1226,6 +1439,9 @@ async function main(): Promise<void> {
     throw new Error('Administrator role was not created');
   }
   await seedAdminUser(adminRoleId);
+  // Operational config (always seeded, like permissions/roles): Phase 7 default
+  // deviation rules so the matcher + rule-tuning API have a baseline.
+  await seedDeviationRules();
 
   // Legacy-migration target: seed ONLY the auth bootstrap (permissions, roles,
   // admin). All reference + master + transactional data comes from the legacy DB
@@ -1250,6 +1466,15 @@ async function main(): Promise<void> {
       const adminId = admin?.id ?? null;
 
       const fleet = await loadDemoFleet();
+      const trackedDevices = await seedDemoGpsDevices(fleet.vehicles);
+      await seedDemoTracks(trackedDevices);
+      await seedDemoCorridor();
+      // Populate today's efficiency rollup so the dashboard isn't empty pre-cron.
+      const effRows = await new GpsEfficiencyService(
+        new GpsEfficiencyRepository(prisma as unknown as PrismaService),
+      ).refreshForDate(new Date());
+      // eslint-disable-next-line no-console
+      console.log(`Demo efficiency rollup: ${effRows} vehicle rows for today.`);
       await linkDemoWasteSources(fleet.vehicles);
       await seedDemoPermits(fleet.vehicles, adminId);
       const range = await seedDemoTransactions(fleet);

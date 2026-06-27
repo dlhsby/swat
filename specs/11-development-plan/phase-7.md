@@ -1,5 +1,54 @@
 # Phase 7 — Fleet GPS Tracking & Route-Deviation Monitoring
 
+> ## Implementation status (live tracker)
+> Built on branch `feat/phase-7-gps-foundation` (one PR for the whole phase). Each
+> task verified (typecheck + lint + tests, live PostGIS/Redis where relevant) and
+> committed as a checkpoint.
+>
+> - **Epic 7.0** — ✅ T-701, T-702
+> - **Epic 7.1** — ✅ T-703, T-704, T-705, T-706, T-707
+> - **Epic 7.2** — ✅ T-708, T-709, T-710¹, T-711
+> - **Epic 7.3** — ✅ T-712², T-713, T-714
+> - **Epic 7.4** — ✅ T-715, T-716
+> - **Epic 7.5** — ✅ T-717, T-718³
+> - **Epic 7.6** — ✅ T-719⁴, T-720, T-721
+> - **Epic 7.7** — ✅ T-722, T-723⁵, T-724
+> - **Epic 7.8** — 📋 planned (post-build design): T-725…T-730 — Corridor model
+>   (multi-corridor per leg + road-class) + scheduling multi-driver shifts. **Must land
+>   before the legacy transactional import.** See the Epic 7.8 section below.
+>
+> **All 24 tasks implemented.** Deferred follow-ups (tracked above): per-day Trip
+> corridor UI wiring (¹), `dwell_too_long` + `off_sequence`
+> matcher checks (²), global alert-bell + history (³), `adherencePct`/`dwellMinutes`
+> efficiency (⁴), a live webhook→SSE E2E spec + load test (⁵).
+>
+> ¹ T-710: route-template corridor editor shipped + tested. **Post-Phase-7
+>   enhancement (done):** the editor now snaps segments to roads via the Maps JS
+>   Directions service (browser key — no server proxy), with draggable refine + an
+>   Auto/Bebas (freehand) toggle for off-road segments, and persists the sparse
+>   control points (`route_geometry.waypoints`) so corridors re-open with handles.
+>   A **Lokasi (Site) map pin-picker** (drop/drag pin ⇄ lat/lng + address search)
+>   shipped alongside. The **per-day Trip-override editor** is now wired too: the
+>   shared `CorridorEditorCore` backs both the route-template editor and a
+>   `TripCorridorEditor` reachable from the record/quick-entry board ("Koridor
+>   harian", `/gps/trips/:id/geometry`). Trip overrides now **persist control
+>   waypoints** too (`Trip.geometryWaypoints`), so a per-day override re-opens with
+>   its sparse handles just like a route template.
+> ² T-712: `off_corridor` (PostGIS ST_DWithin + Redis hysteresis + auto-resolve) and
+>   `late_to_schedule` implemented; `dwell_too_long` (needs Site-geofence spatial
+>   check) and `off_sequence` (leg-sequence logic) are tracked follow-ups.
+> ³ T-718: alert center lives on the Pengangkutan → Peta tab (live SSE + REST,
+>   acknowledge); a global header-bell + filterable history view are follow-ups.
+> ⁴ T-719: efficiency rollup computes odometer-primary distance, late minutes,
+>   deviation count, internal wasted-fuel + nightly GPS.id mileage cross-check
+>   (T-720) + dashboard (T-721); `adherencePct`/`dwellMinutes` left NULL (need
+>   ping-vs-corridor replay + the deferred dwell logic) — tracked follow-up.
+> ⁵ T-723: docs (`docs/GPS-WEBHOOK-SECURITY.md`, `PRIVACY-NOTICE-GPS.md`,
+>   `GPSID-REGISTRATION.md`, `GPS-DEPLOYMENT.md`) + demo seed (corridor + synthetic
+>   tracks + efficiency rollup, alongside the online/offline/untracked devices)
+>   shipped; the webhook→ping→matcher→alert→SSE flow is covered end-to-end by unit
+>   tests — a live E2E spec + load test are a tracked follow-up.
+
 ## Overview
 
 Track the operational fleet in **real time** using the **hardware GPS trackers (GPS.id) already installed
@@ -324,11 +373,15 @@ These are **load-bearing** — verified against the existing codebase; ignore th
   snap-to-roads, set tolerance, preview buffer); `apps/web/src/lib/google-maps.ts` (loader; key from
   `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`); wire into Scheduling Route/Template screens **and** the day's ad-hoc trip editor.
 - **Steps:** draw/edit/snap a corridor; save to the Route template **or** the day's `Trip` override (same
-  component both contexts). **Snap-to-roads** uses a server-proxied, IP-restricted Roads/Directions key
-  (keep that key off the client); fail loudly if the public Maps key is missing.
+  component both contexts). **Snap-to-road** is implemented client-side via the Maps JS **Directions
+  service** using the same referrer-restricted browser key (enable the Directions API on it) — drop
+  ordered waypoints, segments auto-follow roads, draggable handles re-route, and an Auto/Bebas (freehand)
+  toggle allows straight off-road segments; sparse control points persist to `route_geometry.waypoints`
+  for clean re-editing. Fail to a placeholder if the public Maps key is missing.
 - **Acceptance criteria:**
-  - [ ] Supervisor saves a Route-template corridor; the same editor overrides a single day's trip without touching the template.
-  - [ ] No hardcoded keys; snap-to-roads key not exposed to the browser.
+  - [x] Supervisor saves a Route-template corridor (snap-to-road + freehand); the override path
+        (`/gps/trips/:id/geometry`) is backend-ready — wiring the day's-trip UI is a tracked follow-up.
+  - [x] No hardcoded keys; the browser key is referrer-restricted (Maps JS + Directions + Geocoding).
 
 #### T-711. Effective-corridor resolver + daily-init wiring
 
@@ -566,6 +619,127 @@ These are **load-bearing** — verified against the existing codebase; ignore th
 
 ---
 
+## Epic 7.8 — Corridor model & scheduling refinements (post-build design) (Size: L)
+
+> Surfaced during the 7.2–7.7 build + operator review (2026-06). Two changes, both
+> **must land before the legacy transactional import** (`seed:staging` / `seed:production`):
+> reshaping after tens of millions of partitioned `trip` rows are loaded means a costly
+> backfill across partitions, whereas now the transactional tables hold demo data only.
+> Corridor tasks build on the shipped 7.2/7.3 corridor engine; no rework of the matcher.
+
+### Why (problem statement)
+
+1. **One corridor per leg is too coarse.** `Route` is `@@unique(originSiteId, destinationSiteId, category)`
+   — there is physically exactly one "TPS A → TPA Benowo / DISPOSAL", owning exactly one
+   `RouteGeometry`. So operators **cannot define alternate corridors** for a leg, and a heavy
+   compactor and a light pickup on the same leg are **forced onto one path** even when their road
+   class differs. That is a correctness gap, not a hypothesis.
+2. **`Route` is legacy-shaped middleware.** Its identity columns (`category`, `originSiteId`,
+   `destinationSiteId`) are already denormalized onto `TripTemplate` ("snapshot so a template
+   survives a Route change"); `distanceKm` is `0` in most legacy rows and is derivable as
+   `ST_Length(corridor)`. The only thing `Route` uniquely anchors is the corridor (mis-keyed by
+   endpoints) and the `rute.RUTE_ID` legacy bridge.
+3. **Multi-driver shifts are modelled but not addable at runtime** (see scheduling sub-section).
+
+**No tonnage or BBM data lives on `Route`** — tonnage is on `Trip` weights + `DailyTonnage` + rollups;
+BBM is on `Trip` fuel fields + `DisposalPermit` + `DailyFuelByVehicle`. So the Route collapse loses
+no operational history; only the route *label* (for "route activity" reports) must be preserved.
+
+### Target model — first-class, shareable Corridor
+
+```
+Corridor (named path)  ◄────many-to-one──── TripTemplate.corridorId   (default for that leg/vehicle)
+   pathGeojson, waypoints, tolerance,                    │ daily-init copies the id (a scalar), not the geometry
+   originSiteId?, destinationSiteId?, category? (metadata)│
+                                            ◄────────────  Trip.corridorId  (the day's chosen corridor; switchable)
+                                                           Trip.geometryOverride? (one-off freehand escape hatch)
+```
+
+- **`Corridor`** = evolve `RouteGeometry` into a standalone, **named** entity: add `name`, optional
+  `originSiteId`/`destinationSiteId`/`category` as **metadata for filtering** (NOT a unique key), keep
+  `pathGeojson` / `waypoints` / `toleranceMeters` / `lengthMeters` (`ST_Length`, derived) / `source`.
+  **Many corridors may share endpoints** → alternates per leg.
+- **`TripTemplate.corridorId`** (nullable FK, many-to-one) — the default corridor for that
+  leg+vehicle. Different vehicles (road class) pick different corridors via their own templates.
+- **`Trip.corridorId`** (nullable FK) — defaults from the template at daily-init; the day can switch
+  it among the leg's defined corridors (situation-based). `Trip.geometryOverride/geometryWaypoints/
+  geometryToleranceM` stay as the one-off freehand override.
+- **Resolution cascade** (`CorridorRepository.resolveTripCorridor`):
+  `trip.geometryOverride → trip.corridor → trip.tripTemplate.corridor → none`. **Stays lazy /
+  by-reference** — never copy LineStrings into the partitioned `trip` table (scale).
+- **`Route` collapses to a label**: denormalize `originSiteId/destinationSiteId/category` onto `Trip`
+  (already on `TripTemplate`); drop `Route.distanceKm` (derive). Keep a thin `Route` purely as a
+  reporting label **or** remove it and group reporting on the denormalized columns + `corridorId`.
+  Drop the endpoint `@@unique` regardless. Legacy `rute.RUTE_ID` bridge → a one-time import detail
+  (or a `legacy_route_map` side table); not needed at runtime.
+
+#### Tasks
+
+##### T-725. Corridor entity + library API
+- **Size:** M · **Coverage:** ≥85%
+- **Files:** rename/evolve `RouteGeometry` → `Corridor` (`schema.prisma` + raw-SQL column add for
+  `name`/endpoint metadata; geography generated column unchanged); `corridor.{controller,service,
+  repository}.ts`; corridor CRUD + `GET /corridors?originSiteId=&destinationSiteId=&category=` filter.
+- **Acceptance:**
+  - [ ] Corridor is standalone + named; multiple corridors may share `(origin, destination, category)`.
+  - [ ] `lengthMeters` derived via `ST_Length`; `distanceKm` no longer required anywhere.
+
+##### T-726. Template + Trip corridor references + resolver
+- **Size:** M · **Coverage:** ≥85%
+- **Files:** `TripTemplate.corridorId`, `Trip.corridorId` (migrations, partition-safe ALTER on `trip`);
+  `daily-init.service.ts` (copy `template.corridorId → trip.corridorId`); `corridor.repository.ts`
+  (`resolveTripCorridor` → `override → trip.corridor → template.corridor → none`).
+- **Acceptance:**
+  - [ ] Deviation matcher unchanged (consumes `resolveTripCorridor`); new cascade unit-tested.
+  - [ ] No corridor geometry stored per `Trip` row (referenced, not copied).
+
+##### T-727. Web: corridor library + pickers + per-day switch
+- **Size:** M · **Coverage:** ≥80%
+- **Files:** corridor-library page; corridor picker in the trip-template editor; per-day corridor
+  switch on the record/scheduling board (reuse `CorridorEditorCore`); **remove the standalone "Rute"
+  admin tab** from `sites-routes`.
+- **Acceptance:**
+  - [ ] Define ≥2 corridors for one leg; assign different corridors to two vehicles' templates.
+  - [ ] Switch a single day's trip to an alternate corridor without touching the template.
+
+##### T-728. Route collapse + reporting backfill (run BEFORE the transactional import)
+- **Size:** M · **Coverage:** ≥80%
+- **Files:** denormalize leg label onto `Trip`; rewrite route-activity rollup + monitoring
+  (`rollup.repository.ts`, `monitoring.repository.ts`, `MonthlyRouteActivity`) to key on `corridorId`
+  / the denormalized label; demote or remove `Route`; legacy-bridge handling in `migrate-legacy.ts`.
+- **Acceptance:**
+  - [ ] Tonnage + BBM reports unchanged after the collapse (data sourced from `Trip`/aggregates).
+  - [ ] Route-activity report still produced (grouped by corridor / leg label).
+  - [ ] Legacy transactional seed maps `trayek` → `Trip` without a live `Route` master.
+
+### Scheduling refinements — multi-driver shifts (no schema change)
+
+`Haul` = one per vehicle/day; `HaulAssignment` = a driver-shift under it (one Haul → many
+assignments). daily-init already builds N assignments per vehicle from N schedule-templates, and the
+legacy migration preserves multi-driver hauls. **Gap:** no runtime UI/API to add a shift/vehicle to an
+initialised day, and no driver edit — the "Edit/Rekalibrasi" dialog only writes a HaulAssignment's
+`depart/returnActualOdometer/Time`. The data model needs no change; this is a UI + endpoint gap.
+
+#### Tasks
+
+##### T-729. Add-shift / add-vehicle endpoints + assignment edit
+- **Size:** M · **Coverage:** ≥85%
+- **Files:** `POST /hauls/:id/assignments` (add a driver-shift: driver + depart/return target times,
+  optional `scheduleTemplateId`); `POST /transaction-days/:id/hauls` (add a vehicle to an initialised
+  day → Haul + first assignment); `PATCH /haul-assignments/:id` (driver / target-time edit). Guarded
+  by a scheduling permission; respects the `(operationDate, day, vehicle)` Haul unique constraint.
+- **Acceptance:**
+  - [ ] Add a second shift (different driver, same vehicle) to an existing day → one Haul, two assignments.
+  - [ ] Adding a duplicate vehicle to a day is rejected cleanly (unique constraint → 422).
+
+##### T-730. Web: add-shift / add-vehicle UI on the scheduling day page
+- **Size:** S · **Coverage:** ≥80%
+- **Files:** "Tambah Shift" (per vehicle row) + "Tambah Kendaraan" (page action) dialogs; driver edit on a row.
+- **Acceptance:**
+  - [ ] An operator adds Alice's 17:00–01:00 shift to L8014JP from the day page; both shifts list + track independently.
+
+---
+
 ## Dependencies & sequencing
 
 ```
@@ -575,6 +749,8 @@ These are **load-bearing** — verified against the existing codebase; ignore th
 7.3 ──> 7.4 (T-715→T-716) ──> 7.5 (T-717, T-718)
 7.3 ──> 7.6 (T-719→T-720→T-721)
 all ──> 7.7 (T-722, T-723, T-724)
+7.2 + 7.3 (done) ──> 7.8 corridor (T-725→T-726→T-727→T-728)   ┐ BOTH before
+(model-only) ─────────────────> 7.8 shifts  (T-729→T-730)     ┘ seed:staging/production
 ```
 Epics 7.1 and 7.2 run in parallel after 7.0. Pilot early on **10–20 vehicles with a handful of drawn
 corridors** before fleet-wide rollout; routes without corridors are tracked (position only) until drawn.
@@ -636,7 +812,7 @@ and fuel**. Corridors are drawn once as templates and tweaked per day. Live phon
 (and offline field capture) is explicitly deferred to a future native app
 ([RFC-0003](../14-proposals/RFC-0003-native-field-app/)).
 
-## Task Summary (T-701 … T-724)
+## Task Summary (T-701 … T-730)
 
 | Task ID | Epic | Title | Size |
 |---------|------|-------|------|
@@ -664,3 +840,9 @@ and fuel**. Corridors are drawn once as templates and tweaked per day. Live phon
 | T-722 | 7.7 | Webhook hardening + privacy note | S |
 | T-723 | 7.7 | E2E + load tests, seed data, deployment & registration runbook | M |
 | T-724 | 7.7 | Deferred-scope doc: native field app | S |
+| T-725 | 7.8 | Corridor entity + library API (RouteGeometry → named, shareable Corridor) | M |
+| T-726 | 7.8 | TripTemplate/Trip `corridorId` + resolver cascade (override → trip → template → none) | M |
+| T-727 | 7.8 | Web: corridor library + pickers + per-day switch; drop "Rute" admin tab | M |
+| T-728 | 7.8 | Route collapse + reporting backfill (before the transactional import) | M |
+| T-729 | 7.8 | Add-shift / add-vehicle endpoints + assignment edit (multi-driver per vehicle/day) | M |
+| T-730 | 7.8 | Web: add-shift / add-vehicle UI on the scheduling day page | S |

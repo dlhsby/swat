@@ -1,11 +1,13 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
+import { MapPin, Spline } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ProtectedAction } from '@/components/auth/protected-action';
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
 import { CrudListShell } from '@/components/crud/crud-list-shell';
 import {
@@ -16,8 +18,26 @@ import {
   TextField,
 } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
+import { MapPicker, round6 } from '@/components/maps/map-picker';
 import { PageHead } from '@/components/shell/page-head';
-import { Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import {
+  type CorridorRoute,
+  RouteCorridorEditor,
+} from '@/components/tracking/route-corridor-editor';
+import {
+  Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DropdownMenuItem,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { formatNumber } from '@/lib/format';
@@ -54,7 +74,7 @@ const siteSchema = z
   .object({
     type: z.enum(['POOL', 'SPBU', 'TPS', 'TPA']),
     name: z.string().min(1, 'Nama lokasi wajib diisi').max(256),
-    address: z.string().min(1, 'Alamat wajib diisi').max(512),
+    address: z.string().max(512, 'Alamat maksimal 512 karakter').optional(),
     latitude: z.coerce.number().min(-90, 'Lintang -90..90').max(90, 'Lintang -90..90').optional(),
     longitude: z.coerce
       .number()
@@ -77,10 +97,101 @@ const siteDefaults: SiteValues = {
 const siteToForm = (r: SiteDto): SiteValues => ({
   type: r.type,
   name: r.name,
-  address: r.address,
+  address: r.address ?? '',
   latitude: r.latitude ?? undefined,
   longitude: r.longitude ?? undefined,
 });
+
+/**
+ * Map pin bound to the form's `latitude`/`longitude` (rounded to 6dp to match the
+ * DB precision). Dropping/dragging the pin or searching an address sets BOTH fields
+ * together — honouring the both-or-neither rule — and the manual number inputs stay
+ * editable as the source of truth. "Hapus titik" clears the pair.
+ */
+function SiteMapPicker(): JSX.Element {
+  const form = useFormContext<SiteValues>();
+  const lat = form.watch('latitude');
+  const lng = form.watch('longitude');
+  const value = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : null;
+
+  // Set BOTH fields, then validate ONCE. Validating on each setValue separately
+  // races the async (zod) resolver: the lat-only pass can resolve last and leave a
+  // stale "both-or-neither" error even though both are now set. So the first set
+  // skips validation and the second triggers a single pass over the consistent pair.
+  const setPin = (p: { lat: number; lng: number }): void => {
+    form.setValue('latitude', round6(p.lat), { shouldDirty: true });
+    form.setValue('longitude', round6(p.lng), { shouldValidate: true, shouldDirty: true });
+  };
+  const clearPin = (): void => {
+    form.setValue('latitude', undefined, { shouldDirty: true });
+    form.setValue('longitude', undefined, { shouldDirty: true });
+    // Both cleared together is valid — drop any error the pair may have shown.
+    form.clearErrors(['latitude', 'longitude']);
+  };
+
+  return (
+    <div className="space-y-2">
+      <MapPicker value={value} onChange={setPin} />
+      {value ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-danger-600"
+          onClick={clearPin}
+        >
+          Hapus titik
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Datagrid coordinate cell: shows `(lat, lng)` plus a pin button that opens a
+ * read-only map preview of the point. Renders "—" when the site has no coordinates.
+ */
+function CoordinateCell({
+  lat,
+  lng,
+  name,
+}: {
+  lat: number | null;
+  lng: number | null;
+  name: string;
+}): JSX.Element {
+  const [open, setOpen] = useState(false);
+  if (lat == null || lng == null) {
+    return <span className="text-neutral-400">—</span>;
+  }
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="tabular-nums">
+        ({lat}, {lng})
+      </span>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Lihat di peta"
+        title="Lihat di peta"
+        className="text-primary-700 transition-colors hover:text-primary-800 dark:text-primary-400"
+      >
+        <MapPin className="h-4 w-4" aria-hidden />
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>{name}</DialogTitle>
+            <DialogDescription className="tabular-nums">
+              ({lat}, {lng})
+            </DialogDescription>
+          </DialogHeader>
+          <MapPicker value={{ lat, lng }} onChange={() => undefined} readOnly height={320} />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
 function SitesTab(): JSX.Element {
   const manager = useResourceManager(sitesApi, (r) => r.id);
@@ -93,18 +204,24 @@ function SitesTab(): JSX.Element {
         meta: { label: 'Jenis' },
         cell: ({ row }) => <Badge appearance="count">{siteTypeLabel(row.original.type)}</Badge>,
       },
-      { accessorKey: 'address', header: 'Alamat', meta: { label: 'Alamat' } },
       {
-        accessorKey: 'latitude',
-        header: 'Lintang',
-        meta: { label: 'Lintang', defaultHidden: true, filterVariant: 'number' },
-        cell: ({ row }) => <span className="tabular-nums">{row.original.latitude ?? '—'}</span>,
+        accessorKey: 'address',
+        header: 'Alamat',
+        meta: { label: 'Alamat' },
+        cell: ({ row }) => row.original.address ?? '—',
       },
       {
-        accessorKey: 'longitude',
-        header: 'Bujur',
-        meta: { label: 'Bujur', defaultHidden: true, filterVariant: 'number' },
-        cell: ({ row }) => <span className="tabular-nums">{row.original.longitude ?? '—'}</span>,
+        id: 'coordinate',
+        header: 'Koordinat',
+        enableSorting: false,
+        meta: { label: 'Koordinat' },
+        cell: ({ row }) => (
+          <CoordinateCell
+            lat={row.original.latitude}
+            lng={row.original.longitude}
+            name={row.original.name}
+          />
+        ),
       },
       {
         id: 'actions',
@@ -116,6 +233,7 @@ function SitesTab(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="site"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
             />
@@ -141,16 +259,17 @@ function SitesTab(): JSX.Element {
         schema={siteSchema}
         defaults={siteDefaults}
         toForm={siteToForm}
-        title={{ create: 'Tambah Lokasi', edit: 'Ubah Lokasi' }}
+        title={{ create: 'Tambah Lokasi', edit: 'Ubah Lokasi', view: 'Lihat Lokasi' }}
         className="max-w-[520px]"
       >
         <SelectField name="type" label="Jenis Lokasi" required options={SITE_TYPES} />
         <TextField name="name" label="Nama" required />
-        <TextareaField name="address" label="Alamat" required />
-        <div className="grid gap-4">
+        <TextareaField name="address" label="Alamat (opsional)" />
+        <div className="grid grid-cols-2 gap-4">
           <NumberField name="latitude" label="Lintang (opsional)" />
           <NumberField name="longitude" label="Bujur (opsional)" />
         </div>
+        <SiteMapPicker />
       </CrudFormDialog>
     </CrudListShell>
   );
@@ -280,6 +399,7 @@ function RouteSiteFields({ sites }: { sites: readonly SiteDto[] }): JSX.Element 
 function RoutesTab(): JSX.Element {
   const manager = useResourceManager(routesApi, (r) => r.id);
   const { rows: sites } = useResourceList(sitesApi.list);
+  const [corridorRoute, setCorridorRoute] = useState<CorridorRoute | null>(null);
   const columns = useMemo<ColumnDef<RouteDto, unknown>[]>(
     () => [
       {
@@ -318,8 +438,17 @@ function RoutesTab(): JSX.Element {
           <div className="text-right">
             <RowActions
               resource="route"
+              onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
+              extra={
+                <ProtectedAction permission="route-geometry:manage">
+                  <DropdownMenuItem onSelect={() => setCorridorRoute(row.original)}>
+                    <Spline aria-hidden />
+                    Koridor
+                  </DropdownMenuItem>
+                </ProtectedAction>
+              }
             />
           </div>
         ),
@@ -343,13 +472,14 @@ function RoutesTab(): JSX.Element {
         schema={routeSchema}
         defaults={routeDefaults}
         toForm={routeToForm}
-        title={{ create: 'Tambah Rute', edit: 'Ubah Rute' }}
+        title={{ create: 'Tambah Rute', edit: 'Ubah Rute', view: 'Lihat Rute' }}
         className="max-w-[520px]"
       >
         <SelectField name="category" label="Jenis Rute" required options={ROUTE_CATEGORIES} />
         <RouteSiteFields sites={sites} />
         <NumberField name="distanceKm" label="Jarak" required unit="km" min={0} />
       </CrudFormDialog>
+      <RouteCorridorEditor route={corridorRoute} onClose={() => setCorridorRoute(null)} />
     </CrudListShell>
   );
 }

@@ -7,7 +7,9 @@
 # Build context is the inner `swat/` monorepo root.
 services:
   postgres:
-    image: postgres:15-alpine
+    # PostGIS image (Phase 7 GPS tracking) — PostgreSQL 15 + the `postgis`
+    # extension enabled by the spatial migrations. Same engine as the stock image.
+    image: postgis/postgis:15-3.4
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
