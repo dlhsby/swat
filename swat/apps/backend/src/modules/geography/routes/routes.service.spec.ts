@@ -132,13 +132,13 @@ describe('RoutesService', () => {
       });
     });
 
-    it('derives distanceKm from the default corridor length (metres → km)', async () => {
+    it('returns the corridor-derived distance after creating the default corridor', async () => {
       repo.create.mockResolvedValue(buildRoute({ distanceKm: 0 }));
-      corridors.createDefaultForRoute.mockResolvedValue({ lengthMeters: 5400 });
-      repo.update.mockResolvedValue(buildRoute({ distanceKm: 5 }));
+      // createDefaultForRoute syncs route.distanceKm in the corridor layer; the
+      // service re-reads the route to return the synced value.
+      repo.findById.mockResolvedValue(buildRoute({ distanceKm: 5 }));
       const result = await service.create(dto);
       expect(corridors.createDefaultForRoute).toHaveBeenCalled();
-      expect(repo.update).toHaveBeenCalledWith(expect.any(String), { distanceKm: 5 });
       expect(result.distanceKm).toBe(5);
     });
   });
@@ -180,12 +180,13 @@ describe('RoutesService', () => {
       expect(corridors.regenerateDefaultForRoute).not.toHaveBeenCalled();
     });
 
-    it('regenerates the default corridor + re-derives distance when an endpoint changes', async () => {
+    it('regenerates the default corridor + re-reads distance when an endpoint changes', async () => {
       const newDest = '550e8400-e29b-41d4-a716-446655440055';
-      repo.findById.mockResolvedValue(buildRoute());
-      repo.update
-        .mockResolvedValueOnce(buildRoute({ destinationSiteId: newDest })) // the endpoint write
-        .mockResolvedValueOnce(buildRoute({ destinationSiteId: newDest, distanceKm: 3 })); // distance sync
+      // findById: first the pre-update load, then the post-regenerate re-read.
+      repo.findById
+        .mockResolvedValueOnce(buildRoute())
+        .mockResolvedValueOnce(buildRoute({ destinationSiteId: newDest, distanceKm: 3 }));
+      repo.update.mockResolvedValue(buildRoute({ destinationSiteId: newDest }));
       corridors.regenerateDefaultForRoute.mockResolvedValue({ lengthMeters: 3200 });
       const result = await service.update('550e8400-e29b-41d4-a716-446655440001', {
         destinationSiteId: newDest,

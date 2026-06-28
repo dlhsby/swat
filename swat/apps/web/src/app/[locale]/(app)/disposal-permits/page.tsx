@@ -37,8 +37,10 @@ const schema = z
     issuedAt: z.string().min(1, 'Tanggal terbit wajib diisi'),
     validFrom: z.string().min(1, 'Berlaku dari wajib diisi'),
     validTo: z.string().min(1, 'Berlaku sampai wajib diisi'),
-    status: z.enum(['ACTIVE', 'INACTIVE']),
+    // '' is the "not chosen yet" sentinel — no default; refine forces a pick.
+    status: z.enum(['ACTIVE', 'INACTIVE']).or(z.literal('')),
   })
+  .refine((d) => d.status !== '', { message: 'Status wajib dipilih', path: ['status'] })
   .refine((d) => d.validFrom <= d.validTo, {
     message: 'Berlaku sampai harus setelah berlaku dari.',
     path: ['validTo'],
@@ -55,7 +57,7 @@ const defaults: Values = {
   issuedAt: '',
   validFrom: '',
   validTo: '',
-  status: 'ACTIVE',
+  status: '',
 };
 const toForm = (r: DisposalPermitDto): Values => ({
   vehicleId: r.vehicleId,
@@ -194,7 +196,13 @@ export default function DisposalPermitsPage(): JSX.Element {
           <DateField name="issuedAt" label="Tanggal Terbit" required />
           <DateField name="validFrom" label="Berlaku Dari" required />
           <DateField name="validTo" label="Berlaku Sampai" required />
-          <SelectField name="status" label="Status" required options={STATUS_OPTIONS} />
+          <SelectField
+            name="status"
+            label="Status"
+            required
+            options={STATUS_OPTIONS}
+            placeholder="Pilih status"
+          />
         </div>
       </CrudFormDialog>
 

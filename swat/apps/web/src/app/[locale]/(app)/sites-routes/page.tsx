@@ -72,7 +72,8 @@ const siteTypeLabel = (t: SiteType): string => SITE_TYPES.find((o) => o.value ==
 
 const siteSchema = z
   .object({
-    type: z.enum(['POOL', 'SPBU', 'TPS', 'TPA']),
+    // '' is the "not chosen yet" sentinel — no default jenis lokasi; refine forces a pick.
+    type: z.enum(['POOL', 'SPBU', 'TPS', 'TPA']).or(z.literal('')),
     name: z.string().min(1, 'Nama lokasi wajib diisi').max(256),
     address: z.string().max(512, 'Alamat maksimal 512 karakter').optional(),
     latitude: z.coerce.number().min(-90, 'Lintang -90..90').max(90, 'Lintang -90..90').optional(),
@@ -82,13 +83,14 @@ const siteSchema = z
       .max(180, 'Bujur -180..180')
       .optional(),
   })
+  .refine((d) => d.type !== '', { message: 'Jenis lokasi wajib dipilih', path: ['type'] })
   .refine((d) => (d.latitude == null) === (d.longitude == null), {
     message: 'Lintang dan bujur harus diisi keduanya atau dikosongkan.',
     path: ['latitude'],
   });
 type SiteValues = z.infer<typeof siteSchema>;
 const siteDefaults: SiteValues = {
-  type: 'TPS',
+  type: '',
   name: '',
   address: '',
   latitude: undefined,
@@ -265,7 +267,13 @@ function SitesTab(): JSX.Element {
         title={{ create: 'Tambah Lokasi', edit: 'Ubah Lokasi', view: 'Lihat Lokasi' }}
         className="max-w-[520px]"
       >
-        <SelectField name="type" label="Jenis Lokasi" required options={SITE_TYPES} />
+        <SelectField
+          name="type"
+          label="Jenis Lokasi"
+          required
+          options={SITE_TYPES}
+          placeholder="Pilih jenis lokasi"
+        />
         <TextField name="name" label="Nama" required />
         <TextareaField name="address" label="Alamat (opsional)" />
         <div className="grid grid-cols-2 gap-4">
@@ -523,7 +531,14 @@ function RoutesTab(): JSX.Element {
         {/* Jarak is derived from the route's default corridor (server-side) — not
             entered by hand. It still shows as a column in the grid. */}
       </CrudFormDialog>
-      <RouteCorridorEditor route={corridorRoute} onClose={() => setCorridorRoute(null)} />
+      <RouteCorridorEditor
+        route={corridorRoute}
+        onClose={() => {
+          setCorridorRoute(null);
+          // A corridor edit may have resynced the route distance — refresh the grid.
+          void manager.reload();
+        }}
+      />
     </CrudListShell>
   );
 }

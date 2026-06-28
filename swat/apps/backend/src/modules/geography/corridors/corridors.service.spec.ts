@@ -38,10 +38,12 @@ describe('CorridorsService', () => {
     listForRoute: jest.Mock;
     findById: jest.Mock;
     hasAny: jest.Mock;
+    findDefault: jest.Mock;
     create: jest.Mock;
     update: jest.Mock;
     softDelete: jest.Mock;
     computeLengthMeters: jest.Mock;
+    setRouteDistanceKm: jest.Mock;
   };
   let directions: { snapDrivingRoute: jest.Mock };
   let service: CorridorsService;
@@ -57,10 +59,12 @@ describe('CorridorsService', () => {
       listForRoute: jest.fn().mockResolvedValue([corridorRow({ isDefault: true })]),
       findById: jest.fn().mockResolvedValue(corridorRow()),
       hasAny: jest.fn().mockResolvedValue(false),
+      findDefault: jest.fn().mockResolvedValue(corridorRow({ isDefault: true })),
       create: jest.fn((_routeId, _data, isDefault) => Promise.resolve(corridorRow({ isDefault }))),
       update: jest.fn().mockResolvedValue(corridorRow()),
       softDelete: jest.fn().mockResolvedValue(corridorRow()),
       computeLengthMeters: jest.fn().mockResolvedValue(6373),
+      setRouteDistanceKm: jest.fn().mockResolvedValue(undefined),
     };
     // Default: no server key → straight-line fallback.
     directions = { snapDrivingRoute: jest.fn().mockResolvedValue(null) };
@@ -173,9 +177,22 @@ describe('CorridorsService', () => {
       expect(repo.computeLengthMeters).toHaveBeenCalled();
     });
 
+    it('resyncs the route distance after editing a corridor (snap-to-road bug)', async () => {
+      // The default corridor is now 6373 m → the route distance should follow (6 km).
+      repo.findDefault.mockResolvedValue(corridorRow({ isDefault: true, lengthMeters: 6373 }));
+      await service.update(ID, { pathGeojson: LINE as unknown as Record<string, unknown> });
+      expect(repo.setRouteDistanceKm).toHaveBeenCalledWith(ROUTE, 6);
+    });
+
     it('404s when there is nothing to delete', async () => {
       repo.softDelete.mockResolvedValue(null);
       await expect(service.remove(ID)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('resyncs the route distance after deleting a corridor', async () => {
+      repo.findDefault.mockResolvedValue(null); // no default left → 0 km
+      await service.remove(ID);
+      expect(repo.setRouteDistanceKm).toHaveBeenCalledWith(ROUTE, 0);
     });
   });
 });

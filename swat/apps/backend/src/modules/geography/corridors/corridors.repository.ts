@@ -61,6 +61,12 @@ export class CorridorsRepository {
     });
   }
 
+  /** Update the route's denormalized distance cache (km) — kept in step with the
+   *  default corridor's length, which is the source of truth. */
+  async setRouteDistanceKm(routeId: string, distanceKm: number): Promise<void> {
+    await this.prisma.route.update({ where: { id: routeId }, data: { distanceKm } });
+  }
+
   create(routeId: string, data: CorridorWriteData, isDefault: boolean): Promise<Corridor> {
     return this.prisma.corridor.create({
       data: {

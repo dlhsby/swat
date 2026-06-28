@@ -98,29 +98,10 @@ export class RoutesService {
       distanceKm: dto.distanceKm ?? 0,
     });
     // Every route gets a default corridor (road-snapped, else a straight line between
-    // its two sites); skipped silently when a site has no coordinates yet. The route
-    // distance is then derived from that corridor's length rather than typed by hand.
-    const corridor = await this.corridors.createDefaultForRoute(route.id);
-    return toRouteDto(await this.syncDistanceFromCorridor(route, corridor));
-  }
-
-  /**
-   * Set a route's `distanceKm` from its default corridor's length (metres → whole
-   * km), so the figure tracks the drawn path instead of manual entry. No-ops (keeps
-   * the existing distance) when the route has no corridor — e.g. a site lacks coords.
-   */
-  private async syncDistanceFromCorridor(
-    route: RouteWithSites,
-    corridor: { lengthMeters: number } | null,
-  ): Promise<RouteWithSites> {
-    if (!corridor) {
-      return route;
-    }
-    const distanceKm = Math.round(corridor.lengthMeters / 1000);
-    if (distanceKm === route.distanceKm) {
-      return route;
-    }
-    return this.repo.update(route.id, { distanceKm });
+    // its two sites); skipped silently when a site has no coordinates yet. The corridor
+    // owns the distance — creating it syncs `route.distanceKm` — so re-read to return it.
+    await this.corridors.createDefaultForRoute(route.id);
+    return toRouteDto((await this.repo.findById(route.id)) ?? route);
   }
 
   /**
@@ -181,10 +162,10 @@ export class RoutesService {
       ...(dto.distanceKm !== undefined ? { distanceKm: dto.distanceKm } : {}),
     });
     // When the endpoints move, the auto-default corridor no longer matches — rebuild
-    // it and re-derive the distance from the new path.
+    // it (which resyncs the route distance from the new path) and re-read.
     if (sitesChanged) {
-      const corridor = await this.corridors.regenerateDefaultForRoute(id);
-      return toRouteDto(await this.syncDistanceFromCorridor(route, corridor));
+      await this.corridors.regenerateDefaultForRoute(id);
+      return toRouteDto((await this.repo.findById(id)) ?? route);
     }
     return toRouteDto(route);
   }

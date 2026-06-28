@@ -73,7 +73,18 @@ export class CorridorsService {
       },
       isDefault,
     );
+    await this.syncRouteDistance(routeId);
     return toDto(corridor);
+  }
+
+  /**
+   * Keep the route's denormalized `distanceKm` in step with its **default corridor's
+   * length** — the corridor (snapped or not) is the source of truth for distance.
+   * Called after every corridor mutation. 0 km when the route has no default.
+   */
+  private async syncRouteDistance(routeId: string): Promise<void> {
+    const def = await this.repo.findDefault(routeId);
+    await this.repo.setRouteDistanceKm(routeId, def ? Math.round(def.lengthMeters / 1000) : 0);
   }
 
   async update(id: string, dto: UpdateCorridorDto): Promise<CorridorDto> {
@@ -98,6 +109,8 @@ export class CorridorsService {
       ...(dto.toleranceMeters !== undefined ? { toleranceMeters: dto.toleranceMeters } : {}),
       ...(dto.source !== undefined ? { source: dto.source } : {}),
     });
+    // Editing/snapping the default corridor changes its length → resync the route.
+    await this.syncRouteDistance(corridor.routeId);
     return toDto(corridor);
   }
 
@@ -106,6 +119,7 @@ export class CorridorsService {
     if (!deleted) {
       throw new NotFoundException('Koridor tidak ditemukan.');
     }
+    await this.syncRouteDistance(deleted.routeId);
     return { message: 'Koridor telah dihapus.' };
   }
 
@@ -146,6 +160,7 @@ export class CorridorsService {
       },
       true,
     );
+    await this.syncRouteDistance(routeId);
     return toDto(corridor);
   }
 

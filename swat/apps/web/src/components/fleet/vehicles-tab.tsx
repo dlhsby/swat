@@ -60,7 +60,8 @@ const schema = z.object({
   vehicleTypeId: z.string().min(1, 'Tipe kendaraan wajib dipilih'),
   modelId: z.string().uuid('Model wajib dipilih'),
   poolSiteId: z.string().uuid('Pool wajib dipilih'),
-  status: z.enum(['GOOD', 'MINOR_DAMAGE', 'MAJOR_DAMAGE', 'LOST']),
+  // '' is the "not chosen yet" sentinel — no default status; refine forces a pick.
+  status: z.enum(['GOOD', 'MINOR_DAMAGE', 'MAJOR_DAMAGE', 'LOST']).or(z.literal('')),
   manufactureYear: z.coerce.number().int().min(1900, 'Tahun tidak valid').max(2100).optional(),
   chassisNumber: z.string().min(1, 'Nomor rangka wajib diisi').max(100),
   engineNumber: z.string().min(1, 'Nomor mesin wajib diisi').max(100),
@@ -70,14 +71,14 @@ const schema = z.object({
   registrationExpiry: z.string().min(1, 'Tanggal STNK wajib diisi'),
   taxExpiry: z.string().min(1, 'Tanggal pajak wajib diisi'),
   notes: z.string().max(512).optional(),
-});
+}).refine((d) => d.status !== '', { message: 'Status wajib dipilih', path: ['status'] });
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
   plateNumber: '',
   vehicleTypeId: '',
   modelId: '',
   poolSiteId: '',
-  status: 'GOOD',
+  status: '',
   manufactureYear: undefined,
   chassisNumber: '',
   engineNumber: '',
@@ -358,7 +359,13 @@ export function VehiclesTab(): JSX.Element {
             options={pools}
             placeholder="Pilih pool"
           />
-          <SelectField name="status" label="Status" required options={STATUS_OPTIONS} />
+          <SelectField
+            name="status"
+            label="Status"
+            required
+            options={STATUS_OPTIONS}
+            placeholder="Pilih status"
+          />
         </div>
 
         <SectionLabel>Identitas & Dimensi</SectionLabel>
