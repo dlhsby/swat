@@ -1,7 +1,7 @@
 # SWAT Rollback Plan (T-168)
 
 Companion to [`CUTOVER-RUNBOOK.md`](./CUTOVER-RUNBOOK.md). Defines exactly when and
-how to revert to the legacy `old_swat` system after a SWAT cutover.
+how to revert to the legacy `legacy/web` system after a SWAT cutover.
 
 ## Trigger criteria (not "maybe" — any ONE triggers a rollback decision)
 

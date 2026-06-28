@@ -6,7 +6,7 @@ tagged **[API]** (curl/Postman/psql), **[WEB]** (browser), or **[OPS]** (operato
 
 - **Admin login:** `admin` / `Password123!` (forces a password change on first login).
 - **API base:** `http://<host>/api/v1` · **Liveness:** `/health` · **Readiness:** `/health/ready` · **Swagger:** `/api/docs`
-- **Web base:** `http://<host>/` (redirects to `/id-ID`). Postman collection: `swat/apps/backend/postman/`.
+- **Web base:** `http://<host>/` (redirects to `/id-ID`). Postman collection: `revamp/apps/backend/postman/`.
 - Docker is the operator's environment; none of this runs in the dev WSL.
 
 ---

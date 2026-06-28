@@ -3,7 +3,7 @@
 Authoritative deployment design for SWAT. **Staging runs on AWS; production is on-premise and
 platform-agnostic.** The same container images run in both places — every environment difference is
 driven by config/env, never baked in. The operational runbook (exact commands, one-time setup) lives
-beside the code at [`../swat/infra/aws/README.md`](../swat/infra/aws/README.md).
+beside the code at [`../revamp/infra/aws/README.md`](../revamp/infra/aws/README.md).
 
 The pattern is shared with the sibling **sekar** project, which co-tenants the same AWS box.
 
@@ -91,12 +91,12 @@ sites, 4,897 routes, 1,463 vehicles, …). Transaction tables are **empty by des
 `/scheduling` from showing fabricated `DONE` days — it replaced the old synthetic demo seed.
 
 `migrate:legacy` is a live-MySQL→Postgres ETL, so `infra/seed-legacy-from-dump.sh` replays the
-committed `old_swat/db_backup/dkp_swat_*.sql` dump through a throwaway `mysql:5.7`, runs the master
+committed `legacy/web/db_backup/dkp_swat_*.sql` dump through a throwaway `mysql:5.7`, runs the master
 phase (`--force-reset` truncates + reloads master), and truncates the transaction tables — a clean,
 transaction-free master. It pulls the target `DATABASE_URL` from the encrypted
 `infra/env/backend/.env.staging` (or `STAGING_DATABASE_URL` for a laptop tunnel, since RDS is private),
 and sets `LEGACY_DB_*` itself. **Later**, import real transactions with `--with-transactions`.
-`seed:demo` remains for synthetic data. See [`../swat/infra/aws/README.md`](../swat/infra/aws/README.md).
+`seed:demo` remains for synthetic data. See [`../revamp/infra/aws/README.md`](../revamp/infra/aws/README.md).
 
 ## Capacity & coupling notes
 

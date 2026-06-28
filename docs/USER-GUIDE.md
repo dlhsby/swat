@@ -1,7 +1,7 @@
 # Panduan Pengguna SWAT (T-169)
 
 Panduan ringkas berbasis peran untuk sistem **SWAT** (pengganti aplikasi lama
-`old_swat`). Bahasa Indonesia. Untuk pemetaan istilah lama → menu baru lihat
+`legacy/web`). Bahasa Indonesia. Untuk pemetaan istilah lama → menu baru lihat
 [`LEGACY-TO-NEW-REFERENCE.md`](./LEGACY-TO-NEW-REFERENCE.md).
 
 ## Login pertama kali (semua pengguna)

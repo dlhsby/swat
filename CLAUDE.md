@@ -4,11 +4,14 @@ Concise orientation so sessions don't re-explore. Global directives live in `~/.
 
 ## Layout
 
-- **Monorepo lives in the inner `swat/` dir** (`projects/swat/swat/`), NOT the project root.
-  Run all package-manager commands from there.
+- **Monorepo lives in the inner `revamp/` dir** (`projects/swat/revamp/`), NOT the project root.
+  Run all package-manager commands from there. (Historically this dir was named `swat/`; renamed to
+  `revamp/` 2026-06.)
 - **Git repo root is the outer `projects/swat/`** → `.github/workflows/` sits at the outer root
-  (CI uses `working-directory: swat`). Husky: enable with `git config core.hooksPath swat/.husky`.
-- Project root also holds `specs/`, `designs/`, `old_swat/` (legacy CI app), `prompts/`.
+  (CI uses `working-directory: revamp`). Husky: enable with `git config core.hooksPath revamp/.husky`.
+- Project root also holds `specs/`, `designs/`, `prompts/`, and `legacy/` — the archived legacy system:
+  the old CodeIgniter app under `legacy/web/` (formerly `old_swat/`, tracked) plus DB dumps under
+  `legacy/db/` (dumps/binaries gitignored — see `legacy/db/.gitignore`).
 
 ## Stack
 
@@ -69,12 +72,12 @@ None of these dev/CI accounts are created in production.
 
 ## Package manager: pnpm (NOT npm)
 
-From inner `swat/`:
+From inner `revamp/`:
 
 - Build: `pnpm build` · Dev: `pnpm dev` · Lint: `pnpm lint` (`pnpm lint:fix`) · Types: `pnpm typecheck`
 - Test: `pnpm test` · Format: `pnpm format` / `pnpm format:check`
 - DB: `pnpm db:generate` · `pnpm db:migrate` (= prisma **deploy**) · `pnpm db:seed`
-- Seeding is **four** independent, idempotent tracks (all from inner `swat/`, scope with
+- Seeding is **four** independent, idempotent tracks (all from inner `revamp/`, scope with
   `--filter @swat/backend`):
   - **`seed:demo`** (= `db:seed`, default) — fully synthetic dev/demo data: demo users + per-role
     permissions + a **slim curated master subset** (`prisma/demo-fixtures.ts`, ~15 vehicles/22 sites/
@@ -142,5 +145,5 @@ From inner `swat/`:
   `staging`/dispatch → AWS deploy, one approval). **Flow: PR branch → `main` → `staging`** (pushing
   to `main` never deploys). On-prem prod stays platform-agnostic.
 - **Deployment**: canonical spec [`specs/15-deployment.md`](specs/15-deployment.md); operational
-  runbook `swat/infra/aws/README.md`. Staging = AWS (shared `dlhsby` box, RDS db `swat_staging`, ECR,
+  runbook `revamp/infra/aws/README.md`. Staging = AWS (shared `dlhsby` box, RDS db `swat_staging`, ECR,
   S3+instance-role, Caddy, OIDC→SSM); prod = `infra/docker-compose.prod.yml`.

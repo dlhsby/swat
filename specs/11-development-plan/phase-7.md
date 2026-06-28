@@ -220,7 +220,7 @@ map regardless, so management never sees a partial picture.
 
 These are **load-bearing** — verified against the existing codebase; ignore them and the phase stalls.
 
-1. **PostGIS is not installed.** `swat/docker-compose.yml` and CI run `postgres:15-alpine`, which has **no
+1. **PostGIS is not installed.** `revamp/docker-compose.yml` and CI run `postgres:15-alpine`, which has **no
    PostGIS**. Epic 7.0 swaps both to `postgis/postgis:15-3.4` and enables the extension via raw-SQL
    migration. On the partitioned/PostGIS tables use **`prisma migrate deploy`, never `migrate dev`** (drift).
 2. **Prisma 7 has no native geometry type.** Strategy: store the human/portable form in Prisma
@@ -253,8 +253,8 @@ These are **load-bearing** — verified against the existing codebase; ignore th
 
 - **Size:** S · **Coverage:** — (infra)
 - **Files:**
-  - `swat/docker-compose.yml` (modify) — `postgres` service `image: postgis/postgis:15-3.4`
-  - `swat/infra/docker-compose.prod.yml` (modify) — same image
+  - `revamp/docker-compose.yml` (modify) — `postgres` service `image: postgis/postgis:15-3.4`
+  - `revamp/infra/docker-compose.prod.yml` (modify) — same image
   - `.github/workflows/ci.yml` (modify) — Postgres service container → `postgis/postgis:15-3.4`
   - `apps/backend/prisma/migrations/<ts>_enable_postgis/migration.sql` (create) — `CREATE EXTENSION IF NOT EXISTS postgis;`
 - **Steps:** swap images; confirm the Prisma 7 `pg` adapter + any pooling work with PostGIS; recreate the dev
@@ -487,7 +487,7 @@ These are **load-bearing** — verified against the existing codebase; ignore th
 - **Depends on:** T-706, T-713
 - **Files:** `apps/backend/src/modules/realtime/realtime.gateway.ts` (SSE preferred — one-way fits positions+alerts);
   `realtime.module.ts`; Redis subscriber bridging `gps:positions`/`gps:alerts` → clients;
-  `swat/infra/nginx.conf.template` (modify) — a `location` for the realtime endpoint with
+  `revamp/infra/nginx.conf.template` (modify) — a `location` for the realtime endpoint with
   `proxy_http_version 1.1`, `proxy_set_header Connection ''`, `proxy_buffering off`, long `proxy_read_timeout`
   (and an `Upgrade`/`Connection` map if WS is chosen).
 - **Steps:** session-auth on connect (`tracking:read`); channels `vehicle-{id}` and `all`; heartbeats;

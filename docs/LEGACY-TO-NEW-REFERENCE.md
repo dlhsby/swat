@@ -1,11 +1,11 @@
 # Legacy → SWAT reference (T-169)
 
-Maps `old_swat` terms/screens to the new SWAT menu so existing staff can find
+Maps `legacy/web` terms/screens to the new SWAT menu so existing staff can find
 their workflows. Indonesian labels match the new UI.
 
 ## Screen / menu mapping
 
-| Legacy (`old_swat`) | SWAT menu | Path |
+| Legacy (`legacy/web`) | SWAT menu | Path |
 |---------------------|-----------|------|
 | Master Kendaraan | Master Data → Kendaraan | `/kendaraan` |
 | Kategori Kendaraan | Master Data → Model Kendaraan | `/model-kendaraan` |

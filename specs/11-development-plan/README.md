@@ -48,7 +48,7 @@ Build-side progress records sit next to each phase plan (`phase-N-status.md`): t
   [`../13-design/`](../13-design/). Phase 0 **ports `swat-tokens.css` verbatim** (light + dark) and
   Phase 1 leads with **Epic 1.8.5 — Design-System Component Library** (28 reusable shadcn/ui
   extensions) **before** any screen epic. All UI composes those components.
-- **Parity-first.** This is a rewrite of `old_swat`: **every legacy feature must ship**. The Part-0
+- **Parity-first.** This is a rewrite of `legacy/web`: **every legacy feature must ship**. The Part-0
   audit (in the plan doc) closes gaps **G1–G15**; the parity additions live in **Epic 1.17**
   (reference masters G1–G3, kitir bulk import G6/G8, refuel log G7, inspection G4, maintenance G5) and
   the Screen→Phase traceability table in [`../08-frontend-spec.md`](../08-frontend-spec.md). Monitoring
@@ -155,6 +155,6 @@ Per-domain backend module = `apps/backend/src/modules/<domain>/` containing
 **To MVP (Phases 0–1): ~17–21 weeks. To full Phase 8: ~30–39 weeks.** This estimate is the *committed*
 MVP figure — it already includes the design-system/dark token layer, the component library
 (Epic 1.8.5), and **all legacy-parity work (Epic 1.17)**. Parity is **committed Phase-1 scope, not an
-optional add-on**: this is a rewrite of `old_swat`, and the cutover (Epic 1.16) is gated on full
+optional add-on**: this is a rewrite of `legacy/web`, and the cutover (Epic 1.16) is gated on full
 parity, so the parity epics must complete before go-live. If schedule pressure hits, cut **new** ideas
 (the lower-priority, non-legacy items flagged per phase) — never parity.

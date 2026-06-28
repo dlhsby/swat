@@ -3,7 +3,7 @@
 ## Context
 
 SWAT is a waste-transport operations platform for **DLH Kota Surabaya**, replacing a legacy
-CodeIgniter 2.1.4 app (`old_swat/`). **Phase 0 (foundation) is complete, verified live, under green
+CodeIgniter 2.1.4 app (`legacy/web/`). **Phase 0 (foundation) is complete, verified live, under green
 CI.** This plan turns the Phase 1 spec (`specs/11-development-plan/phase-1.md` — 18 epics, ~79 tasks
 T-101…T-175) into a sequenced, risk-aware build order, then **begins execution at Milestone 1 (Auth &
 RBAC)** in this session.
@@ -155,7 +155,7 @@ resumable by watermark, idempotent by `legacyId`, dependency order per `04-migra
 `migrate-images.ts` (filesystem→MinIO, bounded concurrency, SHA256 verify, `Photo` rows),
 `verify-migration.ts` (per-table/year reconciliation ≤1%, FK spot-check, exit 1 on critical). Data-quality
 fixes per §4 (0000 dates/1900 years/(0,0) GPS→NULL, dedup routes). Users: **never migrate MD5** →
-random Argon2 + `mustChangePassword`. Dry-run vs `old_swat/db_backup/dkp_swat_2026_05_18_data.sql`.
+random Argon2 + `mustChangePassword`. Dry-run vs `legacy/web/db_backup/dkp_swat_2026_05_18_data.sql`.
 
 ### M8 · Epics 1.14–1.16 hardening (T-160–T-169)
 Playwright E2E (login, vehicle CRUD, driver+license, day-init→depart→pickup→disposal→verify); README +
@@ -173,7 +173,7 @@ rollback plan (docs + staging dry-run). **Live cutover execution is the user's o
 | **DISPOSAL weighing integrity** | Server authoritative `netWeight`; reject `gross<tare`; ≥90% coverage on trip recording |
 | **Legacy migration fidelity** (live volumes unknown) | Discovery-first; idempotent + resumable; per-year ≤1% reconciliation gate; dry-run vs sample before live |
 | **Image-corpus volume** (multi-TB) | Bounded-concurrency streamed upload + checksum + orphan report; resumable; deferred to on-prem |
-| **Parity gaps vs `old_swat`** | Epic 1.17 gates cutover; module specs (`inspection/maintenance/disposal-permits.md`) + legacy controllers as reference |
+| **Parity gaps vs `legacy/web`** | Epic 1.17 gates cutover; module specs (`inspection/maintenance/disposal-permits.md`) + legacy controllers as reference |
 | **Component-library drift from hi-fi** | Build 1.8.5 first; token-driven only; dark + `:focus-visible` verified per component before screens |
 
 ---

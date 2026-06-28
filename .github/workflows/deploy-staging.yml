@@ -13,8 +13,8 @@ name: Deploy staging (AWS)
 #   re-runs the quality gate, then pauses ONCE at `build-push` for `staging`
 #   Environment approval, after which it builds + deploys straight through.
 #
-# The pnpm monorepo lives in the inner `swat/` dir; the git repo root (and this
-# workflow) sit at the OUTER dir, so Docker build contexts are `./swat`.
+# The pnpm monorepo lives in the inner `revamp/` dir; the git repo root (and this
+# workflow) sit at the OUTER dir, so Docker build contexts are `./revamp`.
 #
 # Required repo Variables (Settings → Secrets and variables → Actions → Variables):
 #   AWS_REGION        ap-southeast-3
@@ -44,7 +44,7 @@ concurrency:
 
 defaults:
   run:
-    working-directory: swat
+    working-directory: revamp
 
 jobs:
   # Final safety gate on the release commit — the SAME reusable suite the PR gate
@@ -92,8 +92,8 @@ jobs:
       - name: Build & push backend
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: ./swat
-          file: ./swat/infra/Dockerfile.backend
+          context: ./revamp
+          file: ./revamp/infra/Dockerfile.backend
           platforms: linux/amd64
           push: true
           tags: |
@@ -105,8 +105,8 @@ jobs:
       - name: Build & push web
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
-          context: ./swat
-          file: ./swat/infra/Dockerfile.web
+          context: ./revamp
+          file: ./revamp/infra/Dockerfile.web
           platforms: linux/amd64
           push: true
           # NEXT_PUBLIC_* are decrypted from the committed encrypted

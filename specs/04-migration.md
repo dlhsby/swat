@@ -41,7 +41,7 @@ Before writing any loader, profile the **live** MySQL DB + image store (read-onl
 ## 1. Source & target
 
 ### Source
-- **Location:** `../old_swat/db_backup/dkp_swat_2026_05_18_structure.sql` + `dkp_swat_2026_05_18_data.sql`
+- **Location:** `../legacy/web/db_backup/dkp_swat_2026_05_18_structure.sql` + `dkp_swat_2026_05_18_data.sql`
 - **DB:** MySQL 5.6, database `dkp_swat`, 44 tables, latin1 charset.
   - *In the snapshot:* ~22k rows (master data only); transaction tables empty.
   - *In live production:* tens of millions of rows across `trayek`/`detailtransaksiangkutsampah`/
