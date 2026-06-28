@@ -1,7 +1,27 @@
+import { Logger } from '@nestjs/common';
+
 import { parseDateOnly } from '../../../common/dates';
 import { type PrismaService } from '../../prisma/prisma.service';
 
 import { DailyInitService } from './daily-init.service';
+
+/** A trip template carrying a corridor (active or soft-deleted) for the day-init copy. */
+function templateWithCorridor(corridorDeletedAt: Date | null): Record<string, unknown> {
+  return {
+    id: 1,
+    routeId: 4,
+    corridorId: 'c0000000-0000-0000-0000-000000000001',
+    corridor: { id: 'c0000000-0000-0000-0000-000000000001', deletedAt: corridorDeletedAt },
+    targetTime: new Date('1970-01-01T06:00:00Z'),
+    fuelRequestedLiters: null,
+    route: {
+      id: 4,
+      category: 'DISPOSAL',
+      originSite: { name: 'TPS A' },
+      destinationSite: { name: 'TPA B' },
+    },
+  };
+}
 
 function buildSchedule(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -167,5 +187,26 @@ describe('DailyInitService', () => {
     await service.initializeForDate(date);
     const tripArg = tx.trip.create.mock.calls[0][0] as { data: { fuelRequestedLiters?: number } };
     expect(tripArg.data.fuelRequestedLiters).toBe(40);
+  });
+
+  it('carries an active template corridor onto the day trip', async () => {
+    prisma.scheduleTemplate.findMany.mockResolvedValue([
+      buildSchedule({ tripTemplates: [templateWithCorridor(null)] }),
+    ]);
+    await service.initializeForDate(date);
+    const tripArg = tx.trip.create.mock.calls[0][0] as { data: { corridorId?: string } };
+    expect(tripArg.data.corridorId).toBe('c0000000-0000-0000-0000-000000000001');
+  });
+
+  it('skips a soft-deleted template corridor and warns (resolver falls back to route default)', async () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    prisma.scheduleTemplate.findMany.mockResolvedValue([
+      buildSchedule({ tripTemplates: [templateWithCorridor(new Date('2026-06-01T00:00:00Z'))] }),
+    ]);
+    await service.initializeForDate(date);
+    const tripArg = tx.trip.create.mock.calls[0][0] as { data: { corridorId?: string } };
+    expect(tripArg.data.corridorId).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('soft-deleted corridor'));
+    warn.mockRestore();
   });
 });

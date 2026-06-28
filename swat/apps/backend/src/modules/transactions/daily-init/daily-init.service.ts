@@ -27,6 +27,8 @@ const scheduleInclude = {
           destinationSite: { select: { name: true } },
         },
       },
+      // Pull the corridor's deletedAt so we can skip a soft-deleted one at init.
+      corridor: { select: { id: true, deletedAt: true } },
     },
     orderBy: { targetTime: 'asc' },
   },
@@ -54,6 +56,25 @@ export class DailyInitService {
   private readonly logger = new Logger(DailyInitService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * The corridor to stamp on the day's trip: the template's, unless it was
+   * soft-deleted after the template was set (then omit + warn — the deviation
+   * matcher's resolver falls back to the route's default corridor).
+   */
+  private carryTemplateCorridor(template: TemplateForInit): string | null {
+    if (!template.corridorId) {
+      return null;
+    }
+    if (template.corridor && template.corridor.deletedAt !== null) {
+      this.logger.warn(
+        `Trip template ${template.id} references soft-deleted corridor ` +
+          `${template.corridorId}; omitting (will use the route default).`,
+      );
+      return null;
+    }
+    return template.corridorId;
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async handleCron(): Promise<void> {
@@ -132,13 +153,16 @@ export class DailyInitService {
           assignments += 1;
 
           for (const template of schedule.tripTemplates) {
+            // Copy the template's default corridor down to the day's trip
+            // (Phase 7.8); the day can later switch it (T-727). A corridor that
+            // was soft-deleted after the template was set is skipped (the
+            // matcher's resolver falls back to the route default anyway).
+            const corridorId = this.carryTemplateCorridor(template);
             await tx.trip.create({
               data: {
                 haulAssignmentId: assignment.id,
                 routeId: template.routeId,
-                // Copy the template's default corridor down to the day's trip
-                // (Phase 7.8); the day can later switch it (T-727).
-                ...(template.corridorId ? { corridorId: template.corridorId } : {}),
+                ...(corridorId ? { corridorId } : {}),
                 operationDate: date,
                 status: 'IN_PROGRESS',
                 name: tripName(template.route),
