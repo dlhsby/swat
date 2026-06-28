@@ -66,9 +66,12 @@ export class DailyInitService {
     if (!template.corridorId) {
       return null;
     }
-    if (template.corridor && template.corridor.deletedAt !== null) {
+    // Omit a corridor that was soft-deleted after the template was set (or, defensively,
+    // whose relation didn't resolve) — the matcher's resolver falls back to the route
+    // default, so the trip is never created with a dangling corridor reference.
+    if (!template.corridor || template.corridor.deletedAt !== null) {
       this.logger.warn(
-        `Trip template ${template.id} references soft-deleted corridor ` +
+        `Trip template ${template.id} references a missing/soft-deleted corridor ` +
           `${template.corridorId}; omitting (will use the route default).`,
       );
       return null;

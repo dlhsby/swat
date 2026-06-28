@@ -102,6 +102,7 @@ export function VehicleDevicesSheet({
         vehicleId,
         deviceId,
         deviceType,
+        provider: 'gpsid',
         priority: Number(priority) || 0,
         ...(imei ? { imei } : {}),
       });
