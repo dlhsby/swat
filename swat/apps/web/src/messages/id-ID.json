@@ -247,7 +247,7 @@
     },
     "volume": {
       "title": "Tonase Sampah",
-      "subtitle": "Tonase pengangkutan sampah dari leg pembuangan terealisasi.",
+      "subtitle": "Tonase pengangkutan sampah dari trip pembuangan terealisasi.",
       "kpiTotal": "Total Tonase",
       "kpiHauls": "Angkut Sampah Selesai",
       "kpiAvg": "Rata-rata per Angkut Sampah",
@@ -256,7 +256,7 @@
       "chartSub": "Kilogram dikonversi ke ton.",
       "donutTitle": "Komposisi per Sumber",
       "tableTitle": "Tonase per TPS",
-      "infoNote": "Agregasi dari leg pembuangan terealisasi (Selesai atau Terverifikasi). Kolom Timbangan TPA menampilkan total timbangan jembatan TPA hari itu sebagai informasi.",
+      "infoNote": "Agregasi dari trip pembuangan terealisasi (Selesai atau Terverifikasi). Kolom Timbangan TPA menampilkan total timbangan jembatan TPA hari itu sebagai informasi.",
       "colDate": "Tanggal",
       "colTonnage": "Tonase",
       "colHauls": "Angkut Sampah",

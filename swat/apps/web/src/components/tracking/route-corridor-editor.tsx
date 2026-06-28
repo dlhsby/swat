@@ -130,7 +130,7 @@ export function RouteCorridorEditor({
           <SheetBody className="space-y-3">
             <p className="text-body-sm text-neutral-500">
               {viewOnly
-                ? 'Leg "Berangkat dari Pool" hanya titik awal harian — koridornya tidak diubah.'
+                ? 'Trip "Berangkat dari Pool" hanya titik awal harian — koridornya tidak diubah.'
                 : 'Satu rute punya beberapa pilihan koridor. Koridor utama dibuat otomatis mengikuti jalan; tambahkan alternatif bila perlu.'}
             </p>
 

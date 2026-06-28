@@ -18,7 +18,7 @@ const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
  * REFUEL legs additionally carry the requested fuel volume.
  */
 export class CreateTripTemplateDto {
-  @ApiProperty({ enum: RouteCategory, description: 'Leg category (drives the route)' })
+  @ApiProperty({ enum: RouteCategory, description: 'Trip category (drives the route)' })
   @IsEnum(RouteCategory, { message: 'Kategori rute tidak valid' })
   category!: RouteCategory;
 
@@ -30,7 +30,7 @@ export class CreateTripTemplateDto {
 
   @ApiPropertyOptional({
     format: 'uuid',
-    description: 'End location — required for every leg except DEPART_POOL',
+    description: 'End location — required for every trip except DEPART_POOL',
   })
   @IsOptional()
   @IsString()
@@ -42,7 +42,7 @@ export class CreateTripTemplateDto {
   @Matches(TIME_REGEX, { message: 'Waktu harus berformat HH:mm' })
   targetTime!: string;
 
-  @ApiPropertyOptional({ minimum: 0, description: 'Requested fuel (liters) — REFUEL legs' })
+  @ApiPropertyOptional({ minimum: 0, description: 'Requested fuel (liters) — REFUEL trips' })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Jumlah BBM tidak valid' })
@@ -50,7 +50,7 @@ export class CreateTripTemplateDto {
   fuelRequestedLiters?: number;
 
   @ApiPropertyOptional({
-    description: 'Default Corridor for this leg (copied to the day at init); "" clears it',
+    description: 'Default Corridor for this trip (copied to the day at init); "" clears it',
   })
   @IsOptional()
   @IsString()
