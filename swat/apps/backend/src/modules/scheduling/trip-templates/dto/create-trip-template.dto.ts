@@ -1,7 +1,16 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { RouteCategory } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Matches, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -50,10 +59,14 @@ export class CreateTripTemplateDto {
   fuelRequestedLiters?: number;
 
   @ApiPropertyOptional({
+    format: 'uuid',
     description: 'Default Corridor for this trip (copied to the day at init); "" clears it',
   })
   @IsOptional()
-  @IsString()
+  // `''` is the explicit "clear" signal — skip the UUID check for it; reject any
+  // other non-UUID string instead of letting it fail at the DB layer.
+  @ValidateIf((o: CreateTripTemplateDto) => o.corridorId !== '')
+  @IsUUID(undefined, { message: 'ID koridor harus berupa UUID' })
   corridorId?: string;
 }
 

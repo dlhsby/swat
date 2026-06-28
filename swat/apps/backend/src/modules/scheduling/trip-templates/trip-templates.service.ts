@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { type Prisma, type SiteType } from '@prisma/client';
 
 import { formatTimeOnly, parseTimeOnly } from '../../../common/dates';
@@ -107,6 +112,11 @@ export class TripTemplatesService {
       dto.destinationSiteId,
     );
     const route = await this.routes.resolveOrCreate(dto.category, originSiteId, destinationSiteId);
+    // A chosen corridor must belong to this leg's route, or the resolver cascade
+    // (and the deviation matcher) would check the wrong route's geometry.
+    if (dto.corridorId) {
+      await this.assertCorridorInRoute(dto.corridorId, route.id);
+    }
     const row = await this.prisma.tripTemplate.create({
       data: {
         scheduleTemplateId,
@@ -131,7 +141,7 @@ export class TripTemplatesService {
     templateId: string,
     dto: UpdateTripTemplateDto,
   ): Promise<TripTemplateDto> {
-    await this.findOwned(scheduleTemplateId, templateId);
+    const owned = await this.findOwned(scheduleTemplateId, templateId);
     // A route change requires the full triple (category + start + end); partial
     // edits (time / fuel only) leave the existing route untouched.
     let routeChange:
@@ -152,6 +162,11 @@ export class TripTemplatesService {
         originSiteId: dto.originSiteId,
         destinationSiteId: dto.destinationSiteId,
       };
+    }
+    // Validate a newly-set corridor against the effective route (the changed one,
+    // else the template's current route). `''` clears, so only check a real id.
+    if (dto.corridorId) {
+      await this.assertCorridorInRoute(dto.corridorId, routeChange?.routeId ?? owned.routeId);
     }
     const row = await this.prisma.tripTemplate.update({
       where: { id: templateId },
@@ -183,13 +198,28 @@ export class TripTemplatesService {
     return { message: 'Template rute telah dihapus.' };
   }
 
-  private async findOwned(scheduleTemplateId: string, templateId: string): Promise<void> {
+  private async findOwned(
+    scheduleTemplateId: string,
+    templateId: string,
+  ): Promise<{ routeId: string }> {
     const template = await this.prisma.tripTemplate.findFirst({
       where: { id: templateId, scheduleTemplateId },
-      select: { id: true },
+      select: { id: true, routeId: true },
     });
     if (!template) {
       throw new NotFoundException('Template rute tidak ditemukan.');
+    }
+    return { routeId: template.routeId };
+  }
+
+  /** A template's corridor must belong to that template's route (resolver soundness). */
+  private async assertCorridorInRoute(corridorId: string, routeId: string): Promise<void> {
+    const owned = await this.prisma.corridor.findFirst({
+      where: { id: corridorId, routeId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new UnprocessableEntityException('Koridor bukan milik rute trip ini.');
     }
   }
 

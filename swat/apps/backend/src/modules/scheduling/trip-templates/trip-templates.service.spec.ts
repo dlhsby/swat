@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { type RoutesService } from '../../geography/routes/routes.service';
 import { type PrismaService } from '../../prisma/prisma.service';
@@ -32,6 +36,7 @@ describe('TripTemplatesService', () => {
       delete: jest.Mock;
     };
     site: { findFirst: jest.Mock };
+    corridor: { findFirst: jest.Mock };
   };
   let routes: { resolveOrCreate: jest.Mock };
   let service: TripTemplatesService;
@@ -53,6 +58,8 @@ describe('TripTemplatesService', () => {
         delete: jest.fn(),
       },
       site: { findFirst: jest.fn().mockResolvedValue({ type: 'POOL' }) },
+      // Default: a chosen corridor belongs to the leg's route (ownership passes).
+      corridor: { findFirst: jest.fn().mockResolvedValue({ id: 'c1' }) },
     };
     routes = { resolveOrCreate: jest.fn().mockResolvedValue({ id: 2 }) };
     service = new TripTemplatesService(
@@ -69,6 +76,7 @@ describe('TripTemplatesService', () => {
   const DEST = '00000000-0000-0000-0000-0000000000d2';
   const POOL = '00000000-0000-0000-0000-0000000000d0';
   const RID3 = '00000000-0000-0000-0000-0000000000b3';
+  const CID = '00000000-0000-0000-0000-0000000000c1';
   // A non-DEPART leg supplies only its destination; the origin is derived from the
   // preceding leg (mocked to end at ORIGIN above).
   const dto = {
@@ -180,6 +188,46 @@ describe('TripTemplatesService', () => {
   it('removes an owned template', async () => {
     await expect(service.remove(SID, TID)).resolves.toEqual({
       message: 'Template rute telah dihapus.',
+    });
+  });
+
+  describe('corridor ownership', () => {
+    it('assigns a corridor that belongs to the leg route on create', async () => {
+      prisma.tripTemplate.create.mockResolvedValue(buildRow());
+      await service.create(SID, { ...dto, corridorId: CID });
+      expect(prisma.corridor.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: CID, routeId: 2, deletedAt: null } }),
+      );
+      expect(prisma.tripTemplate.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ corridorId: CID }) }),
+      );
+    });
+
+    it('rejects a corridor from a different route on create (422)', async () => {
+      prisma.corridor.findFirst.mockResolvedValue(null);
+      await expect(service.create(SID, { ...dto, corridorId: CID })).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
+      expect(prisma.tripTemplate.create).not.toHaveBeenCalled();
+    });
+
+    it('validates the corridor against the template route on update', async () => {
+      prisma.tripTemplate.findFirst.mockResolvedValue({ id: 1, routeId: 2 });
+      prisma.corridor.findFirst.mockResolvedValue(null);
+      await expect(service.update(SID, TID, { corridorId: CID })).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
+      expect(prisma.tripTemplate.update).not.toHaveBeenCalled();
+    });
+
+    it('clears the corridor with "" without an ownership check', async () => {
+      prisma.tripTemplate.findFirst.mockResolvedValue({ id: 1, routeId: 2 });
+      prisma.tripTemplate.update.mockResolvedValue(buildRow());
+      await service.update(SID, TID, { corridorId: '' });
+      expect(prisma.corridor.findFirst).not.toHaveBeenCalled();
+      expect(prisma.tripTemplate.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ corridorId: null }) }),
+      );
     });
   });
 });
