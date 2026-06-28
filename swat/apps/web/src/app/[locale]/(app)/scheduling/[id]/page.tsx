@@ -235,7 +235,7 @@ export default function HaulBoardPage({
     <>
       <PageHead
         breadcrumb={[{ label: 'Penjadwalan', href: '/scheduling' }, { label: day.date }]}
-        title={`Angkut Sampah · ${formatDateDisplay(day.date)}`}
+        title={`Pengangkutan Sampah · ${formatDateDisplay(day.date)}`}
         description={`${verifiedCount}/${allTrips.length} rute terverifikasi`}
         actions={
           <div className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export default function HaulBoardPage({
                   disabled={openHauls}
                   title={
                     openHauls
-                      ? 'Semua angkut sampah harus berstatus selesai terlebih dahulu. Verifikasi rute tidak diwajibkan.'
+                      ? 'Semua pengangkutan sampah harus berstatus selesai terlebih dahulu. Verifikasi rute tidak diwajibkan.'
                       : 'Tandai seluruh hari transaksi selesai.'
                   }
                 >
@@ -273,8 +273,8 @@ export default function HaulBoardPage({
       {day.status !== 'DONE' ? (
         <p className="-mt-2 text-tiny text-neutral-500">
           {openHauls
-            ? 'Hari dapat ditandai selesai setelah semua angkut sampah berstatus selesai (verifikasi rute opsional, tidak menghalangi). Hanya peran Administrasi/Administrator yang dapat menandainya.'
-            : 'Semua angkut sampah selesai — hari siap ditandai selesai oleh Administrasi/Administrator.'}
+            ? 'Hari dapat ditandai selesai setelah semua pengangkutan sampah berstatus selesai (verifikasi rute opsional, tidak menghalangi). Hanya peran Administrasi/Administrator yang dapat menandainya.'
+            : 'Semua pengangkutan sampah selesai — hari siap ditandai selesai oleh Administrasi/Administrator.'}
         </p>
       ) : null}
 
@@ -285,7 +285,7 @@ export default function HaulBoardPage({
         searchPlaceholder="Cari kendaraan / pengemudi"
         onRefresh={() => void load()}
         refreshing={loading}
-        emptyTitle="Tidak ada angkut sampah untuk hari ini."
+        emptyTitle="Tidak ada pengangkutan sampah untuk hari ini."
       />
 
       <TripSheet
@@ -329,7 +329,7 @@ export default function HaulBoardPage({
         open={markDone}
         onOpenChange={setMarkDone}
         title="Tandai hari transaksi selesai?"
-        description="Pastikan semua angkut sampah telah selesai dan diverifikasi."
+        description="Pastikan semua pengangkutan sampah telah selesai dan diverifikasi."
         confirmLabel="Tandai Selesai"
         onConfirm={() => void onMarkDone()}
       />
