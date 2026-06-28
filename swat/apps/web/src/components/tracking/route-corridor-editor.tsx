@@ -139,12 +139,12 @@ export function RouteCorridorEditor({
                 <Spinner className="h-6 w-6 text-neutral-400" />
               </div>
             ) : corridors.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 rounded-base border border-dashed border-neutral-300 bg-neutral-50 px-4 py-10 text-center">
-                <MapPinned className="h-7 w-7 text-neutral-400" aria-hidden />
-                <p className="text-body-sm text-neutral-500">Belum ada koridor.</p>
-                <p className="max-w-xs text-tiny text-neutral-500">
+              <div className="rounded-base border border-dashed border-neutral-300 bg-neutral-50 px-6 py-10 text-center">
+                <MapPinned className="mx-auto h-7 w-7 text-neutral-400" aria-hidden />
+                <p className="mt-3 text-body-sm text-neutral-500">Belum ada koridor.</p>
+                <p className="mx-auto mt-1 max-w-[20rem] text-tiny text-neutral-500">
                   Koridor utama dibuat otomatis mengikuti jalan — pastikan lokasi asal &amp; tujuan
-                  rute sudah punya koordinat di master Lokasi.
+                  rute sudah punya koordinat di master Lokasi, lalu simpan ulang rutenya.
                 </p>
               </div>
             ) : (

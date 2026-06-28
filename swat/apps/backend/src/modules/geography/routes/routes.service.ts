@@ -147,10 +147,6 @@ export class RoutesService {
       throw new ConflictException('Rute dengan asal, tujuan, dan kategori ini sudah ada.');
     }
 
-    const sitesChanged =
-      (dto.originSiteId !== undefined && dto.originSiteId !== existing.originSiteId) ||
-      (dto.destinationSiteId !== undefined && dto.destinationSiteId !== existing.destinationSiteId);
-
     const route = await this.repo.update(id, {
       ...(dto.category !== undefined ? { category: dto.category } : {}),
       ...(dto.originSiteId !== undefined
@@ -161,13 +157,13 @@ export class RoutesService {
         : {}),
       ...(dto.distanceKm !== undefined ? { distanceKm: dto.distanceKm } : {}),
     });
-    // When the endpoints move, the auto-default corridor no longer matches — rebuild
-    // it (which resyncs the route distance from the new path) and re-read.
-    if (sitesChanged) {
-      await this.corridors.regenerateDefaultForRoute(id);
-      return toRouteDto((await this.repo.findById(id)) ?? route);
-    }
-    return toRouteDto(route);
+    // Editing a route RESETS its auto-default corridor: regenerate (re-snap) it to the
+    // current endpoints and re-derive the distance. This makes a route pick up site
+    // coordinates that were added after it was first created (when the sites had none,
+    // so no corridor could be drawn), and keeps the path matching the route. Returns
+    // null silently when a site still has no coordinates → the manager shows the hint.
+    await this.corridors.regenerateDefaultForRoute(id);
+    return toRouteDto((await this.repo.findById(id)) ?? route);
   }
 
   async remove(id: string): Promise<{ message: string }> {

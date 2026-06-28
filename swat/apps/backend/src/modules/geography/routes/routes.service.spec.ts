@@ -168,33 +168,20 @@ describe('RoutesService', () => {
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
-    it('updates the distance', async () => {
-      repo.findById.mockResolvedValue(buildRoute());
-      repo.update.mockResolvedValue(buildRoute({ distanceKm: 30 }));
-      await expect(
-        service.update('550e8400-e29b-41d4-a716-446655440001', { distanceKm: 30 }),
-      ).resolves.toMatchObject({
-        distanceKm: 30,
-      });
-      // No endpoint change → the default corridor is left alone.
-      expect(corridors.regenerateDefaultForRoute).not.toHaveBeenCalled();
-    });
-
-    it('regenerates the default corridor + re-reads distance when an endpoint changes', async () => {
-      const newDest = '550e8400-e29b-41d4-a716-446655440055';
-      // findById: first the pre-update load, then the post-regenerate re-read.
+    it('resets the default corridor on any edit and re-reads the derived distance', async () => {
+      // Every edit regenerates the auto-default (so newly-added site coords take
+      // effect); the distance comes from the post-regenerate re-read.
       repo.findById
-        .mockResolvedValueOnce(buildRoute())
-        .mockResolvedValueOnce(buildRoute({ destinationSiteId: newDest, distanceKm: 3 }));
-      repo.update.mockResolvedValue(buildRoute({ destinationSiteId: newDest }));
-      corridors.regenerateDefaultForRoute.mockResolvedValue({ lengthMeters: 3200 });
+        .mockResolvedValueOnce(buildRoute()) // pre-update load
+        .mockResolvedValueOnce(buildRoute({ distanceKm: 4 })); // post-regenerate re-read
+      repo.update.mockResolvedValue(buildRoute());
       const result = await service.update('550e8400-e29b-41d4-a716-446655440001', {
-        destinationSiteId: newDest,
+        category: RouteCategory.PICKUP,
       });
       expect(corridors.regenerateDefaultForRoute).toHaveBeenCalledWith(
         '550e8400-e29b-41d4-a716-446655440001',
       );
-      expect(result.distanceKm).toBe(3);
+      expect(result.distanceKm).toBe(4);
     });
   });
 
