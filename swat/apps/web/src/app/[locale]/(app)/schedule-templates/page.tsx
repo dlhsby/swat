@@ -79,8 +79,8 @@ export default function ScheduleTemplatesPage(): JSX.Element {
       },
       {
         accessorKey: 'tripTemplateCount',
-        header: 'Template Trip',
-        meta: { label: 'Template Trip' },
+        header: 'Template Perjalanan',
+        meta: { label: 'Template Perjalanan' },
         cell: ({ row }) => <Badge appearance="count">{row.original.tripTemplateCount}</Badge>,
       },
       {
@@ -100,7 +100,7 @@ export default function ScheduleTemplatesPage(): JSX.Element {
                 <ProtectedAction permission="trip-template:read">
                   <DropdownMenuItem onSelect={() => setTemplatesFor(row.original)}>
                     <ListChecks aria-hidden />
-                    Kelola Template Trip
+                    Kelola Template Perjalanan
                   </DropdownMenuItem>
                 </ProtectedAction>
               }

@@ -124,7 +124,7 @@ export default function HaulingPage(): JSX.Element {
           icon={MapPin}
           label={t('kpiTrips')}
           value={formatNumber(totalTrips)}
-          unit="trayek"
+          unit="perjalanan"
           loading={routes.isLoading}
         />
       </div>

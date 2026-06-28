@@ -337,7 +337,7 @@ export class TripsService {
 
   private disposalData(dto: RecordTripDto, vehicleTare: number): Prisma.TripUpdateInput {
     if (dto.grossWeight === undefined) {
-      throw new BadRequestException('Berat kotor wajib diisi untuk trip pembuangan.');
+      throw new BadRequestException('Berat kotor wajib diisi untuk perjalanan pembuangan.');
     }
     const tareWeight = dto.tareWeight ?? vehicleTare;
     if (dto.grossWeight < tareWeight) {

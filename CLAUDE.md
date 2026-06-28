@@ -28,9 +28,10 @@ None of these dev/CI accounts are created in production.
   `/scheduling`, `/record`, `/monitoring/fuel`); **UI labels stay localized** via next-intl. IA lives in
   `src/lib/nav.ts`. Note the frontend `/scheduling` route (UI label "Penjadwalan") is served by the
   unchanged backend API path `/transaction-days` — the FE slug and BE path intentionally differ.
-- **Code/DB keep English domain terms (`Haul`, `Levy`); user-facing display reconciles to the
-  operators' vocabulary** — `Haul` → "Angkut Sampah", `Levy` → "Retribusi". Don't surface the raw
-  English entity name in id-ID UI strings (en-US may keep "Haul" — it's valid English).
+- **Code/DB keep English domain terms (`Haul`, `Levy`, `Trip`); user-facing display reconciles to the
+  operators' vocabulary** — `Haul` → "Angkut Sampah", `Levy` → "Retribusi", `Trip` → **"Perjalanan"**
+  (the legacy `trayek`; never "leg"/"trip" in id-ID — that confuses operators). Don't surface the raw
+  English entity name in id-ID UI strings (en-US may keep "Haul"/"Trip" — valid English).
 - **Default locale `id-ID`**, enforced with `localeDetection: false` in `src/i18n/routing.ts` so the
   browser `Accept-Language` can't redirect `/` to en-US.
 - **Form error handling (standard):** field-specific errors render **inline under the field**

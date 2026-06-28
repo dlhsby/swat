@@ -93,7 +93,7 @@ export class TripTemplatesService {
       dto.category === 'REFUEL' &&
       !(dto.fuelRequestedLiters !== undefined && dto.fuelRequestedLiters > 0)
     ) {
-      throw new BadRequestException('BBM diajukan wajib diisi untuk trip Isi BBM.');
+      throw new BadRequestException('BBM diajukan wajib diisi untuk perjalanan Isi BBM.');
     }
     // Derive the leg's start/end from its category (Berangkat = Pool→Pool; every
     // other leg starts where the previous one ended), then resolve the (category,
@@ -208,7 +208,7 @@ export class TripTemplatesService {
   ): Promise<{ originSiteId: string; destinationSiteId: string }> {
     if (category === 'DEPART_POOL') {
       if (!originSiteId) {
-        throw new BadRequestException('Lokasi pool wajib dipilih untuk trip berangkat.');
+        throw new BadRequestException('Lokasi pool wajib dipilih untuk perjalanan berangkat.');
       }
       await this.assertSiteType(originSiteId, 'POOL');
       return { originSiteId, destinationSiteId: originSiteId };
@@ -219,7 +219,7 @@ export class TripTemplatesService {
     const previousDestinationId = await this.previousDestination(scheduleTemplateId, targetTime);
     if (!previousDestinationId) {
       throw new BadRequestException(
-        "Tambahkan trip 'Berangkat' dari pool terlebih dahulu sebelum trip lainnya.",
+        "Tambahkan perjalanan 'Berangkat' dari pool terlebih dahulu sebelum perjalanan lainnya.",
       );
     }
     return { originSiteId: previousDestinationId, destinationSiteId };
