@@ -33,8 +33,11 @@ bash old_swat/scripts/setup.sh
 ```
 
 `setup.sh` builds the image, starts the stack, waits for MySQL to accept **authenticated**
-connections, then loads `../db_backup/` (structure first, then data) into `dkp_swat`.
-It is **idempotent** — re-running skips the import if the database already has tables.
+connections, then loads the database into `dkp_swat`. It prefers the current per-table dump
+at **`../../db/dump/`** (`_structure.sql.gz` first, then every table's `*.sql.gz` smallest-first,
+loaded as latin1), and falls back to the legacy single-file `../db_backup/` export if that
+folder is absent. It is **idempotent** — re-running skips the import if the database already
+has tables.
 
 ## Configuration (`.env`)
 

@@ -12,8 +12,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 INFRA_DIR="${APP_ROOT}/infra"
 COMPOSE_FILE="${INFRA_DIR}/docker-compose.yml"
-BACKUP_DIR="${APP_ROOT}/db_backup"
+# Two possible sources, newest preferred:
+#   1. DUMP_DIR  — the current per-table, gzipped backup (structure + one .sql.gz
+#      per table, produced by db/backup_swat.bat). This is the source of record.
+#   2. BACKUP_DIR — the legacy single-file phpMyAdmin export (fallback only).
+REPO_ROOT="$(cd "${APP_ROOT}/.." && pwd)"
+DUMP_DIR="${REPO_ROOT}/db/dump"
+STRUCTURE_GZ="${DUMP_DIR}/_structure.sql.gz"
 
+BACKUP_DIR="${APP_ROOT}/db_backup"
 STRUCTURE_SQL="${BACKUP_DIR}/dkp_swat_2026_05_18_structure.sql"
 DATA_SQL="${BACKUP_DIR}/dkp_swat_2026_05_18_data.sql"
 
@@ -61,7 +68,28 @@ TABLE_COUNT="$(compose exec -T db mysql -uroot -p"${DB_ROOT_PW}" -N -e \
 
 if [ "${TABLE_COUNT:-0}" -gt 0 ]; then
   echo "==> Database '${DB_NAME}' already has ${TABLE_COUNT} tables — skipping import."
-else
+elif [ -f "${STRUCTURE_GZ}" ]; then
+  # --- Preferred: per-table gzipped dump in db/dump/ -------------------------
+  # The dump is latin1 (the legacy DB's charset); load it byte-faithfully.
+  # _structure.sql.gz recreates all tables + stored routines; every other
+  # *.sql.gz holds one table's data as REPLACE INTO. FK checks are disabled
+  # inside the dumps, so load order among data files does not matter.
+  load_gz() { gunzip -c "$1" | compose exec -T db \
+    mysql -uroot -p"${DB_ROOT_PW}" --default-character-set=latin1 "${DB_NAME}"; }
+
+  echo "==> Loading structure + routines from ${STRUCTURE_GZ##*/} ..."
+  load_gz "${STRUCTURE_GZ}"
+
+  echo "==> Loading per-table data from ${DUMP_DIR} ..."
+  # Smallest files first so the quick tables finish before the multi-GB ones.
+  for f in $(ls -1Sr "${DUMP_DIR}"/*.sql.gz | grep -v '/_structure\.sql\.gz$'); do
+    printf '    %s ... ' "${f##*/}"
+    if load_gz "$f"; then echo "ok"; else echo "FAILED" >&2; exit 1; fi
+  done
+  echo "    Database import complete (per-table dump)."
+elif [ -f "${STRUCTURE_SQL}" ]; then
+  # --- Fallback: legacy single-file phpMyAdmin export -----------------------
+  echo "==> db/dump/ not found — falling back to legacy ${BACKUP_DIR##*/}/ export."
   echo "==> Loading database structure..."
   compose exec -T db mysql -uroot -p"${DB_ROOT_PW}" "${DB_NAME}" < "${STRUCTURE_SQL}"
 
@@ -69,6 +97,9 @@ else
   compose exec -T db mysql -uroot -p"${DB_ROOT_PW}" "${DB_NAME}" < "${DATA_SQL}"
 
   echo "    Database import complete."
+else
+  echo "ERROR: no dump found (looked for ${STRUCTURE_GZ} and ${STRUCTURE_SQL})." >&2
+  exit 1
 fi
 
 echo "==> Fixing writable permissions for cache/logs..."
