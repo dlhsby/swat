@@ -2,7 +2,9 @@
 
 import { useTranslations } from 'next-intl';
 
+import { ProtectedAction } from '@/components/auth/protected-action';
 import { AppearanceControl } from '@/components/settings/appearance-control';
+import { DeviationRulesControl } from '@/components/settings/deviation-rules-control';
 import { LanguageControl } from '@/components/settings/language-control';
 import { PageHead } from '@/components/shell/page-head';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
@@ -35,6 +37,18 @@ export default function SettingsPage(): JSX.Element {
             <LanguageControl />
           </CardContent>
         </Card>
+
+        <ProtectedAction permission="deviation-rule:manage">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('tracking')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-body-sm text-neutral-500">{t('trackingBody')}</p>
+              <DeviationRulesControl />
+            </CardContent>
+          </Card>
+        </ProtectedAction>
 
         <Card>
           <CardHeader>

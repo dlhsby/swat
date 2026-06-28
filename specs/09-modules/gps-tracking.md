@@ -229,8 +229,9 @@ gateway, retained for audit.
 |------|---------|-----------|
 | `/monitoring/hauling` → **Peta** tab (Pengangkutan, the Phase 6 `<HaulingMap>`) | **Whole-fleet** map: **live** markers for GPS vehicles (plate/driver/status, in/out-of-corridor colour, corridor overlay + breadcrumb on tap) **and** distinct markers for **untracked** vehicles placed from **recorded activity** (last-recorded Site + as-of timestamp); legend; alert badges. Live alert center (feed + acknowledge + history) surfaced here. | `tracking:read`, `deviation-alert:read\|acknowledge` |
 | `/monitoring/efficiency` | Management KPIs: route adherence % (tracked-only denominator), wasted time, wasted fuel (internal vs GPS.id), deviation counts, GPS-coverage + device-offline rate; per-vehicle/route/day trends | `monitoring:read` |
-| Vehicle list/detail (`/vehicles`) | Derived **GPS-coverage badge** (`Tracked · online` / `Tracked · offline` / `Tidak terlacak`); embedded "GPS Device" mapping section. **⏳ web pending** — the badge is computed in the vehicle read DTO (`gpsCoverage`) but not yet surfaced in the web vehicle table. | `vehicle:read`, `gps-device:read\|manage` |
-| `/tracking/devices` | Map IMEI → vehicle; mappable unmatched-IMEI queue. **⏳ web pending** — full device-registry CRUD + unmatched-mapper endpoints exist on the backend (`/gps/devices*`); the admin page is a thin follow-up not yet built. | `gps-device:read\|manage` |
+| Vehicle list/detail (`/vehicles`) | Derived **GPS-coverage badge** ("Cakupan GPS" column: Terlacak · online / offline / Tidak terlacak) + a per-vehicle **"Kelola Perangkat GPS"** sheet (attach/detach the device). **✅ done.** | `vehicle:read`, `gps-device:read\|create\|update\|delete` |
+| `/tracking/devices` | Device registry CRUD + mappable unmatched-IMEI queue. **✅ done** (under Pengangkutan). | `gps-device:read\|create\|update\|delete` |
+| Settings → **Pelacakan** | Tune deviation-rule thresholds / hysteresis / severity / enabled per type. **✅ done.** | `deviation-rule:manage` |
 | Route management → **Koridor** sheet (`RouteCorridorEditor`) | List a route's **1..N corridors** (default first, badged); draw/**snap-to-road** an alternate, set tolerance. The **default** is auto-managed (created/re-snapped with the route); template legs and per-day trips pick among them. | `corridor:read\|create\|update\|delete`, `route-geometry:manage` |
 
 Form errors render inline; submit success/failure via toast (per project convention). Map key from
@@ -243,7 +244,7 @@ Form errors render inline; submit success/failure via toast (per project convent
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
 | POST | `/integrations/gps/webhook/:token` | secret token + IP allowlist | GPS.id push ingest (single/batch) → enqueue |
-| GET/POST/PATCH/DELETE | `/gps/devices` | `gps-device:read\|manage` | device registry; unmatched-IMEI queue |
+| GET/POST/PATCH/DELETE | `/gps/devices` | `gps-device:read|create|update|delete` | device registry; unmatched-IMEI queue |
 | GET | `/monitoring/fleet-positions?date=today` | `tracking:read` | **whole active fleet** as `VehiclePosition[]` (`source: live-gps\|recorded-activity\|none`) — powers the Peta tab |
 | GET | `/gps/vehicles/:id/position` | `tracking:read` | latest position (live or recorded) |
 | GET | `/gps/vehicles/:id/track?minutes=60` | `tracking:read` | live breadcrumb trail |
@@ -277,10 +278,11 @@ All REST endpoints use the standard `{ success, data?, error?, meta? }` envelope
 ---
 
 ## 8. Permissions (`../06-auth-rbac.md`)
-`gps-device:read`, `gps-device:manage`, `corridor:read`, `corridor:create`, `corridor:update`,
+`gps-device:read`, `gps-device:create`, `gps-device:update`, `gps-device:delete`, `corridor:read`,
+`corridor:create`, `corridor:update`,
 `corridor:delete`, `route-geometry:manage`, `deviation-rule:manage`, `deviation-alert:read`,
 `deviation-alert:acknowledge`, `tracking:read`. Typical: **Supervisor** gets `tracking:read` +
-`deviation-alert:read|acknowledge` (+ `corridor:read` via `*:read`); **DataAdmin** gets `gps-device:manage` +
+`deviation-alert:read|acknowledge` (+ `corridor:read` + `gps-device:read` via `*:read`); **DataAdmin** gets `gps-device:create|update|delete` +
 `corridor:create|update|delete` + `route-geometry:manage` + `deviation-rule:manage`; **Management**
 read-only via `tracking:read` + `monitoring:read`.
 

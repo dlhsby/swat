@@ -84,7 +84,30 @@ export interface EfficiencyDashboard {
   readonly rows: EfficiencyRow[];
 }
 
-/** Phase 7 GPS tracking API — fleet positions, breadcrumb track, deviation alerts. */
+export type DeviationType =
+  | 'off_corridor'
+  | 'off_sequence'
+  | 'dwell_too_long'
+  | 'late_to_schedule';
+export type DeviationSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
+
+/** A tunable deviation rule (Phase 7). `threshold` is metres or seconds per type. */
+export interface DeviationRule {
+  readonly deviationType: DeviationType;
+  readonly threshold: number | null;
+  readonly hysteresisSec: number;
+  readonly severity: DeviationSeverity;
+  readonly enabled: boolean;
+}
+
+export interface UpsertDeviationRuleBody {
+  readonly threshold?: number;
+  readonly hysteresisSec?: number;
+  readonly severity?: DeviationSeverity;
+  readonly enabled?: boolean;
+}
+
+/** Phase 7 GPS tracking API — fleet positions, breadcrumb track, deviation alerts + rules. */
 export const trackingApi = {
   efficiency: (from: string, to: string): Promise<EfficiencyDashboard> =>
     apiClient.get(`/monitoring/efficiency?from=${from}&to=${to}`),
@@ -95,4 +118,7 @@ export const trackingApi = {
     apiClient.get(`/gps/alerts?${alertQuery(filter)}`),
   acknowledge: (id: string, notes?: string): Promise<DeviationAlert> =>
     apiClient.patch(`/gps/alerts/${id}/acknowledge`, notes ? { notes } : {}),
+  deviationRules: (): Promise<DeviationRule[]> => apiClient.get('/gps/deviation-rules'),
+  upsertDeviationRule: (type: DeviationType, body: UpsertDeviationRuleBody): Promise<DeviationRule> =>
+    apiClient.put(`/gps/deviation-rules/${type}`, { ...body }),
 };

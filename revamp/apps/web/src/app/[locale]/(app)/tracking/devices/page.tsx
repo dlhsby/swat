@@ -2,6 +2,7 @@
 
 import { type ColumnDef } from '@tanstack/react-table';
 import { Inbox } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { z } from 'zod';
 
@@ -67,6 +68,7 @@ const buildPayload = (values: Values): Record<string, unknown> => {
 };
 
 export default function GpsDevicesPage(): JSX.Element {
+  const t = useTranslations('nav');
   const manager = useResourceManager(gpsDevicesApi, (r) => r.id);
   const { rows: vehicles } = useResourceList(vehiclesApi.list);
   const vehicleOptions = useMemo<ComboboxOption[]>(
@@ -146,7 +148,7 @@ export default function GpsDevicesPage(): JSX.Element {
 
   return (
     <CrudListShell
-      title="Perangkat GPS"
+      title={t('gpsDevices')}
       description="Daftar perangkat pelacak dan pemetaan IMEI ke kendaraan."
       resource="gps-device"
       manager={manager}

@@ -154,7 +154,9 @@ export const PERMISSION_KEYS: readonly string[] = [
   // to Supervisors. The GPS.id webhook itself is unauthenticated machine-to-
   // machine (token + IP + rate-limit), so it needs no permission key.
   'gps-device:read',
-  'gps-device:manage',
+  'gps-device:create',
+  'gps-device:update',
+  'gps-device:delete',
   'route-geometry:manage',
   'deviation-rule:manage',
   'deviation-alert:read',

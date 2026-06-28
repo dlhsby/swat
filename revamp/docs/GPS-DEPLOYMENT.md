@@ -34,16 +34,23 @@ SSE without extra config. Ensure any prod proxy mirrors the nginx settings.
 
 ## Environment
 
-See `swat/.env.example`. Required for GPS: `GPS_WEBHOOK_TOKEN` (prod), optional
+See `revamp/.env.example` (backend + shared) and `revamp/infra/env/backend/.env.staging.example`
+(deploy). Required for GPS: `GPS_WEBHOOK_TOKEN` (prod — boot fails without it), optional
 `GPS_WEBHOOK_ALLOWED_IPS`, `GPS_INGEST_RATE_LIMIT_PER_MIN`,
-`GPS_DEVICE_OFFLINE_MINUTES`; pull creds `GPSID_BASE_URL/USERNAME/PASSWORD`;
-web `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (restrict by HTTP referrer + enabled APIs).
+`GPS_DEVICE_OFFLINE_MINUTES`; pull creds `GPSID_BASE_URL/USERNAME/PASSWORD` (all three or none);
+web `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` + server `GOOGLE_MAPS_SERVER_KEY`.
 
-**Google Maps key — enable these APIs** on the single referrer-restricted browser
-key (no separate server key is used): **Maps JavaScript API** (fleet map + editors),
-**Directions API** (corridor snap-to-road), and **Geocoding API** (Lokasi pin
-address search). Missing the key degrades every map to a placeholder; missing
-Directions/Geocoding only disables snap/search (the editor still works manually).
+**Google Maps — TWO keys, enable the APIs on each up front** (both optional; absent → maps degrade
+gracefully, never block boot):
+
+- **`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** (browser, restrict by **HTTP referrer**) — enable
+  **Maps JavaScript API** (fleet map + corridor/Lokasi editors), **Directions API** (manual editor
+  snap-to-road), **Geocoding API** (Lokasi pin address search).
+- **`GOOGLE_MAPS_SERVER_KEY`** (server, restrict by the **server's egress IP**) — enable
+  **Directions API** (the auto-default corridor's **server-side** snap-to-road on route create/edit).
+
+Missing the browser key degrades every map to a placeholder; missing the server key (or Directions on
+it) makes a route's default corridor a straight line between its sites instead of road-snapped.
 
 ## Recurring ops jobs (all `@Cron`, in-process)
 

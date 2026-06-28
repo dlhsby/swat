@@ -40,7 +40,7 @@ export class GpsDeviceController {
   }
 
   @Post('unmatched/map')
-  @RequirePermissions('gps-device:manage')
+  @RequirePermissions('gps-device:create')
   @ApiOperation({ summary: 'Map an unmatched IMEI to a vehicle (creates a hardware device)' })
   mapUnmatched(@Body() dto: MapUnmatchedPingDto): Promise<GpsDeviceDto> {
     return this.devices.mapUnmatched(dto);
@@ -54,21 +54,21 @@ export class GpsDeviceController {
   }
 
   @Post()
-  @RequirePermissions('gps-device:manage')
+  @RequirePermissions('gps-device:create')
   @ApiOperation({ summary: 'Register a GPS device for a vehicle' })
   create(@Body() dto: CreateGpsDeviceDto): Promise<GpsDeviceDto> {
     return this.devices.create(dto);
   }
 
   @Patch(':id')
-  @RequirePermissions('gps-device:manage')
+  @RequirePermissions('gps-device:update')
   @ApiOperation({ summary: 'Update / activate / reassign a GPS device' })
   update(@Param('id') id: string, @Body() dto: UpdateGpsDeviceDto): Promise<GpsDeviceDto> {
     return this.devices.update(id, dto);
   }
 
   @Delete(':id')
-  @RequirePermissions('gps-device:manage')
+  @RequirePermissions('gps-device:delete')
   @ApiOperation({ summary: 'Detach (delete) a GPS device' })
   remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.devices.remove(id);

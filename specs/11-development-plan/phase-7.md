@@ -71,9 +71,12 @@
 >   `gpsCoverage` badge (`tracked-online` / `tracked-offline` / `untracked`) from the active hardware
 >   device's `status` vs `GPS_DEVICE_OFFLINE_MINUTES`. **Mapping to GPS.id** is by **IMEI** =
 >   `GpsDevice.imei`/`deviceId` ↔ vendor `VehicleId`; unknown IMEIs queue in `GpsUnmatchedPing` for a
->   one-click "map to vehicle". Registry CRUD: `/gps/devices*` (`gps-device:read|manage`). **⏳ Backend
->   complete; web UI deferred** — no `/tracking/devices` admin page, no coverage badge in the vehicle
->   table, no unmatched-mapper dialog yet (thin web follow-up).
+>   one-click "map to vehicle". Registry CRUD: `/gps/devices*` (`gps-device:read|create|update|delete`).
+>   **✅ DONE (gap-fix, 2026-06-28):** vehicle table now shows the **Cakupan GPS** badge; a
+>   **`/tracking/devices`** registry page (under Pengangkutan) with create/edit/delete + an
+>   **unmatched-IMEI mapper**; plus a per-vehicle **"Kelola Perangkat GPS"** sheet to attach/detach a
+>   device from the vehicle master. The device permissions were aligned to standard CRUD verbs
+>   (`gps-device:read|create|update|delete`, was `read|manage`) so the CRUD scaffold gates correctly.
 > - **Corridor (master geometry).** `Route` owns **1..N `Corridor`s** (road-snapped default + alternates);
 >   corridor owns route distance (`Route.distanceKm` = denormalized cache); default auto-created on route
 >   create and **re-snapped on route edit**. Server-side snap needs `GOOGLE_MAPS_SERVER_KEY` + backend
@@ -325,7 +328,7 @@ These are **load-bearing** — verified against the existing codebase; ignore th
   in the vehicle list); `apps/backend/.../fleet/vehicles/*` (modify — include derived GPS-coverage in the
   vehicle read DTO); `apps/backend/prisma/seed.ts` (demo IMEIs, leaving **some demo vehicles intentionally
   untracked**).
-- **Steps:** attach/detach IMEI↔vehicle (`gps-device:read|manage`) — **the only join into the Vehicle master;
+- **Steps:** attach/detach IMEI↔vehicle (`gps-device:read|create|update|delete`) — **the only join into the Vehicle master;
   the `Vehicle` table is not altered**; list/clear the `GpsUnmatchedPing` queue with one-click "map to
   vehicle"; expose a derived **GPS-coverage status** (`Tracked · online` / `Tracked · offline` / `Tidak
   terlacak`) on the vehicle list + detail; Indonesian validation.

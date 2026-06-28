@@ -1,7 +1,7 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { ClipboardCheck, Recycle, Wrench } from 'lucide-react';
+import { ClipboardCheck, Recycle, Satellite, Wrench } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { z } from 'zod';
@@ -18,6 +18,7 @@ import {
   TextField,
 } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
+import { VehicleDevicesSheet } from '@/components/fleet/vehicle-devices-sheet';
 import { VehicleInspectionsSheet } from '@/components/fleet/vehicle-inspections-sheet';
 import { VehicleMaintenanceSheet } from '@/components/fleet/vehicle-maintenance-sheet';
 import { VehicleWasteSourcesSheet } from '@/components/fleet/vehicle-waste-sources-sheet';
@@ -198,6 +199,7 @@ export function VehiclesTab(): JSX.Element {
   const [sourcesFor, setSourcesFor] = useState<VehicleDto | null>(null);
   const [inspectFor, setInspectFor] = useState<VehicleDto | null>(null);
   const [maintainFor, setMaintainFor] = useState<VehicleDto | null>(null);
+  const [devicesFor, setDevicesFor] = useState<VehicleDto | null>(null);
 
   const columns = useMemo<ColumnDef<VehicleDto, unknown>[]>(
     () => [
@@ -326,6 +328,12 @@ export function VehiclesTab(): JSX.Element {
                       Perawatan Kendaraan
                     </DropdownMenuItem>
                   </ProtectedAction>
+                  <ProtectedAction permission="gps-device:read">
+                    <DropdownMenuItem onSelect={() => setDevicesFor(row.original)}>
+                      <Satellite aria-hidden />
+                      Kelola Perangkat GPS
+                    </DropdownMenuItem>
+                  </ProtectedAction>
                 </>
               }
             />
@@ -403,6 +411,11 @@ export function VehiclesTab(): JSX.Element {
       <VehicleMaintenanceSheet
         vehicle={maintainFor}
         onOpenChange={(open) => !open && setMaintainFor(null)}
+      />
+      <VehicleDevicesSheet
+        vehicle={devicesFor}
+        onOpenChange={(open) => !open && setDevicesFor(null)}
+        onChanged={() => void manager.reload()}
       />
     </CrudListShell>
   );

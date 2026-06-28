@@ -5,7 +5,13 @@ import { useMemo } from 'react';
 
 import { notify } from '@/components/ui';
 import { ApiError } from '@/lib/api-error';
-import { type DeviationAlert, trackingApi, type VehiclePosition } from '@/lib/tracking-api';
+import {
+  type DeviationAlert,
+  type DeviationType,
+  trackingApi,
+  type UpsertDeviationRuleBody,
+  type VehiclePosition,
+} from '@/lib/tracking-api';
 
 import { useLiveFleet } from './use-live-fleet';
 
@@ -93,5 +99,27 @@ export function useAcknowledgeAlert() {
     },
     onError: (err) =>
       notify.error(err instanceof ApiError ? err.message : 'Gagal mengakui peringatan.'),
+  });
+}
+
+/** The tunable deviation rules (Phase 7) — gated `deviation-rule:manage`. */
+export function useDeviationRules() {
+  return useQuery({
+    queryKey: [KEY, 'deviation-rules'],
+    queryFn: () => trackingApi.deviationRules(),
+  });
+}
+
+export function useUpsertDeviationRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { type: DeviationType; body: UpsertDeviationRuleBody }) =>
+      trackingApi.upsertDeviationRule(input.type, input.body),
+    onSuccess: () => {
+      notify.success('Aturan penyimpangan diperbarui.');
+      void queryClient.invalidateQueries({ queryKey: [KEY, 'deviation-rules'] });
+    },
+    onError: (err) =>
+      notify.error(err instanceof ApiError ? err.message : 'Gagal memperbarui aturan.'),
   });
 }

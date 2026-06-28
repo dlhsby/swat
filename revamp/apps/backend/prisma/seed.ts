@@ -105,9 +105,10 @@ const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
       'fuel:approve',
       'transaction-day:manage',
       // GPS tracking admin (Phase 7) — manage the device registry, draw route
-      // corridors, tune deviation rules, and acknowledge alerts. (`*:read`
-      // already grants gps-device:read / deviation-alert:read / tracking:read.)
-      'gps-device:manage',
+      // corridors, tune deviation rules, and acknowledge alerts. The device
+      // registry uses standard CRUD verbs; `*:create/update/read` above already
+      // grant gps-device:create/update/read — only :delete needs an explicit grant.
+      'gps-device:delete',
       'route-geometry:manage',
       // A route owns 1..N corridors (Phase 7.8) — delete isn't covered by the
       // `*:create/update/read` wildcards above, so grant it explicitly.
