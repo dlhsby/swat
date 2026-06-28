@@ -7,6 +7,8 @@ export interface CreateTripTemplateBody {
   originSiteId?: string;
   /** Required for every leg except DEPART_POOL. */
   destinationSiteId?: string;
+  /** Default corridor for this leg (Phase 7.8); copied to the day's trip at init. */
+  corridorId?: string;
   targetTime: string;
   fuelRequestedLiters?: number;
 }
@@ -22,6 +24,24 @@ export function createTripTemplate(
   return apiClient.post<TripTemplateDto>(`/schedule-templates/${scheduleId}/trip-templates`, {
     ...body,
   });
+}
+
+export interface UpdateTripTemplateBody {
+  /** A corridor id selects it; `''` clears back to the route default. */
+  corridorId?: string;
+  targetTime?: string;
+  fuelRequestedLiters?: number;
+}
+
+export function updateTripTemplate(
+  scheduleId: string,
+  templateId: string,
+  body: UpdateTripTemplateBody,
+): Promise<TripTemplateDto> {
+  return apiClient.patch<TripTemplateDto>(
+    `/schedule-templates/${scheduleId}/trip-templates/${templateId}`,
+    { ...body },
+  );
 }
 
 export function deleteTripTemplate(

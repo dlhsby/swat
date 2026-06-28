@@ -107,7 +107,7 @@ export function RecordTripDialog({
     }
     try {
       await recordTrip(trip.id, payload);
-      notify.success('Trip berhasil dicatat.');
+      notify.success('Perjalanan berhasil dicatat.');
       onOpenChange(false);
       onRecorded();
     } catch (err) {
@@ -121,7 +121,7 @@ export function RecordTripDialog({
     <Dialog open={trip !== null} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>{TITLES[category] ?? 'Catat Trip'}</DialogTitle>
+          <DialogTitle>{TITLES[category] ?? 'Catat Perjalanan'}</DialogTitle>
           <DialogDescription>{trip?.name}</DialogDescription>
         </DialogHeader>
 

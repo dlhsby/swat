@@ -1,7 +1,16 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { RouteCategory } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, Matches, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -18,7 +27,7 @@ const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
  * REFUEL legs additionally carry the requested fuel volume.
  */
 export class CreateTripTemplateDto {
-  @ApiProperty({ enum: RouteCategory, description: 'Leg category (drives the route)' })
+  @ApiProperty({ enum: RouteCategory, description: 'Trip category (drives the route)' })
   @IsEnum(RouteCategory, { message: 'Kategori rute tidak valid' })
   category!: RouteCategory;
 
@@ -30,7 +39,7 @@ export class CreateTripTemplateDto {
 
   @ApiPropertyOptional({
     format: 'uuid',
-    description: 'End location — required for every leg except DEPART_POOL',
+    description: 'End location — required for every trip except DEPART_POOL',
   })
   @IsOptional()
   @IsString()
@@ -42,12 +51,23 @@ export class CreateTripTemplateDto {
   @Matches(TIME_REGEX, { message: 'Waktu harus berformat HH:mm' })
   targetTime!: string;
 
-  @ApiPropertyOptional({ minimum: 0, description: 'Requested fuel (liters) — REFUEL legs' })
+  @ApiPropertyOptional({ minimum: 0, description: 'Requested fuel (liters) — REFUEL trips' })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Jumlah BBM tidak valid' })
   @Min(0, { message: 'Jumlah BBM tidak boleh negatif' })
   fuelRequestedLiters?: number;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Default Corridor for this trip (copied to the day at init); "" clears it',
+  })
+  @IsOptional()
+  // `''` is the explicit "clear" signal — skip the UUID check for it; reject any
+  // other non-UUID string instead of letting it fail at the DB layer.
+  @ValidateIf((o: CreateTripTemplateDto) => o.corridorId !== '')
+  @IsUUID(undefined, { message: 'ID koridor harus berupa UUID' })
+  corridorId?: string;
 }
 
 export class UpdateTripTemplateDto extends PartialType(CreateTripTemplateDto) {}

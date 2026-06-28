@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { type Prisma, type SiteType } from '@prisma/client';
 
 import { formatTimeOnly, parseTimeOnly } from '../../../common/dates';
@@ -15,6 +20,7 @@ const templateInclude = {
   // names are joined for display.
   originSite: { select: { id: true, name: true } },
   destinationSite: { select: { id: true, name: true } },
+  corridor: { select: { id: true, name: true } },
 } satisfies Prisma.TripTemplateInclude;
 
 type TemplateWithRoute = Prisma.TripTemplateGetPayload<{ include: typeof templateInclude }>;
@@ -29,6 +35,8 @@ export interface TripTemplateDto {
   readonly originSiteName: string;
   readonly destinationSiteId: string;
   readonly destinationSiteName: string;
+  readonly corridorId: string | null;
+  readonly corridorName: string | null;
   readonly targetTime: string;
   readonly fuelRequestedLiters: number | null;
   readonly createdAt: string;
@@ -46,6 +54,8 @@ function toDto(template: TemplateWithRoute): TripTemplateDto {
     originSiteName: template.originSite.name,
     destinationSiteId: template.destinationSite.id,
     destinationSiteName: template.destinationSite.name,
+    corridorId: template.corridorId,
+    corridorName: template.corridor?.name ?? null,
     targetTime: formatTimeOnly(template.targetTime),
     fuelRequestedLiters:
       template.fuelRequestedLiters === null ? null : Number(template.fuelRequestedLiters),
@@ -88,7 +98,7 @@ export class TripTemplatesService {
       dto.category === 'REFUEL' &&
       !(dto.fuelRequestedLiters !== undefined && dto.fuelRequestedLiters > 0)
     ) {
-      throw new BadRequestException('BBM diajukan wajib diisi untuk leg Isi BBM.');
+      throw new BadRequestException('BBM diajukan wajib diisi untuk perjalanan Isi BBM.');
     }
     // Derive the leg's start/end from its category (Berangkat = Pool→Pool; every
     // other leg starts where the previous one ended), then resolve the (category,
@@ -102,6 +112,11 @@ export class TripTemplatesService {
       dto.destinationSiteId,
     );
     const route = await this.routes.resolveOrCreate(dto.category, originSiteId, destinationSiteId);
+    // A chosen corridor must belong to this leg's route, or the resolver cascade
+    // (and the deviation matcher) would check the wrong route's geometry.
+    if (dto.corridorId) {
+      await this.assertCorridorInRoute(dto.corridorId, route.id);
+    }
     const row = await this.prisma.tripTemplate.create({
       data: {
         scheduleTemplateId,
@@ -110,6 +125,7 @@ export class TripTemplatesService {
         routeCategory: dto.category,
         originSiteId,
         destinationSiteId,
+        ...(dto.corridorId ? { corridorId: dto.corridorId } : {}),
         targetTime: parseTimeOnly(dto.targetTime),
         ...(dto.fuelRequestedLiters !== undefined
           ? { fuelRequestedLiters: dto.fuelRequestedLiters }
@@ -125,7 +141,7 @@ export class TripTemplatesService {
     templateId: string,
     dto: UpdateTripTemplateDto,
   ): Promise<TripTemplateDto> {
-    await this.findOwned(scheduleTemplateId, templateId);
+    const owned = await this.findOwned(scheduleTemplateId, templateId);
     // A route change requires the full triple (category + start + end); partial
     // edits (time / fuel only) leave the existing route untouched.
     let routeChange:
@@ -147,6 +163,11 @@ export class TripTemplatesService {
         destinationSiteId: dto.destinationSiteId,
       };
     }
+    // Validate a newly-set corridor against the effective route (the changed one,
+    // else the template's current route). `''` clears, so only check a real id.
+    if (dto.corridorId) {
+      await this.assertCorridorInRoute(dto.corridorId, routeChange?.routeId ?? owned.routeId);
+    }
     const row = await this.prisma.tripTemplate.update({
       where: { id: templateId },
       data: {
@@ -159,6 +180,8 @@ export class TripTemplatesService {
               destinationSiteId: routeChange.destinationSiteId,
             }
           : {}),
+        // `corridorId: ''` clears the assignment; a uuid sets it.
+        ...(dto.corridorId !== undefined ? { corridorId: dto.corridorId || null } : {}),
         ...(dto.targetTime !== undefined ? { targetTime: parseTimeOnly(dto.targetTime) } : {}),
         ...(dto.fuelRequestedLiters !== undefined
           ? { fuelRequestedLiters: dto.fuelRequestedLiters }
@@ -175,13 +198,28 @@ export class TripTemplatesService {
     return { message: 'Template rute telah dihapus.' };
   }
 
-  private async findOwned(scheduleTemplateId: string, templateId: string): Promise<void> {
+  private async findOwned(
+    scheduleTemplateId: string,
+    templateId: string,
+  ): Promise<{ routeId: string }> {
     const template = await this.prisma.tripTemplate.findFirst({
       where: { id: templateId, scheduleTemplateId },
-      select: { id: true },
+      select: { id: true, routeId: true },
     });
     if (!template) {
       throw new NotFoundException('Template rute tidak ditemukan.');
+    }
+    return { routeId: template.routeId };
+  }
+
+  /** A template's corridor must belong to that template's route (resolver soundness). */
+  private async assertCorridorInRoute(corridorId: string, routeId: string): Promise<void> {
+    const owned = await this.prisma.corridor.findFirst({
+      where: { id: corridorId, routeId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new UnprocessableEntityException('Koridor bukan milik rute trip ini.');
     }
   }
 
@@ -200,7 +238,7 @@ export class TripTemplatesService {
   ): Promise<{ originSiteId: string; destinationSiteId: string }> {
     if (category === 'DEPART_POOL') {
       if (!originSiteId) {
-        throw new BadRequestException('Lokasi pool wajib dipilih untuk leg berangkat.');
+        throw new BadRequestException('Lokasi pool wajib dipilih untuk perjalanan berangkat.');
       }
       await this.assertSiteType(originSiteId, 'POOL');
       return { originSiteId, destinationSiteId: originSiteId };
@@ -211,7 +249,7 @@ export class TripTemplatesService {
     const previousDestinationId = await this.previousDestination(scheduleTemplateId, targetTime);
     if (!previousDestinationId) {
       throw new BadRequestException(
-        "Tambahkan leg 'Berangkat' dari pool terlebih dahulu sebelum leg lainnya.",
+        "Tambahkan perjalanan 'Berangkat' dari pool terlebih dahulu sebelum perjalanan lainnya.",
       );
     }
     return { originSiteId: previousDestinationId, destinationSiteId };

@@ -78,6 +78,10 @@ export const envSchema = z
     GPSID_BASE_URL: z.url('GPSID_BASE_URL must be a valid URL').optional(),
     GPSID_USERNAME: z.string().min(1).optional(),
     GPSID_PASSWORD: z.string().min(1).optional(),
+    // Server-side Google Directions key (NOT the referrer-restricted browser key)
+    // for snapping a route's auto-default corridor to roads. Optional: unset → the
+    // default falls back to a straight line. Restrict by IP + enable Directions API.
+    GOOGLE_MAPS_SERVER_KEY: z.string().min(1).optional(),
   })
   .superRefine((env, ctx) => {
     // In production the webhook token must be set — an open GPS ingress is a

@@ -49,7 +49,7 @@ export function VerifyTripDialog({
     setSaving(true);
     try {
       await verifyTrip(trip.id);
-      notify.success('Trip terverifikasi.');
+      notify.success('Perjalanan terverifikasi.');
       onOpenChange(false);
       onVerified();
     } catch (err) {

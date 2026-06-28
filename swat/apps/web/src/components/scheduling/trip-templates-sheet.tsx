@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Trash2 } from 'lucide-react';
+import { ArrowRight, Spline, Trash2 } from 'lucide-react';
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
@@ -11,6 +11,7 @@ import {
   SheetFilterBar,
   useWindowedList,
 } from '@/components/crud/sheet-list';
+import { TripTemplateCorridorSheet } from '@/components/scheduling/trip-template-corridor-sheet';
 import {
   Badge,
   Button,
@@ -96,7 +97,7 @@ const siteOption = (s: SiteDto): { value: string; label: string } => ({
   label: `${s.name} · ${SITE_TYPE_LABEL[s.type]}`,
 });
 
-/** Manage the planned trips (Template Trip Terencana) for a schedule template. */
+/** Manage the planned trips (Template Perjalanan Terencana) for a schedule template. */
 export function TripTemplatesSheet({
   schedule,
   onOpenChange,
@@ -105,6 +106,7 @@ export function TripTemplatesSheet({
   const [templates, setTemplates] = useState<TripTemplateDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TripTemplateDto | null>(null);
+  const [corridorTarget, setCorridorTarget] = useState<TripTemplateDto | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL_FILTER);
 
   // Sites (not the full route catalogue) drive the picker: operators choose a leg
@@ -227,7 +229,7 @@ export function TripTemplatesSheet({
         targetTime,
         fuelRequestedLiters: isRefuel && fuel ? Number(fuel) : undefined,
       });
-      notify.success('Template Trip ditambahkan.');
+      notify.success('Template Perjalanan ditambahkan.');
       resetForm();
       await reload();
       onMutated?.();
@@ -244,7 +246,7 @@ export function TripTemplatesSheet({
     }
     try {
       await deleteTripTemplate(scheduleId, deleteTarget.id);
-      notify.success('Template Trip dihapus.');
+      notify.success('Template Perjalanan dihapus.');
       setDeleteTarget(null);
       await reload();
       onMutated?.();
@@ -258,7 +260,7 @@ export function TripTemplatesSheet({
       <SheetContent side="right" className="w-[min(92vw,560px)]">
         <SheetHeader>
           <SheetTitle>
-            Template Trip — {schedule?.vehiclePlate} · {schedule?.driverName}
+            Template Perjalanan — {schedule?.vehiclePlate} · {schedule?.driverName}
           </SheetTitle>
         </SheetHeader>
         <SheetBody className="space-y-5">
@@ -308,20 +310,37 @@ export function TripTemplatesSheet({
                           {tpl.fuelRequestedLiters ? (
                             <span>· {tpl.fuelRequestedLiters} L</span>
                           ) : null}
+                          <span className="inline-flex items-center gap-1">
+                            <Spline className="h-3 w-3" aria-hidden />
+                            {tpl.corridorName ?? 'Koridor utama'}
+                          </span>
                         </p>
                       </div>
                     </div>
-                    <ProtectedAction permission="trip-template:delete">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-danger-600"
-                        aria-label="Hapus rute"
-                        onClick={() => setDeleteTarget(tpl)}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden />
-                      </Button>
-                    </ProtectedAction>
+                    <div className="flex items-center gap-1">
+                      <ProtectedAction permission="trip-template:update">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          aria-label="Pilih koridor"
+                          onClick={() => setCorridorTarget(tpl)}
+                        >
+                          <Spline className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </ProtectedAction>
+                      <ProtectedAction permission="trip-template:delete">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-danger-600"
+                          aria-label="Hapus rute"
+                          onClick={() => setDeleteTarget(tpl)}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </ProtectedAction>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -334,7 +353,7 @@ export function TripTemplatesSheet({
               onSubmit={(e) => void onAdd(e)}
               className="space-y-3 rounded-lg border border-neutral-200 p-3"
             >
-              <p className="text-label font-semibold text-neutral-700">Tambah Template Trip</p>
+              <p className="text-label font-semibold text-neutral-700">Tambah Template Perjalanan</p>
 
               <div className="space-y-1.5">
                 <Label htmlFor="tpl-category" required>
@@ -442,7 +461,7 @@ export function TripTemplatesSheet({
 
               <Button type="submit" loading={saving} disabled={!canSubmit}>
                 <ArrowRight className="h-4 w-4" aria-hidden />
-                Tambah Template Trip
+                Tambah Template Perjalanan
               </Button>
             </form>
           </ProtectedAction>
@@ -455,9 +474,19 @@ export function TripTemplatesSheet({
           if (!open) setDeleteTarget(null);
         }}
         title="Hapus rute ini?"
-        description="Template Trip terencana akan dihapus dari jadwal."
+        description="Template Perjalanan terencana akan dihapus dari jadwal."
         confirmLabel="Hapus"
         onConfirm={() => void onDelete()}
+      />
+
+      <TripTemplateCorridorSheet
+        template={corridorTarget}
+        scheduleId={scheduleId}
+        onClose={() => setCorridorTarget(null)}
+        onMutated={() => {
+          void reload();
+          onMutated?.();
+        }}
       />
     </Sheet>
   );

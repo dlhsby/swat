@@ -6,8 +6,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 export interface EffectiveCorridor {
   readonly geojson: unknown;
   readonly toleranceMeters: number;
-  /** Where it came from — a per-day Trip override or the Route template. */
-  readonly source: 'trip-override' | 'route-template';
+  /**
+   * Where it came from — a per-day Trip override, the Trip's chosen Corridor, or
+   * the route's default corridor (Phase 7.8).
+   */
+  readonly source: 'trip-override' | 'corridor' | 'route-default';
 }
 
 /**
@@ -73,27 +76,50 @@ export class CorridorRepository {
       select: {
         geometryOverride: true,
         geometryToleranceM: true,
+        corridor: { select: { pathGeojson: true, toleranceMeters: true, deletedAt: true } },
+        // Fall back to the route's default corridor when the trip has no chosen one.
         route: {
-          select: { geometry: { select: { pathGeojson: true, toleranceMeters: true } } },
+          select: {
+            corridors: {
+              where: { isDefault: true, deletedAt: null },
+              select: { pathGeojson: true, toleranceMeters: true },
+              take: 1,
+            },
+          },
         },
       },
     });
     if (!trip) {
       return null;
     }
+    const routeDefault = trip.route?.corridors[0] ?? null;
+    // 1. Per-day freehand override wins.
     if (trip.geometryOverride != null) {
       return {
         geojson: trip.geometryOverride,
-        toleranceMeters: trip.geometryToleranceM ?? trip.route?.geometry?.toleranceMeters ?? 150,
+        toleranceMeters:
+          trip.geometryToleranceM ??
+          trip.corridor?.toleranceMeters ??
+          routeDefault?.toleranceMeters ??
+          150,
         source: 'trip-override',
       };
     }
-    const template = trip.route?.geometry;
-    if (template) {
+    // 2. The day's chosen Corridor (copied from the template at daily-init). A
+    //    soft-deleted corridor is ignored → fall through to the route default.
+    if (trip.corridor && trip.corridor.deletedAt == null) {
       return {
-        geojson: template.pathGeojson,
-        toleranceMeters: template.toleranceMeters,
-        source: 'route-template',
+        geojson: trip.corridor.pathGeojson,
+        toleranceMeters: trip.corridor.toleranceMeters,
+        source: 'corridor',
+      };
+    }
+    // 3. The route's default corridor.
+    if (routeDefault) {
+      return {
+        geojson: routeDefault.pathGeojson,
+        toleranceMeters: routeDefault.toleranceMeters,
+        source: 'route-default',
       };
     }
     return null;

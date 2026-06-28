@@ -994,6 +994,91 @@
               "path": ["routes", "{{routeId}}"]
             }
           }
+        },
+        {
+          "name": "List Route Corridors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/routes/{{routeId}}/corridors",
+              "host": ["{{baseUrl}}"],
+              "path": ["routes", "{{routeId}}", "corridors"]
+            },
+            "description": "All corridors for a route (default 'Jalur Utama' first, then alternates). corridor:read."
+          }
+        },
+        {
+          "name": "Create Corridor (alternate)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/routes/{{routeId}}/corridors",
+              "host": ["{{baseUrl}}"],
+              "path": ["routes", "{{routeId}}", "corridors"]
+            },
+            "description": "Add an alternate corridor to a route. lengthMeters is server-computed (ST_Length). corridor:create.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jalur Alternatif\",\n  \"pathGeojson\": {\n    \"type\": \"LineString\",\n    \"coordinates\": [\n      [\n        112.7508,\n        -7.2575\n      ],\n      [\n        112.7601,\n        -7.265\n      ]\n    ]\n  },\n  \"toleranceMeters\": 150,\n  \"source\": \"google-maps\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('corridorId', value); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Corridor",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/corridors/{{corridorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["corridors", "{{corridorId}}"]
+            },
+            "description": "Edit an alternate (or the default's path). corridor:update.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jalur Alternatif (revisi)\",\n  \"toleranceMeters\": 120\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Corridor",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/corridors/{{corridorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["corridors", "{{corridorId}}"]
+            },
+            "description": "Soft-delete an alternate (the default cannot be deleted). corridor:delete."
+          }
         }
       ]
     },
@@ -3147,6 +3232,80 @@
             },
             "description": "Reverts a recorded trip to IN_PROGRESS and clears the entered values, keeping the scheduled slot — the recap grid “Hapus” action. Category-specific permission; a verified trip needs trip:override."
           }
+        },
+        {
+          "name": "Add Driver Shift (to existing haul)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/haul-assignments",
+              "host": ["{{baseUrl}}"],
+              "path": ["haul-assignments"]
+            },
+            "description": "Phase 7.8 T-729 — add a second driver-shift to a vehicle's haul for the day.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"haulId\": \"{{haulId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"departTime\": \"07:00\",\n  \"returnTime\": \"17:00\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('haulAssignmentId', value); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Vehicle (new haul + first shift)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/haul-assignments/with-new-haul",
+              "host": ["{{baseUrl}}"],
+              "path": ["haul-assignments", "with-new-haul"]
+            },
+            "description": "Phase 7.8 T-730 — add a vehicle (creates the haul + first shift) to a transaction day.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionDayId\": \"{{transactionDayId}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"driverId\": \"{{driverId}}\",\n  \"departTime\": \"07:00\",\n  \"returnTime\": \"17:00\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const value = json?.['data']?.['id'];",
+                  "if (value !== undefined && value !== null) { pm.environment.set('haulAssignmentId', value); }"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -4082,6 +4241,446 @@
           }
         }
       ]
+    },
+    {
+      "name": "GPS Tracking (Phase 7)",
+      "item": [
+        {
+          "name": "Device Registry",
+          "item": [
+            {
+              "name": "List Devices",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/devices?page=1&limit=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "devices"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "GPS device registry — the 'tracked' flag for a vehicle. gps-device:read."
+              }
+            },
+            {
+              "name": "Get Device",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/devices/{{gpsDeviceId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "devices", "{{gpsDeviceId}}"]
+                },
+                "description": "gps-device:read."
+              }
+            },
+            {
+              "name": "Create Device (map IMEI -> vehicle)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/devices",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "devices"]
+                },
+                "description": "Register/attach a GPS.id unit to a vehicle. deviceId/imei = GPS.id VehicleId. gps-device:manage.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"deviceType\": \"gps-hardware\",\n  \"deviceId\": \"350000000000999\",\n  \"imei\": \"350000000000999\",\n  \"provider\": \"gpsid\",\n  \"priority\": 0\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                      "",
+                      "const json = pm.response.json();",
+                      "const value = json?.['data']?.['id'];",
+                      "if (value !== undefined && value !== null) { pm.environment.set('gpsDeviceId', value); }"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Update Device",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/devices/{{gpsDeviceId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "devices", "{{gpsDeviceId}}"]
+                },
+                "description": "gps-device:manage.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"active\": true,\n  \"priority\": 0\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Device (detach)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/devices/{{gpsDeviceId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "devices", "{{gpsDeviceId}}"]
+                },
+                "description": "gps-device:manage."
+              }
+            },
+            {
+              "name": "List Unmatched IMEIs",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/devices/unmatched",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "devices", "unmatched"]
+                },
+                "description": "Pings from IMEIs with no registered device (never dropped). gps-device:read."
+              }
+            },
+            {
+              "name": "Map Unmatched IMEI -> Vehicle",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/devices/unmatched/map",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "devices", "unmatched", "map"]
+                },
+                "description": "One-click: create a hardware device from a queued IMEI and clear its pings. gps-device:manage.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"imei\": \"359999999999999\",\n  \"vehicleId\": \"{{vehicleId}}\"\n}"
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 202, 204]));",
+                      "",
+                      "const json = pm.response.json();",
+                      "const value = json?.['data']?.['id'];",
+                      "if (value !== undefined && value !== null) { pm.environment.set('gpsDeviceId', value); }"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Deviation Rules & Alerts",
+          "item": [
+            {
+              "name": "List Deviation Rules",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/deviation-rules",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "deviation-rules"]
+                },
+                "description": "deviation-rule:manage."
+              }
+            },
+            {
+              "name": "Upsert Deviation Rule (off_corridor)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/deviation-rules/off_corridor",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "deviation-rules", "off_corridor"]
+                },
+                "description": "Tune a rule. type ∈ off_corridor | off_sequence | dwell_too_long | late_to_schedule. deviation-rule:manage.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"threshold\": 150,\n  \"hysteresisSec\": 30,\n  \"severity\": \"WARNING\",\n  \"enabled\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "List Alerts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/alerts?page=1&limit=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "alerts"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Deviation alert feed (filter by vehicle/status/date). deviation-alert:read."
+              }
+            },
+            {
+              "name": "Acknowledge Alert",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/alerts/{{deviationAlertId}}/acknowledge",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "alerts", "{{deviationAlertId}}", "acknowledge"]
+                },
+                "description": "deviation-alert:acknowledge.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"notes\": \"Ditinjau supervisor\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Live Positions & Efficiency",
+          "item": [
+            {
+              "name": "Fleet Positions (whole active fleet)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/monitoring/fleet-positions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["monitoring", "fleet-positions"]
+                },
+                "description": "VehiclePosition[] for the Peta tab (source: live-gps | recorded-activity | none). tracking:read."
+              }
+            },
+            {
+              "name": "Vehicle Track (breadcrumb)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/vehicles/{{vehicleId}}/track?minutes=60",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "vehicles", "{{vehicleId}}", "track"],
+                  "query": [
+                    {
+                      "key": "minutes",
+                      "value": "60"
+                    }
+                  ]
+                },
+                "description": "Live breadcrumb trail. tracking:read."
+              }
+            },
+            {
+              "name": "Efficiency Dashboard",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/monitoring/efficiency",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["monitoring", "efficiency"]
+                },
+                "description": "Adherence %, wasted time/fuel, GPS-coverage, deviation counts. monitoring:read."
+              }
+            },
+            {
+              "name": "Realtime Fleet (SSE)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/realtime/fleet",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["realtime", "fleet"]
+                },
+                "description": "Server-Sent Events stream of live positions + alerts. Session + tracking:read. (Postman shows the raw stream.)"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Corridor / Geometry (per-day & legacy)",
+          "item": [
+            {
+              "name": "Set Trip Corridor (per-day picker)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/trips/{{tripId}}/corridor",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "trips", "{{tripId}}", "corridor"]
+                },
+                "description": "Point a day's Trip at one of its route's corridors. route-geometry:manage.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"corridorId\": \"{{corridorId}}\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Get Trip Geometry Override",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/trips/{{tripId}}/geometry",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "trips", "{{tripId}}", "geometry"]
+                },
+                "description": "route-geometry:manage."
+              }
+            },
+            {
+              "name": "Put Trip Geometry Override (freehand)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/trips/{{tripId}}/geometry",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "trips", "{{tripId}}", "geometry"]
+                },
+                "description": "One-off per-day freehand override; wins over the chosen corridor. route-geometry:manage.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pathGeojson\": {\n    \"type\": \"LineString\",\n    \"coordinates\": [\n      [\n        112.7508,\n        -7.2575\n      ],\n      [\n        112.7601,\n        -7.265\n      ]\n    ]\n  },\n  \"toleranceMeters\": 150\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Trip Geometry Override",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/trips/{{tripId}}/geometry",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "trips", "{{tripId}}", "geometry"]
+                },
+                "description": "route-geometry:manage."
+              }
+            },
+            {
+              "name": "Get Route Geometry (legacy)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/routes/{{routeId}}/geometry",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "routes", "{{routeId}}", "geometry"]
+                },
+                "description": "LEGACY RouteGeometry template — superseded by /routes/:id/corridors. route-geometry:manage."
+              }
+            },
+            {
+              "name": "Put Route Geometry (legacy)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/routes/{{routeId}}/geometry",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "routes", "{{routeId}}", "geometry"]
+                },
+                "description": "LEGACY. route-geometry:manage.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pathGeojson\": {\n    \"type\": \"LineString\",\n    \"coordinates\": [\n      [\n        112.7508,\n        -7.2575\n      ],\n      [\n        112.7601,\n        -7.265\n      ]\n    ]\n  },\n  \"toleranceMeters\": 150\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Route Geometry (legacy)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/gps/routes/{{routeId}}/geometry",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["gps", "routes", "{{routeId}}", "geometry"]
+                },
+                "description": "LEGACY. route-geometry:manage."
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Phase 7 GPS tracking. A vehicle is 'tracked' by owning a GpsDevice (IMEI -> vehicle); the gps.id mapping is the IMEI. The inbound GPS.id push webhook lives in the separate 'GPS.id Vendor API' collection (Inbound Webhook folder)."
     },
     {
       "name": "Reports",

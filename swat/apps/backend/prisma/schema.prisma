@@ -558,9 +558,10 @@ model Route {
   deletedAt         DateTime?      @map("deleted_at") @db.Timestamptz(6)
   trips             Trip[]
   tripTemplates     TripTemplate[]
-  // GPS corridor template (Phase 7) — at most one per route; a day's Trip may
-  // override it (Trip.geometryOverride). Opt-in: a route without geometry is
-  // tracked but not corridor-checked.
+  // Drawn GPS corridors (Phase 7.8) — 1..N per route; the first is the auto-created
+  // straight-line `isDefault`. A route with no corridor is tracked, not checked.
+  corridors         Corridor[]
+  // Legacy 1:1 corridor (pre-7.8); superseded by `corridors`, kept for back-compat.
   geometry          RouteGeometry?
 
   createdById String? @map("created_by_id") @db.Uuid
@@ -650,6 +651,10 @@ model TripTemplate {
   originSite          Site          @relation("TripTemplateOrigin", fields: [originSiteId], references: [id])
   destinationSiteId   String        @map("destination_site_id") @db.Uuid
   destinationSite     Site          @relation("TripTemplateDestination", fields: [destinationSiteId], references: [id])
+  // Default corridor for this leg/vehicle (Phase 7.8). Copied to Trip.corridorId at
+  // daily-init; many templates may point at one shared Corridor.
+  corridorId          String?       @map("corridor_id") @db.Uuid
+  corridor            Corridor?     @relation(fields: [corridorId], references: [id])
   targetTime          DateTime     @map("target_time") @db.Time
   fuelRequestedLiters Decimal?     @map("fuel_requested_liters") @db.Decimal(8, 2)
   createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -660,6 +665,7 @@ model TripTemplate {
   updatedById String?   @map("updated_by_id") @db.Uuid
   deletedById String?   @map("deleted_by_id") @db.Uuid
 
+  @@index([corridorId])
   @@map("trip_template")
 }
 
@@ -815,9 +821,14 @@ model Trip {
   // RouteGeometry.waypoints). Null when none drawn.
   geometryWaypoints   Json?           @map("geometry_waypoints")
   geometryToleranceM  Int?            @map("geometry_tolerance_m")
+  // The day's chosen corridor (Phase 7.8). Copied from the trip template at
+  // daily-init; switchable per day; `geometryOverride` still wins over it.
+  corridorId          String?         @map("corridor_id") @db.Uuid
+  corridor            Corridor?       @relation(fields: [corridorId], references: [id])
 
   @@index([haulAssignmentId])
   @@index([routeId])
+  @@index([corridorId])
   @@index([status])
   @@index([operationDate])
   @@index([legacyId])
@@ -1228,10 +1239,46 @@ model GpsUnmatchedPing {
   @@map("gps_unmatched_ping")
 }
 
+/// A drawn path that belongs to a Route (Phase 7.8 — revised). A Route owns one or
+/// more corridors: the first is the auto-generated `isDefault` straight line between
+/// the route's two Sites; users add alternates (road class, situation) whose
+/// endpoints stay anchored to those sites. `pathGeojson` is the portable GeoJSON
+/// LineString; a maintained `geography(LineString,4326)` column + GiST index (raw
+/// SQL) back spatial queries; `lengthMeters` is server-computed (ST_Length). Replaces
+/// the old 1:1 RouteGeometry.
+model Corridor {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  legacyId          Int?           @map("legacy_id")
+  routeId           String         @map("route_id") @db.Uuid
+  route             Route          @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  name              String         @db.VarChar(120)
+  /** The route's auto-created straight-line default; exactly one per route. */
+  isDefault         Boolean        @default(false) @map("is_default")
+  pathGeojson       Json           @map("path_geojson")
+  // Editor control points ({ lng, lat, snapped }[]) so re-opening restores handles.
+  waypoints         Json?          @map("waypoints")
+  toleranceMeters   Int            @default(150) @map("tolerance_meters")
+  lengthMeters      Int            @default(0) @map("length_meters")
+  source            String         @default("google-maps") @db.VarChar(20)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  createdById       String?        @map("created_by_id") @db.Uuid
+  updatedById       String?        @map("updated_by_id") @db.Uuid
+  deletedById       String?        @map("deleted_by_id") @db.Uuid
+  tripTemplates     TripTemplate[]
+  trips             Trip[]
+
+  @@index([routeId])
+  @@index([deletedAt])
+  @@map("corridor")
+}
+
 /// Route corridor template (one per Route). `pathGeojson` is the portable
 /// GeoJSON LineString; a maintained `geography(LineString,4326)` column + GiST
 /// index (raw SQL) back the spatial queries. `lengthMeters` is server-computed
 /// (ST_Length). A day's Trip.geometryOverride can override this template.
+/// DEPRECATED by `Corridor` (T-725); retired in T-728.
 model RouteGeometry {
   id              String   @id @default(uuid(7)) @db.Uuid
   routeId         String   @unique @map("route_id") @db.Uuid

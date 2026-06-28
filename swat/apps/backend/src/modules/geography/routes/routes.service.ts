@@ -9,6 +9,7 @@ import { type RouteCategory } from '@prisma/client';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
 import { ActorNamesService } from '../../audit/actor-names.service';
+import { CorridorsService } from '../corridors/corridors.service';
 
 import { type CreateRouteDto } from './dto/create-route.dto';
 import { type ListRoutesQueryDto } from './dto/list-routes.query.dto';
@@ -54,6 +55,7 @@ export class RoutesService {
   constructor(
     private readonly repo: RoutesRepository,
     private readonly actorNames: ActorNamesService,
+    private readonly corridors: CorridorsService,
   ) {}
 
   async list(query: ListRoutesQueryDto): Promise<{ data: RouteDto[]; meta: PaginationMeta }> {
@@ -93,9 +95,13 @@ export class RoutesService {
       category: dto.category,
       originSite: { connect: { id: dto.originSiteId } },
       destinationSite: { connect: { id: dto.destinationSiteId } },
-      distanceKm: dto.distanceKm,
+      distanceKm: dto.distanceKm ?? 0,
     });
-    return toRouteDto(route);
+    // Every route gets a default corridor (road-snapped, else a straight line between
+    // its two sites); skipped silently when a site has no coordinates yet. The corridor
+    // owns the distance — creating it syncs `route.distanceKm` — so re-read to return it.
+    await this.corridors.createDefaultForRoute(route.id);
+    return toRouteDto((await this.repo.findById(route.id)) ?? route);
   }
 
   /**
@@ -151,7 +157,13 @@ export class RoutesService {
         : {}),
       ...(dto.distanceKm !== undefined ? { distanceKm: dto.distanceKm } : {}),
     });
-    return toRouteDto(route);
+    // Editing a route RESETS its auto-default corridor: regenerate (re-snap) it to the
+    // current endpoints and re-derive the distance. This makes a route pick up site
+    // coordinates that were added after it was first created (when the sites had none,
+    // so no corridor could be drawn), and keeps the path matching the route. Returns
+    // null silently when a site still has no coordinates → the manager shows the hint.
+    await this.corridors.regenerateDefaultForRoute(id);
+    return toRouteDto((await this.repo.findById(id)) ?? route);
   }
 
   async remove(id: string): Promise<{ message: string }> {

@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { RouteCategory } from '@prisma/client';
 
 import { type ActorNamesService } from '../../audit/actor-names.service';
+import { type CorridorsService } from '../corridors/corridors.service';
 
 import { type RoutesRepository } from './routes.repository';
 import { RoutesService } from './routes.service';
@@ -31,6 +32,7 @@ describe('RoutesService', () => {
     update: jest.Mock;
     softDelete: jest.Mock;
   };
+  let corridors: { createDefaultForRoute: jest.Mock; regenerateDefaultForRoute: jest.Mock };
   let service: RoutesService;
 
   beforeEach(() => {
@@ -44,12 +46,18 @@ describe('RoutesService', () => {
       update: jest.fn(),
       softDelete: jest.fn(),
     };
+    corridors = {
+      // Default: no corridor (e.g. a site without coords) → distance stays as-is.
+      createDefaultForRoute: jest.fn().mockResolvedValue(null),
+      regenerateDefaultForRoute: jest.fn().mockResolvedValue(null),
+    };
     service = new RoutesService(
       repo as unknown as RoutesRepository,
       {
         attach: async (_r: unknown, d: unknown[]) => d,
         resolve: async () => new Map<string, string>(),
       } as unknown as ActorNamesService,
+      corridors as unknown as CorridorsService,
     );
   });
 
@@ -123,6 +131,16 @@ describe('RoutesService', () => {
         destinationSiteName: 'TPA',
       });
     });
+
+    it('returns the corridor-derived distance after creating the default corridor', async () => {
+      repo.create.mockResolvedValue(buildRoute({ distanceKm: 0 }));
+      // createDefaultForRoute syncs route.distanceKm in the corridor layer; the
+      // service re-reads the route to return the synced value.
+      repo.findById.mockResolvedValue(buildRoute({ distanceKm: 5 }));
+      const result = await service.create(dto);
+      expect(corridors.createDefaultForRoute).toHaveBeenCalled();
+      expect(result.distanceKm).toBe(5);
+    });
   });
 
   describe('update', () => {
@@ -150,14 +168,20 @@ describe('RoutesService', () => {
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
-    it('updates the distance', async () => {
-      repo.findById.mockResolvedValue(buildRoute());
-      repo.update.mockResolvedValue(buildRoute({ distanceKm: 30 }));
-      await expect(
-        service.update('550e8400-e29b-41d4-a716-446655440001', { distanceKm: 30 }),
-      ).resolves.toMatchObject({
-        distanceKm: 30,
+    it('resets the default corridor on any edit and re-reads the derived distance', async () => {
+      // Every edit regenerates the auto-default (so newly-added site coords take
+      // effect); the distance comes from the post-regenerate re-read.
+      repo.findById
+        .mockResolvedValueOnce(buildRoute()) // pre-update load
+        .mockResolvedValueOnce(buildRoute({ distanceKm: 4 })); // post-regenerate re-read
+      repo.update.mockResolvedValue(buildRoute());
+      const result = await service.update('550e8400-e29b-41d4-a716-446655440001', {
+        category: RouteCategory.PICKUP,
       });
+      expect(corridors.regenerateDefaultForRoute).toHaveBeenCalledWith(
+        '550e8400-e29b-41d4-a716-446655440001',
+      );
+      expect(result.distanceKm).toBe(4);
     });
   });
 

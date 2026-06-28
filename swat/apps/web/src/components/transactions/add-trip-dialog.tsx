@@ -80,7 +80,7 @@ export function AddTripDialog({
         routeId,
         ...(name.trim() ? { name: name.trim() } : {}),
       });
-      notify.success('Trip tak terjadwal berhasil dibuat.');
+      notify.success('Perjalanan tak terjadwal berhasil dibuat.');
       onOpenChange(false);
       onCreated();
     } catch (err) {
@@ -94,7 +94,7 @@ export function AddTripDialog({
     <Dialog open={haulAssignmentId !== null} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Tambah Rute Tak Terjadwal</DialogTitle>
+          <DialogTitle>Tambah Perjalanan Tak Terjadwal</DialogTitle>
           <DialogDescription>
             Catat aktivitas di luar rencana harian. Trip dibuat berstatus berjalan dan dicatat
             realisasinya seperti biasa.

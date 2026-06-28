@@ -1,7 +1,7 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { Eye, Pencil } from 'lucide-react';
+import { Eye, Pencil, UserPlus } from 'lucide-react';
 import { use, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
@@ -9,6 +9,7 @@ import { PageHead } from '@/components/shell/page-head';
 import { AddTripDialog } from '@/components/transactions/add-trip-dialog';
 import { ReconcileDialog } from '@/components/transactions/reconcile-dialog';
 import { RecordTripDialog } from '@/components/transactions/record-trip-dialog';
+import { type ShiftTarget, ShiftDialog } from '@/components/transactions/shift-dialog';
 import { TripPhotosDialog } from '@/components/transactions/trip-photos-dialog';
 import { TripSheet } from '@/components/transactions/trip-sheet';
 import { VerifyTripDialog } from '@/components/transactions/verify-trip-dialog';
@@ -58,6 +59,7 @@ export default function HaulBoardPage({
   const [verifyTrip, setVerifyTrip] = useState<TripDto | null>(null);
   const [addTripAssignmentId, setAddTripAssignmentId] = useState<string | null>(null);
   const [photoTrip, setPhotoTrip] = useState<TripDto | null>(null);
+  const [shiftTarget, setShiftTarget] = useState<ShiftTarget>(null);
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -169,6 +171,22 @@ export default function HaulBoardPage({
         meta: { pinRight: true, label: 'Aksi' },
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-2">
+            <ProtectedAction permission="transaction-day:manage">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setShiftTarget({
+                    mode: 'shift',
+                    haulId: row.original.haulId,
+                    vehiclePlate: row.original.vehiclePlate,
+                  })
+                }
+              >
+                <UserPlus className="h-4 w-4" aria-hidden />
+                Shift
+              </Button>
+            </ProtectedAction>
             <ProtectedAction permission="trip:update">
               <Button variant="outline" size="sm" onClick={() => setReconcileId(row.original.id)}>
                 <Pencil className="h-4 w-4" aria-hidden />
@@ -217,7 +235,7 @@ export default function HaulBoardPage({
     <>
       <PageHead
         breadcrumb={[{ label: 'Penjadwalan', href: '/scheduling' }, { label: day.date }]}
-        title={`Angkut Sampah · ${formatDateDisplay(day.date)}`}
+        title={`Pengangkutan Sampah · ${formatDateDisplay(day.date)}`}
         description={`${verifiedCount}/${allTrips.length} rute terverifikasi`}
         actions={
           <div className="flex items-center gap-2">
@@ -225,11 +243,22 @@ export default function HaulBoardPage({
             {day.status !== 'DONE' ? (
               <ProtectedAction permission="transaction-day:manage">
                 <Button
+                  variant="secondary"
+                  onClick={() => setShiftTarget({ mode: 'vehicle', dayId })}
+                >
+                  <UserPlus className="h-4 w-4" aria-hidden />
+                  Tambah Kendaraan
+                </Button>
+              </ProtectedAction>
+            ) : null}
+            {day.status !== 'DONE' ? (
+              <ProtectedAction permission="transaction-day:manage">
+                <Button
                   onClick={() => setMarkDone(true)}
                   disabled={openHauls}
                   title={
                     openHauls
-                      ? 'Semua angkut sampah harus berstatus selesai terlebih dahulu. Verifikasi rute tidak diwajibkan.'
+                      ? 'Semua pengangkutan sampah harus berstatus selesai terlebih dahulu. Verifikasi rute tidak diwajibkan.'
                       : 'Tandai seluruh hari transaksi selesai.'
                   }
                 >
@@ -244,8 +273,8 @@ export default function HaulBoardPage({
       {day.status !== 'DONE' ? (
         <p className="-mt-2 text-tiny text-neutral-500">
           {openHauls
-            ? 'Hari dapat ditandai selesai setelah semua angkut sampah berstatus selesai (verifikasi rute opsional, tidak menghalangi). Hanya peran Administrasi/Administrator yang dapat menandainya.'
-            : 'Semua angkut sampah selesai — hari siap ditandai selesai oleh Administrasi/Administrator.'}
+            ? 'Hari dapat ditandai selesai setelah semua pengangkutan sampah berstatus selesai (verifikasi rute opsional, tidak menghalangi). Hanya peran Administrasi/Administrator yang dapat menandainya.'
+            : 'Semua pengangkutan sampah selesai — hari siap ditandai selesai oleh Administrasi/Administrator.'}
         </p>
       ) : null}
 
@@ -256,7 +285,7 @@ export default function HaulBoardPage({
         searchPlaceholder="Cari kendaraan / pengemudi"
         onRefresh={() => void load()}
         refreshing={loading}
-        emptyTitle="Tidak ada angkut sampah untuk hari ini."
+        emptyTitle="Tidak ada pengangkutan sampah untuk hari ini."
       />
 
       <TripSheet
@@ -290,11 +319,17 @@ export default function HaulBoardPage({
         onVerified={() => void load()}
       />
 
+      <ShiftDialog
+        target={shiftTarget}
+        onOpenChange={(open) => !open && setShiftTarget(null)}
+        onChanged={() => void load()}
+      />
+
       <ConfirmDialog
         open={markDone}
         onOpenChange={setMarkDone}
         title="Tandai hari transaksi selesai?"
-        description="Pastikan semua angkut sampah telah selesai dan diverifikasi."
+        description="Pastikan semua pengangkutan sampah telah selesai dan diverifikasi."
         confirmLabel="Tandai Selesai"
         onConfirm={() => void onMarkDone()}
       />

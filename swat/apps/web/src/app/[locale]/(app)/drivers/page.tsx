@@ -42,7 +42,8 @@ const schema = z.object({
   name: z.string().min(1, 'Nama wajib diisi').max(100),
   idCardNumber: z.string().regex(/^\d{16}$/, 'Nomor KTP harus 16 digit angka'),
   poolSiteId: z.string().uuid('Pool wajib dipilih'),
-  employmentStatus: z.enum(['SATGAS', 'PNS', 'HONORER']),
+  // '' is the "not chosen yet" sentinel — no default; refine forces a pick.
+  employmentStatus: z.enum(['SATGAS', 'PNS', 'HONORER']).or(z.literal('')),
   birthDate: z
     .string()
     .min(1, 'Tanggal lahir wajib diisi')
@@ -62,13 +63,16 @@ const schema = z.object({
   currentAddress: z.string().min(1, 'Alamat saat ini wajib diisi').max(256),
   safetyTraining: z.string().max(100).optional(),
   notes: z.string().max(256).optional(),
+}).refine((d) => d.employmentStatus !== '', {
+  message: 'Status kepegawaian wajib dipilih',
+  path: ['employmentStatus'],
 });
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
   name: '',
   idCardNumber: '',
   poolSiteId: '',
-  employmentStatus: 'SATGAS',
+  employmentStatus: '',
   birthDate: '',
   contact: '',
   originAddress: '',
@@ -221,6 +225,7 @@ export default function DriversPage(): JSX.Element {
             label="Status Kepegawaian"
             required
             options={EMPLOYMENT_OPTIONS}
+            placeholder="Pilih status kepegawaian"
           />
           <DateField name="birthDate" label="Tanggal Lahir" required />
           <TextField name="contact" label="Kontak" required placeholder="08xx…" />

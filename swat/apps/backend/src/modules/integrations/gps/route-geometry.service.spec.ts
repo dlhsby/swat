@@ -34,6 +34,8 @@ describe('RouteGeometryService', () => {
     tripOverride: jest.Mock;
     setTripOverride: jest.Mock;
     clearTripOverride: jest.Mock;
+    corridorInRoute: jest.Mock;
+    setTripCorridor: jest.Mock;
   };
   let corridor: { computeLengthMeters: jest.Mock };
   let service: RouteGeometryService;
@@ -46,12 +48,17 @@ describe('RouteGeometryService', () => {
       upsertTemplate: jest.fn().mockResolvedValue(geometryRow()),
       deleteTemplate: jest.fn().mockResolvedValue(true),
       tripOverride: jest.fn().mockResolvedValue({
+        routeId: ROUTE,
+        corridorId: null,
+        corridor: null,
         geometryOverride: null,
         geometryWaypoints: null,
         geometryToleranceM: null,
       }),
       setTripOverride: jest.fn().mockResolvedValue(undefined),
       clearTripOverride: jest.fn().mockResolvedValue(undefined),
+      corridorInRoute: jest.fn().mockResolvedValue({ id: 'c1' }),
+      setTripCorridor: jest.fn().mockResolvedValue(undefined),
     };
     corridor = { computeLengthMeters: jest.fn().mockResolvedValue(1200) };
     service = new RouteGeometryService(
@@ -168,6 +175,15 @@ describe('RouteGeometryService', () => {
 
     it('sets a valid override with waypoints', async () => {
       const waypoints = [{ lng: 1, lat: 2, snapped: true }];
+      // The service re-reads via getTripOverride after the write — reflect the saved state.
+      repo.tripOverride.mockResolvedValue({
+        routeId: ROUTE,
+        corridorId: null,
+        corridor: null,
+        geometryOverride: LINE,
+        geometryWaypoints: waypoints,
+        geometryToleranceM: 120,
+      });
       const result = await service.setTripOverride(TRIP, {
         pathGeojson: LINE as unknown as Record<string, unknown>,
         toleranceMeters: 120,
@@ -178,6 +194,7 @@ describe('RouteGeometryService', () => {
         expect.objectContaining({ toleranceMeters: 120, waypoints }),
       );
       expect(result.waypoints).toEqual(waypoints);
+      expect(result.hasOverride).toBe(true);
     });
 
     it('clears an override', async () => {
@@ -185,6 +202,34 @@ describe('RouteGeometryService', () => {
         message: expect.stringContaining('dihapus'),
       });
       expect(repo.clearTripOverride).toHaveBeenCalledWith(TRIP);
+    });
+  });
+
+  describe('setTripCorridor', () => {
+    it('throws NotFound for an unknown trip', async () => {
+      repo.tripOverride.mockResolvedValue(null);
+      await expect(service.setTripCorridor(TRIP, 'c1')).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('picks a corridor that belongs to the trip route (clearing any override)', async () => {
+      repo.corridorInRoute.mockResolvedValue({ id: 'c2' });
+      await service.setTripCorridor(TRIP, 'c2');
+      expect(repo.corridorInRoute).toHaveBeenCalledWith('c2', ROUTE);
+      expect(repo.setTripCorridor).toHaveBeenCalledWith(TRIP, 'c2');
+    });
+
+    it('rejects a corridor that is not on the trip route', async () => {
+      repo.corridorInRoute.mockResolvedValue(null);
+      await expect(service.setTripCorridor(TRIP, 'c9')).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
+      expect(repo.setTripCorridor).not.toHaveBeenCalled();
+    });
+
+    it('clears the explicit corridor with a null id (tracks the route default)', async () => {
+      await service.setTripCorridor(TRIP, null);
+      expect(repo.corridorInRoute).not.toHaveBeenCalled();
+      expect(repo.setTripCorridor).toHaveBeenCalledWith(TRIP, null);
     });
   });
 });

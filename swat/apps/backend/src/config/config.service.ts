@@ -109,6 +109,11 @@ export class AppConfigService {
     };
   }
 
+  /** Server-side Directions key for snapping the auto-default corridor (optional). */
+  get googleMapsServerKey(): string | undefined {
+    return this.get('GOOGLE_MAPS_SERVER_KEY');
+  }
+
   /**
    * GPS.id pull-API credentials (Phase 7, nightly batch). Returns null when any
    * credential is missing so callers fail loudly ("pull API not configured")

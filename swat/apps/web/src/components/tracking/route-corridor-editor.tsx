@@ -1,25 +1,52 @@
 'use client';
 
+import { MapPinned, Plus } from 'lucide-react';
+import { useState } from 'react';
+
 import {
   type CorridorData,
   CorridorEditorCore,
   type SaveCorridorPayload,
 } from '@/components/tracking/corridor-editor-core';
+import { CorridorListItem } from '@/components/tracking/corridor-list-item';
 import {
-  useDeleteRouteGeometry,
-  useRouteGeometry,
-  useSaveRouteGeometry,
-} from '@/hooks/use-geometry';
+  Button,
+  ConfirmDialog,
+  Input,
+  Label,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  Spinner,
+} from '@/components/ui';
+import {
+  useCreateCorridor,
+  useDeleteCorridor,
+  useRouteCorridors,
+  useUpdateCorridor,
+} from '@/hooks/use-corridors';
+import { type CorridorDto } from '@/lib/corridor-api';
 
 export interface CorridorRoute {
   readonly id: string;
+  readonly category: string;
   readonly originSiteName: string;
   readonly destinationSiteName: string;
 }
 
+/** Editor target: an existing corridor (edit) or null (add a new alternate). */
+type EditTarget = { corridor: CorridorDto | null };
+
 /**
- * Route-template corridor editor (Phase 7, T-710). Loads/saves the route's corridor
- * template (with persisted control waypoints) and renders the shared editor core.
+ * Route corridor manager (Phase 7.8). A route owns 1..N corridors — a snap-to-road
+ * default plus optional alternates. This sheet lists them (default first, badged),
+ * and add/edit drops into the shared {@link CorridorEditorCore} drawing canvas. The
+ * default corridor is route-managed (created on route creation) so it can't be
+ * deleted here, only re-drawn. Gated upstream by `route-geometry:manage`.
  */
 export function RouteCorridorEditor({
   route,
@@ -28,41 +55,163 @@ export function RouteCorridorEditor({
   route: CorridorRoute | null;
   onClose: () => void;
 }): JSX.Element {
-  const { data, isLoading } = useRouteGeometry(route?.id ?? null);
-  const save = useSaveRouteGeometry();
-  const remove = useDeleteRouteGeometry();
+  const routeId = route?.id ?? null;
+  // "Berangkat dari Pool" is a Pool→Pool kickoff with no real route — its corridor
+  // is a degenerate point, so it's view-only (no add/edit/delete).
+  const viewOnly = route?.category === 'DEPART_POOL';
+  const { data: corridors = [], isLoading } = useRouteCorridors(routeId);
+  const create = useCreateCorridor(routeId);
+  const update = useUpdateCorridor(routeId);
+  const remove = useDeleteCorridor(routeId);
 
-  const existing: CorridorData | null = data
+  const [editing, setEditing] = useState<EditTarget | null>(null);
+  const [name, setName] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<CorridorDto | null>(null);
+
+  const backToList = (): void => {
+    setEditing(null);
+    setName('');
+  };
+
+  const startAdd = (): void => {
+    setName('');
+    setEditing({ corridor: null });
+  };
+  const startEdit = (corridor: CorridorDto): void => {
+    setName(corridor.name);
+    setEditing({ corridor });
+  };
+
+  const existing: CorridorData | null = editing?.corridor
     ? {
-        pathGeojson: data.pathGeojson,
-        waypoints: data.waypoints,
-        toleranceMeters: data.toleranceMeters,
+        pathGeojson: editing.corridor.pathGeojson,
+        waypoints: editing.corridor.waypoints,
+        toleranceMeters: editing.corridor.toleranceMeters,
       }
     : null;
 
   const handleSave = (payload: SaveCorridorPayload): void => {
-    if (!route) return;
-    save.mutate({ routeId: route.id, ...payload }, { onSuccess: onClose });
+    const body = {
+      name: name.trim(),
+      pathGeojson: payload.pathGeojson,
+      waypoints: payload.waypoints,
+      toleranceMeters: payload.toleranceMeters,
+    };
+    if (editing?.corridor) {
+      update.mutate({ id: editing.corridor.id, body }, { onSuccess: backToList });
+    } else {
+      create.mutate(body, { onSuccess: backToList });
+    }
   };
 
-  const handleDelete = (): void => {
-    if (!route) return;
-    remove.mutate(route.id, { onSuccess: onClose });
+  const confirmDelete = (): void => {
+    if (!deleteTarget) return;
+    remove.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        setDeleteTarget(null);
+        // If the deleted corridor was being edited, drop back to the list.
+        if (editing?.corridor?.id === deleteTarget.id) backToList();
+      },
+    });
   };
 
   return (
-    <CorridorEditorCore
-      open={route !== null}
-      entityKey={route?.id ?? 'none'}
-      subtitle={route ? `${route.originSiteName} → ${route.destinationSiteName}` : ''}
-      existing={existing}
-      isLoading={isLoading}
-      saving={save.isPending}
-      removing={remove.isPending}
-      hasExisting={data != null}
-      onSave={handleSave}
-      onDelete={handleDelete}
-      onClose={onClose}
-    />
+    <>
+      {/* List view — visible whenever a route is open and we're not drawing. */}
+      <Sheet open={route !== null && editing === null} onOpenChange={(next) => !next && onClose()}>
+        <SheetContent side="right" className="w-full sm:max-w-[560px]">
+          <SheetHeader>
+            <SheetTitle>Koridor rute</SheetTitle>
+            <SheetDescription>
+              {route ? `${route.originSiteName} → ${route.destinationSiteName}` : ''}
+            </SheetDescription>
+          </SheetHeader>
+
+          <SheetBody className="space-y-3">
+            <p className="text-body-sm text-neutral-500">
+              {viewOnly
+                ? 'Perjalanan "Berangkat dari Pool" hanya titik awal harian — koridornya tidak diubah.'
+                : 'Satu rute punya beberapa pilihan koridor. Koridor utama dibuat otomatis mengikuti jalan; tambahkan alternatif bila perlu.'}
+            </p>
+
+            {isLoading ? (
+              <div className="flex justify-center py-10">
+                <Spinner className="h-6 w-6 text-neutral-400" />
+              </div>
+            ) : corridors.length === 0 ? (
+              <div className="rounded-base border border-dashed border-neutral-300 bg-neutral-50 px-6 py-10 text-center">
+                <MapPinned className="mx-auto h-7 w-7 text-neutral-400" aria-hidden />
+                <p className="mt-3 text-body-sm text-neutral-500">Belum ada koridor.</p>
+                <p className="mx-auto mt-1 max-w-[20rem] text-tiny text-neutral-500">
+                  Koridor utama dibuat otomatis mengikuti jalan — pastikan lokasi asal &amp; tujuan
+                  rute sudah punya koordinat di master Lokasi, lalu simpan ulang rutenya.
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {corridors.map((c) => (
+                  <CorridorListItem
+                    key={c.id}
+                    corridor={c}
+                    // Pool-kickoff routes are view-only; for the rest the default is
+                    // editable but not deletable (only alternates can be removed).
+                    onEdit={viewOnly ? undefined : () => startEdit(c)}
+                    onDelete={viewOnly || c.isDefault ? undefined : () => setDeleteTarget(c)}
+                  />
+                ))}
+              </ul>
+            )}
+
+            {!viewOnly ? (
+              <Button variant="secondary" onClick={startAdd} className="w-full">
+                <Plus className="h-4 w-4" aria-hidden /> Tambah koridor
+              </Button>
+            ) : null}
+          </SheetBody>
+
+          <SheetFooter>
+            <Button variant="secondary" onClick={onClose}>
+              Tutup
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Drawing canvas — add or edit a single corridor. */}
+      <CorridorEditorCore
+        open={editing !== null}
+        entityKey={editing?.corridor?.id ?? 'new'}
+        subtitle={route ? `${route.originSiteName} → ${route.destinationSiteName}` : ''}
+        existing={existing}
+        isLoading={false}
+        saving={create.isPending || update.isPending}
+        removing={remove.isPending}
+        hasExisting={editing?.corridor != null && !editing.corridor.isDefault}
+        canSave={name.trim().length > 0}
+        onSave={handleSave}
+        onDelete={() => editing?.corridor && setDeleteTarget(editing.corridor)}
+        onClose={backToList}
+        extraFields={
+          <div className="grid gap-1.5">
+            <Label htmlFor="corridor-name">Nama koridor</Label>
+            <Input
+              id="corridor-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="mis. Jalur alternatif via tol"
+            />
+          </div>
+        }
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Hapus koridor"
+        description={deleteTarget ? `Yakin ingin menghapus koridor "${deleteTarget.name}"?` : ''}
+        confirmLabel="Hapus"
+        onConfirm={confirmDelete}
+      />
+    </>
   );
 }

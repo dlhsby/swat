@@ -3,7 +3,7 @@
 import { APIProvider, Map as GoogleMap, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MapPinned, Undo2, Trash2, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { round6 } from '@/components/maps/map-picker';
 import {
@@ -233,6 +233,8 @@ export function CorridorEditorCore({
   onSave,
   onDelete,
   onClose,
+  extraFields,
+  canSave = true,
 }: {
   open: boolean;
   /** Changes per opened target so the canvas remounts + re-fits bounds. */
@@ -246,6 +248,10 @@ export function CorridorEditorCore({
   onSave: (payload: SaveCorridorPayload) => void;
   onDelete: () => void;
   onClose: () => void;
+  /** Caller-owned fields (e.g. name/leg metadata) rendered above the map. */
+  extraFields?: ReactNode;
+  /** Gate the Save button on caller-side validity (e.g. a required name). */
+  canSave?: boolean;
 }): JSX.Element {
   const t = useTranslations('corridor');
 
@@ -268,16 +274,23 @@ export function CorridorEditorCore({
   useEffect(() => {
     if (!open) return;
     if (existing?.waypoints && existing.waypoints.length > 0) {
-      setNodes(existing.waypoints.map((w) => ({ lng: w.lng, lat: w.lat, snapped: w.snapped })));
+      const nodes = existing.waypoints.map((w) => ({ lng: w.lng, lat: w.lat, snapped: w.snapped }));
+      setNodes(nodes);
       setTolerance(existing.toleranceMeters);
+      // Reflect the loaded corridor: the switch is ON only if every node is snapped.
+      setSnapMode(nodes.every((n) => n.snapped));
     } else if (existing?.pathGeojson) {
+      // A legacy corridor stored only its dense path (no control points) → load the
+      // vertices as freehand and show the switch OFF, so flipping it ON re-routes.
       setNodes(
         existing.pathGeojson.coordinates.map(([lng, lat]) => ({ lng, lat, snapped: false })),
       );
       setTolerance(existing.toleranceMeters);
+      setSnapMode(false);
     } else {
       setNodes([]);
       setTolerance(150);
+      setSnapMode(true);
     }
   }, [open, existing]);
 
@@ -325,6 +338,7 @@ export function CorridorEditorCore({
         </SheetHeader>
 
         <SheetBody className="space-y-4">
+          {extraFields}
           {!isMapsConfigured ? (
             <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-base border border-dashed border-neutral-300 bg-neutral-50 text-center">
               <MapPinned className="h-8 w-8 text-neutral-400" aria-hidden />
@@ -339,7 +353,17 @@ export function CorridorEditorCore({
                   <Label htmlFor="corridor-snap">{t('snapToggle')}</Label>
                   <p className="text-tiny text-neutral-500">{t('snapHint')}</p>
                 </div>
-                <Switch id="corridor-snap" checked={snapMode} onCheckedChange={setSnapMode} />
+                <Switch
+                  id="corridor-snap"
+                  checked={snapMode}
+                  onCheckedChange={(next) => {
+                    setSnapMode(next);
+                    // Re-apply to EVERY node, not just new ones, so flipping the
+                    // switch re-routes the whole path (snap → follow roads; off →
+                    // straight). This is what makes a legacy straight corridor snap.
+                    setNodes((prev) => prev.map((node) => ({ ...node, snapped: next })));
+                  }}
+                />
               </div>
 
               {/* Keyed by target so the fit-bounds runs once per opened corridor. */}
@@ -418,7 +442,7 @@ export function CorridorEditorCore({
           <Button
             onClick={handleSave}
             loading={saving}
-            disabled={!isMapsConfigured || isLoading || building || path.length < 2}
+            disabled={!isMapsConfigured || isLoading || building || path.length < 2 || !canSave}
           >
             {t('save')}
           </Button>

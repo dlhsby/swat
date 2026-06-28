@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { RouteCategory } from '@prisma/client';
-import { IsEnum, IsString, IsInt, Min } from 'class-validator';
+import { IsEnum, IsString, IsInt, IsOptional, Min } from 'class-validator';
 
 export class CreateRouteDto {
   @ApiProperty({ enum: RouteCategory })
@@ -15,10 +15,12 @@ export class CreateRouteDto {
   @IsString({ message: 'Lokasi tujuan wajib dipilih' })
   destinationSiteId!: string;
 
-  // 0 is allowed: legacy routes overwhelmingly carry distance 0 (the old app did
-  // not track leg distance), so the field must round-trip that on edit.
-  @ApiProperty({ minimum: 0, description: 'Distance in whole km' })
+  // Distance is derived from the route's default corridor length (ST_Length); the
+  // service overrides whatever is sent. Optional + accepted only so legacy clients
+  // and the resolve-or-create path can still pass a seed value (0).
+  @ApiPropertyOptional({ minimum: 0, description: 'Derived from the default corridor; optional' })
+  @IsOptional()
   @IsInt({ message: 'Jarak harus bilangan bulat (km)' })
   @Min(0, { message: 'Jarak tidak boleh negatif' })
-  distanceKm!: number;
+  distanceKm?: number;
 }

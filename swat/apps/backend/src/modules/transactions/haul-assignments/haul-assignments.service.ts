@@ -1,8 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 
 import { type SessionUser } from '../../../common/auth/session.types';
+import { combineDateAndTime, parseTimeOnly } from '../../../common/dates';
 import { type TripDto, toTripDto } from '../trips/trip.mapper';
 
+import { type AddAssignmentDto, type AddHaulDto } from './dto/add-assignment.dto';
 import { type RecordDepartDto } from './dto/record-depart.dto';
 import { type RecordReturnDto } from './dto/record-return.dto';
 import { type HaulAssignmentDto, toHaulAssignmentDto } from './haul-assignment.mapper';
@@ -94,5 +101,74 @@ export class HaulAssignmentsService {
     const assignment = await this.load(idParam);
     const trips = await this.repo.listTrips(assignment.id);
     return trips.map(toTripDto);
+  }
+
+  /** Add a driver-shift to a vehicle's existing haul (e.g. a second shift). */
+  async addAssignment(dto: AddAssignmentDto, user: SessionUser): Promise<HaulAssignmentDto> {
+    const haul = await this.repo.findHaul(dto.haulId);
+    if (!haul) {
+      throw new NotFoundException('Haul tidak ditemukan.');
+    }
+    if (haul.status === 'DONE') {
+      throw new BadRequestException('Haul sudah selesai dan tidak dapat ditambah.');
+    }
+    if (!(await this.repo.driverExists(dto.driverId))) {
+      throw new NotFoundException('Pengemudi tidak ditemukan.');
+    }
+    const odometer = haul.vehicle.currentOdometer;
+    const assignment = await this.repo.createAssignment({
+      haulId: haul.id,
+      driverId: dto.driverId,
+      operationDate: haul.operationDate,
+      status: 'IN_PROGRESS',
+      departTargetOdometer: odometer,
+      returnTargetOdometer: odometer,
+      departTargetTime: this.targetTime(haul.operationDate, dto.departTime),
+      returnTargetTime: this.targetTime(haul.operationDate, dto.returnTime),
+      createdById: user.id,
+    });
+    return toHaulAssignmentDto(assignment);
+  }
+
+  /** Add a vehicle (new haul + first shift) to an already-initialised day. */
+  async addHaul(dto: AddHaulDto, user: SessionUser): Promise<HaulAssignmentDto> {
+    const day = await this.repo.findDay(dto.transactionDayId);
+    if (!day) {
+      throw new NotFoundException('Hari transaksi tidak ditemukan.');
+    }
+    const vehicle = await this.repo.findVehicle(dto.vehicleId);
+    if (!vehicle) {
+      throw new NotFoundException('Kendaraan tidak ditemukan.');
+    }
+    if (!(await this.repo.driverExists(dto.driverId))) {
+      throw new NotFoundException('Pengemudi tidak ditemukan.');
+    }
+    if (await this.repo.haulExistsForVehicle(day.id, vehicle.id)) {
+      throw new UnprocessableEntityException('Kendaraan sudah terjadwal pada hari ini.');
+    }
+    const odometer = vehicle.currentOdometer;
+    const assignment = await this.repo.createHaulWithAssignment(
+      {
+        transactionDayId: day.id,
+        vehicleId: vehicle.id,
+        operationDate: day.date,
+        status: 'IN_PROGRESS',
+      },
+      {
+        driverId: dto.driverId,
+        operationDate: day.date,
+        status: 'IN_PROGRESS',
+        departTargetOdometer: odometer,
+        returnTargetOdometer: odometer,
+        departTargetTime: this.targetTime(day.date, dto.departTime),
+        returnTargetTime: this.targetTime(day.date, dto.returnTime),
+        createdById: user.id,
+      },
+    );
+    return toHaulAssignmentDto(assignment);
+  }
+
+  private targetTime(date: Date, time: string | undefined): Date | null {
+    return time ? combineDateAndTime(date, parseTimeOnly(time)) : null;
   }
 }

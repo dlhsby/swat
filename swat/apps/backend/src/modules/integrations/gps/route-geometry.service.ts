@@ -19,6 +19,12 @@ export interface RouteGeometryDto {
 
 export interface TripGeometryDto {
   readonly tripId: string;
+  readonly routeId: string | null;
+  /** The route corridor chosen for this day (null ⇒ the route default applies). */
+  readonly corridorId: string | null;
+  readonly corridorName: string | null;
+  /** True when a one-off freehand override is set (it wins over the named corridor). */
+  readonly hasOverride: boolean;
   readonly pathGeojson: unknown | null;
   readonly waypoints: unknown | null;
   readonly toleranceMeters: number | null;
@@ -79,10 +85,36 @@ export class RouteGeometryService {
     }
     return {
       tripId,
+      routeId: trip.routeId,
+      corridorId: trip.corridorId,
+      corridorName: trip.corridor?.name ?? null,
+      hasOverride: trip.geometryOverride != null,
       pathGeojson: trip.geometryOverride ?? null,
       waypoints: trip.geometryWaypoints ?? null,
       toleranceMeters: trip.geometryToleranceM,
     };
+  }
+
+  /**
+   * Pick one of the trip's route corridors for this single day (or `null` to track
+   * the route default). Clears any freehand override so the chosen corridor wins.
+   */
+  async setTripCorridor(tripId: string, corridorId: string | null): Promise<TripGeometryDto> {
+    const trip = await this.repo.tripOverride(tripId);
+    if (!trip) {
+      throw new NotFoundException('Trip tidak ditemukan.');
+    }
+    if (corridorId) {
+      if (!trip.routeId) {
+        throw new UnprocessableEntityException('Trip ini tidak terhubung ke rute.');
+      }
+      const owned = await this.repo.corridorInRoute(corridorId, trip.routeId);
+      if (!owned) {
+        throw new UnprocessableEntityException('Koridor bukan milik rute trip ini.');
+      }
+    }
+    await this.repo.setTripCorridor(tripId, corridorId);
+    return this.getTripOverride(tripId);
   }
 
   async setTripOverride(tripId: string, dto: UpsertTripGeometryDto): Promise<TripGeometryDto> {
@@ -97,12 +129,7 @@ export class RouteGeometryService {
       waypoints: (dto.waypoints ?? null) as Prisma.InputJsonValue | null,
       toleranceMeters: dto.toleranceMeters ?? null,
     });
-    return {
-      tripId,
-      pathGeojson: line,
-      waypoints: dto.waypoints ?? null,
-      toleranceMeters: dto.toleranceMeters ?? null,
-    };
+    return this.getTripOverride(tripId);
   }
 
   async clearTripOverride(tripId: string): Promise<{ message: string }> {

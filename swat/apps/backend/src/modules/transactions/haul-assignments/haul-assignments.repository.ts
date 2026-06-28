@@ -86,4 +86,69 @@ export class HaulAssignmentsRepository {
       orderBy: { targetTime: 'asc' },
     });
   }
+
+  // --- Add shift / add vehicle (Phase 7.8, T-729) --------------------------
+
+  findHaul(haulId: string): Promise<{
+    id: string;
+    status: string;
+    operationDate: Date;
+    vehicle: { currentOdometer: number };
+  } | null> {
+    return this.prisma.haul.findUnique({
+      where: { id: haulId },
+      select: {
+        id: true,
+        status: true,
+        operationDate: true,
+        vehicle: { select: { currentOdometer: true } },
+      },
+    });
+  }
+
+  findDay(dayId: string): Promise<{ id: string; date: Date; status: string } | null> {
+    return this.prisma.transactionDay.findUnique({
+      where: { id: dayId },
+      select: { id: true, date: true, status: true },
+    });
+  }
+
+  findVehicle(vehicleId: string): Promise<{ id: string; currentOdometer: number } | null> {
+    return this.prisma.vehicle.findFirst({
+      where: { id: vehicleId, deletedAt: null },
+      select: { id: true, currentOdometer: true },
+    });
+  }
+
+  driverExists(driverId: string): Promise<boolean> {
+    return this.prisma.driver
+      .findFirst({ where: { id: driverId, deletedAt: null }, select: { id: true } })
+      .then((d) => d !== null);
+  }
+
+  haulExistsForVehicle(transactionDayId: string, vehicleId: string): Promise<boolean> {
+    return this.prisma.haul
+      .findFirst({ where: { transactionDayId, vehicleId }, select: { id: true } })
+      .then((h) => h !== null);
+  }
+
+  createAssignment(
+    data: Prisma.HaulAssignmentUncheckedCreateInput,
+  ): Promise<HaulAssignmentWithRefs> {
+    return this.prisma.haulAssignment.create({ data, include: haulAssignmentInclude });
+  }
+
+  /** Create a vehicle's haul + its first shift atomically. */
+  createHaulWithAssignment(
+    haul: Prisma.HaulUncheckedCreateInput,
+    assignment: Omit<Prisma.HaulAssignmentUncheckedCreateInput, 'haulId'>,
+  ): Promise<HaulAssignmentWithRefs> {
+    return this.prisma.$transaction(async (tx) => {
+      const created = await tx.haul.create({ data: haul, select: { id: true } });
+      return tx.haulAssignment.create({
+        data: { ...assignment, haulId: created.id },
+        include: haulAssignmentInclude,
+      });
+    });
+  }
 }

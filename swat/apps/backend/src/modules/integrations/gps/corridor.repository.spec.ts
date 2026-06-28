@@ -58,7 +58,7 @@ describe('CorridorRepository', () => {
       prisma.trip.findFirst.mockResolvedValue({
         geometryOverride: OVERRIDE,
         geometryToleranceM: 120,
-        route: { geometry: { pathGeojson: LINE, toleranceMeters: 150 } },
+        route: { corridors: [{ pathGeojson: LINE, toleranceMeters: 150 }] },
       });
       await expect(repo.resolveTripCorridor('t1')).resolves.toEqual({
         geojson: OVERRIDE,
@@ -67,16 +67,45 @@ describe('CorridorRepository', () => {
       });
     });
 
-    it('falls back to the route template when there is no override', async () => {
+    it("uses the trip's chosen Corridor over the legacy route template", async () => {
       prisma.trip.findFirst.mockResolvedValue({
         geometryOverride: null,
         geometryToleranceM: null,
-        route: { geometry: { pathGeojson: LINE, toleranceMeters: 150 } },
+        corridor: { pathGeojson: LINE, toleranceMeters: 200, deletedAt: null },
+        route: { corridors: [{ pathGeojson: OVERRIDE, toleranceMeters: 150 }] },
+      });
+      await expect(repo.resolveTripCorridor('t1')).resolves.toEqual({
+        geojson: LINE,
+        toleranceMeters: 200,
+        source: 'corridor',
+      });
+    });
+
+    it('ignores a soft-deleted corridor and falls through to the template', async () => {
+      prisma.trip.findFirst.mockResolvedValue({
+        geometryOverride: null,
+        geometryToleranceM: null,
+        corridor: { pathGeojson: LINE, toleranceMeters: 200, deletedAt: new Date() },
+        route: { corridors: [{ pathGeojson: OVERRIDE, toleranceMeters: 150 }] },
+      });
+      await expect(repo.resolveTripCorridor('t1')).resolves.toEqual({
+        geojson: OVERRIDE,
+        toleranceMeters: 150,
+        source: 'route-default',
+      });
+    });
+
+    it('falls back to the route template when there is no override or corridor', async () => {
+      prisma.trip.findFirst.mockResolvedValue({
+        geometryOverride: null,
+        geometryToleranceM: null,
+        corridor: null,
+        route: { corridors: [{ pathGeojson: LINE, toleranceMeters: 150 }] },
       });
       await expect(repo.resolveTripCorridor('t1')).resolves.toEqual({
         geojson: LINE,
         toleranceMeters: 150,
-        source: 'route-template',
+        source: 'route-default',
       });
     });
 
@@ -84,7 +113,7 @@ describe('CorridorRepository', () => {
       prisma.trip.findFirst.mockResolvedValue({
         geometryOverride: null,
         geometryToleranceM: null,
-        route: { geometry: null },
+        route: { corridors: [] },
       });
       await expect(repo.resolveTripCorridor('t1')).resolves.toBeNull();
     });

@@ -165,6 +165,8 @@ export interface TripTemplateDto {
   originSiteName: string;
   destinationSiteId: string;
   destinationSiteName: string;
+  corridorId: string | null;
+  corridorName: string | null;
   targetTime: string;
   fuelRequestedLiters: number | null;
   createdAt: string;
