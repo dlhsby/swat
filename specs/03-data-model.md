@@ -1,7 +1,7 @@
 # 03 — Data Model (PostgreSQL + Prisma)
 
 Target schema for the new database. Names follow [`01-glossary.md`](./01-glossary.md). Source of the
-legacy structure: `../old_swat/db_backup/dkp_swat_2026_05_18_structure.sql` (44 tables, MySQL 5.6,
+legacy structure: `../legacy/web/db_backup/dkp_swat_2026_05_18_structure.sql` (44 tables, MySQL 5.6,
 latin1).
 
 ## 1. Design decisions

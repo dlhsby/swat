@@ -375,7 +375,7 @@ Legacy MySQL (`dkp_swat`) → PostgreSQL migration scripts in
 `apps/backend/scripts/migration/`. Following the Phase-0/1 defer-live-infra posture (Docker / a live
 MySQL / a live PostgreSQL are unavailable here): the **pure logic is unit-tested + typechecked +
 linted locally**; the **end-to-end run is the operator's on-prem step**. Column/enum maps were derived
-from the legacy structure + sample dump (`old_swat/db_backup/`); the snapshot is master-data-only, so
+from the legacy structure + sample dump (`legacy/web/db_backup/`); the snapshot is master-data-only, so
 the live transactional history is the streamed phase to run on-prem.
 
 | Task | Title | Status | Notes |
@@ -394,7 +394,7 @@ the live transactional history is the streamed phase to run on-prem.
   (verified against the dump's lookup rows), `mappers` (PK-preserve + data-quality), `reconcile`
   (tolerance + report), `permission-map` (longest-prefix), `pagination` (keyset + watermark), `images`.
 - **npm tasks:** `migrate:discovery` · `migrate:legacy` · `migrate:images` · `migrate:verify`. Run
-  order + env vars in [`apps/backend/scripts/migration/README.md`](../../swat/apps/backend/scripts/migration/README.md).
+  order + env vars in [`apps/backend/scripts/migration/README.md`](../../revamp/apps/backend/scripts/migration/README.md).
 
 ### M7 review fixes (`1436b9b`)
 

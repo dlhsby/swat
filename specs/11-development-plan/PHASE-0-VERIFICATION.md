@@ -27,7 +27,7 @@ tooling — runs in the dev WSL without Docker).
 - [ ] **P3. Docker up [OPS].** `docker compose --env-file infra/docker-compose.env up -d` →
   postgres15 / adminer / redis7 / minio / nginx all start. **Expected:** `docker compose ps` shows
   postgres + redis healthy; Adminer `:8080`, MinIO console `:9001` reachable.
-- [ ] **P4. Hooks wired [DEV].** `git config core.hooksPath` → `swat/.husky` (the git root is the **outer**
+- [ ] **P4. Hooks wired [DEV].** `git config core.hooksPath` → `revamp/.husky` (the git root is the **outer**
   dir; hooks are cwd-robust). pre-commit + commit-msg both present.
 
 ---
@@ -131,7 +131,7 @@ session cookie flows exactly as in production. It is **not** part of the unit ga
 
 ## DOC · Docs & developer onboarding  [DEV]
 
-- [ ] **DOC1. README.** `swat/README.md` walks clone → `.env.local` → `docker compose up` → `pnpm install` → `prisma:deploy` → seed → `pnpm dev`. A fresh developer can follow it to a running stack.
+- [ ] **DOC1. README.** `revamp/README.md` walks clone → `.env.local` → `docker compose up` → `pnpm install` → `prisma:deploy` → seed → `pnpm dev`. A fresh developer can follow it to a running stack.
 - [ ] **DOC2. .env.example complete.** Every key any service reads is present and commented; no secret values committed.
 
 ---

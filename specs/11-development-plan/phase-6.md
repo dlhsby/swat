@@ -7,7 +7,7 @@
 ## Overview
 
 Verify that **every legacy monitoring view and report has a faithful equivalent** in the new system,
-list the gaps, then remediate. Legacy surface audited (`old_swat/application/controllers/`):
+list the gaps, then remediate. Legacy surface audited (`legacy/web/application/controllers/`):
 
 - **Monitoring:** `monitoring/tonase*` (incl. `tonasesemua*`, `tonaseswasta`, `tonasesemua_b1_*`),
   `monitoring/bahanbakar`, `monitoring/rute*` (`rute`, `rute_swasta`, `rutesemua*`),

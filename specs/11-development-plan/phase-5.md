@@ -3,8 +3,8 @@
 ## Overview
 
 Close the remaining legacy-parity gaps in the transaction domain found by the gap analysis of
-`old_swat/application/controllers/transaksi/*` and the NuSOAP native-app server
-(`old_swat/application/controllers/Soapservers.php`) against the new NestJS/Prisma transactions stack.
+`legacy/web/application/controllers/transaksi/*` and the NuSOAP native-app server
+(`legacy/web/application/controllers/Soapservers.php`) against the new NestJS/Prisma transactions stack.
 The core daily workflow (auto-init, pool depart/return, disposal + weighbridge, verification, kitir,
 levy, rollups, inspections) is already rebuilt and in places improved; this phase fills the specific
 holes that can block real operations or the native-app cutover.

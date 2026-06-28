@@ -1488,7 +1488,7 @@ For each entity, build: list (table + filters + pagination), create (form + vali
 Full requirements in [`04-migration.md`](../04-migration.md) §11.
 
 > **Hard prerequisite:** **Epic 1.17 (Legacy-parity additions) must be complete before cutover.**
-> Cutover replaces `old_swat`, so the new system must have full feature parity first (reference
+> Cutover replaces `legacy/web`, so the new system must have full feature parity first (reference
 > masters, kitir bulk import, refuel log, inspection, maintenance). The Exit Criteria below treat
 > parity as a gate.
 
@@ -1587,7 +1587,7 @@ Full requirements in [`04-migration.md`](../04-migration.md) §11.
 ## Epic 1.17 — Legacy-parity additions (Size: L) — **committed Phase-1 scope; gates cutover**
 
 Closes the legacy feature gaps the new design surfaced (see the plan's Part 0 audit, G1–G8). These are
-**not new features** — they existed in `old_swat`. Because this is a **parity-first rewrite and the
+**not new features** — they existed in `legacy/web`. Because this is a **parity-first rewrite and the
 Phase-1 cutover (Epic 1.16) cannot proceed without full legacy parity**, this epic is **not optional
 and not deferrable** — its effort is already included in the Phase-1 estimate (it is *not* an add-on).
 Backend + frontend tasks together.

@@ -5,7 +5,7 @@ name: Quality
 # deploy-staging.yml (as the final gate on the release commit). SWAT is one unified
 # monorepo, so there's a single suite — no per-component path filtering needed.
 #
-# The pnpm monorepo lives in the inner `swat/` dir.
+# The pnpm monorepo lives in the inner `revamp/` dir.
 
 on:
   workflow_call:
@@ -16,7 +16,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: swat
+    working-directory: revamp
 
 jobs:
   checks:
@@ -39,7 +39,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          cache-dependency-path: swat/pnpm-lock.yaml
+          cache-dependency-path: revamp/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @swat/backend run prisma:generate
       - run: pnpm lint

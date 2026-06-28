@@ -1,0 +1,12 @@
+# Backup artifacts / large binaries / dumped data (never commit citizen data)
+dump/
+sample/
+test/
+downloaded/
+7za.exe
+*.sql
+*.sql.gz
+_rowcounts.txt
+_tables.txt
+_err.txt
+*.log

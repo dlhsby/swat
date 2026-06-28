@@ -12,7 +12,7 @@ infrastructure.
 | **Plan** | scaffold-all, defer-live-infra (Docker since enabled & verified) |
 | **Commit** | `516099f` — *feat: scaffold Phase 0 foundation (monorepo, backend, frontend, db)* (131 files) |
 | **Verified on** | 2026-06-08, PostgreSQL 15 + Redis 7 (Docker), Node 24 / pnpm 9 |
-| **Monorepo root** | inner `swat/` (keeps `specs/`, `designs/`, `old_swat/` out of the workspace) |
+| **Monorepo root** | inner `revamp/` (keeps `specs/`, `designs/`, `legacy/web/` out of the workspace) |
 
 ---
 
@@ -24,7 +24,7 @@ infrastructure.
 | Typecheck | `pnpm typecheck` | ✅ 5/5 packages, 0 errors |
 | Unit tests | `pnpm test` | ✅ 42 tests — backend 14, schemas 17, web 11 |
 | Build | `pnpm build` | ✅ 4/4 (backend `dist/`, web `.next/`) |
-| Hooks | `git config core.hooksPath` | ✅ `swat/.husky` (pre-commit + commit-msg active) |
+| Hooks | `git config core.hooksPath` | ✅ `revamp/.husky` (pre-commit + commit-msg active) |
 
 **Coverage** (gates from spec): `format.ts` + `status-pill.ts` ≥ 90% ✅ · `@swat/schemas` ≈ 95% ✅ ·
 storage/cache services ≥ 80% ✅.
@@ -42,7 +42,7 @@ pending live infra not on the critical path).
 | T-001 | Init pnpm + Turborepo | ✅ | `pnpm-workspace.yaml`, `turbo.json` (build/dev/lint/typecheck/test), `.npmrc` (prisma hoist), `tsconfig.base.json` (strict). |
 | T-002 | ESLint + Prettier shared config | ⚠️ | `@swat/eslint-config` (no-param-reassign, no-console, import/order). `import/no-unresolved` **disabled** — resolver is unreliable for `@/*` aliases under lint-staged's repo-root cwd; `tsc` owns resolution. |
 | T-003 | TypeScript strict config | ⚠️ | `@swat/tsconfig` (`base`/`nest`/`next`) made **self-contained** (no relative `extends`) so ESLint resolves them through pnpm symlinks. `nest.json` sets `incremental:false` (see T-005 deviation). |
-| T-004 | Husky + lint-staged + commitlint | ⚠️ | Hooks are cwd-robust (`cd "$(dirname "$0")/.."`) because the git root is the **outer** dir; `core.hooksPath=swat/.husky`. lint-staged runs `eslint` only on `*.{ts,tsx}` (configs → Prettier only). |
+| T-004 | Husky + lint-staged + commitlint | ⚠️ | Hooks are cwd-robust (`cd "$(dirname "$0")/.."`) because the git root is the **outer** dir; `core.hooksPath=revamp/.husky`. lint-staged runs `eslint` only on `*.{ts,tsx}` (configs → Prettier only). |
 
 ### Epic 0.2 — Backend bootstrap (NestJS)
 | Task | Title | Status | Notes |
@@ -83,7 +83,7 @@ pending live infra not on the critical path).
 | Task | Title | Status | Notes |
 |------|-------|--------|-------|
 | T-022 | GitHub Actions CI | ✅ | `.github/workflows/ci.yml` (Node 24, pnpm via `packageManager`) — mirrors local gates. **Exercised live**: first push to `dlhsby/swat` `main` ran green (Lint·Typecheck·Test·Build). Same workflow runs on PRs. |
-| T-023 | `.env.example` + README | ✅ | Root `.env.example` (all keys, commented) + `swat/README.md` setup guide. |
+| T-023 | `.env.example` + README | ✅ | Root `.env.example` (all keys, commented) + `revamp/README.md` setup guide. |
 
 ### Epic 0.7 — Storage, cache, rollups
 | Task | Title | Status | Notes |

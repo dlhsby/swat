@@ -13,7 +13,7 @@ MySQL system on a modern stack:
 | Web / UI | **Next.js** (App Router), installable **PWA**, Indonesian UI |
 | Backend | **NestJS** (REST), English domain code |
 | Database | **PostgreSQL** via **Prisma** |
-| Monorepo | pnpm workspaces + Turborepo, lives in `../swat/` |
+| Monorepo | pnpm workspaces + Turborepo, lives in `../revamp/` |
 
 > ⚠️ These are specs only. No application code is written yet. Implementation follows the phased
 > roadmap in [`11-development-plan/README.md`](./11-development-plan/README.md).
@@ -93,8 +93,8 @@ have multiple peer documents under one heading.
 
 ## Source material
 
-- Legacy code: `../old_swat/` (CodeIgniter 2.1.4).
-- Legacy DB dump: `../old_swat/db_backup/dkp_swat_2026_05_18_{structure,data}.sql`
+- Legacy code: `../legacy/web/` (CodeIgniter 2.1.4).
+- Legacy DB dump: `../legacy/web/db_backup/dkp_swat_2026_05_18_{structure,data}.sql`
   (database `dkp_swat`, MySQL 5.6, latin1).
   > ⚠️ This dump is a **partial / master-data snapshot**: the core transaction tables
   > (`transaksiangkutsampah`, `detailtransaksiangkutsampah`, `trayek`) are empty in it. The **live

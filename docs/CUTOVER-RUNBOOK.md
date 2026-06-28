@@ -1,6 +1,6 @@
 # SWAT Cutover Runbook (T-167)
 
-Operational procedure to switch DLH Kota Surabaya from the legacy `old_swat`
+Operational procedure to switch DLH Kota Surabaya from the legacy `legacy/web`
 (CodeIgniter + MySQL) system to SWAT (NestJS + PostgreSQL). Spec:
 [`specs/04-migration.md`](../specs/04-migration.md) §11.
 
@@ -23,7 +23,7 @@ A go-live decision requires the Approver's written sign-off on the §4 checklist
 
 - [ ] Production stack provisioned + healthy: `docker compose -f infra/docker-compose.prod.yml --env-file infra/docker-compose.prod.env up -d --build` → all services `healthy`.
 - [ ] Secrets set (no defaults): `SESSION_SECRET`, DB + MinIO credentials. TLS terminating in front of Nginx.
-- [ ] Bulk migration done + verified on staging: `migrate:discovery` → `migrate:legacy` → `migrate:images` → `migrate:verify` (exit 0, ≤1% variance, FK clean). See [`apps/backend/scripts/migration/README.md`](../swat/apps/backend/scripts/migration/README.md).
+- [ ] Bulk migration done + verified on staging: `migrate:discovery` → `migrate:legacy` → `migrate:images` → `migrate:verify` (exit 0, ≤1% variance, FK clean). See [`apps/backend/scripts/migration/README.md`](../revamp/apps/backend/scripts/migration/README.md).
 - [ ] Parallel run active: legacy still authoritative; `migrate:delta-sync` run daily, KPI parity (tonnage/fuel/ritase) within 1%.
 - [ ] This runbook + [`ROLLBACK-PLAN.md`](./ROLLBACK-PLAN.md) dry-run on staging (flip → verify → flip back).
 - [ ] Users notified of the freeze window + that they will receive one-time credentials.
