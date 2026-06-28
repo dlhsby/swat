@@ -68,7 +68,14 @@ import {
   resolveFk,
   toLegacyMap,
 } from './lib/mappers';
-import { keysetBatches, readWatermark, writeWatermark } from './lib/pagination';
+import {
+  distinctKeys,
+  fetchExistingLegacyIds,
+  keysetBatches,
+  readWatermark,
+  resolveParents,
+  writeWatermark,
+} from './lib/pagination';
 import { derivePermissionKeys } from './lib/permission-map';
 import {
   type Flags,
@@ -80,9 +87,11 @@ import {
   warn,
 } from './lib/runtime';
 import {
+  capApprovedFuel,
   clampNonNegative,
   dedupeRoutes,
   fixDate,
+  grossOrNullIfBelowTare,
   legacyTimeToDate,
   nonNegativeOrNull,
   parseDmyDate,
@@ -115,6 +124,29 @@ if (seedEnv) {
 const prisma = new PrismaClient({ adapter: pgAdapter() });
 const NOW = new Date();
 
+/** Resumable keyset watermarks for every streamed table (shared across phases). */
+const WATERMARK_PATH = join(__dirname, 'reports', 'watermark.json');
+
+/**
+ * Partition window pre-created by `20260608000100_partition_transactions`
+ * (2013-01..2026-12 monthly + a DEFAULT catch-all). Rows whose `operationDate`
+ * falls outside this land in `*_default` — harmless but bad for pruning, and a
+ * signal that the partition migration must be extended before loading. The loader
+ * warns rather than silently misroutes.
+ */
+const PARTITION_RANGE_START = Date.UTC(2013, 0, 1);
+const PARTITION_RANGE_END = Date.UTC(2027, 0, 1);
+let outOfRangeOperationDates = 0;
+
+/** Count (and pass through) a denormalized operationDate that would miss the partition window. */
+function checkPartitionRange(date: Date): Date {
+  const t = date.getTime();
+  if (t < PARTITION_RANGE_START || t >= PARTITION_RANGE_END) {
+    outOfRangeOperationDates += 1;
+  }
+  return date;
+}
+
 /**
  * Dev/test password set on the bootstrap `admin` AND every migrated legacy user
  * (override with `LEGACY_SEED_PASSWORD`). Legacy users get it with a forced
@@ -137,7 +169,7 @@ const ROLE_NAME_MAP: Record<string, string> = {
   Supervisor: 'Supervisor',
 };
 
-async function checkIdempotency(forceReset: boolean): Promise<void> {
+async function checkIdempotency(forceReset: boolean, includeTransactions: boolean): Promise<void> {
   const existing = await prisma.user.findFirst({ where: { legacyId: { not: null } } });
   if (existing && !forceReset) {
     // Already applied. Every write is skipDuplicates/upsert, so a re-run just adds
@@ -153,6 +185,22 @@ async function checkIdempotency(forceReset: boolean): Promise<void> {
        "fuel_category","vehicle_type","license_class","daily_tonnage","levy","legacy_name_map"
        CASCADE`,
     );
+    // disposal_permit is in the master set above and streamed (watermarked) in
+    // migrateScheduling — reset its watermark whenever we force-reset.
+    writeWatermark(WATERMARK_PATH, 'disposal_permit', 0);
+    if (includeTransactions) {
+      // The partitioned transaction tables aren't in the CASCADE set above (they have
+      // no FK from the master tables). Clear them too for a clean transactional reload,
+      // and reset their keyset watermarks so the stream restarts from the top.
+      warn('Force reset: truncating transaction tables + resetting watermarks.');
+      await prisma.$executeRawUnsafe(
+        `TRUNCATE TABLE "trip","haul_assignment","haul","transaction_day","tpa_inbound_log"
+         RESTART IDENTITY CASCADE`,
+      );
+      for (const key of ['transaction_day', 'haul', 'haul_assignment', 'trip', 'tpa_inbound_log']) {
+        writeWatermark(WATERMARK_PATH, key, 0);
+      }
+    }
   }
 }
 
@@ -449,7 +497,7 @@ async function migrateAuth(): Promise<void> {
   }
 }
 
-async function migrateScheduling(sysUser: string): Promise<void> {
+async function migrateScheduling(sysUser: string, flags: Flags): Promise<void> {
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
     // Resolve FKs against the master data loaded earlier (legacy id → new UUID).
@@ -561,12 +609,31 @@ async function migrateScheduling(sysUser: string): Promise<void> {
     }
     log(`TripTemplate: ${tplCount}`);
 
-    const quotas = await query<LegacyDisposalPermit>(conn, 'SELECT * FROM jatahkitir');
-    await prisma.disposalPermit.createMany({
-      data: quotas.map((r) => mapDisposalPermit(r, NOW, sysUser, vehicleMap, siteMap)),
-      skipDuplicates: true,
-    });
-    log(`DisposalPermit: ${quotas.length}`);
+    // jatahkitir → DisposalPermit. ~2.4M rows, so stream in keyset batches rather
+    // than `SELECT *` the whole table. legacyId IS @unique here, so createMany
+    // skipDuplicates makes a re-run idempotent (no per-batch existence probe needed).
+    let permitCount = 0;
+    const permitStart = flags.resume ? readWatermark(WATERMARK_PATH, 'disposal_permit') : 0;
+    for await (const { rows, lastId } of keysetBatches<LegacyDisposalPermit>(
+      (afterId, limit) =>
+        query(
+          conn,
+          'SELECT * FROM jatahkitir WHERE JATAHKITIR_ID > ? ORDER BY JATAHKITIR_ID LIMIT ?',
+          [afterId, limit],
+        ),
+      (r) => r.JATAHKITIR_ID,
+      flags.batchSize,
+      permitStart,
+    )) {
+      // mapDisposalPermit resolves vehicle+site via the preloaded master maps and
+      // throws on an unresolvable hard FK — fail loud (the loader never writes a
+      // silent bad row), same as the original whole-table map.
+      const data = rows.map((r) => mapDisposalPermit(r, NOW, sysUser, vehicleMap, siteMap));
+      await prisma.disposalPermit.createMany({ data, skipDuplicates: true });
+      permitCount += data.length;
+      writeWatermark(WATERMARK_PATH, 'disposal_permit', lastId);
+    }
+    log(`DisposalPermit: ${permitCount}`);
   } finally {
     await conn.end();
   }
@@ -588,6 +655,10 @@ async function migrateAggregates(sysUser: string): Promise<void> {
     });
 
     const nameMap = await query<LegacyNameMapRow>(conn, 'SELECT * FROM konversi_si_swat');
+    // LegacyNameMap has no legacyId/unique key, so skipDuplicates can't dedupe it — a
+    // re-run (e.g. --resume, which skips --force-reset's truncate) would otherwise
+    // re-insert all rows. It's a tiny fully-derived table, so reset it for idempotency.
+    await prisma.legacyNameMap.deleteMany();
     await prisma.legacyNameMap.createMany({
       data: nameMap.map((r) => mapNameMap(r, NOW)),
       skipDuplicates: true,
@@ -611,7 +682,7 @@ async function migrateAggregates(sysUser: string): Promise<void> {
  * skipped, so a re-run or `--resume` never duplicates.
  */
 async function migrateTransactions(sysUser: string, flags: Flags): Promise<void> {
-  const watermarkPath = join(__dirname, 'reports', 'watermark.json');
+  const watermarkPath = WATERMARK_PATH;
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
     // 1. haritransaksi → TransactionDay (keyset-batched, idempotent on legacyId/date).
@@ -645,56 +716,10 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
     }
     log(`TransactionDay: ${dayCount}`);
 
-    // FK resolution maps for the (small) haul/assignment/trip chain.
-    const dayByLegacy = new Map(
-      (
-        await prisma.transactionDay.findMany({
-          where: { legacyId: { not: null } },
-          select: { id: true, legacyId: true, date: true },
-        })
-      ).map((d) => [d.legacyId, { id: d.id, date: d.date }]),
-    );
+    // Small master maps preloaded once (each <5k rows) and reused across batches.
     const vehicleMap = toLegacyMap(await prisma.vehicle.findMany(ID_LEGACY));
-
-    // 2. transaksiangkutsampah → Haul (operationDate denormalized from the day).
-    const existingHaul = new Set(
-      (
-        await prisma.haul.findMany({
-          where: { legacyId: { not: null } },
-          select: { legacyId: true },
-        })
-      ).map((h) => Number(h.legacyId)),
-    );
-    const legacyHauls = await query<LegacyHaul>(conn, 'SELECT * FROM transaksiangkutsampah');
-    const haulData = legacyHauls.flatMap((r) => {
-      if (existingHaul.has(r.TRANSAKSIANGKUTSAMPAH_ID)) return [];
-      const day = dayByLegacy.get(r.HARITRANSAKSI_ID);
-      const vehicleId = vehicleMap.get(r.KENDARAAN_ID);
-      if (!day || !vehicleId) return [];
-      return [
-        {
-          legacyId: r.TRANSAKSIANGKUTSAMPAH_ID,
-          transactionDayId: day.id,
-          vehicleId,
-          operationDate: day.date,
-          status: mapDayStatus(r.STATUSTRANSAKSIANGKUTSAMPAH_ID),
-          notes: trimOrNull(r.TRANSAKSIANGKUTSAMPAH_KETERANGAN),
-        },
-      ];
-    });
-    await prisma.haul.createMany({ data: haulData, skipDuplicates: true });
-    log(`Haul: ${haulData.length}`);
-
-    // 3. detailtransaksiangkutsampah → HaulAssignment.
-    const haulByLegacy = new Map(
-      (
-        await prisma.haul.findMany({
-          where: { legacyId: { not: null } },
-          select: { id: true, legacyId: true, operationDate: true },
-        })
-      ).map((h) => [Number(h.legacyId), { id: h.id, operationDate: h.operationDate }]),
-    );
     const driverMap = toLegacyMap(await prisma.driver.findMany(ID_LEGACY));
+    const routeMap = toLegacyMap(await prisma.route.findMany(ID_LEGACY));
     const scheduleByLegacy = new Map(
       (
         await prisma.scheduleTemplate.findMany({
@@ -703,114 +728,216 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
         })
       ).map((s) => [s.legacyId, s.id]),
     );
-    const existingAssignment = new Set(
-      (
-        await prisma.haulAssignment.findMany({
-          where: { legacyId: { not: null } },
-          select: { legacyId: true },
-        })
-      ).map((a) => Number(a.legacyId)),
-    );
-    const legacyDetails = await query<LegacyHaulAssignment>(
-      conn,
-      'SELECT * FROM detailtransaksiangkutsampah',
-    );
-    const assignmentData = legacyDetails.flatMap((r) => {
-      if (existingAssignment.has(r.DETAILTRANSAKSIANGKUTSAMPAH_ID)) return [];
-      const haul = haulByLegacy.get(r.TRANSAKSIANGKUTSAMPAH_ID);
-      const driverId = driverMap.get(r.PENGEMUDI_ID);
-      if (!haul || !driverId) return [];
-      const scheduleTemplateId =
-        r.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID != null
-          ? (scheduleByLegacy.get(r.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID) ?? null)
-          : null;
-      return [
-        {
-          legacyId: r.DETAILTRANSAKSIANGKUTSAMPAH_ID,
-          haulId: haul.id,
-          driverId,
-          scheduleTemplateId,
-          operationDate: haul.operationDate,
-          status: mapDayStatus(r.STATUSDETAILTRANSAKSIANGKUTSAMPAH_ID),
-          departTargetOdometer: clampNonNegative(
-            r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMTARGETBERANGKATKANDANG,
-          ),
-          departActualOdometer: nonNegativeOrNull(
-            r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMREALISASIBERANGKATKANDANG,
-          ),
-          returnTargetOdometer: clampNonNegative(
-            r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMTARGETKEMBALIKANDANG,
-          ),
-          returnActualOdometer: nonNegativeOrNull(
-            r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMREALISASIKEMBALIKANDANG,
-          ),
-          departTargetTime: fixDate(r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUTARGETBERANGKATKANDANG),
-          departActualTime: fixDate(
-            r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUREALISASIBERANGKATKANDANG,
-          ),
-          returnTargetTime: fixDate(r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUTARGETKEMBALIKANDANG),
-          returnActualTime: fixDate(
-            r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUREALISASIKEMBALIKANDANG,
-          ),
-          notes: trimOrNull(r.DETAILTRANSAKSIANGKUTSAMPAH_KETERANGAN),
-          createdById: sysUser,
-        },
-      ];
-    });
-    await prisma.haulAssignment.createMany({ data: assignmentData, skipDuplicates: true });
-    log(`HaulAssignment: ${assignmentData.length}`);
 
-    // 4. trayek → Trip.
-    const assignmentByLegacy = new Map(
-      (
-        await prisma.haulAssignment.findMany({
-          where: { legacyId: { not: null } },
-          select: { id: true, legacyId: true, operationDate: true },
-        })
-      ).map((a) => [Number(a.legacyId), { id: a.id, operationDate: a.operationDate }]),
-    );
-    const routeMap = toLegacyMap(await prisma.route.findMany(ID_LEGACY));
-    const existingTrip = new Set(
-      (
-        await prisma.trip.findMany({
-          where: { legacyId: { not: null } },
-          select: { legacyId: true },
-        })
-      ).map((t) => Number(t.legacyId)),
-    );
-    const legacyTrips = await query<LegacyTrip>(conn, 'SELECT * FROM trayek');
-    const tripData = legacyTrips.flatMap((r) => {
-      if (existingTrip.has(r.TRAYEK_ID)) return [];
-      const assignment = assignmentByLegacy.get(r.DETAILTRANSAKSIANGKUTSAMPAH_ID);
-      if (!assignment) return [];
-      const routeId = r.RUTE_ID != null ? (routeMap.get(r.RUTE_ID) ?? null) : null;
-      return [
-        {
-          legacyId: r.TRAYEK_ID,
-          haulAssignmentId: assignment.id,
-          routeId,
-          operationDate: assignment.operationDate,
-          status: mapTripStatus(r.STATUSTRAYEK_ID),
-          name: trimOrNull(r.TRAYEK_NAMA) ?? 'Trayek',
-          targetTime: fixDate(r.TRAYEK_WAKTUTARGET),
-          actualTime: fixDate(r.TRAYEK_WAKTUREALISASI),
-          targetOdometer: clampNonNegative(r.TRAYEK_KMTARGET),
-          actualOdometer: clampNonNegative(r.TRAYEK_KMREALISASI),
-          tareWeight: clampNonNegative(r.TRAYEK_BERATKOSONGKENDARAAN),
-          grossWeight: nonNegativeOrNull(r.TRAYEK_BERATKOTORTIMBANGAN),
-          netWeight: nonNegativeOrNull(r.TRAYEK_BERATBERSIHSAMPAH),
-          wasteVolume: nonNegativeOrNull(r.TRAYEK_VOLUMESAMPAH),
-          fuelRequestedLiters: nonNegativeOrNull(r.TRAYEK_JUMLAHISIBBMDIAJUKAN),
-          fuelApprovedLiters: nonNegativeOrNull(r.TRAYEK_JUMLAHISIBBMDISETUJUI),
-          scheduledEntryAt: fixDate(r.TRAYEK_WAKTUENTRIPENJADWALAN),
-          realizationEntryAt: fixDate(r.TRAYEK_WAKTUENTRIREALISASI),
-          notes: trimOrNull(r.TRAYEK_KETERANGAN),
-          createdById: sysUser,
-        },
-      ];
-    });
-    await prisma.trip.createMany({ data: tripData, skipDuplicates: true });
-    log(`Trip: ${tripData.length}`);
+    // 2. transaksiangkutsampah → Haul (~4.1M). Keyset-batched; per batch resolve only
+    //    the distinct TransactionDay parents it references (never the whole table).
+    //    Idempotent via the unique (operationDate, transactionDayId, vehicleId).
+    let haulCount = 0;
+    const haulStart = flags.resume ? readWatermark(watermarkPath, 'haul') : 0;
+    for await (const { rows, lastId } of keysetBatches<LegacyHaul>(
+      (afterId, limit) =>
+        query(
+          conn,
+          'SELECT * FROM transaksiangkutsampah WHERE TRANSAKSIANGKUTSAMPAH_ID > ? ORDER BY TRANSAKSIANGKUTSAMPAH_ID LIMIT ?',
+          [afterId, limit],
+        ),
+      (r) => r.TRANSAKSIANGKUTSAMPAH_ID,
+      flags.batchSize,
+      haulStart,
+    )) {
+      const dayByLegacy = await resolveParents(
+        distinctKeys(rows, (r) => r.HARITRANSAKSI_ID),
+        (ids) =>
+          prisma.transactionDay.findMany({
+            where: { legacyId: { in: ids } },
+            select: { id: true, legacyId: true, date: true },
+          }),
+      );
+      const data = rows.flatMap((r) => {
+        const day = dayByLegacy.get(r.HARITRANSAKSI_ID);
+        const vehicleId = vehicleMap.get(r.KENDARAAN_ID);
+        if (!day || !vehicleId) return [];
+        return [
+          {
+            legacyId: r.TRANSAKSIANGKUTSAMPAH_ID,
+            transactionDayId: day.id,
+            vehicleId,
+            operationDate: checkPartitionRange(day.date),
+            status: mapDayStatus(r.STATUSTRANSAKSIANGKUTSAMPAH_ID),
+            notes: trimOrNull(r.TRANSAKSIANGKUTSAMPAH_KETERANGAN),
+          },
+        ];
+      });
+      await prisma.haul.createMany({ data, skipDuplicates: true });
+      haulCount += data.length;
+      writeWatermark(watermarkPath, 'haul', lastId);
+    }
+    log(`Haul: ${haulCount}`);
+
+    // 3. detailtransaksiangkutsampah → HaulAssignment (~4.4M). Per batch resolve the
+    //    Haul parents; HaulAssignment.legacyId is NOT unique (partitioned), so dedupe
+    //    via a per-batch existing-legacyId probe rather than createMany skipDuplicates.
+    let assignmentCount = 0;
+    const assignmentStart = flags.resume ? readWatermark(watermarkPath, 'haul_assignment') : 0;
+    for await (const { rows, lastId } of keysetBatches<LegacyHaulAssignment>(
+      (afterId, limit) =>
+        query(
+          conn,
+          'SELECT * FROM detailtransaksiangkutsampah WHERE DETAILTRANSAKSIANGKUTSAMPAH_ID > ? ORDER BY DETAILTRANSAKSIANGKUTSAMPAH_ID LIMIT ?',
+          [afterId, limit],
+        ),
+      (r) => r.DETAILTRANSAKSIANGKUTSAMPAH_ID,
+      flags.batchSize,
+      assignmentStart,
+    )) {
+      const haulByLegacy = await resolveParents(
+        distinctKeys(rows, (r) => r.TRANSAKSIANGKUTSAMPAH_ID),
+        (ids) =>
+          prisma.haul.findMany({
+            where: { legacyId: { in: ids.map((n) => BigInt(n)) } },
+            select: { id: true, legacyId: true, operationDate: true },
+          }),
+      );
+      const already = await fetchExistingLegacyIds(
+        rows.map((r) => r.DETAILTRANSAKSIANGKUTSAMPAH_ID),
+        (ids) =>
+          prisma.haulAssignment.findMany({
+            where: { legacyId: { in: ids.map((n) => BigInt(n)) } },
+            select: { legacyId: true },
+          }),
+      );
+      const data = rows.flatMap((r) => {
+        if (already.has(r.DETAILTRANSAKSIANGKUTSAMPAH_ID)) return [];
+        const haul = haulByLegacy.get(r.TRANSAKSIANGKUTSAMPAH_ID);
+        const driverId = driverMap.get(r.PENGEMUDI_ID);
+        if (!haul || !driverId) return [];
+        const scheduleTemplateId =
+          r.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID != null
+            ? (scheduleByLegacy.get(r.MASTERDETAILTRANSAKSIANGKUTSAMPAH_ID) ?? null)
+            : null;
+        return [
+          {
+            legacyId: r.DETAILTRANSAKSIANGKUTSAMPAH_ID,
+            haulId: haul.id,
+            driverId,
+            scheduleTemplateId,
+            operationDate: haul.operationDate,
+            status: mapDayStatus(r.STATUSDETAILTRANSAKSIANGKUTSAMPAH_ID),
+            departTargetOdometer: clampNonNegative(
+              r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMTARGETBERANGKATKANDANG,
+            ),
+            departActualOdometer: nonNegativeOrNull(
+              r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMREALISASIBERANGKATKANDANG,
+            ),
+            returnTargetOdometer: clampNonNegative(
+              r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMTARGETKEMBALIKANDANG,
+            ),
+            returnActualOdometer: nonNegativeOrNull(
+              r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPKMREALISASIKEMBALIKANDANG,
+            ),
+            departTargetTime: fixDate(
+              r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUTARGETBERANGKATKANDANG,
+            ),
+            departActualTime: fixDate(
+              r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUREALISASIBERANGKATKANDANG,
+            ),
+            returnTargetTime: fixDate(r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUTARGETKEMBALIKANDANG),
+            returnActualTime: fixDate(
+              r.DETAILTRANSAKSIANGKUTSAMPAH_REKAPWAKTUREALISASIKEMBALIKANDANG,
+            ),
+            notes: trimOrNull(r.DETAILTRANSAKSIANGKUTSAMPAH_KETERANGAN),
+            createdById: sysUser,
+          },
+        ];
+      });
+      await prisma.haulAssignment.createMany({ data, skipDuplicates: true });
+      assignmentCount += data.length;
+      writeWatermark(watermarkPath, 'haul_assignment', lastId);
+    }
+    log(`HaulAssignment: ${assignmentCount}`);
+
+    // 4. trayek → Trip (~8M). Per batch resolve the HaulAssignment parents; Trip.legacyId
+    //    is NOT unique (partitioned), so dedupe via a per-batch existing-legacyId probe.
+    let tripCount = 0;
+    const tripStart = flags.resume ? readWatermark(watermarkPath, 'trip') : 0;
+    for await (const { rows, lastId } of keysetBatches<LegacyTrip>(
+      (afterId, limit) =>
+        query(conn, 'SELECT * FROM trayek WHERE TRAYEK_ID > ? ORDER BY TRAYEK_ID LIMIT ?', [
+          afterId,
+          limit,
+        ]),
+      (r) => r.TRAYEK_ID,
+      flags.batchSize,
+      tripStart,
+    )) {
+      const assignmentByLegacy = await resolveParents(
+        distinctKeys(rows, (r) => r.DETAILTRANSAKSIANGKUTSAMPAH_ID),
+        (ids) =>
+          prisma.haulAssignment.findMany({
+            where: { legacyId: { in: ids.map((n) => BigInt(n)) } },
+            select: { id: true, legacyId: true, operationDate: true },
+          }),
+      );
+      const already = await fetchExistingLegacyIds(
+        rows.map((r) => r.TRAYEK_ID),
+        (ids) =>
+          prisma.trip.findMany({
+            where: { legacyId: { in: ids.map((n) => BigInt(n)) } },
+            select: { legacyId: true },
+          }),
+      );
+      const data = rows.flatMap((r) => {
+        if (already.has(r.TRAYEK_ID)) return [];
+        const assignment = assignmentByLegacy.get(r.DETAILTRANSAKSIANGKUTSAMPAH_ID);
+        if (!assignment) return [];
+        const routeId = r.RUTE_ID != null ? (routeMap.get(r.RUTE_ID) ?? null) : null;
+        const fuelRequestedLiters = nonNegativeOrNull(r.TRAYEK_JUMLAHISIBBMDIAJUKAN);
+        const tareWeight = clampNonNegative(r.TRAYEK_BERATKOSONGKENDARAAN);
+        return [
+          {
+            legacyId: r.TRAYEK_ID,
+            haulAssignmentId: assignment.id,
+            routeId,
+            operationDate: assignment.operationDate,
+            status: mapTripStatus(r.STATUSTRAYEK_ID),
+            name: trimOrNull(r.TRAYEK_NAMA) ?? 'Trayek',
+            targetTime: fixDate(r.TRAYEK_WAKTUTARGET),
+            actualTime: fixDate(r.TRAYEK_WAKTUREALISASI),
+            targetOdometer: clampNonNegative(r.TRAYEK_KMTARGET),
+            actualOdometer: clampNonNegative(r.TRAYEK_KMREALISASI),
+            tareWeight,
+            // gross ≥ tare (DB CHECK); legacy has ~1k faulty readings below tare.
+            grossWeight: grossOrNullIfBelowTare(
+              tareWeight,
+              nonNegativeOrNull(r.TRAYEK_BERATKOTORTIMBANGAN),
+            ),
+            netWeight: nonNegativeOrNull(r.TRAYEK_BERATBERSIHSAMPAH),
+            wasteVolume: nonNegativeOrNull(r.TRAYEK_VOLUMESAMPAH),
+            fuelRequestedLiters,
+            // approved ≤ requested (DB CHECK); legacy has ~100k violating rows.
+            fuelApprovedLiters: capApprovedFuel(
+              fuelRequestedLiters,
+              nonNegativeOrNull(r.TRAYEK_JUMLAHISIBBMDISETUJUI),
+            ),
+            scheduledEntryAt: fixDate(r.TRAYEK_WAKTUENTRIPENJADWALAN),
+            realizationEntryAt: fixDate(r.TRAYEK_WAKTUENTRIREALISASI),
+            notes: trimOrNull(r.TRAYEK_KETERANGAN),
+            createdById: sysUser,
+          },
+        ];
+      });
+      await prisma.trip.createMany({ data, skipDuplicates: true });
+      tripCount += data.length;
+      writeWatermark(watermarkPath, 'trip', lastId);
+    }
+    log(`Trip: ${tripCount}`);
+    if (outOfRangeOperationDates > 0) {
+      warn(
+        `${outOfRangeOperationDates} rows have an operationDate outside the pre-created ` +
+          `partition window (2013-01..2026-12) and landed in *_default — extend the ` +
+          `20260608000100_partition_transactions range and reload to prune them properly.`,
+      );
+    }
 
     // 5. sampahmasuktpa → TpaInboundLog. `operation_date` is the physical monthly
     //    partition key (absent from the Prisma model), so insert via raw SQL.
@@ -880,18 +1007,17 @@ async function main(): Promise<void> {
       'Refusing to run against production (SEED_ENV=production) without --confirm-production.',
     );
   }
-  const watermarkPath = join(__dirname, 'reports', 'watermark.json');
   log(
     `Migration start (env=${seedEnv ?? 'local'} resume=${flags.resume} forceReset=${flags.forceReset} ` +
-      `batch=${flags.batchSize} transactions=${flags.includeTransactions}); watermarks → ${watermarkPath}`,
+      `batch=${flags.batchSize} transactions=${flags.includeTransactions}); watermarks → ${WATERMARK_PATH}`,
   );
 
-  await checkIdempotency(flags.forceReset);
+  await checkIdempotency(flags.forceReset, flags.includeTransactions);
   const sysUser = await ensureAuthBootstrap();
 
   await migrateMasterData();
   await migrateAuth();
-  await migrateScheduling(sysUser);
+  await migrateScheduling(sysUser, flags);
   await migrateAggregates(sysUser);
 
   if (flags.includeTransactions) {

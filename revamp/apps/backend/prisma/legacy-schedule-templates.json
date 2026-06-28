@@ -9770,5 +9770,47 @@
     "driverLegacyId": 132,
     "departTime": "00:00:00",
     "returnTime": "00:00:00"
+  },
+  {
+    "legacyId": 1449,
+    "vehicleLegacyId": 1538,
+    "driverLegacyId": 180,
+    "departTime": "00:00:00",
+    "returnTime": "00:00:00"
+  },
+  {
+    "legacyId": 1450,
+    "vehicleLegacyId": 1539,
+    "driverLegacyId": 180,
+    "departTime": "00:00:00",
+    "returnTime": "00:00:00"
+  },
+  {
+    "legacyId": 1451,
+    "vehicleLegacyId": 1540,
+    "driverLegacyId": 132,
+    "departTime": "00:00:00",
+    "returnTime": "00:00:00"
+  },
+  {
+    "legacyId": 1452,
+    "vehicleLegacyId": 1541,
+    "driverLegacyId": 132,
+    "departTime": "00:00:00",
+    "returnTime": "00:00:00"
+  },
+  {
+    "legacyId": 1453,
+    "vehicleLegacyId": 1542,
+    "driverLegacyId": 132,
+    "departTime": "00:00:00",
+    "returnTime": "00:00:00"
+  },
+  {
+    "legacyId": 1454,
+    "vehicleLegacyId": 1543,
+    "driverLegacyId": 132,
+    "departTime": "00:00:00",
+    "returnTime": "00:00:00"
   }
 ]

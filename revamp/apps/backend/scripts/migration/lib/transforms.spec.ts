@@ -1,9 +1,11 @@
 import {
+  capApprovedFuel,
   clampNonNegative,
   dedupeRoutes,
   fixDate,
   fixGps,
   fixYear,
+  grossOrNullIfBelowTare,
   legacyTimeToDate,
   nonNegativeOrNull,
   parseDmyDate,
@@ -137,5 +139,33 @@ describe('resolveLegacyUsername', () => {
     expect(resolveLegacyUsername('admin', 70, reserved)).toBe(
       resolveLegacyUsername('admin', 70, reserved),
     );
+  });
+});
+
+describe('capApprovedFuel', () => {
+  it('clamps approved down to requested when it exceeds it', () => {
+    expect(capApprovedFuel(40, 60)).toBe(40);
+  });
+  it('keeps approved when within requested', () => {
+    expect(capApprovedFuel(60, 40)).toBe(40);
+    expect(capApprovedFuel(60, 60)).toBe(60);
+  });
+  it('passes nulls through (the CHECK allows a null on either side)', () => {
+    expect(capApprovedFuel(null, 60)).toBe(60);
+    expect(capApprovedFuel(40, null)).toBeNull();
+    expect(capApprovedFuel(null, null)).toBeNull();
+  });
+});
+
+describe('grossOrNullIfBelowTare', () => {
+  it('nulls a gross reading below tare', () => {
+    expect(grossOrNullIfBelowTare(8000, 5000)).toBeNull();
+  });
+  it('keeps a gross at or above tare', () => {
+    expect(grossOrNullIfBelowTare(8000, 8000)).toBe(8000);
+    expect(grossOrNullIfBelowTare(8000, 12000)).toBe(12000);
+  });
+  it('passes a null gross through', () => {
+    expect(grossOrNullIfBelowTare(8000, null)).toBeNull();
   });
 });

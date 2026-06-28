@@ -2,7 +2,14 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { keysetBatches, readWatermark, writeWatermark } from './pagination';
+import {
+  distinctKeys,
+  fetchExistingLegacyIds,
+  keysetBatches,
+  readWatermark,
+  resolveParents,
+  writeWatermark,
+} from './pagination';
 
 describe('keysetBatches', () => {
   it('walks all rows in id order without overlap, stopping on a short batch', async () => {
@@ -57,5 +64,63 @@ describe('watermark file', () => {
 
   it('returns 0 for a missing file', () => {
     expect(readWatermark(join(tmpdir(), 'does-not-exist-xyz.json'), 'trip')).toBe(0);
+  });
+});
+
+describe('distinctKeys', () => {
+  it('collects unique, defined numeric keys', () => {
+    const rows = [{ p: 5 }, { p: 5 }, { p: 7 }, { p: null }, { p: undefined }];
+    expect(distinctKeys(rows, (r) => r.p).sort((a, b) => a - b)).toEqual([5, 7]);
+  });
+
+  it('returns [] for an empty batch', () => {
+    expect(distinctKeys([] as { p: number }[], (r) => r.p)).toEqual([]);
+  });
+});
+
+describe('resolveParents', () => {
+  it('maps each legacy id to its parent row (keyed by numeric legacyId)', async () => {
+    const parents = [
+      { legacyId: 10n, id: 'a', date: 'd10' },
+      { legacyId: 11n, id: 'b', date: 'd11' },
+    ];
+    const find = async (ids: number[]): Promise<typeof parents> =>
+      parents.filter((p) => ids.includes(Number(p.legacyId)));
+
+    const map = await resolveParents([10, 11], find);
+    expect(map.get(10)).toEqual({ legacyId: 10n, id: 'a', date: 'd10' });
+    expect(map.get(11)?.id).toBe('b');
+    expect(map.size).toBe(2);
+  });
+
+  it('short-circuits (no DB call) on an empty id list', async () => {
+    let called = false;
+    const map = await resolveParents([], async () => {
+      called = true;
+      return [];
+    });
+    expect(called).toBe(false);
+    expect(map.size).toBe(0);
+  });
+});
+
+describe('fetchExistingLegacyIds', () => {
+  it('returns the subset of batch ids already present (bigint legacyId)', async () => {
+    const present = new Set([2n, 4n]);
+    const find = async (ids: number[]): Promise<{ legacyId: bigint }[]> =>
+      ids.filter((i) => present.has(BigInt(i))).map((i) => ({ legacyId: BigInt(i) }));
+
+    const got = await fetchExistingLegacyIds([1, 2, 3, 4], find);
+    expect([...got].sort((a, b) => a - b)).toEqual([2, 4]);
+  });
+
+  it('short-circuits on an empty batch', async () => {
+    let called = false;
+    const got = await fetchExistingLegacyIds([], async () => {
+      called = true;
+      return [];
+    });
+    expect(called).toBe(false);
+    expect(got.size).toBe(0);
   });
 });

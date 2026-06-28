@@ -21278,5 +21278,115 @@
     "destinationLegacyId": 4,
     "targetTime": "00:00:00",
     "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2540,
+    "scheduleLegacyId": 1059,
+    "routeLegacyId": 128539,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 950,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2541,
+    "scheduleLegacyId": 1449,
+    "routeLegacyId": 3917,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 29,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2542,
+    "scheduleLegacyId": 1318,
+    "routeLegacyId": 128540,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 951,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2543,
+    "scheduleLegacyId": 1444,
+    "routeLegacyId": 128540,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 951,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2544,
+    "scheduleLegacyId": 1238,
+    "routeLegacyId": 128541,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 952,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2545,
+    "scheduleLegacyId": 1241,
+    "routeLegacyId": 128542,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 953,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2546,
+    "scheduleLegacyId": 1450,
+    "routeLegacyId": 3917,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 29,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2547,
+    "scheduleLegacyId": 1451,
+    "routeLegacyId": 128141,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 497,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2548,
+    "scheduleLegacyId": 1452,
+    "routeLegacyId": 128543,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 954,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2549,
+    "scheduleLegacyId": 1453,
+    "routeLegacyId": 128544,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 955,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
+  },
+  {
+    "legacyId": 2550,
+    "scheduleLegacyId": 1454,
+    "routeLegacyId": 128529,
+    "routeCategory": "DISPOSAL",
+    "originLegacyId": 941,
+    "destinationLegacyId": 4,
+    "targetTime": "00:00:00",
+    "fuelRequestedLiters": null
   }
 ]

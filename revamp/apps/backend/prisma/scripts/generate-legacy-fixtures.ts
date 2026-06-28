@@ -1,16 +1,21 @@
 /**
  * One-off dev generator: parse the legacy MySQL dump and emit cleaned seed
- * fixtures for Sites (spot), Routes (rute) and Vehicles (kendaraan) — mirroring
- * the data-quality rules in scripts/migration/lib/{transforms,enums}.ts so the
- * baked seed matches what the live migration would produce.
+ * fixtures for the demo master snapshot (sites/routes/vehicles/drivers/licenses +
+ * schedule/trip templates) — mirroring the data-quality rules in
+ * scripts/migration/lib/{transforms,enums}.ts so the baked seed matches what the
+ * live migration would produce.
  *
  *   pnpm --filter @swat/backend exec ts-node --compiler-options '{"module":"CommonJS"}' \
  *     prisma/scripts/generate-legacy-fixtures.ts
  *
- * Reads the SQL dump under <repo>/old_swat and writes prisma/legacy-{sites,routes,vehicles}.ts.
+ * Source: the per-table gzipped dump at <repo>/legacy/db/dump/ (the current backup
+ * format). Only the small master tables are decompressed + text-parsed here; no
+ * MySQL needed. Writes prisma/legacy-{sites,routes,vehicles,drivers,licenses,
+ * schedule-templates,trip-templates}.json.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
+import { gunzipSync } from 'node:zlib';
 
 import {
   mapEmploymentStatus,
@@ -28,16 +33,40 @@ import {
   trimOrNull,
 } from '../../scripts/migration/lib/transforms';
 
-const DUMP = resolve(__dirname, '../../../../../legacy/web/db_backup/dkp_swat_2026_05_18_data.sql');
+const DUMP_DIR = resolve(__dirname, '../../../../../legacy/db/dump');
 const OUT_DIR = resolve(__dirname, '..');
 const NOW = new Date('2026-06-11T00:00:00.000Z');
 
+// Master tables this generator reads. Each is a separate `<table>.sql.gz` in the
+// per-table dump; decompress (latin1 — the dump's charset) and concatenate so the
+// existing `parseInserts(sql, table)` calls below work unchanged.
+const MASTER_TABLES = [
+  'spot',
+  'rute',
+  'kendaraan',
+  'pengemudi',
+  'sim',
+  'kepemilikansim',
+  'masterdetailtransaksiangkutsampah',
+  'mastertrayek',
+] as const;
+
+function loadDumpSql(tables: readonly string[]): string {
+  return tables
+    .map((t) => gunzipSync(readFileSync(join(DUMP_DIR, `${t}.sql.gz`))).toString('latin1'))
+    .join('\n');
+}
+
 type Field = string | null;
 
-/** Parse every `INSERT INTO \`table\` … VALUES (…),(…);` row into raw fields. */
+/**
+ * Parse every `… INTO \`table\` … VALUES (…),(…);` row into raw fields. The marker
+ * matches both `INSERT INTO` and `REPLACE INTO` (the per-table dump uses
+ * `--replace`, so its data statements are `REPLACE INTO`).
+ */
 function parseInserts(sql: string, table: string): Field[][] {
   const rows: Field[][] = [];
-  const marker = 'INSERT INTO `' + table + '`';
+  const marker = ' INTO `' + table + '`';
   let idx = 0;
   for (;;) {
     const at = sql.indexOf(marker, idx);
@@ -104,7 +133,7 @@ const unsentinel = (f: Field | undefined): number => {
 };
 
 function main(): void {
-  const sql = readFileSync(DUMP, 'utf8');
+  const sql = loadDumpSql(MASTER_TABLES);
 
   // --- Sites (spot) -------------------------------------------------------
   const spotRows = parseInserts(sql, 'spot');

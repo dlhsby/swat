@@ -65,6 +65,12 @@ import {
   DEMO_VEHICLE_MODELS,
   DEMO_VEHICLES,
 } from './demo-fixtures';
+import {
+  DEMO_TRANSACTIONS,
+  type DemoTxnAssignment,
+  type DemoTxnHaul,
+  type DemoTxnTrip,
+} from './demo-transaction-fixtures';
 
 const prisma = new PrismaClient({ adapter: pgAdapter() });
 
@@ -895,6 +901,158 @@ async function seedDemoPermits(vehicles: DemoVehicleRef[], adminId: string | nul
   }
 }
 
+/**
+ * Load the SAMPLED real legacy transactions (demo-transactions.json) — real
+ * structure, latest year, curated demo vehicles/drivers. Runs BEFORE the synthetic
+ * generator, which then skips these days (its per-day `haul.count > 0` guard), so
+ * the two never double-count. Returns the loaded date range (for the rollup
+ * backfill), or null when no fixture is committed. Idempotent: a day that already
+ * has hauls is skipped.
+ */
+type DateRange = { from: Date; to: Date };
+
+/** Union of two optional seeded date ranges (for the rollup backfill). */
+function mergeRanges(a: DateRange | null, b: DateRange | null): DateRange | null {
+  if (!a) return b;
+  if (!b) return a;
+  return {
+    from: a.from < b.from ? a.from : b.from,
+    to: a.to > b.to ? a.to : b.to,
+  };
+}
+
+async function seedDemoRealTransactions(): Promise<{ from: Date; to: Date } | null> {
+  const fx = DEMO_TRANSACTIONS;
+  if (fx.days.length === 0) return null;
+
+  // legacyId → uuid maps for the curated demo masters the fixture references.
+  const vehicleByLegacy = new Map(
+    (
+      await prisma.vehicle.findMany({
+        where: { legacyId: { in: fx.hauls.map((h) => h.vehicleLegacyId) } },
+        select: { id: true, legacyId: true },
+      })
+    ).map((v) => [v.legacyId, v.id]),
+  );
+  const driverByLegacy = new Map(
+    (
+      await prisma.driver.findMany({
+        where: { legacyId: { in: fx.assignments.map((a) => a.driverLegacyId) } },
+        select: { id: true, legacyId: true },
+      })
+    ).map((d) => [d.legacyId, d.id]),
+  );
+  const routeByLegacy = new Map(
+    (
+      await prisma.route.findMany({
+        where: {
+          legacyId: {
+            in: fx.trips.flatMap((t) => (t.routeLegacyId != null ? [t.routeLegacyId] : [])),
+          },
+        },
+        select: { id: true, legacyId: true },
+      })
+    ).map((r) => [r.legacyId, r.id]),
+  );
+
+  const toDate = (v: string | null): Date | null => (v ? new Date(v) : null);
+  let from: Date | null = null;
+  let to: Date | null = null;
+  let dayCount = 0;
+
+  // Index children by their legacy parent id.
+  const haulsByDay = new Map<number, DemoTxnHaul[]>();
+  for (const h of fx.hauls)
+    (haulsByDay.get(h.dayLegacyId) ?? haulsByDay.set(h.dayLegacyId, []).get(h.dayLegacyId)!).push(
+      h,
+    );
+  const assignmentsByHaul = new Map<number, DemoTxnAssignment[]>();
+  for (const a of fx.assignments)
+    (
+      assignmentsByHaul.get(a.haulLegacyId) ??
+      assignmentsByHaul.set(a.haulLegacyId, []).get(a.haulLegacyId)!
+    ).push(a);
+  const tripsByAssignment = new Map<number, DemoTxnTrip[]>();
+  for (const t of fx.trips)
+    (
+      tripsByAssignment.get(t.assignmentLegacyId) ??
+      tripsByAssignment.set(t.assignmentLegacyId, []).get(t.assignmentLegacyId)!
+    ).push(t);
+
+  for (const day of fx.days) {
+    const opDate = new Date(`${day.date}T00:00:00.000Z`);
+    const record =
+      (await prisma.transactionDay.findUnique({ where: { date: opDate } })) ??
+      (await prisma.transactionDay.create({ data: { date: opDate, status: day.status } }));
+    // Skip a day an earlier run (or the synthetic pass) already populated.
+    if ((await prisma.haul.count({ where: { operationDate: opDate } })) > 0) continue;
+
+    for (const h of haulsByDay.get(day.legacyId) ?? []) {
+      const vehicleId = vehicleByLegacy.get(h.vehicleLegacyId);
+      if (!vehicleId) continue;
+      const haul = await prisma.haul.create({
+        data: {
+          transactionDayId: record.id,
+          vehicleId,
+          operationDate: opDate,
+          status: h.status,
+          notes: h.notes,
+        },
+      });
+      for (const a of assignmentsByHaul.get(h.legacyId) ?? []) {
+        const driverId = driverByLegacy.get(a.driverLegacyId);
+        if (!driverId) continue;
+        const assignment = await prisma.haulAssignment.create({
+          data: {
+            haulId: haul.id,
+            driverId,
+            operationDate: opDate,
+            status: a.status,
+            departTargetOdometer: a.departTargetOdometer,
+            departActualOdometer: a.departActualOdometer,
+            returnTargetOdometer: a.returnTargetOdometer,
+            returnActualOdometer: a.returnActualOdometer,
+            departTargetTime: toDate(a.departTargetTime),
+            departActualTime: toDate(a.departActualTime),
+            returnTargetTime: toDate(a.returnTargetTime),
+            returnActualTime: toDate(a.returnActualTime),
+            notes: a.notes,
+          },
+        });
+        const tripData = (tripsByAssignment.get(a.legacyId) ?? []).map((t) => ({
+          haulAssignmentId: assignment.id,
+          routeId: t.routeLegacyId != null ? (routeByLegacy.get(t.routeLegacyId) ?? null) : null,
+          operationDate: opDate,
+          status: t.status,
+          name: t.name,
+          targetTime: toDate(t.targetTime),
+          actualTime: toDate(t.actualTime),
+          targetOdometer: t.targetOdometer,
+          actualOdometer: t.actualOdometer,
+          tareWeight: t.tareWeight,
+          grossWeight: t.grossWeight,
+          netWeight: t.netWeight,
+          wasteVolume: t.wasteVolume,
+          fuelRequestedLiters: t.fuelRequestedLiters,
+          fuelApprovedLiters: t.fuelApprovedLiters,
+          scheduledEntryAt: toDate(t.scheduledEntryAt),
+          realizationEntryAt: toDate(t.realizationEntryAt),
+          notes: t.notes,
+        }));
+        if (tripData.length > 0) await prisma.trip.createMany({ data: tripData });
+      }
+    }
+    dayCount += 1;
+    if (!from || opDate < from) from = opDate;
+    if (!to || opDate > to) to = opDate;
+  }
+  // eslint-disable-next-line no-console
+  console.log(
+    `Demo real transactions: ${dayCount} days (year ${fx.year}) from the sampled legacy dump.`,
+  );
+  return from && to ? { from, to } : null;
+}
+
 /** A year of operational days across the whole demo fleet. Returns the seeded
  * date range for the rollup backfill. Idempotent: a day that already has hauls
  * is left untouched. */
@@ -1489,7 +1647,11 @@ async function main(): Promise<void> {
       console.log(`Demo efficiency rollup: ${effRows} vehicle rows for today.`);
       await linkDemoWasteSources(fleet.vehicles);
       await seedDemoPermits(fleet.vehicles, adminId);
-      const range = await seedDemoTransactions(fleet);
+      // Real sampled legacy transactions first (claims its ~60 days), then the
+      // synthetic generator fills the remaining days (it skips days with hauls).
+      const realRange = await seedDemoRealTransactions();
+      const synthRange = await seedDemoTransactions(fleet);
+      const range = mergeRanges(realRange, synthRange);
       await seedInspections(fleet.vehicles, adminId);
       await seedMaintenance(fleet.vehicles, adminId);
       await seedDemoPhotos();

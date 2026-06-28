@@ -7470,5 +7470,53 @@
     "address": "JL. TAMBAK OSO WILANGUN N0. 82E",
     "latitude": null,
     "longitude": null
+  },
+  {
+    "legacyId": 950,
+    "type": "TPS",
+    "name": "PASAR TRADISIONAL BENOWO",
+    "address": "JL. RAYA BENOWO SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 951,
+    "type": "TPS",
+    "name": "RS. BAWEAN ORTHOPEDI",
+    "address": "JL. BAWEAN NO. 40 SURABAYA",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 952,
+    "type": "TPS",
+    "name": "YELLO HOTEL",
+    "address": "JL. RAYA JEMURSARI NO. 176",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 953,
+    "type": "TPS",
+    "name": "PT. HIKMAH SEJAHTERA",
+    "address": "-",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 954,
+    "type": "TPS",
+    "name": "PT. MAHAPUTRA ERA SEJAHTERA",
+    "address": "JL. PLOSO TIMUR III/21",
+    "latitude": null,
+    "longitude": null
+  },
+  {
+    "legacyId": 955,
+    "type": "TPS",
+    "name": "G SUITES HOTEL",
+    "address": "JL. RAYA GUBENG NO. 43",
+    "latitude": null,
+    "longitude": null
   }
 ]
