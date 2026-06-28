@@ -38,10 +38,17 @@ The geography module manages physical locations (pools, SPBU fuel stations, TPS 
   - `originSiteId` ≠ `destinationSiteId` (route endpoints distinct)
   - `distanceKm`: non-negative integer
   - Unique composite: `(originSiteId, destinationSiteId, category)` prevents duplicate routes
-- **Map-derived geometry (Phase 7):** a `Route` may carry an optional **`RouteGeometry`** (one per route) —
-  a buffered corridor polyline drawn on **Google Maps** and used as the **template** for GPS route-deviation
-  monitoring. A single day's `Trip` can override it. See
-  [`gps-tracking.md`](./gps-tracking.md). This supersedes the earlier "coordinates deferred" note.
+- **Map-derived geometry (Phase 7, revised by Epic 7.8):** a `Route` now **owns 1..N `Corridor`s** — a
+  road-snapped **default** ("Jalur Utama", `isDefault`, exactly one per route) plus optional alternates,
+  each a buffered polyline drawn on **Google Maps**. The default corridor is **auto-created when the route
+  is created and re-generated when it is edited** (server-side road-snap via `GoogleDirectionsService` /
+  `GOOGLE_MAPS_SERVER_KEY`; straight-line fallback when a site has no coordinates yet). **The corridor owns
+  the route's planned distance** (`Corridor.lengthMeters`, `ST_Length`); `Route.distanceKm` is a
+  **denormalized cache** auto-synced from the default corridor on any corridor mutation. A `TripTemplate`
+  / day's `Trip` may point at a specific corridor (`corridorId`, else inherits the route default); a
+  single day's `Trip` may still carry a freehand `geometryOverride`. The old 1:1 `RouteGeometry` is
+  **superseded** by this model. See [`gps-tracking.md`](./gps-tracking.md). This also supersedes the
+  earlier "coordinates deferred" note.
 
 ## User Stories
 

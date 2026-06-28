@@ -60,6 +60,31 @@
 >   tracks + efficiency rollup, alongside the online/offline/untracked devices)
 >   shipped; the webhook→ping→matcher→alert→SSE flow is covered end-to-end by unit
 >   tests — a live E2E spec + load test are a tracked follow-up.
+>
+> ### PRs & as-built master-data reconciliation
+> **PR #16 (merged)** = Epics 7.0–7.7 GPS foundation. **PR #17 (open, `feat/phase-7.8-corridor-model`)**
+> = Epic 7.8 first-class Corridor + scheduling shifts + the master-data review below.
+>
+> **Master data touched by Phase 7 (verify these screens):**
+> - **Vehicle → GPS tracking flag (the registry IS the flag).** A vehicle is "tracked" by owning a
+>   **`GpsDevice`** row; there is **no column on `Vehicle`**. The vehicle read DTO exposes a derived
+>   `gpsCoverage` badge (`tracked-online` / `tracked-offline` / `untracked`) from the active hardware
+>   device's `status` vs `GPS_DEVICE_OFFLINE_MINUTES`. **Mapping to GPS.id** is by **IMEI** =
+>   `GpsDevice.imei`/`deviceId` ↔ vendor `VehicleId`; unknown IMEIs queue in `GpsUnmatchedPing` for a
+>   one-click "map to vehicle". Registry CRUD: `/gps/devices*` (`gps-device:read|manage`). **⏳ Backend
+>   complete; web UI deferred** — no `/tracking/devices` admin page, no coverage badge in the vehicle
+>   table, no unmatched-mapper dialog yet (thin web follow-up).
+> - **Corridor (master geometry).** `Route` owns **1..N `Corridor`s** (road-snapped default + alternates);
+>   corridor owns route distance (`Route.distanceKm` = denormalized cache); default auto-created on route
+>   create and **re-snapped on route edit**. Server-side snap needs `GOOGLE_MAPS_SERVER_KEY` + backend
+>   restart. See [`../09-modules/gps-tracking.md`](../09-modules/gps-tracking.md) §2.4.
+> - **Schedule/Trip templates.** `TripTemplate.corridorId` (nullable → inherits the route default,
+>   copied to `Trip.corridorId` at daily-init); picker is a post-creation sheet. **Consistent — no drift.**
+> - **Form/UX refinements (7.8 review).** Select defaults now open **unselected** (Lokasi jenis, Vehicle
+>   status, Driver employmentStatus, DisposalPermit status); Route form drops the manual Jarak (derived)
+>   and hides Tujuan for "Berangkat dari Pool"; Lokasi "Lihat" hides pin controls.
+> - **Terminology (id-ID).** `Trip`→**"Perjalanan"** (legacy trayek), `Haul`→**"Pengangkutan Sampah"**;
+>   "leg" eliminated. Code/DB keep English entity names.
 
 ## Overview
 

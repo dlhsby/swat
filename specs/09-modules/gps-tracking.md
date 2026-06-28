@@ -128,11 +128,32 @@ partitions) per `../12-scalability-archiving.md`.
 A ping whose IMEI is not yet registered: `id`, `imei`, `payload` (Json), `receivedAt`. Surfaced as an
 ops queue to map IMEI → vehicle (never silently dropped).
 
-### 2.4 RouteGeometry (corridor template)
-One per `Route`. Fields: `id`, `routeId` (unique FK), `pathGeojson` (LineString), `toleranceMeters`
-(default 150), `lengthMeters` (server-computed planned distance), `source` (default `google-maps`),
-`createdAt`, `updatedAt`. **Per-day override** lives on `Trip.geometryOverride (Json?)` +
-`Trip.geometryToleranceM (Int?)`.
+### 2.4 Corridor (first-class — revised by Epic 7.8)
+> **Model revision (2026-06, operator decision).** The original 1:1 `RouteGeometry` template was replaced
+> by a **first-class `Corridor`** so a route can hold more than one path. A **`Route` owns 1..N
+> `Corridor`s**. The legacy `RouteGeometry` row/endpoints are retained but **superseded** — `Corridor` is
+> the source of truth for everything below (authoring, distance, the deviation cascade).
+
+`Corridor` — one or more per `Route`. Fields: `id`, `routeId` (FK, cascade-delete — **not** unique), `name`
+(e.g. "Jalur Utama"), `isDefault` (**exactly one default per route**), `pathGeojson` (LineString),
+`waypoints` (Json? — sparse editor control points `{lng,lat,snapped}[]` so a corridor re-opens with
+draggable handles), `toleranceMeters` (default 150), `lengthMeters` (server-computed planned distance,
+`ST_Length`), `source` (`google-maps` | `straight` | `directions`), soft-delete + audit, `createdAt`,
+`updatedAt`.
+
+- **Default corridor is route-managed:** auto-created on route creation and **re-generated (re-snapped) on
+  route edit**, so coordinates added to a site later take effect. Road-snap runs **server-side**
+  (`GoogleDirectionsService` + `GOOGLE_MAPS_SERVER_KEY`); falls back to a straight line when a site lacks
+  coordinates. The default is **editable but not deletable** (only alternates can be removed); a
+  "Berangkat dari Pool" (Pool→Pool) route's corridor is a degenerate point and **view-only**.
+- **Corridor owns the route's planned distance.** `Corridor.lengthMeters` is authoritative;
+  `Route.distanceKm` is a **denormalized cache** auto-synced from the default corridor on any corridor
+  create/update/delete (fixes the "snap-to-road didn't update route distance" bug).
+- **Per-leg / per-day selection:** `TripTemplate.corridorId (Uuid?)` picks which of the route's corridors a
+  template leg follows (null = inherit the route default); it is **copied to `Trip.corridorId` at
+  daily-init** and switchable per day. A single day's `Trip` may still carry a **freehand override**
+  (`Trip.geometryOverride (Json?)` + `Trip.geometryToleranceM (Int?)` + persisted waypoints) as a one-off
+  escape hatch that wins over the chosen corridor.
 
 ### 2.5 DeviationRule
 Tunable per type (optionally per route). Fields: `id`, `deviationType`
@@ -156,8 +177,11 @@ nullable, not defaulted to 0** — `null` means "not measurable" (untracked), di
 ## 3. Deviation detection
 
 For each new ping, the matcher determines the vehicle's **active leg** (the `Trip` whose actual window is
-open, else by `targetTime` ordering vs now, else nearest-by-geometry) and the **effective corridor** =
-`Trip.geometryOverride ?? Route.RouteGeometry ?? null`, then evaluates:
+open, else by `targetTime` ordering vs now, else nearest-by-geometry) and the **effective corridor**
+(`resolveTripCorridor`, resolved at match time — never eager-copied):
+`Trip.geometryOverride` (freehand) **→** the day's chosen `Trip.corridor` (ignored if soft-deleted) **→**
+the route's **default `Corridor`** (`isDefault`) **→** `null` (route with no corridor — tracked, not
+corridor-checked). Then it evaluates:
 
 | Type | Rule | PostGIS |
 |------|------|---------|
@@ -205,9 +229,9 @@ gateway, retained for audit.
 |------|---------|-----------|
 | `/monitoring/hauling` → **Peta** tab (Pengangkutan, the Phase 6 `<HaulingMap>`) | **Whole-fleet** map: **live** markers for GPS vehicles (plate/driver/status, in/out-of-corridor colour, corridor overlay + breadcrumb on tap) **and** distinct markers for **untracked** vehicles placed from **recorded activity** (last-recorded Site + as-of timestamp); legend; alert badges. Live alert center (feed + acknowledge + history) surfaced here. | `tracking:read`, `deviation-alert:read\|acknowledge` |
 | `/monitoring/efficiency` | Management KPIs: route adherence % (tracked-only denominator), wasted time, wasted fuel (internal vs GPS.id), deviation counts, GPS-coverage + device-offline rate; per-vehicle/route/day trends | `monitoring:read` |
-| Vehicle list/detail (`/vehicles`) | Derived **GPS-coverage badge**; embedded "GPS Device" mapping section | `vehicle:read`, `gps-device:read\|manage` |
-| `/tracking/devices` | Map IMEI → vehicle; mappable unmatched-IMEI queue | `gps-device:read\|manage` |
-| Scheduling Route/Template + ad-hoc day editor | `RouteCorridorEditor`: draw/snap a corridor, set tolerance; save as **template** or as a **per-day override** | `route-geometry:manage` |
+| Vehicle list/detail (`/vehicles`) | Derived **GPS-coverage badge** (`Tracked · online` / `Tracked · offline` / `Tidak terlacak`); embedded "GPS Device" mapping section. **⏳ web pending** — the badge is computed in the vehicle read DTO (`gpsCoverage`) but not yet surfaced in the web vehicle table. | `vehicle:read`, `gps-device:read\|manage` |
+| `/tracking/devices` | Map IMEI → vehicle; mappable unmatched-IMEI queue. **⏳ web pending** — full device-registry CRUD + unmatched-mapper endpoints exist on the backend (`/gps/devices*`); the admin page is a thin follow-up not yet built. | `gps-device:read\|manage` |
+| Route management → **Koridor** sheet (`RouteCorridorEditor`) | List a route's **1..N corridors** (default first, badged); draw/**snap-to-road** an alternate, set tolerance. The **default** is auto-managed (created/re-snapped with the route); template legs and per-day trips pick among them. | `corridor:read\|create\|update\|delete`, `route-geometry:manage` |
 
 Form errors render inline; submit success/failure via toast (per project convention). Map key from
 `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (fail loudly if missing).
@@ -223,8 +247,11 @@ Form errors render inline; submit success/failure via toast (per project convent
 | GET | `/monitoring/fleet-positions?date=today` | `tracking:read` | **whole active fleet** as `VehiclePosition[]` (`source: live-gps\|recorded-activity\|none`) — powers the Peta tab |
 | GET | `/gps/vehicles/:id/position` | `tracking:read` | latest position (live or recorded) |
 | GET | `/gps/vehicles/:id/track?minutes=60` | `tracking:read` | live breadcrumb trail |
-| GET/PUT/DELETE | `/gps/routes/:routeId/geometry` | `route-geometry:manage` | corridor template CRUD |
-| PUT/DELETE | `/gps/trips/:tripId/geometry` | `route-geometry:manage` | per-day override |
+| GET/POST | `/routes/:routeId/corridors` | `corridor:read\|create` | list / add a corridor (default + alternates) for a route |
+| PATCH/DELETE | `/corridors/:id` | `corridor:update\|delete` | edit / remove an alternate corridor (the default is editable, not deletable) |
+| PUT | `/gps/trips/:tripId/corridor` | `route-geometry:manage` | per-day picker — set `Trip.corridorId` to one of the route's corridors |
+| PUT/DELETE | `/gps/trips/:tripId/geometry` | `route-geometry:manage` | per-day freehand override (`Trip.geometryOverride`) |
+| GET/PUT/DELETE | `/gps/routes/:routeId/geometry` | `route-geometry:manage` | legacy `RouteGeometry` template (**superseded** by `/routes/:routeId/corridors`) |
 | GET/POST/PUT | `/gps/deviation-rules` | `deviation-rule:manage` | rule tuning |
 | GET | `/gps/alerts` | `deviation-alert:read` | feed (filter vehicle/status/date) |
 | PATCH | `/gps/alerts/:id/acknowledge` | `deviation-alert:acknowledge` | acknowledge + notes |
@@ -242,7 +269,7 @@ All REST endpoints use the standard `{ success, data?, error?, meta? }` envelope
    parked, not dropped.
 2. **Webhook is untrusted** — secret token (constant-time compare) + optional IP allowlist + rate-limit + full `ApiAuditLog`. Never leak internals on rejection.
 3. **Idempotent ingest** on `(recorded_at, imei)` (the `gps_ping` dedup unique).
-4. **Corridor inheritance** — a day's `Trip` uses its override if set, else the `Route` template; resolved at match/read time (no copy).
+4. **Corridor inheritance** — a day's `Trip` uses its freehand override if set, else its chosen `Corridor`, else the route's **default `Corridor`**; resolved at match/read time (no eager copy). `Route.distanceKm` is a denormalized cache of the default corridor's `lengthMeters`.
 5. **No false alerts from noise** — hysteresis + debounce; single off-corridor ping never alerts.
 6. **Efficiency primary = internal**, GPS.id mileage is a nightly cross-check; discrepancies beyond a threshold are flagged.
 7. **Access is RBAC-gated and audited** even though hardware-vehicle GPS is less personal-data-sensitive than driver-login tracking.
@@ -250,11 +277,12 @@ All REST endpoints use the standard `{ success, data?, error?, meta? }` envelope
 ---
 
 ## 8. Permissions (`../06-auth-rbac.md`)
-`gps-device:read`, `gps-device:manage`, `route-geometry:manage`, `deviation-rule:manage`,
-`deviation-alert:read`, `deviation-alert:acknowledge`, `tracking:read`. Typical: **Supervisor** gets
-`tracking:read` + `deviation-alert:read|acknowledge`; **DataAdmin** gets `gps-device:*` +
-`route-geometry:manage` + `deviation-rule:manage`; **Management** read-only via `tracking:read` +
-`monitoring:read`.
+`gps-device:read`, `gps-device:manage`, `corridor:read`, `corridor:create`, `corridor:update`,
+`corridor:delete`, `route-geometry:manage`, `deviation-rule:manage`, `deviation-alert:read`,
+`deviation-alert:acknowledge`, `tracking:read`. Typical: **Supervisor** gets `tracking:read` +
+`deviation-alert:read|acknowledge` (+ `corridor:read` via `*:read`); **DataAdmin** gets `gps-device:manage` +
+`corridor:create|update|delete` + `route-geometry:manage` + `deviation-rule:manage`; **Management**
+read-only via `tracking:read` + `monitoring:read`.
 
 ---
 
