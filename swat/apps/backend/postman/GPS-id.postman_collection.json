@@ -1,0 +1,168 @@
+{
+  "info": {
+    "name": "GPS.id Vendor API + Webhook",
+    "description": "GPS.id integration for SWAT Phase 7.\n\nTwo directions:\n1. **Pull API** (SWAT → GPS.id) — the SECONDARY path used only by the nightly backfill + mileage reconcile. Bearer token from POST /login (24h), self-throttled to ~5 req/5 min. Mirrors `gpsid-client.service.ts`.\n2. **Inbound Webhook** (GPS.id → SWAT) — the PRIMARY push path. GPS.id POSTs JSON every ~30s/unit to SWAT's vendor-unauthenticated webhook, secured by a secret path token (+ IP allowlist + rate-limit + audit). Use the simulator requests to exercise SWAT's ingestion without the real vendor.\n\nSet the `GPS.id (vendor)` environment first.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{gpsidToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login (get bearer token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "",
+                  "const json = pm.response.json();",
+                  "const token = json?.access_token ?? json?.token ?? json?.Token;",
+                  "if (token) { pm.environment.set('gpsidToken', token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/login",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{gpsidUsername}}\",\n  \"password\": \"{{gpsidPassword}}\"\n}"
+            },
+            "description": "POST {baseUrl}/login → { access_token | token | Token }. The client caches it for 24h and re-logs in on a 401."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pull API (nightly backfill)",
+      "item": [
+        {
+          "name": "Get Vehicles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/get-vehicle",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["get-vehicle"]
+            },
+            "description": "Registered vehicle list → [{ imei | VehicleId, plate | VehicleNumber }]. Used to reconcile the device registry."
+          }
+        },
+        {
+          "name": "Vehicle Detail (by IMEI)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/vehicle/detail/{{imei}}",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["vehicle", "detail", "{{imei}}"]
+            },
+            "description": "Single-device detail (per spec §1.2; not consumed by the client yet — included for connectivity testing)."
+          }
+        },
+        {
+          "name": "Report: History (breadcrumbs)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/report/history?imei={{imei}}&from={{fromIso}}&to={{toIso}}",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["report", "history"],
+              "query": [
+                { "key": "imei", "value": "{{imei}}" },
+                { "key": "from", "value": "{{fromIso}}" },
+                { "key": "to", "value": "{{toIso}}" }
+              ]
+            },
+            "description": "Historical track points for gap-fill → [{ lat|Lat, lon|Lon, speed|Speed, datetime|DatetimeUTC }]."
+          }
+        },
+        {
+          "name": "Report: Mileage (fuel cross-check)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/report/mileage?imei={{imei}}&date={{dateIso}}",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["report", "mileage"],
+              "query": [
+                {
+                  "key": "imei",
+                  "value": "{{imei}}",
+                  "description": "CSV, ≤5 IMEIs per call (vendor batch limit)"
+                },
+                { "key": "date", "value": "{{dateIso}}" }
+              ]
+            },
+            "description": "Per-device mileage + used fuel for the nightly internal-vs-vendor cross-check → [{ imei|VehicleId, mileage|distance, used_fuel_total|usedFuel }]. Max 5 IMEIs/call."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inbound Webhook (simulate GPS.id → SWAT)",
+      "item": [
+        {
+          "name": "Push single ping → SWAT",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{swatRootUrl}}/api/v1/integrations/gps/webhook/{{gpsWebhookToken}}",
+              "host": ["{{swatRootUrl}}"],
+              "path": ["api", "v1", "integrations", "gps", "webhook", "{{gpsWebhookToken}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"VehicleId\": \"{{imei}}\",\n  \"VehicleNumber\": \"L 1234 AB\",\n  \"DatetimeUTC\": \"2026-06-26 03:15:00\",\n  \"Lat\": -7.2575,\n  \"Lon\": 112.7508,\n  \"Speed\": 32.5,\n  \"Direction\": 145,\n  \"Engine\": \"ON\",\n  \"Odometer\": 1000250,\n  \"Car_Status\": \"START\",\n  \"VehicleType\": \"truck\",\n  \"Alarm\": \"\",\n  \"GpsLocation\": \"Jl. Ahmad Yani\"\n}"
+            },
+            "description": "Simulates a GPS.id push. token = SWAT's GPS_WEBHOOK_TOKEN (≥16 chars). Returns 200 { accepted: 1 }; an unknown IMEI is parked in GpsUnmatchedPing. Bad token → 401, disallowed IP → 403, over-rate → 429, future DatetimeUTC → rejected."
+          }
+        },
+        {
+          "name": "Push batch (array) → SWAT",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{swatRootUrl}}/api/v1/integrations/gps/webhook/{{gpsWebhookToken}}",
+              "host": ["{{swatRootUrl}}"],
+              "path": ["api", "v1", "integrations", "gps", "webhook", "{{gpsWebhookToken}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"VehicleId\": \"{{imei}}\",\n    \"DatetimeUTC\": \"2026-06-26 03:15:00\",\n    \"Lat\": -7.2575,\n    \"Lon\": 112.7508,\n    \"Speed\": 30,\n    \"Direction\": 140,\n    \"Engine\": \"ON\",\n    \"Odometer\": 1000250,\n    \"Car_Status\": \"START\"\n  },\n  {\n    \"VehicleId\": \"{{imei}}\",\n    \"DatetimeUTC\": \"2026-06-26 03:15:30\",\n    \"Lat\": -7.2588,\n    \"Lon\": 112.7521,\n    \"Speed\": 28,\n    \"Direction\": 150,\n    \"Engine\": \"ON\",\n    \"Odometer\": 1000500,\n    \"Car_Status\": \"START\"\n  }\n]"
+            },
+            "description": "The webhook accepts a single object OR an array. Returns 200 { accepted: n }."
+          }
+        }
+      ]
+    }
+  ]
+}
