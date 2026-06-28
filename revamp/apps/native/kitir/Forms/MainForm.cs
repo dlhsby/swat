@@ -99,6 +99,11 @@ public sealed class MainForm : Form
         {
             var vehicles = await _api.GetVehiclesAsync();
             var sites = await _api.GetSitesAsync();
+            if (vehicles.Count == 0 || sites.Count == 0)
+            {
+                ShowError("Tidak ada kendaraan atau lokasi yang tersedia. Hubungi administrator.");
+                return;
+            }
             _vehicle.DisplayMember = nameof(Vehicle.PlateNumber);
             _vehicle.ValueMember = nameof(Vehicle.Id);
             _vehicle.DataSource = vehicles;

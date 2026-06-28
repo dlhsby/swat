@@ -66,12 +66,18 @@ public sealed class SwatApiClient : IDisposable
             using var res = await SendAsync(() =>
                 new HttpRequestMessage(HttpMethod.Get, $"{path}?page={page}&limit={limit}"));
             var envelope = await ReadEnvelopeAsync<List<T>>(res);
-            if (envelope.Data is { Count: > 0 } rows)
+            // Surface a 401/403/5xx instead of silently returning an empty list
+            // (e.g. a missing vehicle:read/site:read permission must reach the user).
+            ThrowIfFailed(res, envelope);
+            var count = envelope.Data?.Count ?? 0;
+            if (count > 0)
             {
-                all.AddRange(rows);
+                all.AddRange(envelope.Data!);
             }
-            var total = envelope.Meta?.Total ?? all.Count;
-            if (all.Count >= total || envelope.Data is null or { Count: 0 })
+            // A short (or empty) page means we've reached the end — robust even if
+            // the server ever omits Meta.Total. The 1000-page guard backstops a
+            // server that always returns a full page.
+            if (count < limit || page >= 1000)
             {
                 break;
             }
@@ -132,12 +138,22 @@ public sealed class SwatApiClient : IDisposable
     private static async Task<T> UnwrapAsync<T>(HttpResponseMessage res)
     {
         var envelope = await ReadEnvelopeAsync<T>(res);
-        if (!res.IsSuccessStatusCode || envelope.Success == false || envelope.Data is null)
+        ThrowIfFailed(res, envelope);
+        if (envelope.Data is null)
+        {
+            throw new ApiException("ERROR", FallbackMessage(res.StatusCode));
+        }
+        return envelope.Data;
+    }
+
+    /// <summary>Throws a localized <see cref="ApiException"/> when the response is not a success.</summary>
+    private static void ThrowIfFailed<T>(HttpResponseMessage res, ApiEnvelope<T> envelope)
+    {
+        if (!res.IsSuccessStatusCode || envelope.Success == false)
         {
             var err = envelope.Error;
             throw new ApiException(err?.Code ?? "ERROR", err?.Message ?? FallbackMessage(res.StatusCode));
         }
-        return envelope.Data;
     }
 
     private static async Task<ApiEnvelope<T>> ReadEnvelopeAsync<T>(HttpResponseMessage res)
