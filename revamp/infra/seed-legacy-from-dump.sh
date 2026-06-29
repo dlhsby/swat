@@ -46,6 +46,7 @@ DOTENVX="$BACKEND_DIR/node_modules/.bin/dotenvx"
 TARGET_ENV="staging"
 INCLUDE_TRANSACTIONS=""
 CONFIRM_PRODUCTION=""
+SINCE_YEAR_ARG=""
 saw_target=""
 for arg in "$@"; do
   case "$arg" in
@@ -54,7 +55,10 @@ for arg in "$@"; do
       TARGET_ENV="$arg"; saw_target=1 ;;
     --with-transactions) INCLUDE_TRANSACTIONS="--include-transactions" ;;
     --confirm-production) CONFIRM_PRODUCTION="--confirm-production" ;;
-    *) echo "Unknown argument: $arg (expected staging|production, --with-transactions, --confirm-production)" >&2; exit 2 ;;
+    # Load only this year onward of date-scoped data (e.g. --since-year=2025) — for a
+    # constrained target like AWS free-tier RDS. Masters still load in full.
+    --since-year=*) SINCE_YEAR_ARG="$arg" ;;
+    *) echo "Unknown argument: $arg (expected staging|production, --with-transactions, --confirm-production, --since-year=YYYY)" >&2; exit 2 ;;
   esac
 done
 
@@ -144,7 +148,7 @@ echo "==> Running migrate:legacy (env=$TARGET_ENV) --force-reset ${INCLUDE_TRANS
 # (and NOT load prisma/.env, whose dev DATABASE_URL would shadow the target).
 ( cd "$REPO_ROOT" && \
   SEED_ENV="$TARGET_ENV" pnpm --filter @swat/backend run migrate:legacy -- \
-    --force-reset ${INCLUDE_TRANSACTIONS} ${CONFIRM_PRODUCTION} )
+    --force-reset ${INCLUDE_TRANSACTIONS} ${CONFIRM_PRODUCTION} ${SINCE_YEAR_ARG} )
 
 # Master-only: --force-reset only truncates the phases it runs, so the (skipped) transaction
 # tables keep any pre-existing rows — e.g. old synthetic demo days. Clear them so a master-only

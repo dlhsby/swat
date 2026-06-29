@@ -77,6 +77,7 @@ import {
   writeWatermark,
 } from './lib/pagination';
 import { derivePermissionKeys } from './lib/permission-map';
+import { completeRoutes } from './lib/route-completion';
 import {
   type Flags,
   connectLegacy,
@@ -613,12 +614,16 @@ async function migrateScheduling(sysUser: string, flags: Flags): Promise<void> {
     // than `SELECT *` the whole table. legacyId IS @unique here, so createMany
     // skipDuplicates makes a re-run idempotent (no per-batch existence probe needed).
     let permitCount = 0;
+    // Window permits by issue date too under --since-year (bounds a constrained target).
+    const permitWindow = flags.sinceYear
+      ? `AND JATAHKITIR_WAKTUDITERBITKAN >= '${flags.sinceYear}-01-01'`
+      : '';
     const permitStart = flags.resume ? readWatermark(WATERMARK_PATH, 'disposal_permit') : 0;
     for await (const { rows, lastId } of keysetBatches<LegacyDisposalPermit>(
       (afterId, limit) =>
         query(
           conn,
-          'SELECT * FROM jatahkitir WHERE JATAHKITIR_ID > ? ORDER BY JATAHKITIR_ID LIMIT ?',
+          `SELECT * FROM jatahkitir WHERE JATAHKITIR_ID > ? ${permitWindow} ORDER BY JATAHKITIR_ID LIMIT ?`,
           [afterId, limit],
         ),
       (r) => r.JATAHKITIR_ID,
@@ -683,6 +688,16 @@ async function migrateAggregates(sysUser: string): Promise<void> {
  */
 async function migrateTransactions(sysUser: string, flags: Flags): Promise<void> {
   const watermarkPath = WATERMARK_PATH;
+  // Optional date window (--since-year): only TransactionDays from this year load,
+  // and Haul/HaulAssignment/Trip cascade-skip out-of-window rows (their day/parent
+  // isn't present). sinceYear is a validated integer → safe to inline. Date compare
+  // (>= 'YYYY-01-01') is index-friendlier than YEAR().
+  const dayWindow = flags.sinceYear
+    ? `AND HARITRANSAKSI_TANGGAL >= '${flags.sinceYear}-01-01'`
+    : '';
+  if (flags.sinceYear) {
+    log(`Date window active: loading transactions from ${flags.sinceYear}-01-01 onward.`);
+  }
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
     // 1. haritransaksi → TransactionDay (keyset-batched, idempotent on legacyId/date).
@@ -692,7 +707,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
       (afterId, limit) =>
         query(
           conn,
-          'SELECT * FROM haritransaksi WHERE HARITRANSAKSI_ID > ? ORDER BY HARITRANSAKSI_ID LIMIT ?',
+          `SELECT * FROM haritransaksi WHERE HARITRANSAKSI_ID > ? ${dayWindow} ORDER BY HARITRANSAKSI_ID LIMIT ?`,
           [afterId, limit],
         ),
       (r) => r.HARITRANSAKSI_ID,
@@ -969,7 +984,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
           return [];
         }
         const date = parseDmyDate(r.tgltitle);
-        if (!date) {
+        if (!date || (flags.sinceYear && date.getUTCFullYear() < flags.sinceYear)) {
           tpaSkipped += 1;
           return [];
         }
@@ -1019,6 +1034,11 @@ async function main(): Promise<void> {
   await migrateAuth();
   await migrateScheduling(sysUser, flags);
   await migrateAggregates(sysUser);
+
+  // Generate the full set of valid routes (per operator rules) the legacy data
+  // doesn't already cover — new data, idempotent.
+  const routeStats = await completeRoutes(prisma);
+  log(`Route completion: +${routeStats.generated} new routes (total ${routeStats.totalAfter}).`);
 
   if (flags.includeTransactions) {
     await migrateTransactions(sysUser, flags);

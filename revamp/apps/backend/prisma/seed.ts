@@ -43,6 +43,7 @@ import {
 } from '@prisma/client';
 import { hash } from 'argon2';
 
+import { completeRoutes } from '../scripts/migration/lib/route-completion';
 import {
   PERMISSION_CATALOG,
   describePermission,
@@ -1627,6 +1628,17 @@ async function main(): Promise<void> {
     await seedDemoRoleUsers(roleIdByName);
     await seedDemoServiceAccount(roleIdByName);
     await seedReferenceData();
+    // Generate the full set of valid routes (per operator rules) on top of the
+    // curated demo routes — new data, idempotent.
+    const routeStats = await completeRoutes(prisma);
+    // eslint-disable-next-line no-console
+    console.log(
+      `Route completion: +${routeStats.generated} routes (${
+        Object.entries(routeStats.byCategory)
+          .map(([c, n]) => `${c}=${n}`)
+          .join(', ') || 'none'
+      }) → ${routeStats.totalAfter} total.`,
+    );
     if (process.env.SEED_SYNTHETIC !== 'false') {
       await seedLevies();
       const admin = await prisma.user.findUnique({
