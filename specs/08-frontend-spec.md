@@ -118,6 +118,15 @@ phase. This is the parity contract.
   - Loading: skeleton 10 rows
   - Error state: toast + "Gagal memuat data"
 
+- **Client- vs server-side paging (implementation):** the shared `DataTable` paginates,
+  searches and sorts **client-side** by default — fine for small master lists, whose data is
+  loaded in one shot by `makeResourceApi.list()` (it fetches any remaining pages **in parallel**,
+  not serially). **Large lists** (≥ a few thousand rows — e.g. disposal-permits ~348k, routes
+  ~16.8k, levies) instead use the **`DataTable` `serverPagination` mode** driven by
+  `useServerResource{List,Manager}`: exactly one page is fetched per request, with `search` +
+  filters sent as query params and the total taken from the response `meta`. Per-column filters
+  are hidden in server mode; the global search box + a toolbar filter replace them.
+
 - **Bulk actions:** (Phase 2) select checkbox, export CSV, bulk status change
 
 ### Create/Edit form

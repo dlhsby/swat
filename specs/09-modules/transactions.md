@@ -53,6 +53,7 @@ The Transactions module is the **operational core** of SWAT. It models a vehicle
 **Constraints:**
 - Unique on `(operationDate, transactionDayId, vehicleId)` — one haul per vehicle per day (partition key included per 12-scalability-archiving.md §2).
 - Index on `(operationDate, transactionDayId, vehicleId)`.
+- Index on `(transactionDayId)` — the `/transaction-days/list` vehicle-count `groupBy` filters hauls by day id (not the partition key), so without this it scans every monthly partition. As a partitioned index it cascades a local index to each partition.
 
 **Business rules:**
 - Created at daily init from active CrewSchedules.
@@ -363,7 +364,7 @@ Response 200
 | `POST /trips` | `trip:create` | Record an **ad-hoc/unscheduled** trip on a haul assignment (legacy parity for off-plan pickups/refuels/disposals). Body: `{ haulAssignmentId, routeId? \| (category + destinationSiteId?), name?, ...optional actuals }`. The route is resolved from `routeId`, or inferred from `category` + `destinationSiteId`. When `actualTime` + `actualOdometer` are supplied the trip is recorded (DONE) in the same call (also requires the category record permission); otherwise it is created `IN_PROGRESS`. |
 | `GET /trips/:id/photos` | `trip:read` | List a trip's documentation photos (legacy `dokumentasitrayek`), each with a short-lived presigned view URL. |
 | `POST /trips/:id/photos` | `trip:update` | Register a photo against a trip. Upload the bytes via `POST /storage/presigned-put` first, then post the object metadata `{ objectKey, contentType, sizeBytes, checksum, width?, height? }`. Stored as a polymorphic `Photo` (`ownerType='trip'`); bytes never pass through the API server. |
-| `GET /transaction-days/list` | `transaction-day:read` | Paginated list of day **summaries** (newest first), optional `status` filter. Each row `{ id, date, status, vehicleCount, tonnageKg }` is lightweight — `vehicleCount` from a `haul` groupBy, `tonnageKg` from the `daily_tonnage` rollup — so the full haul/trip tree is never loaded. Backs the Penjadwalan list table. |
+| `GET /transaction-days/list` | `transaction-day:read` | Paginated list of day **summaries** (newest first), optional `status` filter. Each row `{ id, date, status, vehicleCount, tonnageKg }` is lightweight — `vehicleCount` from a `haul` groupBy (keyed by `transactionDayId`, served by the `haul(transactionDayId)` index above), `tonnageKg` from the `daily_tonnage` rollup — so the full haul/trip tree is never loaded. Backs the Penjadwalan list table. |
 | `DELETE /trips/:id` | category record perm (verified ⇒ `trip:override`) | **Un-record** (soft delete on the recap): reverts the trip to `IN_PROGRESS` and clears the entered values (`actualTime`, odometer, weights, liters, notes, `recordedBy`, `realizationEntryAt`), keeping the scheduled slot for re-entry. Refreshes the day's rollups; audited as `trip.unrecord`. Same category gate as recording. |
 
 **`Trip.disposalPermitId`** (new, nullable FK → `DisposalPermit`) records the kitir a weighbridge disposal was posted against (legacy `jatahKitir`), set by `post-weighing` for historical auditability. `trip` is a partitioned table, so the column was added by a raw-SQL migration applied with `migrate deploy`.

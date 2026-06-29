@@ -396,6 +396,7 @@ model DisposalPermit {   // "kitir" — TPA dumping permit
   @@index([code])
   @@index([vehicleId, status, validFrom, validTo])
   @@index([status, validFrom, validTo])
+  @@index([siteId])                                      // site-only list filter (the composites are vehicle/status-prefixed)
 }
 
 // ---------- Transaction lifecycle ----------
@@ -407,6 +408,7 @@ model TransactionDay {
   createdAt DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt DateTime  @updatedAt @db.Timestamptz(6)
   hauls     Haul[]
+  @@index([status])                                      // scheduling list status filter
 }
 
 model Haul {
@@ -424,6 +426,7 @@ model Haul {
   assignments      HaulAssignment[]
   @@unique([operationDate, transactionDayId, vehicleId])  // partition key included for cross-partition uniqueness
   @@index([operationDate])
+  @@index([transactionDayId])                            // scheduling vehicle-count group-by (cascades to every monthly partition)
 }
 
 model HaulAssignment {
