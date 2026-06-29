@@ -30,6 +30,7 @@ infra/docker-compose.env
 # ARE committed (safe); only the dotenvx private keys (.env.keys) must never be.
 !infra/env/backend/.env.staging
 !infra/env/web/.env.staging
+!infra/env/backend/.env.production
 .env.keys
 infra/env/**/.env.keys
 

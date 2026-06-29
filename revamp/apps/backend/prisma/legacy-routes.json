@@ -34277,5 +34277,47 @@
     "originLegacyId": 949,
     "destinationLegacyId": 4,
     "distanceKm": 0
+  },
+  {
+    "legacyId": 128539,
+    "category": "DISPOSAL",
+    "originLegacyId": 950,
+    "destinationLegacyId": 4,
+    "distanceKm": 0
+  },
+  {
+    "legacyId": 128540,
+    "category": "DISPOSAL",
+    "originLegacyId": 951,
+    "destinationLegacyId": 4,
+    "distanceKm": 0
+  },
+  {
+    "legacyId": 128541,
+    "category": "DISPOSAL",
+    "originLegacyId": 952,
+    "destinationLegacyId": 4,
+    "distanceKm": 0
+  },
+  {
+    "legacyId": 128542,
+    "category": "DISPOSAL",
+    "originLegacyId": 953,
+    "destinationLegacyId": 4,
+    "distanceKm": 0
+  },
+  {
+    "legacyId": 128543,
+    "category": "DISPOSAL",
+    "originLegacyId": 954,
+    "destinationLegacyId": 4,
+    "distanceKm": 0
+  },
+  {
+    "legacyId": 128544,
+    "category": "DISPOSAL",
+    "originLegacyId": 955,
+    "destinationLegacyId": 4,
+    "distanceKm": 0
   }
 ]

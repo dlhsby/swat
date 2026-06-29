@@ -86,6 +86,8 @@ async function reconcileCounts(): Promise<ReconcileRow[]> {
       const legacy = await safeCount(conn, p.legacyTable);
       rows.push(reconcileRow(p.legacyTable, legacy, await p.count()));
     }
+
+    rows.push(...(await reconcileTransactions(conn)));
   } finally {
     await conn.end();
   }
@@ -98,6 +100,99 @@ async function safeCount(conn: Parameters<typeof countRows>[0], table: string): 
   } catch {
     return 0;
   }
+}
+
+/**
+ * Reconcile the transactional tables (only present after an `--include-transactions`
+ * load) — overall counts plus a per-year breakdown for the partition-routed tables.
+ * NOTE: the partitioned tables' live counts EXCLUDE any partitions the archiving job
+ * has detached (>13 months old), so run this BEFORE archiving for an apples-to-apples
+ * comparison; archived months legitimately read as a shortfall here.
+ */
+async function reconcileTransactions(
+  conn: Parameters<typeof countRows>[0],
+): Promise<ReconcileRow[]> {
+  const rows: ReconcileRow[] = [];
+  const migratedTrips = await prisma.trip.count({ where: { legacyId: { not: null } } });
+  if (migratedTrips === 0) {
+    log('No migrated trips — master-only load; skipping transactional reconciliation.');
+    return rows;
+  }
+  // Haul is unique per (day, vehicle); legacy has duplicate (day,vehicle) rows that
+  // collapse on load (kept = lowest PK), orphaning the detail/trayek rows that pointed
+  // at a dropped duplicate. Compute those expected drops so the variance check is fair
+  // (same treatment as the route/schedule dedup above).
+  const haulDrop = Number(
+    (
+      await query<{ d: number }>(
+        conn,
+        `SELECT COUNT(*) - COUNT(DISTINCT CONCAT(HARITRANSAKSI_ID,'-',KENDARAAN_ID)) AS d
+           FROM transaksiangkutsampah`,
+      )
+    )[0]?.d ?? 0,
+  );
+  // kept hauls = MIN(id) per (day,vehicle); detail/trayek whose haul isn't a kept one drop.
+  const keptHauls =
+    'SELECT MIN(TRANSAKSIANGKUTSAMPAH_ID) AS id FROM transaksiangkutsampah GROUP BY HARITRANSAKSI_ID, KENDARAAN_ID';
+  const detailDrop = Number(
+    (
+      await query<{ d: number }>(
+        conn,
+        `SELECT COUNT(*) AS d FROM detailtransaksiangkutsampah dt
+           LEFT JOIN (${keptHauls}) k ON dt.TRANSAKSIANGKUTSAMPAH_ID = k.id
+          WHERE k.id IS NULL`,
+      )
+    )[0]?.d ?? 0,
+  );
+  const tripDrop = Number(
+    (
+      await query<{ d: number }>(
+        conn,
+        `SELECT COUNT(*) AS d FROM trayek tr
+           JOIN detailtransaksiangkutsampah dt ON tr.DETAILTRANSAKSIANGKUTSAMPAH_ID = dt.DETAILTRANSAKSIANGKUTSAMPAH_ID
+           LEFT JOIN (${keptHauls}) k ON dt.TRANSAKSIANGKUTSAMPAH_ID = k.id
+          WHERE k.id IS NULL`,
+      )
+    )[0]?.d ?? 0,
+  );
+
+  // Whole-table counts (legacy vs migrated; migrated side counts legacy-sourced rows only).
+  const txnPairs: Array<[string, () => Promise<number>, number]> = [
+    ['haritransaksi', () => prisma.transactionDay.count({ where: { legacyId: { not: null } } }), 0],
+    [
+      'transaksiangkutsampah',
+      () => prisma.haul.count({ where: { legacyId: { not: null } } }),
+      haulDrop,
+    ],
+    [
+      'detailtransaksiangkutsampah',
+      () => prisma.haulAssignment.count({ where: { legacyId: { not: null } } }),
+      detailDrop,
+    ],
+    ['trayek', () => prisma.trip.count({ where: { legacyId: { not: null } } }), tripDrop],
+    ['sampahmasuktpa', () => prisma.tpaInboundLog.count({ where: { legacyId: { not: null } } }), 0],
+  ];
+  for (const [table, count, drop] of txnPairs) {
+    rows.push(reconcileRow(table, await safeCount(conn, table), await count(), 1, drop));
+  }
+
+  // Per-year breakdown for the partition-routed day/trip chain. Legacy day count by
+  // YEAR(TANGGAL) vs migrated TransactionDay by operation year (its `date`).
+  const years = await query<{ y: number; n: number }>(
+    conn,
+    `SELECT YEAR(HARITRANSAKSI_TANGGAL) AS y, COUNT(*) AS n FROM haritransaksi
+      WHERE HARITRANSAKSI_TANGGAL > '2000-01-01' GROUP BY y ORDER BY y`,
+  );
+  for (const { y, n } of years) {
+    const migrated = await prisma.transactionDay.count({
+      where: {
+        legacyId: { not: null },
+        date: { gte: new Date(Date.UTC(y, 0, 1)), lt: new Date(Date.UTC(y + 1, 0, 1)) },
+      },
+    });
+    rows.push(reconcileRow(`haritransaksi[${y}]`, Number(n), migrated));
+  }
+  return rows;
 }
 
 async function checkFkIntegrity(): Promise<boolean> {

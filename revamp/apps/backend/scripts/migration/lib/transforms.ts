@@ -95,6 +95,32 @@ export function nonNegativeOrNull(value: number | string | null | undefined): nu
   return Number.isNaN(n) || n < 0 ? null : Math.trunc(n);
 }
 
+/**
+ * The DB enforces approved fuel ≤ requested (`trip_fuel_approved_lte_requested`).
+ * Legacy data has ~100k trips where approved > requested (data-entry artifacts);
+ * clamp approved down to requested so the row loads. Nulls pass through (the
+ * constraint allows a null on either side).
+ */
+export function capApprovedFuel(requested: number | null, approved: number | null): number | null {
+  if (approved == null || requested == null) {
+    return approved;
+  }
+  return approved > requested ? requested : approved;
+}
+
+/**
+ * The DB enforces gross ≥ tare (`trip_gross_weight_gte_tare_weight`). ~1k legacy
+ * trips have a gross reading below the tare (a faulty weighing); null the gross so
+ * the row loads (the CHECK permits a null gross). netWeight is mapped separately
+ * and unaffected.
+ */
+export function grossOrNullIfBelowTare(tare: number, gross: number | null): number | null {
+  if (gross == null) {
+    return null;
+  }
+  return gross < tare ? null : gross;
+}
+
 /** Trim a legacy string; empty/whitespace → null. */
 export function trimOrNull(value: string | null | undefined): string | null {
   if (value == null) {

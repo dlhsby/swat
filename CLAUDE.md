@@ -79,20 +79,25 @@ From inner `revamp/`:
 - DB: `pnpm db:generate` · `pnpm db:migrate` (= prisma **deploy**) · `pnpm db:seed`
 - Seeding is **four** independent, idempotent tracks (all from inner `revamp/`, scope with
   `--filter @swat/backend`):
-  - **`seed:demo`** (= `db:seed`, default) — fully synthetic dev/demo data: demo users + per-role
-    permissions + a **slim curated master subset** (`prisma/demo-fixtures.ts`, ~15 vehicles/22 sites/
-    39 routes, derived from the legacy snapshot by `scripts/build-demo-fixtures.ts`) + a year of
-    synthetic transactions across the whole demo fleet + 24 months of levies + inspections/maintenance/
-    photos. **Auto-runs the rollup backfill** at the end, so every monitoring dashboard works from one
-    command (no separate `rollup:backfill`). No MySQL needed.
+  - **`seed:demo`** (= `db:seed`, default) — dev/demo data: demo users + per-role permissions + a
+    **slim curated master subset** (`prisma/demo-fixtures.ts`, ~15 vehicles/22 sites/39 routes, derived
+    from the legacy snapshot by `scripts/build-demo-fixtures.ts`) + a **sampled slice of REAL legacy
+    transactions** (latest year, demo vehicles — `prisma/demo-transactions.json`, loaded first) with
+    **synthetic** transactions filling the remaining days (the synthetic pass skips days that already
+    have hauls, so no double-count) + 24 months of levies + inspections/maintenance/photos. **Auto-runs
+    the rollup backfill** at the end. No MySQL at seed time. After a re-dump, regenerate all demo
+    fixtures with `infra/refresh-demo-fixtures.sh`.
   - **`seed:legacy`** — full legacy load from MySQL via `migrate:legacy`: master + auth + scheduling +
     aggregates, **no transactions, no synthetic data**. For local pre-UAT testing on real masters.
-  - **`seed:staging`** — same engine **+ transactional history** (`--include-transactions`:
-    haritransaksi→TransactionDay, transaksiangkutsampah→Haul, detail→HaulAssignment, trayek→Trip,
-    sampahmasuktpa→TpaInboundLog, keyset-batched + watermarked). Targets the staging DB via
-    `SEED_ENV=staging`, which trusts `DATABASE_URL` + `LEGACY_DB_*` from the process env. For UAT.
-  - **`seed:production`** — same as staging but `SEED_ENV=production` and requires
-    `--confirm-production` (the engine refuses a production run without it). The real cutover.
+  - **`seed:staging`** (root `pnpm seed:staging` → `infra/seed-legacy-from-dump.sh staging
+    --with-transactions`) — stands up a throwaway MySQL from `legacy/db/dump/`, then the engine loads
+    master + **full transactional history** (`--include-transactions`: haritransaksi→TransactionDay,
+    transaksiangkutsampah→Haul, detail→HaulAssignment, trayek→Trip, sampahmasuktpa→TpaInboundLog —
+    **every stage keyset-batched + watermarked with per-batch FK resolution**, so ~21M rows load at flat
+    memory). Targets the staging DB via `SEED_ENV=staging`. For UAT.
+  - **`seed:production`** (root `pnpm seed:production`) — same from `.env.production` with
+    `SEED_ENV=production` + requires `--confirm-production` (the engine AND the script refuse without it).
+    The real cutover.
   - `seed:auth` (`SEED_AUTH_ONLY=true`) stays as an internal bootstrap utility (permissions + roles +
     admin only). Legacy users get `LEGACY_SEED_PASSWORD` (default `Password123!`) with a forced
     first-login reset; a legacy username colliding with `admin` is suffixed. Legacy tracks need
@@ -113,6 +118,10 @@ From inner `revamp/`:
   ciphertext, committed; key in SSM/GitHub. The runtime decrypts it at boot; the legacy seed
   (`SEED_ENV=staging`) decrypts `DATABASE_URL` from the same file (so there's ONE `.env.staging`).
   `LEGACY_DB_*` (the legacy MySQL source) come from the env — the dump helper sets them.
+- **Production (on-prem, encrypted)**: `infra/env/backend/.env.production` — same dotenvx pattern
+  (`DOTENV_PRIVATE_KEY_PRODUCTION` in the gitignored `.env.keys`, stored in the client's secret store,
+  NOT AWS). `seed:production` decrypts `DATABASE_URL` from it. Template: `.env.production.example`
+  (on-prem MinIO + local Postgres placeholders — fill before cutover).
 - **Infra stack**: `infra/docker-compose*.env` ← `*.example`.
 
 ## Gotchas

@@ -22,6 +22,10 @@
     "db:seed:demo": "pnpm --filter @swat/backend run seed:demo",
     "db:seed:auth": "pnpm --filter @swat/backend run seed:auth",
     "db:seed:legacy": "pnpm --filter @swat/backend run seed:legacy",
+    "seed:staging": "bash infra/seed-legacy-from-dump.sh staging --with-transactions",
+    "seed:staging:master": "bash infra/seed-legacy-from-dump.sh staging",
+    "seed:production": "bash infra/seed-legacy-from-dump.sh production --with-transactions --confirm-production",
+    "refresh:demo-fixtures": "bash infra/refresh-demo-fixtures.sh",
     "prepare": "husky",
     "postinstall": "pnpm --filter @swat/backend run prisma:generate || true"
   },
