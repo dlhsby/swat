@@ -1,3 +1,4 @@
+import { apiClient } from './api-client';
 import { makeResourceApi } from './resource-api';
 
 /* ----------------------------- DTO types ------------------------------ */
@@ -137,6 +138,15 @@ export interface RouteDto {
   updatedAt: string;
 }
 
+/** Slim route for the record board — only the fields it derives suggestions +
+ *  route resolution from. Fetched in one request (not the paged full route list). */
+export interface BoardRouteDto {
+  id: string;
+  category: RouteCategoryValue;
+  originSiteName: string;
+  destinationSiteName: string;
+}
+
 export interface WasteSourceDto {
   id: string;
   code: string;
@@ -202,6 +212,9 @@ export const vehiclesApi = makeResourceApi<VehicleDto>('/vehicles');
 export const driversApi = makeResourceApi<DriverDto>('/drivers');
 export const sitesApi = makeResourceApi<SiteDto>('/sites');
 export const routesApi = makeResourceApi<RouteDto>('/routes');
+/** All active routes, slimmed, in a single request — for the record board. */
+export const routesBoardSummary = (): Promise<BoardRouteDto[]> =>
+  apiClient.get<BoardRouteDto[]>('/routes/board-summary');
 export const wasteSourcesApi = makeResourceApi<WasteSourceDto>('/waste-sources');
 export const scheduleTemplatesApi = makeResourceApi<ScheduleTemplateDto>('/schedule-templates');
 export const disposalPermitsApi = makeResourceApi<DisposalPermitDto>('/disposal-permits');

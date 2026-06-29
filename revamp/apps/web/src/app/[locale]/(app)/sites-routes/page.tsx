@@ -3,7 +3,7 @@
 import { type ColumnDef } from '@tanstack/react-table';
 import { MapPin, Spline } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -33,6 +33,11 @@ import {
   DialogHeader,
   DialogTitle,
   DropdownMenuItem,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Tabs,
   TabsContent,
   TabsList,
@@ -40,6 +45,8 @@ import {
 } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
+import { type ServerQueryParams } from '@/hooks/use-server-resource-list';
+import { useServerResourceManager } from '@/hooks/use-server-resource-manager';
 import { formatNumber } from '@/lib/format';
 import {
   type RouteCategoryValue,
@@ -441,7 +448,20 @@ function RouteSiteFields({ sites }: { sites: readonly SiteDto[] }): JSX.Element 
 }
 
 function RoutesTab(): JSX.Element {
-  const manager = useResourceManager(routesApi, (r) => r.id);
+  // Routes run to ~17k legacy rows — page/search/filter on the server.
+  const [category, setCategory] = useState<RouteCategoryValue | ''>('');
+  const buildQuery = useCallback(
+    ({ page, pageSize, search }: ServerQueryParams): string => {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('limit', String(pageSize));
+      if (search.trim()) params.set('search', search.trim());
+      if (category) params.set('category', category);
+      return `?${params.toString()}`;
+    },
+    [category],
+  );
+  const manager = useServerResourceManager(routesApi, (r) => r.id, buildQuery);
   const { rows: sites } = useResourceList(sitesApi.list);
   const [corridorRoute, setCorridorRoute] = useState<CorridorRoute | null>(null);
   const columns = useMemo<ColumnDef<RouteDto, unknown>[]>(
@@ -509,6 +529,28 @@ function RoutesTab(): JSX.Element {
       columns={columns}
       searchPlaceholder="Cari rute…"
       createLabel="Tambah Rute"
+      serverPagination={manager.serverPagination}
+      toolbar={
+        <Select
+          value={category === '' ? 'ALL' : category}
+          onValueChange={(v) => {
+            setCategory(v === 'ALL' ? '' : (v as RouteCategoryValue));
+            manager.setPage(1);
+          }}
+        >
+          <SelectTrigger className="h-9 w-44" aria-label="Filter jenis rute">
+            <SelectValue placeholder="Semua jenis" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">Semua jenis</SelectItem>
+            {ROUTE_CATEGORIES.map((c) => (
+              <SelectItem key={String(c.value)} value={String(c.value)}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      }
       embedded
     >
       <CrudFormDialog

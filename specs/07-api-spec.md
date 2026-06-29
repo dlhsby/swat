@@ -386,7 +386,8 @@ Response 200:
 | POST | `/sites` | `site:create` | Register new site (POOL/SPBU/TPS/TPA) |
 | PATCH | `/sites/:id` | `site:update` | Update site (address, coords, photo) |
 | DELETE | `/sites/:id` | `site:delete` | Soft-delete site |
-| GET | `/routes` | `route:read` | List routes (filter: category, search) |
+| GET | `/routes` | `route:read` | List routes — paginated (filter: category, originSiteId, destinationSiteId; `search` matches origin/destination site name) |
+| GET | `/routes/board-summary` | `route:read` | Slim list of **all active routes** (`{id, category, originSiteName, destinationSiteName}`, unpaginated) for the record/quick-entry board — avoids paging the full route table client-side |
 | GET | `/routes/:id` | `route:read` | Get route (origin, destination, distance) |
 | POST | `/routes` | `route:create` | Define route (origin, destination, distanceKm, category) |
 | PATCH | `/routes/:id` | `route:update` | Update route (distance) |
@@ -417,7 +418,7 @@ Response 200:
 | POST | `/crew-schedules/:scheduleId/trip-templates` | `trip-template:create` | Add leg (route, time, fuel request) |
 | PATCH | `/trip-templates/:id` | `trip-template:update` | Update leg (time, fuel request) |
 | DELETE | `/trip-templates/:id` | `trip-template:delete` | Remove leg |
-| GET | `/disposal-permits` | `disposal-permit:read` | List permits (kitir) by vehicle+site+date |
+| GET | `/disposal-permits` | `disposal-permit:read` | List permits (kitir) — paginated (filter: vehicleId, siteId, status, activeOn; `search` matches permit code / vehicle plate) |
 | POST | `/disposal-permits` | `disposal-permit:create` | Issue permit (vehicle, site, validFrom, validTo) |
 | PATCH | `/disposal-permits/:id` | `disposal-permit:update` | Update permit (extend, deactivate) |
 | DELETE | `/disposal-permits/:id` | `disposal-permit:delete` | Delete permit (if unused) |

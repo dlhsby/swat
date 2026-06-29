@@ -700,6 +700,7 @@ model DisposalPermit {
 
   @@index([vehicleId, status, validFrom, validTo])
   @@index([status, validFrom, validTo])
+  @@index([siteId])
   @@map("disposal_permit")
 }
 
@@ -715,6 +716,7 @@ model TransactionDay {
   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   hauls     Haul[]
 
+  @@index([status])
   @@map("transaction_day")
 }
 
@@ -736,6 +738,7 @@ model Haul {
 
   @@unique([operationDate, transactionDayId, vehicleId])
   @@index([operationDate])
+  @@index([transactionDayId])
   @@index([legacyId])
   @@map("haul")
 }

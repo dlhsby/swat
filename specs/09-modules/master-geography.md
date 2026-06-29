@@ -125,7 +125,8 @@ The geography module manages physical locations (pools, SPBU fuel stations, TPS 
 | POST | `/sites` | `site:create` | Register new site (POOL/SPBU/TPS/TPA) |
 | PATCH | `/sites/:id` | `site:update` | Update site (address, coords, photo) |
 | DELETE | `/sites/:id` | `site:delete` | Soft-delete site |
-| GET | `/routes` | `route:read` | List routes (paginated, filterable by category, origin, destination) |
+| GET | `/routes` | `route:read` | List routes (paginated, filterable by category, origin, destination; `search` by origin/destination site name) |
+| GET | `/routes/board-summary` | `route:read` | Slim, unpaginated `{id, category, originSiteName, destinationSiteName}[]` of all active routes — for the record/quick-entry board (location suggestions + route resolution) without paging the full table |
 | GET | `/routes/:id` | `route:read` | Get route (origin, destination, distance, category) |
 | POST | `/routes` | `route:create` | Define route (origin, destination, distanceKm, category) |
 | PATCH | `/routes/:id` | `route:update` | Update route (distance) |

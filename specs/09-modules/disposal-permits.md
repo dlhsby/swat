@@ -44,6 +44,7 @@ The DisposalPermit (Jatah Kitir) is a **TPA dumping permit** that authorizes a s
 - `@@index([vehicleId, validFrom, validTo])` — resolve quota for vehicle on a given date.
 - `@@index([status])` — filter active quotas for list views.
 - `@@index([status, siteId, vehicleId, validFrom, validTo])` — compound index for weighbridge resolution queries.
+- `@@index([siteId])` — site-only list filter (the composite indexes are vehicle/status-prefixed, so a bare site filter could not use them).
 - Validate performance with EXPLAIN ANALYZE; adjust if needed.
 
 **Constraints:**
@@ -156,7 +157,7 @@ enum DisposalPermitStatus {
 
 See [`07-api-spec.md`](../07-api-spec.md) **§2.7**:
 
-- `GET /disposal-permits` — List (paginated, filterable by vehicleId, siteId, status, validFrom/validTo range).
+- `GET /disposal-permits` — List (paginated, filterable by vehicleId, siteId, status, activeOn date; `search` by permit code / vehicle plate). At legacy volume (~348k rows) the UI pages this **server-side**, one page per request.
 - `GET /disposal-permits/:id` — Get detail.
 - `POST /disposal-permits` — Create (vehicleId, siteId, validFrom, validTo, status).
 - `PATCH /disposal-permits/:id` — Update (extend dates, deactivate).

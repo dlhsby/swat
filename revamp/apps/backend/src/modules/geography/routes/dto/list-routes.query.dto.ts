@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { RouteCategory } from '@prisma/client';
-import { IsEnum, IsString, IsOptional } from 'class-validator';
+import { IsEnum, IsString, IsOptional, MaxLength } from 'class-validator';
 
 import { PaginationQueryDto } from '../../../../common/dto/pagination-query.dto';
 
@@ -19,4 +19,10 @@ export class ListRoutesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   destinationSiteId?: string;
+
+  @ApiPropertyOptional({ description: 'Search by origin or destination site name' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  search?: string;
 }
