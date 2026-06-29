@@ -7,7 +7,7 @@ import { type PaginationMeta } from '../../../common/types/api-response';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { ListRoutesQueryDto } from './dto/list-routes.query.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
-import { type RouteDto, RoutesService } from './routes.service';
+import { type BoardRouteDto, type RouteDto, RoutesService } from './routes.service';
 
 @ApiTags('routes')
 @Controller('routes')
@@ -19,6 +19,14 @@ export class RoutesController {
   @ApiOperation({ summary: 'List routes (paginated)' })
   list(@Query() query: ListRoutesQueryDto): Promise<{ data: RouteDto[]; meta: PaginationMeta }> {
     return this.routes.list(query);
+  }
+
+  // Must precede the `:id` route so "board-summary" isn't captured as an id.
+  @Get('board-summary')
+  @RequirePermissions('route:read')
+  @ApiOperation({ summary: 'Slim list of all active routes for the record board' })
+  boardSummary(): Promise<BoardRouteDto[]> {
+    return this.routes.boardSummary();
   }
 
   @Get(':id')

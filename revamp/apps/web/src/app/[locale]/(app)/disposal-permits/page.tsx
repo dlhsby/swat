@@ -3,7 +3,7 @@
 import { type ColumnDef } from '@tanstack/react-table';
 import { Upload } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
@@ -12,9 +12,18 @@ import { CrudListShell } from '@/components/crud/crud-list-shell';
 import { DateField, type SelectOption, SelectField } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
 import { KitirBulkImportDialog } from '@/components/scheduling/kitir-bulk-import-dialog';
-import { Button, StatusPill } from '@/components/ui';
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  StatusPill,
+} from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
-import { useResourceManager } from '@/hooks/use-resource-manager';
+import { type ServerQueryParams } from '@/hooks/use-server-resource-list';
+import { useServerResourceManager } from '@/hooks/use-server-resource-manager';
 import { formatDateDisplay } from '@/lib/format';
 import {
   type DisposalPermitDto,
@@ -73,9 +82,24 @@ const buildPayload = (v: Values, isEdit: boolean): Record<string, unknown> =>
 const siteOption = (s: SiteDto): SelectOption => ({ value: s.id, label: `${s.name} (${s.type})` });
 const vehicleOption = (v: VehicleDto): SelectOption => ({ value: v.id, label: v.plateNumber });
 
+type StatusFilter = '' | 'ACTIVE' | 'INACTIVE';
+
 export default function DisposalPermitsPage(): JSX.Element {
   const t = useTranslations('nav');
-  const manager = useResourceManager(disposalPermitsApi, (r) => r.id);
+  const [status, setStatus] = useState<StatusFilter>('');
+  // Server-side query: page/limit/search + the status toolbar filter.
+  const buildQuery = useCallback(
+    ({ page, pageSize, search }: ServerQueryParams): string => {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('limit', String(pageSize));
+      if (search.trim()) params.set('search', search.trim());
+      if (status) params.set('status', status);
+      return `?${params.toString()}`;
+    },
+    [status],
+  );
+  const manager = useServerResourceManager(disposalPermitsApi, (r) => r.id, buildQuery);
   const { rows: siteRows } = useResourceList(sitesApi.list);
   const { rows: vehicleRows } = useResourceList(vehiclesApi.list);
   const sites = useMemo(() => siteRows.map(siteOption), [siteRows]);
@@ -158,13 +182,32 @@ export default function DisposalPermitsPage(): JSX.Element {
       columns={columns}
       searchPlaceholder="Cari kode / kendaraan…"
       createLabel="Terbitkan Kitir"
+      serverPagination={manager.serverPagination}
       toolbar={
-        <ProtectedAction permission="disposal-permit:create">
-          <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)}>
-            <Upload className="h-4 w-4" aria-hidden />
-            Impor Massal
-          </Button>
-        </ProtectedAction>
+        <>
+          <Select
+            value={status === '' ? 'ALL' : status}
+            onValueChange={(v) => {
+              setStatus(v === 'ALL' ? '' : (v as StatusFilter));
+              manager.setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-9 w-40" aria-label="Filter status">
+              <SelectValue placeholder="Semua status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Semua status</SelectItem>
+              <SelectItem value="ACTIVE">Berlaku</SelectItem>
+              <SelectItem value="INACTIVE">Tidak Berlaku</SelectItem>
+            </SelectContent>
+          </Select>
+          <ProtectedAction permission="disposal-permit:create">
+            <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)}>
+              <Upload className="h-4 w-4" aria-hidden />
+              Impor Massal
+            </Button>
+          </ProtectedAction>
+        </>
       }
     >
       <CrudFormDialog

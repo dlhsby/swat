@@ -36,6 +36,14 @@ export interface RouteDto {
   readonly updatedAt: string;
 }
 
+/** Slim route for the record board (location suggestions + route resolution). */
+export interface BoardRouteDto {
+  readonly id: string;
+  readonly category: RouteCategory;
+  readonly originSiteName: string;
+  readonly destinationSiteName: string;
+}
+
 function toRouteDto(route: RouteWithSites): RouteDto {
   return {
     id: route.id,
@@ -65,8 +73,20 @@ export class RoutesService {
       category: query.category,
       originSiteId: query.originSiteId,
       destinationSiteId: query.destinationSiteId,
+      search: query.search,
     });
     return paginated(await this.actorNames.attach(rows, rows.map(toRouteDto)), total, query);
+  }
+
+  /** All active routes, slimmed for the record board (single small payload). */
+  async boardSummary(): Promise<BoardRouteDto[]> {
+    const rows = await this.repo.boardSummary();
+    return rows.map((r) => ({
+      id: r.id,
+      category: r.category,
+      originSiteName: r.originSite.name,
+      destinationSiteName: r.destinationSite.name,
+    }));
   }
 
   async getById(id: string): Promise<RouteDto> {

@@ -62,6 +62,25 @@ declare module '@tanstack/react-table' {
 
 const PAGE_SIZES = [10, 25, 50, 100] as const;
 
+/**
+ * Opt-in server-side pagination. When provided, the table renders exactly the
+ * `data` page the server returned (no client slice/filter/sort), drives the pager
+ * from the server `total`, and routes the search box to `onSearchChange`
+ * (already debounced 300ms by the table). Per-column filters are hidden in this
+ * mode — use the global search + a toolbar filter. Sort stays client-visual only.
+ */
+export interface ServerPaginationConfig {
+  /** 0-indexed current page. */
+  page: number;
+  pageSize: number;
+  /** Total rows across all pages. */
+  total: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+  /** Fired with the debounced search text (empty string clears). */
+  onSearchChange: (search: string) => void;
+}
+
 export interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -86,6 +105,8 @@ export interface DataTableProps<TData, TValue> {
   actions?: ReactNode;
   /** Per-row mobile card title accessor. */
   getRowId?: (row: TData) => string;
+  /** Opt into server-side pagination/search (large tables). Omit for client mode. */
+  serverPagination?: ServerPaginationConfig;
   className?: string;
 }
 
@@ -119,6 +140,7 @@ export function DataTable<TData, TValue>({
   onRefresh,
   refreshing = false,
   actions,
+  serverPagination,
   className,
 }: DataTableProps<TData, TValue>): JSX.Element {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -154,10 +176,19 @@ export function DataTable<TData, TValue>({
   );
 
   const debouncedSearch = useDebounced(search, 300);
+  // In server mode the search drives a refetch (the hook resets to page 1); in
+  // client mode it drives the local global filter. `onSearchChange` is the hook's
+  // stable `setSearch`, so depending on it can't loop but stays correct if the
+  // mode/handler ever changes.
+  const onServerSearch = serverPagination?.onSearchChange;
   useEffect(() => {
+    if (onServerSearch) {
+      onServerSearch(debouncedSearch);
+      return;
+    }
     setGlobalFilter(debouncedSearch);
     setPageIndex(0);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, onServerSearch]);
   // Reset to page 1 whenever the per-column filters change.
   useEffect(() => {
     setPageIndex(0);
@@ -172,20 +203,37 @@ export function DataTable<TData, TValue>({
     onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    // Server mode: the server already filtered/sorted/paged — skip the client
+    // row models so the table renders exactly the page it was handed.
+    ...(serverPagination
+      ? { manualPagination: true, manualFiltering: true, manualSorting: true }
+      : { getFilteredRowModel: getFilteredRowModel(), getSortedRowModel: getSortedRowModel() }),
   });
 
   const allRows = table.getRowModel().rows;
-  const totalRows = allRows.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
-  const safePage = Math.min(pageIndex, totalPages - 1);
-  const pageRows = allRows.slice(safePage * pageSize, safePage * pageSize + pageSize);
+  // Client mode slices the filtered/sorted rows; server mode renders the page as-is.
+  const serverTotalPages = serverPagination
+    ? Math.max(1, Math.ceil(serverPagination.total / serverPagination.pageSize))
+    : 1;
+  const totalRows = serverPagination ? serverPagination.total : allRows.length;
+  const totalPages = serverPagination
+    ? serverTotalPages
+    : Math.max(1, Math.ceil(totalRows / pageSize));
+  const safePage = serverPagination ? serverPagination.page : Math.min(pageIndex, totalPages - 1);
+  const pageRows = serverPagination
+    ? allRows
+    : allRows.slice(safePage * pageSize, safePage * pageSize + pageSize);
   const hasSearch = searchPlaceholder !== undefined;
-  const isFiltered = globalFilter.length > 0 || columnFilters.length > 0;
+  const isFiltered =
+    globalFilter.length > 0 ||
+    columnFilters.length > 0 ||
+    (serverPagination !== undefined && search.length > 0);
 
   const colCount = table.getVisibleLeafColumns().length || 1;
-  const hasFilterableColumns = table.getAllColumns().some((c) => c.getCanFilter());
+  // Per-column filters don't apply in server mode (they'd filter only the current
+  // page) — rely on the global search + a toolbar filter instead.
+  const hasFilterableColumns =
+    serverPagination === undefined && table.getAllColumns().some((c) => c.getCanFilter());
   const showToolbar =
     hasSearch ||
     Boolean(toolbar) ||
@@ -514,11 +562,15 @@ export function DataTable<TData, TValue>({
         <DataTablePagination
           table={table}
           page={safePage}
-          pageSize={pageSize}
+          pageSize={serverPagination ? serverPagination.pageSize : pageSize}
           totalRows={totalRows}
           totalPages={totalPages}
-          onPageChange={setPageIndex}
+          onPageChange={serverPagination ? serverPagination.onPageChange : setPageIndex}
           onPageSizeChange={(s) => {
+            if (serverPagination) {
+              serverPagination.onPageSizeChange(s);
+              return;
+            }
             setPageSize(s);
             setPageIndex(0);
           }}

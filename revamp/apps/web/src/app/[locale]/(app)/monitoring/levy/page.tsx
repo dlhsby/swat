@@ -3,7 +3,7 @@
 import { type ColumnDef } from '@tanstack/react-table';
 import { Wallet } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 import { z } from 'zod';
 
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
@@ -27,7 +27,8 @@ import {
 } from '@/components/ui';
 import { useLevySummary, useLevyTrend } from '@/hooks/use-monitoring';
 import { useMonitoringRange } from '@/hooks/use-monitoring-range';
-import { useResourceManager } from '@/hooks/use-resource-manager';
+import { type ServerQueryParams } from '@/hooks/use-server-resource-list';
+import { useServerResourceManager } from '@/hooks/use-server-resource-manager';
 import { formatDateDisplay, formatRupiah } from '@/lib/format';
 import { type LevyDto, levyApi } from '@/lib/levy-api';
 import { levyByCategory, levyTrendPoints } from '@/lib/monitoring-charts';
@@ -138,7 +139,16 @@ const toForm = (r: LevyDto): Values => ({
 
 function DataTab(): JSX.Element {
   const t = useTranslations('monitoring.levy');
-  const manager = useResourceManager(levyApi, (r) => r.id);
+  // Levy holds years of monthly rows — page on the server; the search box filters
+  // by category name (the backend's `categoryName` contains-filter).
+  const buildQuery = useCallback(({ page, pageSize, search }: ServerQueryParams): string => {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('limit', String(pageSize));
+    if (search.trim()) params.set('categoryName', search.trim());
+    return `?${params.toString()}`;
+  }, []);
+  const manager = useServerResourceManager(levyApi, (r) => r.id, buildQuery);
 
   const columns = useMemo<ColumnDef<LevyDto, unknown>[]>(
     () => [
@@ -194,6 +204,7 @@ function DataTab(): JSX.Element {
       columns={columns}
       searchPlaceholder={t('searchPlaceholder')}
       createLabel={t('createLabel')}
+      serverPagination={manager.serverPagination}
       embedded
     >
       <CrudFormDialog

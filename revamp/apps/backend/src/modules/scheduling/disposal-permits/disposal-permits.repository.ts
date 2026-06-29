@@ -18,6 +18,7 @@ export interface ListDisposalPermitsFilter extends PageParams {
   readonly siteId?: string;
   readonly status?: DisposalPermitStatus;
   readonly activeOn?: Date;
+  readonly search?: string;
 }
 
 @Injectable()
@@ -25,12 +26,21 @@ export class DisposalPermitsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private listWhere(filter: ListDisposalPermitsFilter): Prisma.DisposalPermitWhereInput {
+    const search = filter.search?.trim();
     return {
       ...(filter.vehicleId ? { vehicleId: filter.vehicleId } : {}),
       ...(filter.siteId ? { siteId: filter.siteId } : {}),
       ...(filter.status ? { status: filter.status } : {}),
       ...(filter.activeOn
         ? { validFrom: { lte: filter.activeOn }, validTo: { gte: filter.activeOn } }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              { code: { contains: search, mode: 'insensitive' } },
+              { vehicle: { plateNumber: { contains: search, mode: 'insensitive' } } },
+            ],
+          }
         : {}),
     };
   }

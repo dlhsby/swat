@@ -85,6 +85,7 @@ export class DisposalPermitsService {
       siteId: query.siteId,
       status: query.status,
       activeOn: query.activeOn ? parseDateOnly(query.activeOn) : undefined,
+      search: query.search,
     });
     return paginated(await this.actorNames.attach(rows, rows.map(toDto)), total, query);
   }

@@ -8,7 +8,7 @@ import { type ReactNode } from 'react';
 import { ProtectedAction } from '@/components/auth/protected-action';
 import { PageHead } from '@/components/shell/page-head';
 import { Button, ConfirmDialog, DataTable } from '@/components/ui';
-import { type BreadcrumbItem } from '@/components/ui';
+import { type BreadcrumbItem, type ServerPaginationConfig } from '@/components/ui';
 import { type ResourceManager } from '@/hooks/use-resource-manager';
 import { formatDateDisplay } from '@/lib/format';
 
@@ -83,6 +83,8 @@ export interface CrudListShellProps<T> {
   searchPlaceholder?: string;
   /** Extra DataTable toolbar content (status filters). */
   toolbar?: ReactNode;
+  /** Opt into server-side pagination (large lists) — from a server manager. */
+  serverPagination?: ServerPaginationConfig;
   createLabel?: string;
   /** Render without a PageHead (e.g. inside a Tabs panel). */
   embedded?: boolean;
@@ -104,6 +106,7 @@ export function CrudListShell<T>({
   columns,
   searchPlaceholder,
   toolbar,
+  serverPagination,
   createLabel,
   embedded = false,
   children,
@@ -154,6 +157,7 @@ export function CrudListShell<T>({
         refreshing={manager.loading}
         searchPlaceholder={searchPlaceholder ?? t('search')}
         toolbar={toolbar}
+        serverPagination={serverPagination}
         actions={toolbarCreateButton}
         emptyAction={createButton}
       />

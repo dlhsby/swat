@@ -20,7 +20,7 @@ import {
   notify,
 } from '@/components/ui';
 import { ApiError } from '@/lib/api-error';
-import { type RouteDto, routesApi } from '@/lib/master-api';
+import { type BoardRouteDto, routesBoardSummary } from '@/lib/master-api';
 import { createTrip } from '@/lib/transactions-api';
 import { type RouteCategory } from '@/lib/types/transactions';
 
@@ -52,7 +52,7 @@ export function AddTripDialog({
   onOpenChange,
   onCreated,
 }: AddTripDialogProps): JSX.Element {
-  const [routes, setRoutes] = useState<RouteDto[]>([]);
+  const [routes, setRoutes] = useState<BoardRouteDto[]>([]);
   const [routeId, setRouteId] = useState('');
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -63,8 +63,7 @@ export function AddTripDialog({
     }
     setRouteId('');
     setName('');
-    void routesApi
-      .list()
+    void routesBoardSummary()
       .then(setRoutes)
       .catch(() => notify.error('Gagal memuat daftar rute.'));
   }, [haulAssignmentId]);

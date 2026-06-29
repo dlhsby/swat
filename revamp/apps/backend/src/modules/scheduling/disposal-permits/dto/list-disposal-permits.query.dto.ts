@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { DisposalPermitStatus } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, IsUUID, Matches } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
 
 import { PaginationQueryDto } from '../../../../common/dto/pagination-query.dto';
 
@@ -29,4 +29,10 @@ export class ListDisposalPermitsQueryDto extends PaginationQueryDto {
   @IsString()
   @Matches(DATE_REGEX, { message: 'Tanggal harus berformat YYYY-MM-DD' })
   activeOn?: string;
+
+  @ApiPropertyOptional({ description: 'Search by permit code or vehicle plate' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  search?: string;
 }

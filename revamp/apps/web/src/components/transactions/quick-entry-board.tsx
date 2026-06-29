@@ -41,7 +41,12 @@ import { type ExportColumn, exportActivity } from '@/lib/activity-export';
 import { ApiError } from '@/lib/api-error';
 import { combineDateTimeWIB, nowTimeWIB } from '@/lib/dates';
 import { formatDateDisplay, formatNumber, formatTime } from '@/lib/format';
-import { type RouteDto, type VehicleDto, routesApi, vehiclesApi } from '@/lib/master-api';
+import {
+  type BoardRouteDto,
+  type VehicleDto,
+  routesBoardSummary,
+  vehiclesApi,
+} from '@/lib/master-api';
 import {
   type RecordTripInput,
   createTrip,
@@ -130,7 +135,7 @@ const DINAS_SOURCE_CODE = 'D';
  * The TPS ("asal sampah") end of a route. Disposal routes run TPS → TPA, so the
  * TPS is the origin; pickup routes run hub → TPS, so the TPS is the destination.
  */
-const tpsSiteName = (r: RouteDto, k: ActivityKind): string =>
+const tpsSiteName = (r: BoardRouteDto, k: ActivityKind): string =>
   k === 'PICKUP' ? r.destinationSiteName : r.originSiteName;
 
 /**
@@ -160,7 +165,7 @@ export function QuickEntryBoard({
   // One operation day (`date`, from the header): drives the recap grid, the form
   // (vehicle options + scheduled-trip lookup), and the not-initialized gate.
   const [day, setDay] = useState<TransactionDayDto | null>(null);
-  const [routes, setRoutes] = useState<RouteDto[]>([]);
+  const [routes, setRoutes] = useState<BoardRouteDto[]>([]);
   const [vehicles, setVehicles] = useState<VehicleDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -197,10 +202,10 @@ export function QuickEntryBoard({
     void load();
   }, [load]);
 
-  // Routes & vehicles are date-independent master data — fetch once.
+  // Routes & vehicles are date-independent master data — fetch once. Routes use
+  // the slim board endpoint (one small request) rather than paging the full table.
   useEffect(() => {
-    void routesApi
-      .list()
+    void routesBoardSummary()
       .then(setRoutes)
       .catch(() => setRoutes([]));
     void vehiclesApi
