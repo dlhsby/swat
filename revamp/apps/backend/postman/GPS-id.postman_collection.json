@@ -1,36 +1,36 @@
 {
   "info": {
     "name": "GPS.id Vendor API + Webhook",
-    "description": "GPS.id integration for SWAT Phase 7.\n\nTwo directions:\n1. **Pull API** (SWAT → GPS.id) — the SECONDARY path used only by the nightly backfill + mileage reconcile. Bearer token from POST /login (24h), self-throttled to ~5 req/5 min. Mirrors `gpsid-client.service.ts`.\n2. **Inbound Webhook** (GPS.id → SWAT) — the PRIMARY push path. GPS.id POSTs JSON every ~30s/unit to SWAT's vendor-unauthenticated webhook, secured by a secret path token (+ IP allowlist + rate-limit + audit). Use the simulator requests to exercise SWAT's ingestion without the real vendor.\n\nSet the `GPS.id (vendor)` environment first.",
+    "description": "GPS.id integration for SWAT Phase 7 — REGENERATED from the live vendor docs (https://gpsid.readme.io, read 2026-06-29).\n\nTwo directions:\n1. **Pull API** (SWAT → GPS.id) — base `https://portal.gps.id/backend/seen/public`. Auth: `POST /login` with the GPS.id portal username+password returns a JWT at `message.data.token`, valid **24h**; send it as `Authorization: Bearer <token>` on every other call (the collection-level Bearer auth does this; the Login request runs a test script that captures the token into the `gpsidToken` env var automatically). If the vendor rejects `Bearer`, some endpoints accept the raw token — switch the collection auth to a plain `Authorization: {{gpsidToken}}` header.\n2. **Inbound Webhook** (GPS.id → SWAT) — GPS.id PUSHes JSON every ~30s/unit to SWAT's webhook (registered out-of-band by emailing it.ss@gps.id, subject 'Register Endpoint Push Data'). Secured by SWAT's secret path token (`GPS_WEBHOOK_TOKEN`) + IP allowlist + rate-limit + audit. Use the simulator requests to exercise SWAT ingestion without the real vendor.\n\n**Response envelope:** success `{ \"status\": true, \"message\": { \"data\": ... } }`; error `{ \"status\": false, \"message\": \"<reason>\" }`. HTTP 200 ok / 400 failed.\n\n**Rate limits (vendor):** Login 5/10min · Vehicle list 5/5min · Vehicle Detail 2/1min · History 5/5min · Mileage 5/5min.\n\nSet the `GPS.id (vendor)` environment first.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
     "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{gpsidToken}}",
-        "type": "string"
-      }
-    ]
+    "bearer": [{ "key": "token", "value": "{{gpsidToken}}", "type": "string" }]
   },
   "item": [
     {
       "name": "Auth",
       "item": [
         {
-          "name": "Login (get bearer token)",
+          "name": "Login (get 24h bearer token)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('2xx', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('status true', () => pm.expect(pm.response.json().status).to.be.true);",
                   "",
+                  "// Real envelope: { status, message: { data: { token } } }",
                   "const json = pm.response.json();",
-                  "const token = json?.access_token ?? json?.token ?? json?.Token;",
-                  "if (token) { pm.environment.set('gpsidToken', token); }"
+                  "const token = json?.message?.data?.token;",
+                  "if (token) {",
+                  "  pm.environment.set('gpsidToken', token);",
+                  "  console.log('gpsidToken set (24h validity).');",
+                  "} else {",
+                  "  console.warn('No token at message.data.token — check credentials/response.');",
+                  "}"
                 ]
               }
             }
@@ -48,29 +48,29 @@
               "mode": "raw",
               "raw": "{\n  \"username\": \"{{gpsidUsername}}\",\n  \"password\": \"{{gpsidPassword}}\"\n}"
             },
-            "description": "POST {baseUrl}/login → { access_token | token | Token }. The client caches it for 24h and re-logs in on a 401."
+            "description": "POST {baseUrl}/login → 200 `{ status:true, message:{ data:{ username, fullname, email, phone, token } } }`. Token (JWT) is valid 24h. Wrong creds → 400 `{ status:false, message:'Invalid Credential.' }`. Rate limit: 5 attempts / 10 min."
           }
         }
       ]
     },
     {
-      "name": "Pull API (nightly backfill)",
+      "name": "Vehicles",
       "item": [
         {
-          "name": "Get Vehicles",
+          "name": "Get Vehicle (list / overview)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gpsidBaseUrl}}/get-vehicle",
+              "raw": "{{gpsidBaseUrl}}/vehicle",
               "host": ["{{gpsidBaseUrl}}"],
-              "path": ["get-vehicle"]
+              "path": ["vehicle"]
             },
-            "description": "Registered vehicle list → [{ imei | VehicleId, plate | VehicleNumber }]. Used to reconcile the device registry."
+            "description": "All registered units → `message.total` + `message.data[]` of { imei, owner, device_name, plate, gsm_no, activation_time, expired_gsm, gps_type, vehicle_type, longitude, latitude, speed, address, last_positioning }. Rate limit 5/5min."
           }
         },
         {
-          "name": "Vehicle Detail (by IMEI)",
+          "name": "Get Vehicle Detail (by IMEI)",
           "request": {
             "method": "GET",
             "header": [],
@@ -79,46 +79,205 @@
               "host": ["{{gpsidBaseUrl}}"],
               "path": ["vehicle", "detail", "{{imei}}"]
             },
-            "description": "Single-device detail (per spec §1.2; not consumed by the client yet — included for connectivity testing)."
+            "description": "Single-device detail → message.data { imei, plate, acc, longitude, latitude, angle, speed, mileage, address, door, temperature, last_positioning, last_update, ... }. Rate limit 2/1min (most restrictive)."
           }
-        },
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
         {
-          "name": "Report: History (breadcrumbs)",
+          "name": "Get Data History (track points)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gpsidBaseUrl}}/report/history?imei={{imei}}&from={{fromIso}}&to={{toIso}}",
+              "raw": "{{gpsidBaseUrl}}/report/history?page=1&per_page=10&device={{imei}}&start={{gpsidStart}}&end={{gpsidEnd}}",
               "host": ["{{gpsidBaseUrl}}"],
               "path": ["report", "history"],
               "query": [
-                { "key": "imei", "value": "{{imei}}" },
-                { "key": "from", "value": "{{fromIso}}" },
-                { "key": "to", "value": "{{toIso}}" }
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "10" },
+                { "key": "device", "value": "{{imei}}", "description": "single IMEI" },
+                {
+                  "key": "start",
+                  "value": "{{gpsidStart}}",
+                  "description": "device-timezone start"
+                },
+                { "key": "end", "value": "{{gpsidEnd}}", "description": "device-timezone end" }
               ]
             },
-            "description": "Historical track points for gap-fill → [{ lat|Lat, lon|Lon, speed|Speed, datetime|DatetimeUTC }]."
+            "description": "Historical breadcrumbs → message.total + message.data[] of { plate, imei, lon, lat, speed, angle, time, acc, battery, fuel, mileage, temperature }. Errors: invalid token/device, start>=end, missing dates. Rate limit 5/5min."
           }
         },
         {
-          "name": "Report: Mileage (fuel cross-check)",
+          "name": "Get Data Mileage (+ used fuel)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{gpsidBaseUrl}}/report/mileage?imei={{imei}}&date={{dateIso}}",
+              "raw": "{{gpsidBaseUrl}}/report/mileage?used_fuel=25.10&device=[{{imei}}]&start={{gpsidStart}}&end={{gpsidEnd}}",
               "host": ["{{gpsidBaseUrl}}"],
               "path": ["report", "mileage"],
               "query": [
+                { "key": "used_fuel", "value": "25.10", "description": "optional, Km/L" },
                 {
-                  "key": "imei",
-                  "value": "{{imei}}",
-                  "description": "CSV, ≤5 IMEIs per call (vendor batch limit)"
+                  "key": "device",
+                  "value": "[{{imei}}]",
+                  "description": "JSON array of IMEIs, MAX 5"
                 },
-                { "key": "date", "value": "{{dateIso}}" }
+                { "key": "start", "value": "{{gpsidStart}}" },
+                { "key": "end", "value": "{{gpsidEnd}}" }
               ]
             },
-            "description": "Per-device mileage + used fuel for the nightly internal-vs-vendor cross-check → [{ imei|VehicleId, mileage|distance, used_fuel_total|usedFuel }]. Max 5 IMEIs/call."
+            "description": "Per-device mileage + fuel → message.data[] of { imei, plate, start, end, mileage, start_mileage, end_mileage, used_fuel_d, used_fuel_total }. `device` is a JSON array (≤5 IMEIs). Errors: 'Device must be a valid JSON string.', 'Device should not be more than 5.', start>=end. Rate limit 5/5min."
+          }
+        },
+        {
+          "name": "Get Data Parking Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/report/parking_report?page=1&per_page=10&device={{imei}}&start={{gpsidStart}}&end={{gpsidEnd}}&min_time=60&max_time=3600",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["report", "parking_report"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "10" },
+                { "key": "device", "value": "{{imei}}" },
+                { "key": "start", "value": "{{gpsidStart}}" },
+                { "key": "end", "value": "{{gpsidEnd}}" },
+                {
+                  "key": "min_time",
+                  "value": "60",
+                  "description": "optional, min parking secs (default 60)"
+                },
+                {
+                  "key": "max_time",
+                  "value": "3600",
+                  "description": "optional, max parking secs (default 3600)"
+                }
+              ]
+            },
+            "description": "Parking events → message.total + message.data[]. Same row shape as history."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Alerts",
+      "item": [
+        {
+          "name": "Get Alert Code (reference list)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/ref_alert/alert_code_list",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["ref_alert", "alert_code_list"]
+            },
+            "description": "Reference map of alert codes → message.data. Use a code as `alert_no` in 'Get History Alert Data'."
+          }
+        },
+        {
+          "name": "Get History Alert Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/alert/alert_data?page=1&per_page=10&start={{gpsidStart}}&end={{gpsidEnd}}&device={{imei}}&alert_no=",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["alert", "alert_data"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "per_page", "value": "10" },
+                { "key": "start", "value": "{{gpsidStart}}" },
+                { "key": "end", "value": "{{gpsidEnd}}" },
+                { "key": "device", "value": "{{imei}}" },
+                {
+                  "key": "alert_no",
+                  "value": "",
+                  "description": "alert code from /ref_alert/alert_code_list (blank = all)"
+                }
+              ]
+            },
+            "description": "Historical alerts for a device in a window, filtered by alert_no."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Commands & Streaming",
+      "item": [
+        {
+          "name": "Log Command (by IMEI + date)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/command/log/{{imei}}?date={{gpsidDate}}",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["command", "log", "{{imei}}"],
+              "query": [{ "key": "date", "value": "{{gpsidDate}}", "description": "YYYY-MM-DD" }]
+            },
+            "description": "Command history for a tracker on a given date."
+          }
+        },
+        {
+          "name": "On/Off Engine (relay)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/command/send/{{imei}}?command=RELAY,1%23",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["command", "send", "{{imei}}"],
+              "query": [
+                {
+                  "key": "command",
+                  "value": "RELAY,1%23",
+                  "description": "Engine OFF = 'RELAY,1#'  ·  Engine ON = 'RELAY,0#' (# URL-encoded as %23)"
+                }
+              ]
+            },
+            "description": "Cut/restore engine via relay. ⚠ The vendor OpenAPI is ambiguous on where `command` goes (path vs query vs body) — modelled here as a query param; verify against a real unit before relying on it. DANGER: 'RELAY,1#' cuts the engine."
+          }
+        },
+        {
+          "name": "Set Link Monitoring (share location)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/share_location/create_share",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["share_location", "create_share"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"imei\": \"{{imei}}\",\n  \"expiration\": 60\n}"
+            },
+            "description": "Create a time-limited public share link. Body { imei, expiration } — expiration in MINUTES from generation."
+          }
+        },
+        {
+          "name": "Get Link Live Streaming Public",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{gpsidBaseUrl}}/streaming_with_apikey/streaming_key?imei={{imei}}&channel=1",
+              "host": ["{{gpsidBaseUrl}}"],
+              "path": ["streaming_with_apikey", "streaming_key"],
+              "query": [
+                { "key": "imei", "value": "{{imei}}" },
+                { "key": "channel", "value": "1", "description": "camera channel (default 1)" }
+              ]
+            },
+            "description": "Public live-stream link for a camera-equipped unit → message.data.link."
           }
         }
       ]
@@ -139,9 +298,9 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"VehicleId\": \"{{imei}}\",\n  \"VehicleNumber\": \"L 1234 AB\",\n  \"DatetimeUTC\": \"2026-06-26 03:15:00\",\n  \"Lat\": -7.2575,\n  \"Lon\": 112.7508,\n  \"Speed\": 32.5,\n  \"Direction\": 145,\n  \"Engine\": \"ON\",\n  \"Odometer\": 1000250,\n  \"Car_Status\": \"START\",\n  \"VehicleType\": \"truck\",\n  \"Alarm\": \"\",\n  \"GpsLocation\": \"Jl. Ahmad Yani\"\n}"
+              "raw": "{\n  \"VehicleId\": \"{{imei}}\",\n  \"VehicleNumber\": \"L 1234 AB\",\n  \"DatetimeUTC\": \"2026-06-26 03:15:00\",\n  \"GpsLocation\": \"Jl. Ahmad Yani\",\n  \"Lat\": -7.2575,\n  \"Lon\": 112.7508,\n  \"Speed\": 32.5,\n  \"Direction\": 145,\n  \"Engine\": \"ON\",\n  \"Odometer\": 1000250,\n  \"Car_Status\": \"START\",\n  \"VehicleType\": \"truck\",\n  \"Alarm\": \"\"\n}"
             },
-            "description": "Simulates a GPS.id push. token = SWAT's GPS_WEBHOOK_TOKEN (≥16 chars). Returns 200 { accepted: 1 }; an unknown IMEI is parked in GpsUnmatchedPing. Bad token → 401, disallowed IP → 403, over-rate → 429, future DatetimeUTC → rejected."
+            "description": "Simulates the GPS.id push payload (Register Endpoint webhook; fields per the vendor doc: VehicleId, VehicleNumber, DatetimeUTC, GpsLocation, Lon/Lat, Speed, Direction, Engine, Odometer, Car_Status, VehicleType, Alarm). token = SWAT's GPS_WEBHOOK_TOKEN (≥16 chars). 200 { accepted:1 }; unknown IMEI → parked in GpsUnmatchedPing. Bad token → 401, disallowed IP → 403, over-rate → 429, future DatetimeUTC → rejected."
           }
         },
         {
@@ -159,7 +318,7 @@
               "mode": "raw",
               "raw": "[\n  {\n    \"VehicleId\": \"{{imei}}\",\n    \"DatetimeUTC\": \"2026-06-26 03:15:00\",\n    \"Lat\": -7.2575,\n    \"Lon\": 112.7508,\n    \"Speed\": 30,\n    \"Direction\": 140,\n    \"Engine\": \"ON\",\n    \"Odometer\": 1000250,\n    \"Car_Status\": \"START\"\n  },\n  {\n    \"VehicleId\": \"{{imei}}\",\n    \"DatetimeUTC\": \"2026-06-26 03:15:30\",\n    \"Lat\": -7.2588,\n    \"Lon\": 112.7521,\n    \"Speed\": 28,\n    \"Direction\": 150,\n    \"Engine\": \"ON\",\n    \"Odometer\": 1000500,\n    \"Car_Status\": \"START\"\n  }\n]"
             },
-            "description": "The webhook accepts a single object OR an array. Returns 200 { accepted: n }."
+            "description": "The webhook accepts a single object OR an array → 200 { accepted:n }."
           }
         }
       ]
