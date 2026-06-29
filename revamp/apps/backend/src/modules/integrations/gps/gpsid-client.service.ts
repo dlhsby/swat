@@ -33,6 +33,8 @@ const TOKEN_TTL_MS = 24 * 60 * 60 * 1000 - 60_000;
 const RATE_LIMIT = 5;
 const RATE_WINDOW_SECONDS = 5 * 60;
 const MAX_IMEIS_PER_CALL = 5;
+/** History breadcrumbs are paginated; pull a single generous page (no consumer pages yet). */
+const HISTORY_PAGE_SIZE = 1000;
 
 /**
  * GPS.id pull-API client (Phase 7, T-707) — the SECONDARY path, used only by the
@@ -56,39 +58,53 @@ export class GpsidClientService {
   }
 
   async getVehicles(): Promise<GpsidVehicle[]> {
-    const raw = await this.authedGet<Array<Record<string, unknown>>>('get-vehicle');
+    // GET /vehicle → message.data[] of { imei, plate, ... }.
+    const raw = await this.authedGet<Array<Record<string, unknown>>>('vehicle');
     return (raw ?? []).map((v) => ({
-      imei: String(v.imei ?? v.VehicleId ?? ''),
-      plate: typeof v.plate === 'string' ? v.plate : ((v.VehicleNumber as string) ?? null),
+      imei: String(v.imei ?? ''),
+      plate: typeof v.plate === 'string' ? v.plate : null,
     }));
   }
 
-  async getHistory(imei: string, fromIso: string, toIso: string): Promise<GpsidHistoryPoint[]> {
-    const query = new URLSearchParams({ imei, from: fromIso, to: toIso }).toString();
+  async getHistory(imei: string, startIso: string, endIso: string): Promise<GpsidHistoryPoint[]> {
+    // GET /report/history?device=<imei>&start=<>&end=<> → message.data[] of
+    // { lat, lon, speed, time, ... }. Single page, large window (no consumer paginates yet).
+    const query = new URLSearchParams({
+      page: '1',
+      per_page: String(HISTORY_PAGE_SIZE),
+      device: imei,
+      start: startIso,
+      end: endIso,
+    }).toString();
     const raw = await this.authedGet<Array<Record<string, unknown>>>(`report/history?${query}`);
     return (raw ?? []).map((p) => ({
-      latitude: Number(p.lat ?? p.Lat ?? 0),
-      longitude: Number(p.lon ?? p.Lon ?? 0),
-      speedKmh: Number(p.speed ?? p.Speed ?? 0),
-      recordedAt: String(p.datetime ?? p.DatetimeUTC ?? ''),
+      latitude: Number(p.lat ?? 0),
+      longitude: Number(p.lon ?? 0),
+      speedKmh: Number(p.speed ?? 0),
+      recordedAt: String(p.time ?? ''),
     }));
   }
 
   /**
    * Mileage + used fuel per device for a date (the nightly internal-vs-vendor
    * cross-check). Capped at {@link MAX_IMEIS_PER_CALL} IMEIs per call to respect
-   * the vendor batch limit.
+   * the vendor batch limit. `device` is a JSON array string; the window is the
+   * whole calendar day (the vendor rejects `start >= end`).
    */
   async getMileage(imeis: readonly string[], dateIso: string): Promise<GpsidMileage[]> {
     if (imeis.length > MAX_IMEIS_PER_CALL) {
       throw new Error(`GPS.id mileage: at most ${MAX_IMEIS_PER_CALL} IMEIs per call.`);
     }
-    const query = new URLSearchParams({ imei: imeis.join(','), date: dateIso }).toString();
+    const query = new URLSearchParams({
+      device: JSON.stringify([...imeis]),
+      start: `${dateIso} 00:00:00`,
+      end: `${dateIso} 23:59:59`,
+    }).toString();
     const raw = await this.authedGet<Array<Record<string, unknown>>>(`report/mileage?${query}`);
     return (raw ?? []).map((m) => ({
-      imei: String(m.imei ?? m.VehicleId ?? ''),
-      usedFuelLiters: Number(m.used_fuel_total ?? m.usedFuel ?? 0),
-      distanceKm: Number(m.mileage ?? m.distance ?? 0),
+      imei: String(m.imei ?? ''),
+      usedFuelLiters: Number(m.used_fuel_total ?? 0),
+      distanceKm: Number(m.mileage ?? 0),
     }));
   }
 
@@ -118,9 +134,10 @@ export class GpsidClientService {
     if (!res.ok) {
       throw new ServiceUnavailableException(`GPS.id login failed (${res.status}).`);
     }
-    const json = (await res.json()) as Record<string, unknown>;
-    const token = (json.access_token ?? json.token ?? json.Token) as string | undefined;
-    if (!token) {
+    // Envelope: { status:true, message:{ data:{ token, ... } } }; token is a 24h JWT.
+    const json = (await res.json()) as { message?: { data?: { token?: unknown } } };
+    const token = json.message?.data?.token;
+    if (typeof token !== 'string' || token.length === 0) {
       throw new ServiceUnavailableException('GPS.id login returned no token.');
     }
     this.cachedToken = { token, expiresAt: Date.now() + TOKEN_TTL_MS };
@@ -152,6 +169,16 @@ export class GpsidClientService {
     if (!res.ok) {
       throw new ServiceUnavailableException(`GPS.id ${path} failed (${res.status}).`);
     }
-    return (await res.json()) as T;
+    // Success envelope: { status:true, message:{ data } }. A 200 can still carry
+    // { status:false, message:"<reason>" } — surface that rather than mis-parsing it.
+    const json = (await res.json()) as {
+      status?: boolean;
+      message?: { data?: unknown } | string;
+    };
+    if (json.status === false || typeof json.message === 'string') {
+      const reason = typeof json.message === 'string' ? json.message : 'request failed';
+      throw new ServiceUnavailableException(`GPS.id ${path} failed: ${reason}`);
+    }
+    return (json.message?.data ?? null) as T;
   }
 }
