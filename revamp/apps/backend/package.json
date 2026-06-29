@@ -18,6 +18,7 @@
     "migrate:images": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/migration/migrate-images.ts",
     "migrate:verify": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/migration/verify-migration.ts",
     "migrate:routes": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/migration/complete-routes.ts",
+    "corridors:backfill": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/corridors/run-backfill.ts",
     "migrate:delta-sync": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/migration/delta-sync.ts",
     "migrate:backfill-tpa": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/migration/backfill-tpa-trip-links.ts",
     "rollup:backfill": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/backfill-rollups.ts",

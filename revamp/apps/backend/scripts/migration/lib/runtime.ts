@@ -75,19 +75,28 @@ export interface Flags {
    * all history. Masters are always loaded in full.
    */
   sinceYear: number | null;
+  /**
+   * Run ONLY the transactional phase (skip master/auth/scheduling/aggregate/route
+   * loading) — for resuming a transactional load whose masters are already in place
+   * (e.g. a fragile over-tunnel staging load continued with `--resume`). Implies
+   * `--include-transactions`.
+   */
+  transactionsOnly: boolean;
 }
 
 export function parseFlags(argv: readonly string[]): Flags {
   const batchArg = argv.find((a) => a.startsWith('--batch='));
   const sinceArg = argv.find((a) => a.startsWith('--since-year='));
   const sinceYear = sinceArg ? Number(sinceArg.split('=')[1]) : NaN;
+  const transactionsOnly = argv.includes('--transactions-only');
   return {
     resume: argv.includes('--resume'),
     forceReset: argv.includes('--force-reset'),
     batchSize: batchArg ? Math.max(1, Number(batchArg.split('=')[1])) : 10_000,
-    includeTransactions: argv.includes('--include-transactions'),
+    includeTransactions: argv.includes('--include-transactions') || transactionsOnly,
     confirmProduction: argv.includes('--confirm-production'),
     sinceYear: Number.isInteger(sinceYear) && sinceYear > 2000 ? sinceYear : null,
+    transactionsOnly,
   };
 }
 

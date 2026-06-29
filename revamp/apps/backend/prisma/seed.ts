@@ -43,6 +43,7 @@ import {
 } from '@prisma/client';
 import { hash } from 'argon2';
 
+import { backfillRouteCorridors } from '../scripts/corridors/backfill-route-corridors';
 import { completeRoutes } from '../scripts/migration/lib/route-completion';
 import {
   PERMISSION_CATALOG,
@@ -1553,52 +1554,15 @@ async function seedDemoTracks(devices: DemoTrackedDevice[]): Promise<void> {
  * `GOOGLE_MAPS_SERVER_KEY` upgrades new routes' defaults to road-snapped paths.)
  */
 async function seedDemoCorridors(): Promise<void> {
-  const routes = await prisma.route.findMany({
-    where: {
-      deletedAt: null,
-      originSite: { latitude: { not: null }, longitude: { not: null } },
-      destinationSite: { latitude: { not: null }, longitude: { not: null } },
-    },
-    select: {
-      id: true,
-      originSite: { select: { latitude: true, longitude: true } },
-      destinationSite: { select: { latitude: true, longitude: true } },
-    },
+  // Shared backfill: a default corridor per route, road-snapped via Google when
+  // GOOGLE_MAPS_SERVER_KEY is set (else straight line). Idempotent; same logic the
+  // legacy/staging seeder uses, so demo and staging stay consistent.
+  const stats = await backfillRouteCorridors(prisma, {
+    // eslint-disable-next-line no-console
+    log: (m) => console.log(m),
   });
-  let created = 0;
-  for (const route of routes) {
-    const existing = await prisma.corridor.findFirst({
-      where: { routeId: route.id, isDefault: true, deletedAt: null },
-      select: { id: true },
-    });
-    if (existing) continue;
-    const o = route.originSite;
-    const d = route.destinationSite;
-    const pathGeojson = {
-      type: 'LineString',
-      coordinates: [
-        [Number(o.longitude), Number(o.latitude)],
-        [Number(d.longitude), Number(d.latitude)],
-      ],
-    };
-    const len = await prisma.$queryRaw<Array<{ len: number }>>`
-      SELECT ROUND(ST_Length(ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(pathGeojson)}), 4326)::geography))::int AS "len"
-    `;
-    await prisma.corridor.create({
-      data: {
-        routeId: route.id,
-        name: 'Jalur Utama',
-        isDefault: true,
-        pathGeojson,
-        toleranceMeters: 150,
-        lengthMeters: len[0]?.len ?? 0,
-        source: 'straight',
-      },
-    });
-    created += 1;
-  }
   // eslint-disable-next-line no-console
-  console.log(`Demo corridors: ${created} default route corridor(s).`);
+  console.log(`Demo corridors: ${stats.created} default route corridor(s).`);
 }
 
 async function main(): Promise<void> {

@@ -19,6 +19,7 @@ import { hash } from 'argon2';
 import { PERMISSION_CATALOG } from '../../src/common/auth/permission-catalog';
 import { loadScriptEnv } from '../../src/common/prisma/load-script-env';
 import { pgAdapter } from '../../src/common/prisma/pg-adapter';
+import { backfillRouteCorridors } from '../corridors/backfill-route-corridors';
 
 import { mapDayStatus, mapTripStatus } from './lib/enums';
 import type {
@@ -698,6 +699,21 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
   if (flags.sinceYear) {
     log(`Date window active: loading transactions from ${flags.sinceYear}-01-01 onward.`);
   }
+  // Under a date window, FILTER the big-table source queries at MySQL (join to the
+  // day's date) so the keyset iterates ONLY in-window rows — otherwise it scans the
+  // full 13-year PK range and cascade-skips, which is murder over a slow link (the
+  // in-window rows have the highest, most-recent PKs). The leaf PK keyset still drives
+  // pagination; `--resume` then jumps straight to the next in-window PK.
+  const since = flags.sinceYear ? `${flags.sinceYear}-01-01` : '';
+  const haulSql = flags.sinceYear
+    ? `SELECT t.* FROM transaksiangkutsampah t JOIN haritransaksi h ON t.HARITRANSAKSI_ID = h.HARITRANSAKSI_ID WHERE t.TRANSAKSIANGKUTSAMPAH_ID > ? AND h.HARITRANSAKSI_TANGGAL >= '${since}' ORDER BY t.TRANSAKSIANGKUTSAMPAH_ID LIMIT ?`
+    : 'SELECT * FROM transaksiangkutsampah WHERE TRANSAKSIANGKUTSAMPAH_ID > ? ORDER BY TRANSAKSIANGKUTSAMPAH_ID LIMIT ?';
+  const assignmentSql = flags.sinceYear
+    ? `SELECT d.* FROM detailtransaksiangkutsampah d JOIN transaksiangkutsampah t ON d.TRANSAKSIANGKUTSAMPAH_ID = t.TRANSAKSIANGKUTSAMPAH_ID JOIN haritransaksi h ON t.HARITRANSAKSI_ID = h.HARITRANSAKSI_ID WHERE d.DETAILTRANSAKSIANGKUTSAMPAH_ID > ? AND h.HARITRANSAKSI_TANGGAL >= '${since}' ORDER BY d.DETAILTRANSAKSIANGKUTSAMPAH_ID LIMIT ?`
+    : 'SELECT * FROM detailtransaksiangkutsampah WHERE DETAILTRANSAKSIANGKUTSAMPAH_ID > ? ORDER BY DETAILTRANSAKSIANGKUTSAMPAH_ID LIMIT ?';
+  const tripSql = flags.sinceYear
+    ? `SELECT tr.* FROM trayek tr JOIN detailtransaksiangkutsampah d ON tr.DETAILTRANSAKSIANGKUTSAMPAH_ID = d.DETAILTRANSAKSIANGKUTSAMPAH_ID JOIN transaksiangkutsampah t ON d.TRANSAKSIANGKUTSAMPAH_ID = t.TRANSAKSIANGKUTSAMPAH_ID JOIN haritransaksi h ON t.HARITRANSAKSI_ID = h.HARITRANSAKSI_ID WHERE tr.TRAYEK_ID > ? AND h.HARITRANSAKSI_TANGGAL >= '${since}' ORDER BY tr.TRAYEK_ID LIMIT ?`
+    : 'SELECT * FROM trayek WHERE TRAYEK_ID > ? ORDER BY TRAYEK_ID LIMIT ?';
   const conn = await connectLegacy(legacyDbConfigFromEnv());
   try {
     // 1. haritransaksi → TransactionDay (keyset-batched, idempotent on legacyId/date).
@@ -750,12 +766,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
     let haulCount = 0;
     const haulStart = flags.resume ? readWatermark(watermarkPath, 'haul') : 0;
     for await (const { rows, lastId } of keysetBatches<LegacyHaul>(
-      (afterId, limit) =>
-        query(
-          conn,
-          'SELECT * FROM transaksiangkutsampah WHERE TRANSAKSIANGKUTSAMPAH_ID > ? ORDER BY TRANSAKSIANGKUTSAMPAH_ID LIMIT ?',
-          [afterId, limit],
-        ),
+      (afterId, limit) => query(conn, haulSql, [afterId, limit]),
       (r) => r.TRANSAKSIANGKUTSAMPAH_ID,
       flags.batchSize,
       haulStart,
@@ -795,12 +806,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
     let assignmentCount = 0;
     const assignmentStart = flags.resume ? readWatermark(watermarkPath, 'haul_assignment') : 0;
     for await (const { rows, lastId } of keysetBatches<LegacyHaulAssignment>(
-      (afterId, limit) =>
-        query(
-          conn,
-          'SELECT * FROM detailtransaksiangkutsampah WHERE DETAILTRANSAKSIANGKUTSAMPAH_ID > ? ORDER BY DETAILTRANSAKSIANGKUTSAMPAH_ID LIMIT ?',
-          [afterId, limit],
-        ),
+      (afterId, limit) => query(conn, assignmentSql, [afterId, limit]),
       (r) => r.DETAILTRANSAKSIANGKUTSAMPAH_ID,
       flags.batchSize,
       assignmentStart,
@@ -876,11 +882,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
     let tripCount = 0;
     const tripStart = flags.resume ? readWatermark(watermarkPath, 'trip') : 0;
     for await (const { rows, lastId } of keysetBatches<LegacyTrip>(
-      (afterId, limit) =>
-        query(conn, 'SELECT * FROM trayek WHERE TRAYEK_ID > ? ORDER BY TRAYEK_ID LIMIT ?', [
-          afterId,
-          limit,
-        ]),
+      (afterId, limit) => query(conn, tripSql, [afterId, limit]),
       (r) => r.TRAYEK_ID,
       flags.batchSize,
       tripStart,
@@ -1027,6 +1029,17 @@ async function main(): Promise<void> {
       `batch=${flags.batchSize} transactions=${flags.includeTransactions}); watermarks → ${WATERMARK_PATH}`,
   );
 
+  // Transactions-only: masters are already loaded (e.g. resuming a fragile over-tunnel
+  // staging load). Just re-establish the bootstrap admin for attribution, then stream
+  // the transactional phase from its watermark.
+  if (flags.transactionsOnly) {
+    const sysUser = await ensureAuthBootstrap();
+    await migrateTransactions(sysUser, flags);
+    log('Transactional history migrated (transactions-only).');
+    await prisma.$disconnect();
+    return;
+  }
+
   await checkIdempotency(flags.forceReset, flags.includeTransactions);
   const sysUser = await ensureAuthBootstrap();
 
@@ -1039,6 +1052,11 @@ async function main(): Promise<void> {
   // doesn't already cover — new data, idempotent.
   const routeStats = await completeRoutes(prisma);
   log(`Route completion: +${routeStats.generated} new routes (total ${routeStats.totalAfter}).`);
+
+  // Ensure every route has a default corridor (road-snapped via Google when
+  // GOOGLE_MAPS_SERVER_KEY is set, straight-line otherwise) — baked in here so it
+  // never needs regenerating.
+  await backfillRouteCorridors(prisma, { log });
 
   if (flags.includeTransactions) {
     await migrateTransactions(sysUser, flags);
