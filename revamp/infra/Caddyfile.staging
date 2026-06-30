@@ -1,20 +1,22 @@
-# SWAT staging — Caddy route blocks (source of truth for SWAT's two subdomains).
+# SWAT staging — Caddy DROP-IN (the source of truth for SWAT's two subdomains).
 #
-# The box's Caddy is owned by sekar's compose.staging.yml (the `caddy` service)
-# since project KPI was decommissioned. SWAT is a co-tenant: it does NOT run its
-# own Caddy (80/443 are already bound). Instead the SWAT deploy MERGES the two
-# blocks below into the box's served Caddyfile (between the SWAT-BEGIN/SWAT-END
-# markers, idempotently) and force-recreates / restarts the caddy container so the
-# new file (inode swap) + recreated upstream IPs are picked up.
+# The box's Caddy is owned by sekar's compose.staging.yml (the `caddy` service).
+# SWAT is a co-tenant and does NOT run its own Caddy (80/443 are already bound).
+# Instead the sekar-owned box Caddyfile imports this file via
+# `import /etc/caddy/conf.d/*.caddy`, and SWAT's deploy copies it to
+# `~/sekar/infra/conf.d/swat.caddy` (bind-mounted into sekar-caddy at
+# /etc/caddy/conf.d), then restarts the caddy container.
+#
+# Why a drop-in (not an in-place merge into the box Caddyfile): sekar's deploy
+# REGENERATES its Caddyfile from its own repo and would wipe any blocks appended
+# there (which is exactly what took SWAT down). A separate imported file that
+# sekar never overwrites is clobber-proof.
 #
 # UAT runs over HTTPS — bare hostnames tell Caddy to auto-provision a free
 # Let's Encrypt cert and redirect HTTP->HTTPS (DNS A records for both names point
-# at the shared Elastic IP 16.79.124.63; 80/443 are open).
-#
-# The app containers join the shared external `edge` network (compose.staging.yml),
-# so Caddy reaches them by container name.
-
-# === SWAT-BEGIN (managed by SWAT deploy — do not edit between the markers) ===
+# at the shared Elastic IP 16.79.124.63; 80/443 are open). The app containers join
+# the shared external `edge` network (compose.staging.yml), so Caddy reaches them
+# by container name.
 
 # API — NestJS backend. Global prefix /api/v1; /health + /health/ready are at root
 # for probes; Swagger at /api/docs.
@@ -28,5 +30,3 @@ swat.wahyutrip.com {
 	encode gzip
 	reverse_proxy swat-web:3001
 }
-
-# === SWAT-END ===
