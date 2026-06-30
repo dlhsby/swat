@@ -37,6 +37,17 @@ const MAX_IMEIS_PER_CALL = 5;
 const HISTORY_PAGE_SIZE = 1000;
 
 /**
+ * Coerce a date or ISO datetime to the vendor's required `YYYY-MM-DD HH:MM:SS`
+ * stamp. A date-only value takes {@link fallbackTime} (so a day range becomes a
+ * valid `start < end` window); a full ISO keeps its own time (`T`→space).
+ */
+function toVendorStamp(value: string, fallbackTime: string): string {
+  const date = value.slice(0, 10);
+  const time = value.length > 10 ? value.slice(11, 19) : fallbackTime;
+  return `${date} ${time}`;
+}
+
+/**
  * GPS.id pull-API client (Phase 7, T-707) — the SECONDARY path, used only by the
  * nightly backfill + mileage reconcile (Epic 7.6). Credentials come from config
  * (env-only; fail loudly if missing — never an unauthenticated call). Caches the
@@ -69,12 +80,14 @@ export class GpsidClientService {
   async getHistory(imei: string, startIso: string, endIso: string): Promise<GpsidHistoryPoint[]> {
     // GET /report/history?device=<imei>&start=<>&end=<> → message.data[] of
     // { lat, lon, speed, time, ... }. Single page, large window (no consumer paginates yet).
+    // The vendor requires the `YYYY-MM-DD HH:MM:SS` stamp; a date-only arg widens
+    // to the full day (start→00:00:00, end→23:59:59) so `start < end` holds.
     const query = new URLSearchParams({
       page: '1',
       per_page: String(HISTORY_PAGE_SIZE),
       device: imei,
-      start: startIso,
-      end: endIso,
+      start: toVendorStamp(startIso, '00:00:00'),
+      end: toVendorStamp(endIso, '23:59:59'),
     }).toString();
     const raw = await this.authedGet<Array<Record<string, unknown>>>(`report/history?${query}`);
     return (raw ?? []).map((p) => ({
@@ -92,6 +105,9 @@ export class GpsidClientService {
    * whole calendar day (the vendor rejects `start >= end`).
    */
   async getMileage(imeis: readonly string[], dateIso: string): Promise<GpsidMileage[]> {
+    if (imeis.length === 0) {
+      return [];
+    }
     if (imeis.length > MAX_IMEIS_PER_CALL) {
       throw new Error(`GPS.id mileage: at most ${MAX_IMEIS_PER_CALL} IMEIs per call.`);
     }

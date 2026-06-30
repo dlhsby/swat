@@ -130,9 +130,21 @@ describe('GpsidClientService', () => {
     const historyCall = fetchMock.mock.calls.find(([url]) =>
       String(url).includes('report/history'),
     );
-    expect(String(historyCall?.[0])).toContain('device=350000000000001');
-    expect(String(historyCall?.[0])).toContain('start=2026-06-24');
-    expect(String(historyCall?.[0])).toContain('end=2026-06-25');
+    const url = decodeURIComponent(String(historyCall?.[0]));
+    expect(url).toContain('device=350000000000001');
+    // A date-only arg must widen to the full vendor `YYYY-MM-DD HH:MM:SS` window
+    // (URLSearchParams encodes the space as '+', decoded to a space server-side).
+    expect(url).toContain('start=2026-06-24+00:00:00');
+    expect(url).toContain('end=2026-06-25+23:59:59');
+  });
+
+  it('returns [] for an empty mileage batch without calling the vendor', async () => {
+    wireFetch([]);
+    await expect(service.getMileage([], '2026-06-24')).resolves.toEqual([]);
+    const mileageCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).includes('report/mileage'),
+    );
+    expect(mileageCalls).toHaveLength(0);
   });
 
   it('sends the mileage device as a JSON array and a full-day window', async () => {
