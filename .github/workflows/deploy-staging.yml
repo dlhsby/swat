@@ -190,6 +190,13 @@ jobs:
           bash ~/swat/infra/seed-env-from-ssm.sh
           cd ~/swat/infra
           export IMAGE_TAG=$SHA
+          # Reclaim disk BEFORE the pull: per-SHA images + build cache accumulate
+          # across deploys on the shared box and once filled '/' the pull fails with
+          # "no space left on device". Prune all images not used by a RUNNING container
+          # (so the live swat/sekar stacks are safe) + the builder cache. Volumes and
+          # issued certs (caddy_data) are untouched. Mirrors sekar's deploy.
+          docker image prune -af
+          docker builder prune -af
           docker compose -f compose.staging.yml pull --quiet
           # -T: no TTY/stdin (compose run would otherwise consume the rest of the script).
           # Apply Prisma migrations (deploy — never migrate dev on partitioned tables),
@@ -197,7 +204,6 @@ jobs:
           docker compose -f compose.staging.yml run --rm --no-deps -T backend \
             sh -c "dotenvx run -f .env.staging -- npx prisma migrate deploy"
           docker compose -f compose.staging.yml up -d --force-recreate --wait
-          docker image prune -f
           RUNNING_BE=\$(docker inspect swat-backend --format '{{.Config.Image}}')
           EXPECT_BE="${ECR_BACKEND}:\$IMAGE_TAG"
           echo "running backend image: \$RUNNING_BE (expected \$EXPECT_BE)"
