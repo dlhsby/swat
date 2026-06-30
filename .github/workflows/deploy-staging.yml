@@ -157,7 +157,7 @@ jobs:
             --db-snapshot-identifier "$SNAP" >/dev/null
           echo "Snapshot initiated: $SNAP"
 
-      - name: Deploy via SSM (merge Caddy, seed env, pull, migrate, up --wait)
+      - name: Deploy via SSM (install Caddy drop-in, seed env, pull, migrate, up --wait)
         run: |
           set -euo pipefail
           COMPOSE_B64=$(base64 -w0 infra/compose.staging.yml)
@@ -172,18 +172,19 @@ jobs:
           echo $CADDY_B64 | base64 -d > ~/swat/infra/Caddyfile.staging
           docker network create edge 2>/dev/null || true
 
-          # Merge SWAT's Caddy blocks into the box's served Caddyfile (owned by sekar's
-          # compose since KPI was decommissioned). Idempotent: strip any prior
-          # SWAT-BEGIN..SWAT-END region, then append the fresh blocks. Restart the caddy
-          # container (inode swap → a plain reload would miss the bind-mounted file).
-          BOXCADDY=~/sekar/infra/Caddyfile
-          if [ -f "\$BOXCADDY" ]; then
-            awk '/# === SWAT-BEGIN/{s=1} !s{print} /# === SWAT-END/{s=0}' "\$BOXCADDY" > /tmp/caddy.base
-            cat /tmp/caddy.base ~/swat/infra/Caddyfile.staging > /tmp/caddy.merged
-            cp /tmp/caddy.merged "\$BOXCADDY"
+          # Write SWAT's Caddy site blocks as a DROP-IN that sekar's box Caddyfile
+          # imports (`import /etc/caddy/conf.d/*.caddy`). sekar owns the box Caddyfile
+          # and the conf.d bind-mount but NEVER overwrites this file, so a sekar
+          # redeploy can't clobber SWAT (the old append-into-the-box-Caddyfile merge
+          # did — it was wiped whenever sekar regenerated its Caddyfile). Restart the
+          # caddy container (bind-mounted file → inode swap; a plain reload misses it).
+          CONFD=~/sekar/infra/conf.d
+          if [ -d ~/sekar/infra ]; then
+            mkdir -p "\$CONFD"
+            cp ~/swat/infra/Caddyfile.staging "\$CONFD/swat.caddy"
             docker restart sekar-caddy || true
           else
-            echo "WARN: \$BOXCADDY not found — add SWAT blocks to the box Caddy manually"
+            echo "WARN: ~/sekar/infra not found — SWAT drop-in not installed; check the box"
           fi
 
           bash ~/swat/infra/seed-env-from-ssm.sh
