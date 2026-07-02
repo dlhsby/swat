@@ -1,0 +1,159 @@
+{
+  "//": "Maps each user-guide page to the app screen(s) it documents, the target doc path, sidebar order, and the screenshot(s) it embeds. Content is authored FROM THE LIVE CODE (see extract-app-model.mjs); specs are guidance only. Extend this as coverage grows.",
+  "sections": [
+    {
+      "dir": "memulai",
+      "labelId": "Memulai",
+      "labelEn": "Getting Started",
+      "position": 1,
+      "curated": true,
+      "pages": [
+        { "slug": "intro", "route": null, "shot": null },
+        { "slug": "login", "route": "/login", "shot": "login" },
+        { "slug": "dashboard", "route": "/dashboard", "shot": "dashboard" },
+        { "slug": "peran-akses", "route": null, "shot": null }
+      ]
+    },
+    {
+      "dir": "pemantauan",
+      "labelId": "Pemantauan",
+      "labelEn": "Monitoring",
+      "position": 2,
+      "navGroup": "monitoring",
+      "specHint": "specs/09-modules/monitoring.md",
+      "pages": [
+        { "slug": "index", "route": null, "shot": null },
+        {
+          "slug": "tonase-sampah",
+          "route": "/monitoring/volume",
+          "shot": "monitoring-volume",
+          "permission": "monitoring:read"
+        },
+        {
+          "slug": "konsumsi-bbm",
+          "route": "/monitoring/fuel",
+          "shot": "monitoring-fuel",
+          "permission": "monitoring:read"
+        },
+        {
+          "slug": "pengangkutan",
+          "route": "/monitoring/hauling",
+          "shot": "monitoring-hauling",
+          "permission": "monitoring:read"
+        },
+        {
+          "slug": "retribusi",
+          "route": "/monitoring/levy",
+          "shot": "monitoring-levy",
+          "permission": "monitoring:read"
+        },
+        {
+          "slug": "efisiensi",
+          "route": "/monitoring/efficiency",
+          "shot": "monitoring-efficiency",
+          "permission": "monitoring:read"
+        }
+      ]
+    },
+    {
+      "dir": "data-master",
+      "labelId": "Data Master",
+      "labelEn": "Master Data",
+      "position": 3,
+      "navGroup": "masterData",
+      "specHint": "specs/09-modules/master-fleet.md",
+      "pages": [
+        { "slug": "index", "route": null, "shot": null },
+        {
+          "slug": "kendaraan",
+          "route": "/vehicles",
+          "shot": "vehicles",
+          "permission": "vehicle:read"
+        },
+        {
+          "slug": "pengemudi",
+          "route": "/drivers",
+          "shot": "drivers",
+          "permission": "driver:read"
+        },
+        {
+          "slug": "lokasi-rute",
+          "route": "/sites-routes",
+          "shot": "sites-routes",
+          "permission": "site:read"
+        },
+        {
+          "slug": "sumber-sampah",
+          "route": "/waste-sources",
+          "shot": "waste-sources",
+          "permission": "waste-source:read"
+        },
+        {
+          "slug": "template-jadwal",
+          "route": "/schedule-templates",
+          "shot": "schedule-templates",
+          "permission": "schedule-template:read"
+        }
+      ]
+    },
+    {
+      "dir": "pengangkutan",
+      "labelId": "Pengangkutan",
+      "labelEn": "Hauling",
+      "position": 4,
+      "navGroup": "pengangkutan",
+      "specHint": "specs/09-modules/transactions.md",
+      "pages": [
+        { "slug": "index", "route": null, "shot": null },
+        {
+          "slug": "penjadwalan",
+          "route": "/scheduling",
+          "shot": "scheduling",
+          "permission": "transaction-day:read"
+        },
+        {
+          "slug": "pencatatan-aktivitas",
+          "route": "/record",
+          "shot": "record",
+          "permission": "trip:read"
+        },
+        {
+          "slug": "jatah-kitir",
+          "route": "/disposal-permits",
+          "shot": "disposal-permits",
+          "permission": "disposal-permit:read"
+        },
+        {
+          "slug": "perangkat-gps",
+          "route": "/tracking/devices",
+          "shot": "tracking-devices",
+          "permission": "gps-device:read"
+        }
+      ]
+    },
+    {
+      "dir": "pengguna-akses",
+      "labelId": "Pengguna & Akses",
+      "labelEn": "Users & Access",
+      "position": 5,
+      "navGroup": "usersAccess",
+      "specHint": "specs/09-modules/auth.md",
+      "pages": [
+        { "slug": "index", "route": null, "shot": null },
+        { "slug": "pengguna", "route": "/users", "shot": "users", "permission": "user:read" },
+        { "slug": "hak-akses", "route": "/roles", "shot": "roles", "permission": "role:read" },
+        {
+          "slug": "akun-layanan",
+          "route": "/service-accounts",
+          "shot": "service-accounts",
+          "permission": "service-account:read"
+        }
+      ]
+    },
+    {
+      "dir": ".",
+      "position": 99,
+      "pages": [{ "slug": "faq", "route": null, "shot": null }]
+    }
+  ]
+}

@@ -1,0 +1,1220 @@
+{
+  "nav": [
+    {
+      "key": null,
+      "labelId": null,
+      "labelEn": null,
+      "leaves": [
+        {
+          "key": "dashboard",
+          "href": "/dashboard",
+          "permission": null,
+          "labelId": "Dasbor",
+          "labelEn": "Dashboard"
+        }
+      ]
+    },
+    {
+      "key": "monitoring",
+      "labelId": "Pemantauan",
+      "labelEn": "Monitoring",
+      "leaves": [
+        {
+          "key": "volume",
+          "href": "/monitoring/volume",
+          "permission": "monitoring:read",
+          "labelId": "Tonase Sampah",
+          "labelEn": "Waste Tonnage"
+        },
+        {
+          "key": "fuelMonitoring",
+          "href": "/monitoring/fuel",
+          "permission": "monitoring:read",
+          "labelId": "Konsumsi BBM",
+          "labelEn": "Fuel Consumption"
+        },
+        {
+          "key": "hauling",
+          "href": "/monitoring/hauling",
+          "permission": "monitoring:read",
+          "labelId": "Pengangkutan",
+          "labelEn": "Hauling"
+        },
+        {
+          "key": "levy",
+          "href": "/monitoring/levy",
+          "permission": "monitoring:read",
+          "labelId": "Retribusi",
+          "labelEn": "Levy"
+        },
+        {
+          "key": "efficiency",
+          "href": "/monitoring/efficiency",
+          "permission": "monitoring:read",
+          "labelId": "Efisiensi",
+          "labelEn": "Efficiency"
+        }
+      ]
+    },
+    {
+      "key": "masterData",
+      "labelId": "Data Master",
+      "labelEn": "Master Data",
+      "leaves": [
+        {
+          "key": "vehicles",
+          "href": "/vehicles",
+          "permission": "vehicle:read",
+          "labelId": "Kendaraan",
+          "labelEn": "Vehicles"
+        },
+        {
+          "key": "drivers",
+          "href": "/drivers",
+          "permission": "driver:read",
+          "labelId": "Pengemudi",
+          "labelEn": "Drivers"
+        },
+        {
+          "key": "sitesRoutes",
+          "href": "/sites-routes",
+          "permission": "site:read",
+          "labelId": "Lokasi & Rute",
+          "labelEn": "Sites & Routes"
+        },
+        {
+          "key": "wasteSources",
+          "href": "/waste-sources",
+          "permission": "waste-source:read",
+          "labelId": "Sumber Sampah",
+          "labelEn": "Waste Sources"
+        },
+        {
+          "key": "scheduleTemplates",
+          "href": "/schedule-templates",
+          "permission": "schedule-template:read",
+          "labelId": "Template Jadwal Pengangkutan",
+          "labelEn": "Haulage Schedule Template"
+        }
+      ]
+    },
+    {
+      "key": "pengangkutan",
+      "labelId": "Pengangkutan",
+      "labelEn": "Operations",
+      "leaves": [
+        {
+          "key": "scheduling",
+          "href": "/scheduling",
+          "permission": "transaction-day:read",
+          "labelId": "Penjadwalan",
+          "labelEn": "Scheduling"
+        },
+        {
+          "key": "recordActivity",
+          "href": "/record",
+          "permission": "trip:read",
+          "labelId": "Pencatatan Aktivitas",
+          "labelEn": "Activity Recording"
+        },
+        {
+          "key": "disposalPermits",
+          "href": "/disposal-permits",
+          "permission": "disposal-permit:read",
+          "labelId": "Jatah Kitir",
+          "labelEn": "Disposal Permits"
+        },
+        {
+          "key": "gpsDevices",
+          "href": "/tracking/devices",
+          "permission": "gps-device:read",
+          "labelId": "Perangkat GPS",
+          "labelEn": "GPS Devices"
+        }
+      ]
+    },
+    {
+      "key": "usersAccess",
+      "labelId": "Pengguna & Akses",
+      "labelEn": "Users & Access",
+      "leaves": [
+        {
+          "key": "users",
+          "href": "/users",
+          "permission": "user:read",
+          "labelId": "Pengguna",
+          "labelEn": "Users"
+        },
+        {
+          "key": "roles",
+          "href": "/roles",
+          "permission": "role:read",
+          "labelId": "Hak Akses",
+          "labelEn": "Access Control"
+        },
+        {
+          "key": "serviceAccounts",
+          "href": "/service-accounts",
+          "permission": "service-account:read",
+          "labelId": "Akun Layanan",
+          "labelEn": "Service Accounts"
+        }
+      ]
+    }
+  ],
+  "routes": [
+    "/dashboard",
+    "/disposal-permits",
+    "/drivers",
+    "/monitoring",
+    "/profile",
+    "/record",
+    "/refuel-log",
+    "/roles",
+    "/schedule-templates",
+    "/scheduling",
+    "/service-accounts",
+    "/settings",
+    "/sites-routes",
+    "/tracking",
+    "/users",
+    "/vehicles",
+    "/waste-sources"
+  ],
+  "permissions": [
+    "disposal-permit:read",
+    "driver:read",
+    "gps-device:read",
+    "monitoring:read",
+    "role:read",
+    "schedule-template:read",
+    "service-account:read",
+    "site:read",
+    "transaction-day:read",
+    "trip:read",
+    "user:read",
+    "vehicle:read",
+    "waste-source:read"
+  ],
+  "api": [
+    {
+      "file": "apps/backend/src/modules/geography/corridors/corridors.controller.ts",
+      "basePath": "",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "routes/:routeId/corridors"
+        },
+        {
+          "method": "POST",
+          "path": "routes/:routeId/corridors"
+        },
+        {
+          "method": "PATCH",
+          "path": "corridors/:id"
+        },
+        {
+          "method": "DELETE",
+          "path": "corridors/:id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/integrations/gps/vehicle-position.controller.ts",
+      "basePath": "",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "monitoring/fleet-positions"
+        },
+        {
+          "method": "GET",
+          "path": "gps/vehicles/:id/track"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/integrations/api-audit.controller.ts",
+      "basePath": "admin/api-audit-logs",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/service-accounts/service-accounts.controller.ts",
+      "basePath": "admin/service-accounts",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/archiving/archiving.controller.ts",
+      "basePath": "archiving",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "POST",
+          "path": "reattach"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/auth/auth.controller.ts",
+      "basePath": "auth",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "login"
+        },
+        {
+          "method": "POST",
+          "path": "logout"
+        },
+        {
+          "method": "GET",
+          "path": "me"
+        },
+        {
+          "method": "PATCH",
+          "path": "change-password"
+        },
+        {
+          "method": "POST",
+          "path": "force-reset/:userId"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/auth/token.controller.ts",
+      "basePath": "auth",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "token"
+        },
+        {
+          "method": "POST",
+          "path": "token/refresh"
+        },
+        {
+          "method": "POST",
+          "path": "token/logout"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/scheduling/disposal-permits/disposal-permits.controller.ts",
+      "basePath": "disposal-permits",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "POST",
+          "path": "bulk-import"
+        },
+        {
+          "method": "POST",
+          "path": "bulk-issue"
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/personnel/drivers/drivers.controller.ts",
+      "basePath": "drivers",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/personnel/drivers/licenses/driver-licenses.controller.ts",
+      "basePath": "drivers/:driverId/licenses",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":licenseId"
+        },
+        {
+          "method": "DELETE",
+          "path": ":licenseId"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/fleet/fuel-categories/fuel-categories.controller.ts",
+      "basePath": "fuel-categories",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/fleet/fuels/fuels.controller.ts",
+      "basePath": "fuels",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/integrations/gps/route-geometry.controller.ts",
+      "basePath": "gps",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "routes/:routeId/geometry"
+        },
+        {
+          "method": "PUT",
+          "path": "routes/:routeId/geometry"
+        },
+        {
+          "method": "DELETE",
+          "path": "routes/:routeId/geometry"
+        },
+        {
+          "method": "GET",
+          "path": "trips/:tripId/geometry"
+        },
+        {
+          "method": "PUT",
+          "path": "trips/:tripId/corridor"
+        },
+        {
+          "method": "PUT",
+          "path": "trips/:tripId/geometry"
+        },
+        {
+          "method": "DELETE",
+          "path": "trips/:tripId/geometry"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/integrations/gps/deviation-alert.controller.ts",
+      "basePath": "gps/alerts",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id/acknowledge"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/integrations/gps/deviation-rule.controller.ts",
+      "basePath": "gps/deviation-rules",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "PUT",
+          "path": ":type"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/integrations/gps/gps-device.controller.ts",
+      "basePath": "gps/devices",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": "unmatched"
+        },
+        {
+          "method": "POST",
+          "path": "unmatched/map"
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/transactions/haul-assignments/haul-assignments.controller.ts",
+      "basePath": "haul-assignments",
+      "routes": [
+        {
+          "method": "PUT",
+          "path": ":id/record-depart"
+        },
+        {
+          "method": "PUT",
+          "path": ":id/record-return"
+        },
+        {
+          "method": "GET",
+          "path": ":id/trips"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "POST",
+          "path": "with-new-haul"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/health/health.controller.ts",
+      "basePath": "health",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": "ready"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/integrations/gps/gps-webhook.controller.ts",
+      "basePath": "integrations/gps/webhook",
+      "routes": [
+        {
+          "method": "POST",
+          "path": ":token"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/levy/levy.controller.ts",
+      "basePath": "levies",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/personnel/license-classes/license-classes.controller.ts",
+      "basePath": "license-classes",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/operations/maintenance/maintenance.controller.ts",
+      "basePath": "maintenance-records",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "PATCH",
+          "path": ":id/approve"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/integrations/gps/gps-efficiency.controller.ts",
+      "basePath": "monitoring",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "efficiency"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/monitoring/monitoring.controller.ts",
+      "basePath": "monitoring",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "tonnage-5day"
+        },
+        {
+          "method": "GET",
+          "path": "tonnage-monthly"
+        },
+        {
+          "method": "GET",
+          "path": "tonnage-by-source"
+        },
+        {
+          "method": "GET",
+          "path": "tonnage-by-site"
+        },
+        {
+          "method": "GET",
+          "path": "fuel-consumption"
+        },
+        {
+          "method": "GET",
+          "path": "fuel-by-type"
+        },
+        {
+          "method": "GET",
+          "path": "routes-active"
+        },
+        {
+          "method": "GET",
+          "path": "trip-summary"
+        },
+        {
+          "method": "GET",
+          "path": "route-map"
+        },
+        {
+          "method": "GET",
+          "path": "kpi-overview"
+        },
+        {
+          "method": "GET",
+          "path": "levy-summary"
+        },
+        {
+          "method": "GET",
+          "path": "levy-trend"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/roles/permissions.controller.ts",
+      "basePath": "permissions",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "POST",
+          "path": "sync"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/realtime/realtime.controller.ts",
+      "basePath": "realtime",
+      "routes": []
+    },
+    {
+      "file": "apps/backend/src/modules/operations/refuels/refuels.controller.ts",
+      "basePath": "refuels",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/reports/reports.controller.ts",
+      "basePath": "reports",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "tonnage/generate"
+        },
+        {
+          "method": "POST",
+          "path": "fuel/generate"
+        },
+        {
+          "method": "POST",
+          "path": "route/generate"
+        },
+        {
+          "method": "POST",
+          "path": "levy/generate"
+        },
+        {
+          "method": "GET",
+          "path": "jobs/:jobId"
+        },
+        {
+          "method": "GET",
+          "path": "download/:jobId"
+        },
+        {
+          "method": "DELETE",
+          "path": "jobs/:jobId"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/roles/roles.controller.ts",
+      "basePath": "roles",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/geography/routes/routes.controller.ts",
+      "basePath": "routes",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": "board-summary"
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/scheduling/schedule-templates/schedule-templates.controller.ts",
+      "basePath": "schedule-templates",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/scheduling/trip-templates/trip-templates.controller.ts",
+      "basePath": "schedule-templates/:scheduleTemplateId/trip-templates",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":templateId"
+        },
+        {
+          "method": "DELETE",
+          "path": ":templateId"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/geography/sites/sites.controller.ts",
+      "basePath": "sites",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/storage/storage.controller.ts",
+      "basePath": "storage",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "presigned-put"
+        },
+        {
+          "method": "POST",
+          "path": "presigned-get"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/transactions/transaction-days/transaction-days.controller.ts",
+      "basePath": "transaction-days",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": "list"
+        },
+        {
+          "method": "POST",
+          "path": "initialize-today"
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/transactions/trips/trips.controller.ts",
+      "basePath": "trips",
+      "routes": [
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "PUT",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        },
+        {
+          "method": "PUT",
+          "path": ":id/verify"
+        },
+        {
+          "method": "GET",
+          "path": ":id/photos"
+        },
+        {
+          "method": "POST",
+          "path": ":id/photos"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/users/users.controller.ts",
+      "basePath": "users",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/operations/inspections/inspections.controller.ts",
+      "basePath": "vehicle-inspections",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/fleet/models/models.controller.ts",
+      "basePath": "vehicle-models",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/fleet/vehicle-types/vehicle-types.controller.ts",
+      "basePath": "vehicle-types",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/fleet/vehicles/vehicles.controller.ts",
+      "basePath": "vehicles",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/fleet/vehicles/waste-sources/vehicle-waste-sources.controller.ts",
+      "basePath": "vehicles/:vehicleId/waste-sources",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "DELETE",
+          "path": ":wasteSourceId"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/waste/waste-sources/waste-sources.controller.ts",
+      "basePath": "waste-sources",
+      "routes": [
+        {
+          "method": "GET",
+          "path": ""
+        },
+        {
+          "method": "GET",
+          "path": ":id"
+        },
+        {
+          "method": "POST",
+          "path": ""
+        },
+        {
+          "method": "PATCH",
+          "path": ":id"
+        },
+        {
+          "method": "DELETE",
+          "path": ":id"
+        }
+      ]
+    },
+    {
+      "file": "apps/backend/src/modules/integrations/weighbridge/weighbridge.controller.ts",
+      "basePath": "weighbridge",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "resolve-kitir"
+        },
+        {
+          "method": "POST",
+          "path": "post-weighing"
+        },
+        {
+          "method": "PATCH",
+          "path": "weighings/:tripId"
+        },
+        {
+          "method": "GET",
+          "path": "weighings"
+        },
+        {
+          "method": "POST",
+          "path": "import-excel"
+        }
+      ]
+    }
+  ],
+  "specHints": [
+    "specs/09-modules/auth.md",
+    "specs/09-modules/disposal-permits.md",
+    "specs/09-modules/gps-tracking.md",
+    "specs/09-modules/inspection.md",
+    "specs/09-modules/integration-weighbridge.md",
+    "specs/09-modules/maintenance.md",
+    "specs/09-modules/master-fleet.md",
+    "specs/09-modules/master-geography.md",
+    "specs/09-modules/master-personnel.md",
+    "specs/09-modules/master-waste-fuel.md",
+    "specs/09-modules/monitoring.md",
+    "specs/09-modules/reports.md",
+    "specs/09-modules/scheduling.md",
+    "specs/09-modules/transactions.md"
+  ]
+}

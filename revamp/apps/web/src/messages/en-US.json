@@ -79,7 +79,8 @@
     "roles": "Access Control",
     "serviceAccounts": "Service Accounts",
     "apiAuditLog": "API Log",
-    "hauling": "Hauling"
+    "hauling": "Hauling",
+    "documentation": "Documentation"
   },
   "shell": {
     "openMenu": "Open menu",

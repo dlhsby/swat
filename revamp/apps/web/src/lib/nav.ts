@@ -2,6 +2,7 @@ import {
   Activity,
   ArrowLeftRight,
   BarChart3,
+  BookOpen,
   CalendarClock,
   ClipboardList,
   Database,
@@ -20,6 +21,9 @@ import {
   Users,
 } from 'lucide-react';
 
+/** Public documentation site (user manual). Overridable at build time. */
+const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL ?? 'https://docs.swat.wahyutrip.com';
+
 /** A single sidebar leaf link. */
 export interface NavLeaf {
   /** Translation key under the `nav` namespace. */
@@ -31,6 +35,12 @@ export interface NavLeaf {
   readonly permission?: string;
   /** Designed but not built yet — shows a "Segera" pill and does not navigate. */
   readonly comingSoon?: boolean;
+  /**
+   * Absolute URL to an external site (e.g. the docs). When set, the leaf renders
+   * as a plain `<a target="_blank">` — the locale-aware Link and `active` state are
+   * bypassed. `href` is ignored for navigation but kept for the type (use `'#'`).
+   */
+  readonly externalUrl?: string;
 }
 
 /** A collapsible sidebar group. */
@@ -167,6 +177,18 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         href: '/service-accounts',
         icon: KeyRound,
         permission: 'service-account:read',
+      },
+    ],
+  },
+  // Standalone external link to the public user manual (docs.swat.wahyutrip.com).
+  // Key-less group → renders as a top-level item; `externalUrl` opens a new tab.
+  {
+    leaves: [
+      {
+        key: 'documentation',
+        href: '#',
+        icon: BookOpen,
+        externalUrl: DOCS_URL,
       },
     ],
   },

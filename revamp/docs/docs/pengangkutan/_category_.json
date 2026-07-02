@@ -1,0 +1,10 @@
+{
+  "label": "Pengangkutan",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/pengangkutan",
+    "title": "Pengangkutan",
+    "description": "Kelola jadwal harian, catat aktivitas perjalanan, atur jatah kitir, dan kelola perangkat GPS untuk operasional pengangkutan sampah."
+  }
+}
