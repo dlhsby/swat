@@ -27,10 +27,10 @@ language picker at the top right to switch.
   - **[Monitoring](/pemantauan/)** — waste tonnage, fuel consumption, hauling, levy,
     efficiency.
   - **[Master Data](/data-master/)** — vehicles, drivers, sites & routes, waste sources,
-    schedule templates.
-  - **[Hauling](/pengangkutan/)** — scheduling, activity recording, disposal permits,
-    GPS devices.
+    schedule templates, GPS devices.
+  - **[Hauling](/pengangkutan/)** — scheduling, activity recording, disposal permits.
   - **[Users & Access](/pengguna-akses/)** — users, roles, service accounts.
+  - **[Settings & Account](/pengaturan/)** — appearance, language, profile, password change.
 
 ## Good to know
 

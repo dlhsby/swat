@@ -27,10 +27,11 @@ bahasa di kanan atas untuk berganti.
   - **[Pemantauan](/pemantauan/)** — tonase sampah, konsumsi BBM, pengangkutan,
     retribusi, dan efisiensi.
   - **[Data Master](/data-master/)** — kendaraan, pengemudi, lokasi & rute, sumber
-    sampah, template jadwal.
+    sampah, template jadwal, perangkat GPS.
   - **[Pengangkutan](/pengangkutan/)** — penjadwalan, pencatatan aktivitas, jatah
-    kitir, perangkat GPS.
+    kitir.
   - **[Pengguna & Akses](/pengguna-akses/)** — pengguna, hak akses, akun layanan.
+  - **[Pengaturan & Akun](/pengaturan/)** — tampilan, bahasa, profil, ganti kata sandi.
 
 ## Yang perlu diketahui
 

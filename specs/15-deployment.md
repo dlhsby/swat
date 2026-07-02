@@ -19,8 +19,11 @@ The pattern is shared with the sibling **sekar** project, which co-tenants the s
 | Secrets | dotenvx-encrypted `infra/env/{backend,web}/.env.staging` + key in SSM/GitHub | `.env`/`--env-file` on the host |
 | Deploy | GitHub Actions → ECR → SSM Run Command (no SSH) | manual `docker compose ... up -d --build` |
 
-Domains: web `https://swat.wahyutrip.com`, API `https://api.swat.wahyutrip.com` (both → the shared
-Elastic IP). The split-domain layout requires the session cookie to be `Domain=.swat.wahyutrip.com`,
+Domains: web `https://swat.wahyutrip.com`, API `https://api.swat.wahyutrip.com`, docs
+`https://docs.swat.wahyutrip.com` (all → the shared Elastic IP). The docs site is a public, static
+Docusaurus user manual (`revamp/docs/`, image `swat-docs`) with no auth or session — served straight
+from a small nginx container. The split-domain layout requires the session cookie to be
+`Domain=.swat.wahyutrip.com`,
 `SameSite=Lax`, `Secure`, with CORS pinned to the web origin — all config-driven
 (`SESSION_COOKIE_DOMAIN`, `SESSION_COOKIE_SAMESITE`, `CORS_ORIGIN`) so on-prem same-origin defaults
 (`Strict`, host-only) stay unchanged.
@@ -29,7 +32,9 @@ Elastic IP). The split-domain layout requires the session cookie to be `Domain=.
 
 - **EC2** `i-08edccdc966c0985e` (shared box, Elastic IP 16.79.124.63), reached via SSM Run Command.
 - **RDS** instance `dlhsby` (Postgres 15) — SWAT uses database `swat_staging`, role `swat`.
-- **ECR** `swat-backend`, `swat-web` (tags `:staging` + `:<sha>`).
+- **ECR** `swat-backend`, `swat-web`, `swat-docs` (tags `:staging` + `:<sha>`). New repos must be
+  created once (the deploy role is push-only — no `ecr:CreateRepository`) and added to the role's
+  `EcrPush` resource list.
 - **S3** `swat-photos-staging` (photos/thumbnails), `swat-reports-staging` (7-day TTL) — accessed via
   the EC2 instance IAM role (no static keys); the backend's `S3_USE_INSTANCE_ROLE=true` selects this.
 - **SSM Parameter Store** `/swat/staging/BE_DOTENV_PRIVATE_KEY` (SecureString) — the dotenvx key the
@@ -73,7 +78,9 @@ fires from the governed `staging` branch.
 
 - **OIDC trust is scoped** to `repo:dlhsby/swat:ref:refs/heads/staging` + `…:environment:staging`
   (not `…:*`) — fork/PR refs can never assume the deploy role even though the repo is public.
-- **IAM least-privilege**: the deploy role's ECR push is scoped to the two `swat-*` repos, `ssm:SendCommand`
+- **IAM least-privilege**: the deploy role's ECR push is scoped to the three `swat-*` repos
+  (`swat-backend`, `swat-web`, `swat-docs`) by resource ARN — a new repo must be added to the
+  `EcrPush` statement or the image push 403s; the role has no Describe/CreateRepository. `ssm:SendCommand`
   to the box + the `AWS-RunShellScript` document, `rds:CreateDBSnapshot` to the `dlhsby` instance +
   `swat-staging-predeploy-*` snapshots. The EC2 instance role's S3 access is scoped to the swat buckets.
 - **GitHub Actions**: workflows default to `permissions: {}` (jobs opt in to `id-token`/`contents:read`

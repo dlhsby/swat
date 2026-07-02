@@ -61,13 +61,15 @@ const PAGES = [
   ['/sites-routes', 'sites-routes', 4000],
   ['/waste-sources', 'waste-sources'],
   ['/schedule-templates', 'schedule-templates'],
+  ['/tracking/devices', 'tracking-devices', 4000],
   ['/scheduling', 'scheduling'],
   ['/record', 'record'],
   ['/disposal-permits', 'disposal-permits'],
-  ['/tracking/devices', 'tracking-devices', 4000],
   ['/users', 'users'],
   ['/roles', 'roles'],
   ['/service-accounts', 'service-accounts'],
+  ['/settings', 'settings'],
+  ['/profile', 'profile'],
 ];
 
 const browser = await chromium.launch(LAUNCH);

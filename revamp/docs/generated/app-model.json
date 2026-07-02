@@ -95,6 +95,13 @@
           "permission": "schedule-template:read",
           "labelId": "Template Jadwal Pengangkutan",
           "labelEn": "Haulage Schedule Template"
+        },
+        {
+          "key": "gpsDevices",
+          "href": "/tracking/devices",
+          "permission": "gps-device:read",
+          "labelId": "Perangkat GPS",
+          "labelEn": "GPS Devices"
         }
       ]
     },
@@ -123,13 +130,6 @@
           "permission": "disposal-permit:read",
           "labelId": "Jatah Kitir",
           "labelEn": "Disposal Permits"
-        },
-        {
-          "key": "gpsDevices",
-          "href": "/tracking/devices",
-          "permission": "gps-device:read",
-          "labelId": "Perangkat GPS",
-          "labelEn": "GPS Devices"
         }
       ]
     },
@@ -158,6 +158,13 @@
           "permission": "service-account:read",
           "labelId": "Akun Layanan",
           "labelEn": "Service Accounts"
+        },
+        {
+          "key": "documentation",
+          "href": "#",
+          "permission": null,
+          "labelId": "Dokumentasi",
+          "labelEn": "Documentation"
         }
       ]
     }

@@ -3,4 +3,15 @@
 # cd to this hook's parent monorepo dir so lint-staged resolves correctly,
 # regardless of the cwd git invokes the hook from.
 cd "$(dirname "$0")/.." || exit 1
-pnpm exec lint-staged
+
+# In a linked git worktree, lint-staged's backup stash operates on the stash stack
+# that is SHARED across the main checkout and every worktree — and concurrent
+# sessions can push/pop it — so its stash-and-restore fails with "unstaged changes
+# could not be restored due to a merge conflict", aborting the commit. Detect a
+# worktree (its git-dir differs from the common git-dir) and skip the backup stash
+# there only; a normal single-checkout commit keeps the full stash safety.
+STASH_FLAG=""
+if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then
+  STASH_FLAG="--no-stash"
+fi
+pnpm exec lint-staged $STASH_FLAG
