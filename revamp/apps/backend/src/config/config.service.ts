@@ -128,4 +128,14 @@ export class AppConfigService {
     }
     return { baseUrl, username, password };
   }
+
+  /** Whether the near-real-time GPS.id position pull is enabled. */
+  get gpsidPositionPull(): boolean {
+    return this.get('GPSID_POSITION_PULL');
+  }
+
+  /** How often (minutes) the position pull polls the vendor for recent history. */
+  get gpsidPullIntervalMinutes(): number {
+    return this.get('GPSID_PULL_INTERVAL_MIN');
+  }
 }
