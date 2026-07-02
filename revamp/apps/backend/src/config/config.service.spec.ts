@@ -29,6 +29,8 @@ const ENV: Env = {
   GPSID_BASE_URL: 'https://gps.id/api',
   GPSID_USERNAME: 'swat',
   GPSID_PASSWORD: 'gpsid-secret',
+  GPSID_POSITION_PULL: false,
+  GPSID_PULL_INTERVAL_MIN: 1440,
 };
 
 describe('AppConfigService', () => {
