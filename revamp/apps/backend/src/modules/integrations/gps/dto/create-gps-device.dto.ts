@@ -1,6 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 /** Two known device kinds today; the column is an open string for future sources. */
 export const GPS_DEVICE_TYPES = ['gps-hardware', 'mobile-app'] as const;
@@ -39,4 +49,9 @@ export class CreateGpsDeviceDto {
   @Min(0)
   @Max(100)
   priority?: number;
+
+  @ApiPropertyOptional({ default: true, description: 'Whether the device is active on creation' })
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
 }

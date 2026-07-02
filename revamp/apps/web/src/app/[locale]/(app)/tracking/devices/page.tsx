@@ -8,14 +8,15 @@ import { z } from 'zod';
 
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
 import { CrudListShell } from '@/components/crud/crud-list-shell';
-import {
-  NumberField,
-  type SelectOption,
-  SelectField,
-  SwitchField,
-  TextField,
-} from '@/components/crud/fields';
+import { SelectField } from '@/components/crud/fields';
 import { RowActions } from '@/components/crud/row-actions';
+import {
+  deviceFieldsDefaults,
+  deviceFieldsSchema,
+  dropEmptyImei,
+  GpsDeviceFields,
+  toDeviceFormValues,
+} from '@/components/fleet/gps-device-fields';
 import { UnmatchedDevicesSheet } from '@/components/tracking/unmatched-devices-sheet';
 import { Button, type ComboboxOption, StatusPill } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
@@ -24,48 +25,15 @@ import { formatDateDisplay, formatTime } from '@/lib/format';
 import { type GpsDeviceDto, gpsDevicesApi } from '@/lib/gps-device-api';
 import { type VehicleDto, vehiclesApi } from '@/lib/master-api';
 
-const DEVICE_TYPE_OPTIONS: readonly SelectOption[] = [
-  { value: 'gps-hardware', label: 'Perangkat keras GPS' },
-  { value: 'mobile-app', label: 'Aplikasi ponsel' },
-];
-
-const schema = z.object({
+// The registry page adds `vehicleId` on top of the shared device fields.
+const schema = deviceFieldsSchema.extend({
   vehicleId: z.string().uuid('Kendaraan wajib dipilih'),
-  deviceId: z.string().min(1, 'ID perangkat / IMEI wajib diisi').max(64),
-  // Optional — '' clears it; the backend defaults the IMEI from deviceId for hardware.
-  imei: z
-    .union([z.string().regex(/^\d{6,20}$/, 'IMEI harus 6–20 digit angka'), z.literal('')])
-    .optional(),
-  deviceType: z.enum(['gps-hardware', 'mobile-app']),
-  provider: z.string().min(1, 'Penyedia wajib diisi').max(20),
-  priority: z.coerce.number().int().min(0).max(100),
-  active: z.boolean(),
 });
 type Values = z.infer<typeof schema>;
 
-const defaults: Values = {
-  vehicleId: '',
-  deviceId: '',
-  imei: '',
-  deviceType: 'gps-hardware',
-  provider: 'gpsid',
-  priority: 0,
-  active: true,
-};
-const toForm = (d: GpsDeviceDto): Values => ({
-  vehicleId: d.vehicleId,
-  deviceId: d.deviceId,
-  imei: d.imei ?? '',
-  deviceType: d.deviceType,
-  provider: d.provider,
-  priority: d.priority,
-  active: d.active,
-});
-// Drop an empty IMEI so the backend regex doesn't reject '' (it defaults from deviceId).
-const buildPayload = (values: Values): Record<string, unknown> => {
-  const { imei, ...rest } = values;
-  return imei ? { ...rest, imei } : rest;
-};
+const defaults: Values = { vehicleId: '', ...deviceFieldsDefaults };
+const toForm = (d: GpsDeviceDto): Values => ({ vehicleId: d.vehicleId, ...toDeviceFormValues(d) });
+const buildPayload = (values: Values): Record<string, unknown> => dropEmptyImei(values);
 
 export default function GpsDevicesPage(): JSX.Element {
   const t = useTranslations('nav');
@@ -181,23 +149,7 @@ export default function GpsDevicesPage(): JSX.Element {
             options={vehicleOptions}
             placeholder="Pilih kendaraan"
           />
-          <TextField
-            name="deviceId"
-            label="ID Perangkat / IMEI"
-            required
-            placeholder="mis. 350000000000999"
-          />
-          <TextField name="imei" label="IMEI" placeholder="Opsional — default mengikuti ID perangkat" />
-          <SelectField
-            name="deviceType"
-            label="Jenis Perangkat"
-            required
-            options={DEVICE_TYPE_OPTIONS}
-            placeholder="Pilih jenis"
-          />
-          <TextField name="provider" label="Penyedia" required placeholder="gpsid" />
-          <NumberField name="priority" label="Prioritas" required min={0} max={100} />
-          <SwitchField name="active" label="Aktif" />
+          <GpsDeviceFields />
         </div>
       </CrudFormDialog>
 

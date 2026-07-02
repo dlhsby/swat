@@ -128,6 +128,15 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: CalendarClock,
         permission: 'schedule-template:read',
       },
+      // GPS device registry — the "tracked" flag + IMEI↔vehicle mapping (Phase 7).
+      // A first-class master entity (1:many with Vehicle, own lifecycle + unmatched
+      // triage), so it lives in Data Master rather than under Pengangkutan.
+      {
+        key: 'gpsDevices',
+        href: '/tracking/devices',
+        icon: Satellite,
+        permission: 'gps-device:read',
+      },
     ],
   },
   {
@@ -155,13 +164,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         href: '/disposal-permits',
         icon: Ticket,
         permission: 'disposal-permit:read',
-      },
-      // GPS device registry — the "tracked" flag + IMEI↔vehicle mapping (Phase 7).
-      {
-        key: 'gpsDevices',
-        href: '/tracking/devices',
-        icon: Satellite,
-        permission: 'gps-device:read',
       },
     ],
   },

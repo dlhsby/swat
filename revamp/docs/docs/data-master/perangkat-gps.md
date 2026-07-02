@@ -1,7 +1,7 @@
 ---
 title: Perangkat GPS
 sidebar_label: Perangkat GPS
-sidebar_position: 4
+sidebar_position: 6
 ---
 
 # Perangkat GPS

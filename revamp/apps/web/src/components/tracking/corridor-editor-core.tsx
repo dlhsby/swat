@@ -342,7 +342,7 @@ export function CorridorEditorCore({
           {!isMapsConfigured ? (
             <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-base border border-dashed border-neutral-300 bg-neutral-50 text-center">
               <MapPinned className="h-8 w-8 text-neutral-400" aria-hidden />
-              <p className="max-w-sm text-body-sm text-neutral-500">{t('mapPlaceholder')}</p>
+              <p className="max-w-[24rem] text-body-sm text-neutral-500">{t('mapPlaceholder')}</p>
             </div>
           ) : (
             <>

@@ -78,6 +78,17 @@ export const envSchema = z
     GPSID_BASE_URL: z.url('GPSID_BASE_URL must be a valid URL').optional(),
     GPSID_USERNAME: z.string().min(1).optional(),
     GPSID_PASSWORD: z.string().min(1).optional(),
+    // Position pull (secondary near-real-time backfill): when true AND the GPSID_*
+    // credentials are set, a background job polls `report/history` per active device
+    // every GPSID_PULL_INTERVAL_MIN minutes and feeds the positions through the SAME
+    // ingest pipeline as the push webhook (matching + deviation). Default off; the job
+    // no-ops when the credentials are unset. Lets a deployment run without the vendor
+    // push webhook, or backfill gaps in it.
+    GPSID_POSITION_PULL: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((v) => v === 'true'),
+    GPSID_PULL_INTERVAL_MIN: z.coerce.number().int().positive().default(1440),
     // Server-side Google Directions key (NOT the referrer-restricted browser key)
     // for snapping a route's auto-default corridor to roads. Optional: unset → the
     // default falls back to a straight line. Restrict by IP + enable Directions API.

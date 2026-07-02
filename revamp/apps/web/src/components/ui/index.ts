@@ -30,6 +30,7 @@ export * from './switch';
 export * from './textarea';
 export * from './time-picker';
 export * from './tooltip';
+export * from './info-hint';
 
 // Composites (T-132b)
 export * from './alert-dialog';

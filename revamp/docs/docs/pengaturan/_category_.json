@@ -1,0 +1,10 @@
+{
+  "label": "Pengaturan & Akun",
+  "position": 6,
+  "link": {
+    "type": "generated-index",
+    "slug": "/pengaturan",
+    "title": "Pengaturan & Akun",
+    "description": "Sesuaikan tampilan dan bahasa, kelola profil, dan ganti kata sandi."
+  }
+}

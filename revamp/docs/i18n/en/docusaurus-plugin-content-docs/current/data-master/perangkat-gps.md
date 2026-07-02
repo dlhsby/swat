@@ -1,7 +1,7 @@
 ---
 title: GPS Devices
 sidebar_label: GPS Devices
-sidebar_position: 4
+sidebar_position: 6
 ---
 
 # GPS Devices

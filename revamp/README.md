@@ -36,6 +36,9 @@ swat/
 │   ├── prisma-client/  # @swat/prisma-client — PrismaClient singleton
 │   ├── eslint-config/  # @swat/eslint-config
 │   └── tsconfig/       # @swat/tsconfig
+├── docs/               # public user manual (Docusaurus, bilingual id/en) — standalone
+│                       #   npm project (React 18), NOT in the pnpm workspace. Use `npm`.
+│                       #   → docs.swat.wahyutrip.com. See docs/README.md.
 ├── infra/              # Dockerfiles, nginx, compose env (+ .example)
 ├── scripts/            # setup.sh (bootstrap) · start.sh (run)
 └── docker-compose.yml  # Postgres · Adminer · Redis · MinIO · nginx

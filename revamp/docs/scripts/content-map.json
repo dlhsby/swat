@@ -93,6 +93,12 @@
           "route": "/schedule-templates",
           "shot": "schedule-templates",
           "permission": "schedule-template:read"
+        },
+        {
+          "slug": "perangkat-gps",
+          "route": "/tracking/devices",
+          "shot": "tracking-devices",
+          "permission": "gps-device:read"
         }
       ]
     },
@@ -122,12 +128,6 @@
           "route": "/disposal-permits",
           "shot": "disposal-permits",
           "permission": "disposal-permit:read"
-        },
-        {
-          "slug": "perangkat-gps",
-          "route": "/tracking/devices",
-          "shot": "tracking-devices",
-          "permission": "gps-device:read"
         }
       ]
     },
@@ -148,6 +148,18 @@
           "shot": "service-accounts",
           "permission": "service-account:read"
         }
+      ]
+    },
+    {
+      "dir": "pengaturan",
+      "labelId": "Pengaturan & Akun",
+      "labelEn": "Settings & Account",
+      "position": 6,
+      "pages": [
+        { "slug": "index", "route": null, "shot": null },
+        { "slug": "pengaturan", "route": "/settings", "shot": "settings" },
+        { "slug": "profil", "route": "/profile", "shot": "profile" },
+        { "slug": "ganti-kata-sandi", "route": "/change-password", "shot": null }
       ]
     },
     {

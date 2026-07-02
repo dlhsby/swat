@@ -82,6 +82,10 @@ MinIO creds) for any non-local environment.
 
 - **[`specs/`](./specs/)** — requirements + [`11-development-plan/`](./specs/11-development-plan/) (phased roadmap, status, verification + check guides).
 - **[`docs/`](./docs/)** — `CUTOVER-RUNBOOK.md`, `ROLLBACK-PLAN.md`, `USER-GUIDE.md` (Bahasa), `DEPENDENCY-UPGRADE.md`, `LEGACY-TO-NEW-REFERENCE.md`.
+- **[`revamp/docs/`](./revamp/docs/)** — the **public user manual** (Docusaurus, bilingual id/en), live at
+  **[docs.swat.wahyutrip.com](https://docs.swat.wahyutrip.com)**. A standalone npm project (React 18,
+  outside the pnpm workspace); content is authored from the live app (`scripts/extract-app-model.mjs`) with
+  Playwright screenshots (`scripts/capture-web.mjs`).
 - **[`designs/`](./designs/)** — visual source of truth.
 
 ## Conventions
