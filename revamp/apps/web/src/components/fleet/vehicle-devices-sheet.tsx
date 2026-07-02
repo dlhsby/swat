@@ -12,6 +12,7 @@ import {
   deviceFieldsSchema,
   dropEmptyImei,
   GpsDeviceFields,
+  toDeviceFormValues,
 } from '@/components/fleet/gps-device-fields';
 import {
   Button,
@@ -38,15 +39,6 @@ export interface VehicleDevicesSheetProps {
   /** Reload the vehicle list so its GPS-coverage badge reflects a change. */
   onChanged?: () => void;
 }
-
-const toForm = (d: GpsDeviceDto): DeviceFieldsValues => ({
-  deviceId: d.deviceId,
-  imei: d.imei ?? '',
-  deviceType: d.deviceType,
-  provider: d.provider,
-  priority: d.priority,
-  active: d.active,
-});
 
 /**
  * Per-vehicle "Perangkat GPS" sheet (Phase 7) — attach, EDIT, or detach a GPS
@@ -100,7 +92,7 @@ export function VehicleDevicesSheet({
 
   const startEdit = (device: GpsDeviceDto): void => {
     setEditing(device);
-    form.reset(toForm(device));
+    form.reset(toDeviceFormValues(device));
   };
 
   const cancelEdit = (): void => {

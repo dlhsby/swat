@@ -15,6 +15,7 @@ import {
   deviceFieldsSchema,
   dropEmptyImei,
   GpsDeviceFields,
+  toDeviceFormValues,
 } from '@/components/fleet/gps-device-fields';
 import { UnmatchedDevicesSheet } from '@/components/tracking/unmatched-devices-sheet';
 import { Button, type ComboboxOption, StatusPill } from '@/components/ui';
@@ -31,15 +32,7 @@ const schema = deviceFieldsSchema.extend({
 type Values = z.infer<typeof schema>;
 
 const defaults: Values = { vehicleId: '', ...deviceFieldsDefaults };
-const toForm = (d: GpsDeviceDto): Values => ({
-  vehicleId: d.vehicleId,
-  deviceId: d.deviceId,
-  imei: d.imei ?? '',
-  deviceType: d.deviceType,
-  provider: d.provider,
-  priority: d.priority,
-  active: d.active,
-});
+const toForm = (d: GpsDeviceDto): Values => ({ vehicleId: d.vehicleId, ...toDeviceFormValues(d) });
 const buildPayload = (values: Values): Record<string, unknown> => dropEmptyImei(values);
 
 export default function GpsDevicesPage(): JSX.Element {

@@ -3,6 +3,7 @@
 import { z } from 'zod';
 
 import { NumberField, type SelectOption, SelectField, SwitchField, TextField } from '@/components/crud/fields';
+import { type GpsDeviceDto } from '@/lib/gps-device-api';
 
 /** Device-type options — shared by the registry page and the per-vehicle sheet. */
 export const DEVICE_TYPE_OPTIONS: readonly SelectOption[] = [
@@ -42,6 +43,16 @@ export function dropEmptyImei(values: Record<string, unknown>): Record<string, u
   const { imei, ...rest } = values;
   return imei ? { ...rest, imei } : rest;
 }
+
+/** Map a device DTO onto the shared form values (used by both device surfaces). */
+export const toDeviceFormValues = (d: GpsDeviceDto): DeviceFieldsValues => ({
+  deviceId: d.deviceId,
+  imei: d.imei ?? '',
+  deviceType: d.deviceType,
+  provider: d.provider,
+  priority: d.priority,
+  active: d.active,
+});
 
 /**
  * Shared GPS-device form fields (RHF). Renders inside any react-hook-form context
