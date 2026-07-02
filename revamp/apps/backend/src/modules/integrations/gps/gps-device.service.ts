@@ -99,7 +99,9 @@ export class GpsDeviceService {
 
     await this.assertVehicleExists(dto.vehicleId);
     await this.assertDeviceIdFree(dto.deviceId);
-    if (deviceType === 'gps-hardware') {
+    // The "one active hardware per vehicle" rule only applies when the new device
+    // will actually be active — an inactive spare can be registered freely.
+    if (deviceType === 'gps-hardware' && dto.active !== false) {
       await this.assertNoActiveHardware(dto.vehicleId);
     }
 
@@ -110,6 +112,7 @@ export class GpsDeviceService {
       ...(imei !== undefined ? { imei } : {}),
       ...(dto.provider !== undefined ? { provider: dto.provider } : {}),
       ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
+      ...(dto.active !== undefined ? { active: dto.active } : {}),
     });
     return toDto(device);
   }

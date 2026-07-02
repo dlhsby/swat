@@ -140,6 +140,26 @@ describe('GpsDeviceService', () => {
       } as never);
       expect(repo.findActiveHardwareForVehicle).not.toHaveBeenCalled();
     });
+
+    it('passes an explicit active flag through to the repository', async () => {
+      await service.create({
+        vehicleId: VEHICLE_ID,
+        deviceId: '350000000000002',
+        active: true,
+      } as never);
+      expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ active: true }));
+    });
+
+    it('registers an inactive spare without the one-active-hardware check', async () => {
+      repo.findActiveHardwareForVehicle.mockResolvedValue({ id: 'existing' });
+      await service.create({
+        vehicleId: VEHICLE_ID,
+        deviceId: 'spare-1',
+        active: false,
+      } as never);
+      expect(repo.findActiveHardwareForVehicle).not.toHaveBeenCalled();
+      expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ active: false }));
+    });
   });
 
   describe('update', () => {

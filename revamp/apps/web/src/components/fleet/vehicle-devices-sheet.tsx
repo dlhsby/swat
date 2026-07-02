@@ -1,20 +1,24 @@
 'use client';
 
-import { Trash2 } from 'lucide-react';
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Pencil, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { type Resolver, useForm } from 'react-hook-form';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
+import {
+  type DeviceFieldsValues,
+  deviceFieldsDefaults,
+  deviceFieldsSchema,
+  dropEmptyImei,
+  GpsDeviceFields,
+  toDeviceFormValues,
+} from '@/components/fleet/gps-device-fields';
 import {
   Button,
   ConfirmDialog,
   EmptyState,
-  Input,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Form,
   Sheet,
   SheetBody,
   SheetContent,
@@ -26,17 +30,8 @@ import {
 } from '@/components/ui';
 import { ApiError } from '@/lib/api-error';
 import { formatDateDisplay, formatTime } from '@/lib/format';
-import {
-  type GpsDeviceDto,
-  gpsDevicesApi,
-  listVehicleDevices,
-} from '@/lib/gps-device-api';
+import { type GpsDeviceDto, gpsDevicesApi, listVehicleDevices } from '@/lib/gps-device-api';
 import { type VehicleDto } from '@/lib/master-api';
-
-const DEVICE_TYPE_OPTIONS = [
-  { value: 'gps-hardware', label: 'Perangkat keras GPS' },
-  { value: 'mobile-app', label: 'Aplikasi ponsel' },
-];
 
 export interface VehicleDevicesSheetProps {
   vehicle: VehicleDto | null;
@@ -46,9 +41,10 @@ export interface VehicleDevicesSheetProps {
 }
 
 /**
- * Per-vehicle "Perangkat GPS" sheet (Phase 7) — attach a GPS device to this
- * vehicle (the registry IS the tracked flag) or detach it, without leaving the
- * vehicle master. Mirrors the driver-SIM sheet pattern.
+ * Per-vehicle "Perangkat GPS" sheet (Phase 7) — attach, EDIT, or detach a GPS
+ * device from the vehicle master. Uses the same shared `<GpsDeviceFields>` block as
+ * the `/tracking/devices` registry so both surfaces are field-for-field identical
+ * (`vehicleId` is implicit here — it's this vehicle).
  */
 export function VehicleDevicesSheet({
   vehicle,
@@ -58,14 +54,17 @@ export function VehicleDevicesSheet({
   const [devices, setDevices] = useState<GpsDeviceDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GpsDeviceDto | null>(null);
-
-  const [deviceId, setDeviceId] = useState('');
-  const [imei, setImei] = useState('');
-  const [deviceType, setDeviceType] = useState('gps-hardware');
-  const [priority, setPriority] = useState('0');
+  // null = add mode; a device = editing that device.
+  const [editing, setEditing] = useState<GpsDeviceDto | null>(null);
   const [saving, setSaving] = useState(false);
 
   const vehicleId = vehicle?.id ?? null;
+  const form = useForm<DeviceFieldsValues>({
+    // Cast mirrors CrudFormDialog: Zod 4's `z.coerce.number()` widens the resolver's
+    // input type (priority: unknown), which tsc rejects against the output type.
+    resolver: zodResolver(deviceFieldsSchema as never) as Resolver<DeviceFieldsValues>,
+    defaultValues: deviceFieldsDefaults,
+  });
 
   const reload = useCallback(async (): Promise<void> => {
     if (vehicleId === null) {
@@ -83,36 +82,44 @@ export function VehicleDevicesSheet({
 
   useEffect(() => {
     if (vehicleId !== null) {
-      setDeviceId('');
-      setImei('');
-      setDeviceType('gps-hardware');
-      setPriority('0');
+      setEditing(null);
+      form.reset(deviceFieldsDefaults);
       void reload();
     }
+    // form is stable for the sheet's lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vehicleId, reload]);
 
-  const onAdd = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
-    if (vehicleId === null || !deviceId) {
+  const startEdit = (device: GpsDeviceDto): void => {
+    setEditing(device);
+    form.reset(toDeviceFormValues(device));
+  };
+
+  const cancelEdit = (): void => {
+    setEditing(null);
+    form.reset(deviceFieldsDefaults);
+  };
+
+  const onSubmit = async (values: DeviceFieldsValues): Promise<void> => {
+    if (vehicleId === null) {
       return;
     }
     setSaving(true);
     try {
-      await gpsDevicesApi.create({
-        vehicleId,
-        deviceId,
-        deviceType,
-        provider: 'gpsid',
-        priority: Number(priority) || 0,
-        ...(imei ? { imei } : {}),
-      });
-      notify.success('Perangkat GPS ditautkan.');
-      setDeviceId('');
-      setImei('');
+      const payload = dropEmptyImei(values);
+      if (editing) {
+        await gpsDevicesApi.update(editing.id, payload);
+        notify.success('Perangkat GPS diperbarui.');
+      } else {
+        await gpsDevicesApi.create({ vehicleId, ...payload });
+        notify.success('Perangkat GPS ditautkan.');
+      }
+      setEditing(null);
+      form.reset(deviceFieldsDefaults);
       await reload();
       onChanged?.();
     } catch (err) {
-      notify.error(err instanceof ApiError ? err.message : 'Gagal menautkan perangkat.');
+      notify.error(err instanceof ApiError ? err.message : 'Gagal menyimpan perangkat.');
     } finally {
       setSaving(false);
     }
@@ -125,6 +132,9 @@ export function VehicleDevicesSheet({
     try {
       await gpsDevicesApi.remove(deleteTarget.id);
       notify.success('Perangkat GPS dilepas.');
+      if (editing?.id === deleteTarget.id) {
+        cancelEdit();
+      }
       setDeleteTarget(null);
       await reload();
       onChanged?.();
@@ -168,6 +178,17 @@ export function VehicleDevicesSheet({
                       domain="gpsDevice"
                       value={device.active ? device.status : 'offline'}
                     />
+                    <ProtectedAction permission="gps-device:update">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label="Ubah perangkat"
+                        onClick={() => startEdit(device)}
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </ProtectedAction>
                     <ProtectedAction permission="gps-device:delete">
                       <Button
                         variant="ghost"
@@ -185,63 +206,28 @@ export function VehicleDevicesSheet({
             </ul>
           )}
 
-          <ProtectedAction permission="gps-device:create">
-            <form
-              onSubmit={(e) => void onAdd(e)}
-              className="space-y-3 rounded-lg border border-neutral-200 p-3"
-            >
-              <p className="text-label font-semibold text-neutral-700">Tautkan perangkat</p>
-              <div className="space-y-1.5">
-                <Label htmlFor="dev-id" required>
-                  ID Perangkat / IMEI
-                </Label>
-                <Input
-                  id="dev-id"
-                  value={deviceId}
-                  onChange={(e) => setDeviceId(e.target.value)}
-                  maxLength={64}
-                  placeholder="mis. 350000000000999"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="dev-imei">IMEI (opsional)</Label>
-                <Input
-                  id="dev-imei"
-                  value={imei}
-                  onChange={(e) => setImei(e.target.value)}
-                  placeholder="Default mengikuti ID perangkat"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="dev-type">Jenis Perangkat</Label>
-                <Select value={deviceType} onValueChange={setDeviceType}>
-                  <SelectTrigger id="dev-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DEVICE_TYPE_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>
-                        {o.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="dev-priority">Prioritas</Label>
-                <Input
-                  id="dev-priority"
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                />
-              </div>
-              <Button type="submit" loading={saving} disabled={!deviceId}>
-                Tautkan
-              </Button>
-            </form>
+          <ProtectedAction permission={editing ? 'gps-device:update' : 'gps-device:create'}>
+            <Form {...form}>
+              <form
+                onSubmit={(e) => void form.handleSubmit(onSubmit)(e)}
+                className="space-y-3 rounded-lg border border-neutral-200 p-3"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-label font-semibold text-neutral-700">
+                    {editing ? 'Ubah perangkat' : 'Tautkan perangkat'}
+                  </p>
+                  {editing ? (
+                    <Button type="button" variant="ghost" size="sm" onClick={cancelEdit}>
+                      Batal
+                    </Button>
+                  ) : null}
+                </div>
+                <GpsDeviceFields />
+                <Button type="submit" loading={saving}>
+                  {editing ? 'Simpan' : 'Tautkan'}
+                </Button>
+              </form>
+            </Form>
           </ProtectedAction>
         </SheetBody>
       </SheetContent>
