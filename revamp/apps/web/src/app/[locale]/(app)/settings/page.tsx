@@ -17,7 +17,9 @@ export default function SettingsPage(): JSX.Element {
     <>
       <PageHead title={t('title')} description={t('subtitle')} />
 
-      <div className="max-w-2xl space-y-6">
+      {/* max-w-[42rem] (not max-w-2xl): the custom spacing scale in tailwind.config
+          poisons the named max-w-* tokens (max-w-2xl → 32px), so use an arbitrary value. */}
+      <div className="max-w-[42rem] space-y-6">
         <Card>
           <CardHeader>
             <CardTitle>{t('appearance')}</CardTitle>

@@ -107,6 +107,10 @@ export default {
         label: ['14px', { lineHeight: '1.43', fontWeight: '500' }],
         tiny: ['12px', { lineHeight: '1.5', fontWeight: '500' }],
       },
+      // NOTE (Tailwind v4): these named spacing keys ALSO feed the `max-w-*` scale,
+      // so `max-w-2xl` resolves to 32px (not 42rem), `max-w-sm` to 8px, etc. Do NOT
+      // use the named `max-w-{sm,md,lg,xl,2xl,3xl}` tokens — use arbitrary values like
+      // `max-w-[42rem]`. (This is why the codebase uses arbitrary max-w everywhere.)
       spacing: {
         xs: '4px',
         sm: '8px',
