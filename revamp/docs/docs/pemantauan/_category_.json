@@ -1,0 +1,10 @@
+{
+  "label": "Pemantauan",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "slug": "/pemantauan",
+    "title": "Pemantauan",
+    "description": "Pantau operasional armada secara real-time: tonnase sampah yang diangkut, konsumsi bahan bakar, aktivitas pengangkutan, retribusi, dan efisiensi rute."
+  }
+}

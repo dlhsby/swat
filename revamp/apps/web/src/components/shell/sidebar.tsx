@@ -61,7 +61,41 @@ function NavTop({
   const t = useTranslations('nav');
   const pathname = usePathname();
   const Icon = leaf.icon;
-  const active = pathname === leaf.href || pathname.startsWith(`${leaf.href}/`);
+  // External links (e.g. the docs) are never "active" and open in a new tab.
+  const active =
+    !leaf.externalUrl && (pathname === leaf.href || pathname.startsWith(`${leaf.href}/`));
+
+  const className = cn(
+    'ml-[-3px] flex items-center gap-2.5 rounded-lg border-l-[3px] py-2.5 text-[13px] font-semibold transition-colors',
+    collapsed ? 'justify-center px-0' : 'px-2.5',
+    active
+      ? 'border-transparent bg-primary-700 text-white shadow-subtle'
+      : 'border-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
+  );
+  const inner = (
+    <>
+      <Icon
+        className={cn('h-[18px] w-[18px] shrink-0', active ? 'text-white' : 'text-neutral-400')}
+        aria-hidden
+      />
+      {collapsed ? null : <span className="truncate">{t(leaf.key)}</span>}
+    </>
+  );
+
+  if (leaf.externalUrl) {
+    return (
+      <a
+        href={leaf.externalUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onNavigate}
+        title={collapsed ? t(leaf.key) : undefined}
+        className={className}
+      >
+        {inner}
+      </a>
+    );
+  }
 
   return (
     <Link
@@ -69,19 +103,9 @@ function NavTop({
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       title={collapsed ? t(leaf.key) : undefined}
-      className={cn(
-        'ml-[-3px] flex items-center gap-2.5 rounded-lg border-l-[3px] py-2.5 text-[13px] font-semibold transition-colors',
-        collapsed ? 'justify-center px-0' : 'px-2.5',
-        active
-          ? 'border-transparent bg-primary-700 text-white shadow-subtle'
-          : 'border-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
-      )}
+      className={className}
     >
-      <Icon
-        className={cn('h-[18px] w-[18px] shrink-0', active ? 'text-white' : 'text-neutral-400')}
-        aria-hidden
-      />
-      {collapsed ? null : <span className="truncate">{t(leaf.key)}</span>}
+      {inner}
     </Link>
   );
 }

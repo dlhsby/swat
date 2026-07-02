@@ -1,0 +1,11 @@
+{
+  "label": "Master Data",
+  "position": 3,
+  "collapsed": false,
+  "link": {
+    "type": "generated-index",
+    "slug": "/data-master",
+    "title": "Master Data",
+    "description": "Manage system master data: vehicles, drivers, sites, routes, waste sources, and haulage schedule templates."
+  }
+}

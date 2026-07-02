@@ -1,0 +1,10 @@
+{
+  "label": "Monitoring",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "slug": "/pemantauan",
+    "title": "Monitoring",
+    "description": "Monitor fleet operations in real-time: waste tonnage transported, fuel consumption, hauling activity, levy collection, and route efficiency."
+  }
+}

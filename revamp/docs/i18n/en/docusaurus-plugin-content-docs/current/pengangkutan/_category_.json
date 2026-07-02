@@ -1,0 +1,10 @@
+{
+  "label": "Hauling",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/pengangkutan",
+    "title": "Hauling",
+    "description": "Manage daily schedules, record trip activities, manage disposal permits, and register GPS devices for waste hauling operations."
+  }
+}

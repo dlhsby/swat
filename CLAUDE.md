@@ -9,6 +9,11 @@ Concise orientation so sessions don't re-explore. Global directives live in `~/.
   `revamp/` 2026-06.)
 - **Git repo root is the outer `projects/swat/`** → `.github/workflows/` sits at the outer root
   (CI uses `working-directory: revamp`). Husky: enable with `git config core.hooksPath revamp/.husky`.
+- **Docs site lives in `revamp/docs/`** — a **standalone npm project** (Docusaurus, React 18, own
+  `package-lock.json`), intentionally OUTSIDE the pnpm/Turbo workspace (React 19 conflict). Use `npm`
+  there, not `pnpm`. Bilingual (id default / en). Content is authored **from the live code**
+  (`scripts/extract-app-model.mjs` → `generated/app-model.json` + drift report); specs are guidance
+  only. Screenshots via Playwright (`scripts/capture-web.mjs`). Deploys to **docs.swat.wahyutrip.com**.
 - Project root also holds `specs/`, `designs/`, `prompts/`, and `legacy/` — the archived legacy system:
   the old CodeIgniter app under `legacy/web/` (formerly `old_swat/`, tracked) plus DB dumps under
   `legacy/db/` (dumps/binaries gitignored — see `legacy/db/.gitignore`).
@@ -90,7 +95,7 @@ From inner `revamp/`:
   - **`seed:legacy`** — full legacy load from MySQL via `migrate:legacy`: master + auth + scheduling +
     aggregates, **no transactions, no synthetic data**. For local pre-UAT testing on real masters.
   - **`seed:staging`** (root `pnpm seed:staging` → `infra/seed-legacy-from-dump.sh staging
-    --with-transactions`) — stands up a throwaway MySQL from `legacy/db/dump/`, then the engine loads
+--with-transactions`) — stands up a throwaway MySQL from `legacy/db/dump/`, then the engine loads
     master + **full transactional history** (`--include-transactions`: haritransaksi→TransactionDay,
     transaksiangkutsampah→Haul, detail→HaulAssignment, trayek→Trip, sampahmasuktpa→TpaInboundLog —
     **every stage keyset-batched + watermarked with per-batch FK resolution**, so ~21M rows load at flat
@@ -155,4 +160,7 @@ From inner `revamp/`:
   to `main` never deploys). On-prem prod stays platform-agnostic.
 - **Deployment**: canonical spec [`specs/15-deployment.md`](specs/15-deployment.md); operational
   runbook `revamp/infra/aws/README.md`. Staging = AWS (shared `dlhsby` box, RDS db `swat_staging`, ECR,
-  S3+instance-role, Caddy, OIDC→SSM); prod = `infra/docker-compose.prod.yml`.
+  S3+instance-role, Caddy, OIDC→SSM); prod = `infra/docker-compose.prod.yml`. Three staging subdomains
+  behind the shared Caddy drop-in (`infra/Caddyfile.staging`): `swat.` (web), `api.swat.` (backend),
+  `docs.swat.` (Docusaurus user manual — image `swat-docs`, repo Variable `ECR_DOCS`). On-prem prod docs
+  is a commented stub in `docker-compose.prod.yml` (enable when the `docs.` vhost is provisioned).

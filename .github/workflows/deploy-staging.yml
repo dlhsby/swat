@@ -1,7 +1,8 @@
 name: Deploy staging (AWS)
 
-# Builds the SWAT backend + web production images, pushes them to ECR, snapshots
-# the shared RDS, then deploys to the shared EC2 host via SSM Run Command (no SSH).
+# Builds the SWAT backend + web + docs production images, pushes them to ECR,
+# snapshots the shared RDS, then deploys to the shared EC2 host via SSM Run Command
+# (no SSH).
 # Auth uses GitHub OIDC — no long-lived AWS keys in GitHub. Mirrors the sekar
 # pattern: staging on AWS, on-prem prod stays platform-agnostic (docker-compose.prod.yml).
 #
@@ -21,6 +22,8 @@ name: Deploy staging (AWS)
 #   AWS_ROLE_ARN      arn:aws:iam::659828096624:role/swat-gha-deploy
 #   ECR_BACKEND       659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-backend
 #   ECR_WEB           659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-web
+#   ECR_DOCS          659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-docs
+#                     (docs user-manual image — create the ECR repo `swat-docs` once)
 #   EC2_INSTANCE_ID   i-08edccdc966c0985e
 #   RDS_INSTANCE_ID   dlhsby
 # Required Environment Secret (staging environment):
@@ -121,6 +124,26 @@ jobs:
             ${{ vars.ECR_WEB }}:${{ steps.vars.outputs.sha }}
           cache-from: type=gha,scope=swat-web
           cache-to: type=gha,mode=max,scope=swat-web
+
+      - name: Build & push docs
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          # Docs is a standalone npm project (outside the pnpm workspace), so its
+          # build context is ./revamp/docs, not ./revamp. Site URLs are baked at
+          # build time (static-site constants) from build args.
+          context: ./revamp/docs
+          file: ./revamp/docs/Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            DOCS_URL=https://docs.swat.wahyutrip.com
+            DOCS_BASE_URL=/
+            APP_URL=https://swat.wahyutrip.com
+          tags: |
+            ${{ vars.ECR_DOCS }}:staging
+            ${{ vars.ECR_DOCS }}:${{ steps.vars.outputs.sha }}
+          cache-from: type=gha,scope=swat-docs
+          cache-to: type=gha,mode=max,scope=swat-docs
 
   deploy:
     needs: build-push
@@ -250,3 +273,6 @@ jobs:
           done
           curl -fsS https://api.swat.wahyutrip.com/health
           curl -fsSI --retry 5 --retry-delay 6 https://swat.wahyutrip.com/ | head -1
+          # Docs site — public, no auth. Retry covers first-time Let's Encrypt
+          # issuance for the new docs.swat.wahyutrip.com host.
+          curl -fsSI --retry 5 --retry-delay 6 https://docs.swat.wahyutrip.com/ | head -1

@@ -30,3 +30,10 @@ swat.wahyutrip.com {
 	encode gzip
 	reverse_proxy swat-web:3001
 }
+
+# Docs — public user manual (Docusaurus static site served by nginx on :80).
+# No auth. The swat-docs container joins the shared `edge` network.
+docs.swat.wahyutrip.com {
+	encode gzip
+	reverse_proxy swat-docs:80
+}

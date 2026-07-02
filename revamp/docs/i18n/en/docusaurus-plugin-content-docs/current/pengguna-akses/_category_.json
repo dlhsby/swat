@@ -1,0 +1,10 @@
+{
+  "label": "Users & Access",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "slug": "/pengguna-akses",
+    "title": "Users & Access",
+    "description": "Manage users, roles (access control), and service accounts for API and native client integrations."
+  }
+}
