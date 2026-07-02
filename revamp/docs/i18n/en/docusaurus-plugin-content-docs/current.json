@@ -1,0 +1,10 @@
+{
+  "version.label": {
+    "message": "Next",
+    "description": "The label for version current"
+  },
+  "sidebar.docsSidebar.category.Memulai": {
+    "message": "Getting Started",
+    "description": "The label for category Memulai in sidebar docsSidebar"
+  }
+}

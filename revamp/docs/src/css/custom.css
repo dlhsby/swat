@@ -1,0 +1,35 @@
+/**
+ * SWAT docs theme — the app's emerald primary ramp on Docusaurus' Infima.
+ * Values mirror apps/web/src/app/globals.css (--primary-*). Kept intentionally
+ * small — this is a manual, not the app; we don't import the web app's token
+ * pipeline here (the docs site is a fully independent workspace).
+ */
+
+:root {
+  --ifm-color-primary: #047857; /* primary-700 */
+  --ifm-color-primary-dark: #065f46; /* primary-800 */
+  --ifm-color-primary-darker: #05593f;
+  --ifm-color-primary-darkest: #064e3b; /* primary-900 */
+  --ifm-color-primary-light: #059669; /* primary-600 */
+  --ifm-color-primary-lighter: #10b981; /* primary-500 */
+  --ifm-color-primary-lightest: #34d399;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #34d399;
+  --ifm-color-primary-dark: #10b981;
+  --ifm-color-primary-darker: #059669;
+  --ifm-color-primary-darkest: #047857;
+  --ifm-color-primary-light: #6ee7b7;
+  --ifm-color-primary-lighter: #a7f3d0;
+  --ifm-color-primary-lightest: #d1fae5;
+  --ifm-background-color: #0c1a14;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+.theme-admonition {
+  border-radius: 8px;
+}

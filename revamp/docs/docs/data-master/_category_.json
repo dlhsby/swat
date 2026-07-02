@@ -1,0 +1,11 @@
+{
+  "label": "Data Master",
+  "position": 3,
+  "collapsed": false,
+  "link": {
+    "type": "generated-index",
+    "slug": "/data-master",
+    "title": "Data Master",
+    "description": "Kelola data induk sistem: kendaraan, pengemudi, lokasi, rute, sumber sampah, dan template jadwal pengangkutan."
+  }
+}

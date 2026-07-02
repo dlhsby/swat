@@ -283,6 +283,10 @@ describe('DisposalPermitsService', () => {
       const result = await service.bulkIssue({
         vehicleId: '00000000-0000-0000-0000-000000000001',
         siteId: '00000000-0000-0000-0000-000000000002',
+        // Pin issuedAt inside the validity window — without it, bulkIssue defaults
+        // issuedAt to `now`, so this test broke once the real date passed validTo
+        // (issuedAt > validTo → BadRequestException). Keeps the case deterministic.
+        issuedAt: '2026-06-01',
         validFrom: '2026-06-01',
         validTo: '2026-06-30',
         count: 3,

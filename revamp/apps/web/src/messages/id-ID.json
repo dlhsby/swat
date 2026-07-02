@@ -79,7 +79,8 @@
     "roles": "Hak Akses",
     "serviceAccounts": "Akun Layanan",
     "apiAuditLog": "Log API",
-    "hauling": "Pengangkutan"
+    "hauling": "Pengangkutan",
+    "documentation": "Dokumentasi"
   },
   "shell": {
     "openMenu": "Buka menu",

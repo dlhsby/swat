@@ -1,0 +1,10 @@
+{
+  "label": "Pengguna & Akses",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "slug": "/pengguna-akses",
+    "title": "Pengguna & Akses",
+    "description": "Kelola pengguna, peran (hak akses), dan akun layanan untuk integrasi API dan klien native."
+  }
+}
