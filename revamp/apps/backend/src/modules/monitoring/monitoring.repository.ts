@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, type TripStatus } from '@prisma/client';
 
+import { wibDayRangeUtc } from '../../common/dates';
 import { PrismaService } from '../prisma/prisma.service';
 
 import {
@@ -527,8 +528,9 @@ export class MonitoringRepository {
 
   /** A vehicle's GPS activity milestones for one operation date, oldest first. */
   async dayActivity(vehicleId: string, date: string): Promise<DayActivityEventRow[]> {
-    const start = new Date(`${date}T00:00:00.000Z`);
-    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    // Bound by the operators' WIB day, not the UTC day, so the drill-down matches
+    // the day the events actually belong to.
+    const { start, end } = wibDayRangeUtc(date);
     const rows = await this.prisma.gpsActivityEvent.findMany({
       where: { vehicleId, occurredAt: { gte: start, lt: end } },
       orderBy: { occurredAt: 'asc' },

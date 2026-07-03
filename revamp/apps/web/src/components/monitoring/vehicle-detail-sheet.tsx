@@ -62,7 +62,9 @@ export function VehicleDetailSheet({
 }: VehicleDetailSheetProps): JSX.Element {
   const trips = useTripSummary({ dateFrom: date, dateTo: date }, vehicleId ? { vehicleId } : {});
   const activity = useVehicleDayActivity(vehicleId, date);
-  const tripRows = (trips.data?.data ?? []).filter((r) => !vehicleId || r.plateNumber === plate);
+  // The query already scopes to the vehicle server-side, so no client plate filter
+  // (which would break the moment the vehicle drops off the live positions poll).
+  const tripRows = trips.data?.data ?? [];
   const events = activity.data ?? [];
 
   return (

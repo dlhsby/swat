@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
@@ -96,7 +96,7 @@ export class MonitoringController {
   @Get('vehicles/:vehicleId/day-activity')
   @ApiOperation({ summary: "A vehicle's GPS activity milestones for one day" })
   dayActivity(
-    @Param('vehicleId') vehicleId: string,
+    @Param('vehicleId', new ParseUUIDPipe()) vehicleId: string,
     @Query() query: DayActivityQueryDto,
   ): Promise<DayActivityEventRow[]> {
     return this.monitoring.dayActivity(vehicleId, query.date);

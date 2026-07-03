@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { operationDateOf } from '../../../common/dates';
 import { AppConfigService } from '../../../config';
 import { CacheService } from '../../cache/cache.service';
 
@@ -56,13 +57,10 @@ export class GpsActivityService {
   ) {}
 
   async track(ping: MatchPing): Promise<void> {
-    const operationDate = new Date(
-      Date.UTC(
-        ping.recordedAt.getUTCFullYear(),
-        ping.recordedAt.getUTCMonth(),
-        ping.recordedAt.getUTCDate(),
-      ),
-    );
+    // Key the operation day by the ping's WIB calendar date — hauls/trips store
+    // operationDate as the WIB day, so a UTC-derived date would miss the active
+    // haul for pings in the 00:00–07:00 WIB window.
+    const operationDate = operationDateOf(ping.recordedAt);
     const ctx = await this.repo.loadContext(ping.vehicleId, operationDate);
     if (!ctx) {
       return; // No active haul — nothing to track.
@@ -113,9 +111,12 @@ export class GpsActivityService {
 
   private async handleEnter(site: GeoSite, ctx: HaulContext, ping: MatchPing): Promise<void> {
     if (site.type === 'POOL') {
-      // Entering the pool only means "returned" once the haul has departed;
-      // the initial at-pool state raises nothing.
-      if (ctx.departActualTime && !ctx.returnActualTime) {
+      // Entering the pool means "returned" once the haul has actually run — either
+      // a recorded departure or any leg that progressed. Guarding on progress (not
+      // strictly departActualTime) means a missed DEPART can't strand the haul
+      // open; the initial at-pool state (no progress yet) still raises nothing.
+      const hasRun = Boolean(ctx.departActualTime) || ctx.trips.some((t) => t.arrivedAt ?? t.actualTime);
+      if (hasRun && !ctx.returnActualTime) {
         if (await this.repo.stampReturn(ctx.assignmentId, ping.recordedAt)) {
           await this.emit(ctx, ping, site, 'RETURN', null);
         }

@@ -77,6 +77,23 @@ export function wibDateKey(instant: Date): string {
 }
 
 /**
+ * The `@db.Date` operation day (UTC-midnight Date) a GPS instant belongs to, keyed
+ * by its WIB calendar date — matches how hauls/trips store `operationDate`.
+ */
+export function operationDateOf(instant: Date): Date {
+  return parseDateOnly(wibDateKey(instant));
+}
+
+/**
+ * The `[start, end)` UTC instants bounding a WIB calendar day (`YYYY-MM-DD`) — for
+ * querying `Timestamptz` columns by the operators' local day.
+ */
+export function wibDayRangeUtc(dateKey: string): { start: Date; end: Date } {
+  const start = new Date(Date.parse(`${dateKey}T00:00:00.000Z`) - WIB_OFFSET_MS);
+  return { start, end: new Date(start.getTime() + 24 * 60 * 60 * 1000) };
+}
+
+/**
  * Re-anchor a realization instant onto its operation day, preserving the WIB
  * wall-clock time. A realization belongs to a known operation day, so its
  * `actual_time` must fall on the same WIB date as `operation_date`; this enforces

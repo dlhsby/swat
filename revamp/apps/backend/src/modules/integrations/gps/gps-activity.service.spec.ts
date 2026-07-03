@@ -142,6 +142,17 @@ describe('GpsActivityService.track', () => {
     expect(m.repo.stampReturn).not.toHaveBeenCalled();
   });
 
+  it('still raises RETURN when a leg progressed but DEPART was missed', async () => {
+    // departActualTime null (missed), but a leg already arrived → the haul has run.
+    const ctx = baseCtx({
+      trips: [{ id: 't1', status: 'DONE', arrivedAt: new Date(), actualTime: new Date(), destinationSiteId: 'tps' }],
+    });
+    const { svc, m } = build(ctx, null);
+    await svc.track(AT_POOL);
+    expect(m.repo.stampReturn).toHaveBeenCalledWith('a1', AT_POOL.recordedAt);
+    expect(kinds(m.repo.writeEvent)).toEqual(['RETURN']);
+  });
+
   it('emits nothing when the idempotent stamp reports no change', async () => {
     const { svc, m } = build(baseCtx({ departActualTime: new Date() }), null);
     m.repo.stampArrive.mockResolvedValue(false);

@@ -29,6 +29,10 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useAlerts, useFleetPositions, useVehicleTrack } from '@/hooks/use-tracking';
 import { formatDateDisplay, formatDistance, formatNumber, formatTime } from '@/lib/format';
 import { type RouteActivityRow, type TripSummaryRow } from '@/lib/monitoring-api';
+import { type TrackPoint } from '@/lib/tracking-api';
+
+/** Stable empty trail so the map effect doesn't re-run every render when off. */
+const NO_TRAIL: readonly TrackPoint[] = [];
 
 export default function HaulingPage(): JSX.Element {
   const t = useTranslations('monitoring.hauling');
@@ -47,21 +51,24 @@ export default function HaulingPage(): JSX.Element {
   const alerts = useAlerts(canAlerts);
 
   // Drill-down: search/click a vehicle → focus + detail drawer + optional trail.
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  // The plate is captured at selection time so the drawer keeps working even if the
+  // vehicle drops out of the polled positions (goes offline) while it's open.
+  const [selected, setSelected] = useState<{ id: string; plate: string } | null>(null);
   const [showTrail, setShowTrail] = useState(false);
+  const selectedVehicleId = selected?.id ?? null;
   const trail = useVehicleTrack(showTrail && selectedVehicleId ? selectedVehicleId : null);
 
   const vehicleOptions = useMemo<ComboboxOption[]>(
     () => fleet.positions.map((v) => ({ value: v.vehicleId, label: v.plate })),
     [fleet.positions],
   );
-  const selectedPlate =
-    fleet.positions.find((v) => v.vehicleId === selectedVehicleId)?.plate ?? null;
+  const selectVehicle = (id: string): void =>
+    setSelected({ id, plate: fleet.positions.find((v) => v.vehicleId === id)?.plate ?? id });
   const openAlertCount = selectedVehicleId
     ? alerts.alerts.filter((a) => a.vehicleId === selectedVehicleId).length
     : 0;
   const closeDetail = (): void => {
-    setSelectedVehicleId(null);
+    setSelected(null);
     setShowTrail(false);
   };
 
@@ -170,7 +177,7 @@ export default function HaulingPage(): JSX.Element {
                     <Combobox
                       options={vehicleOptions}
                       value={selectedVehicleId ?? ''}
-                      onValueChange={(v) => setSelectedVehicleId(v || null)}
+                      onValueChange={(v) => (v ? selectVehicle(v) : closeDetail())}
                       placeholder="Cari nopol → fokus"
                       searchPlaceholder="Cari nopol…"
                     />
@@ -184,8 +191,8 @@ export default function HaulingPage(): JSX.Element {
                 loading={map.isLoading}
                 vehicles={canTrack ? fleet.positions : []}
                 selectedVehicleId={selectedVehicleId}
-                onSelectVehicle={canTrack ? setSelectedVehicleId : undefined}
-                trail={showTrail ? (trail.data ?? []) : []}
+                onSelectVehicle={canTrack ? selectVehicle : undefined}
+                trail={showTrail ? (trail.data ?? NO_TRAIL) : NO_TRAIL}
               />
             </ChartCard>
             {canAlerts ? <AlertCenter enabled={canAlerts} /> : null}
@@ -224,7 +231,7 @@ export default function HaulingPage(): JSX.Element {
       {canTrack ? (
         <VehicleDetailSheet
           vehicleId={selectedVehicleId}
-          plate={selectedPlate}
+          plate={selected?.plate ?? null}
           date={today}
           openAlertCount={openAlertCount}
           showTrail={showTrail}
