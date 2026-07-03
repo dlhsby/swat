@@ -61,6 +61,39 @@
 >   shipped; the webhook→ping→matcher→alert→SSE flow is covered end-to-end by unit
 >   tests — a live E2E spec + load test are a tracked follow-up.
 >
+> ### Post-Phase-7 GPS gap-fix program (A–D — merged to `main`, 2026-07)
+> Four follow-up PRs closed the operator-facing gaps and hardened the pipeline:
+> - **A (PR #30)** — device registry moved to **Data Master**; unified add/edit device form
+>   (the `/tracking/devices` registry and the per-vehicle "Perangkat GPS" sheet now at parity);
+>   Settings → **Pelacakan** deviation-rule tuning with `(?)` hint tooltips + "Debounce" →
+>   "Jeda konfirmasi"; fixed a poisoned `max-w-*` Tailwind-v4 token (collapsed Settings); fixed a
+>   create-blocking 422 (`active` was absent from `CreateGpsDeviceDto` under a whitelist pipe).
+> - **B (PR #35)** — dev **push-track simulator** (`pnpm --filter @swat/backend run dev:push-track`)
+>   for local pipeline testing; a **configurable-interval POSITION pull** (`GPSID_POSITION_PULL` +
+>   `GPSID_PULL_INTERVAL_MIN`) that feeds `report/history` through the SAME ingest pipeline as the
+>   push webhook (secondary/backfill path).
+> - **C (PR #38)** — **GPS activity state machine**: geofence enter/exit of the active haul's sites
+>   auto-drives the lifecycle and **auto-stamps the realization times** (previously manual-only) —
+>   leave POOL → DEPART, enter TPS/SPBU/TPA → ARRIVE (new **`ARRIVED`** trip status +
+>   `Trip.arrivedAt`), leave → COMPLETE, return POOL → RETURN; the TPA **timbang** (WEIGH) comes
+>   from the weighbridge integration. Appends an auditable **`GpsActivityEvent`** feed. This also
+>   delivers the Site-geofence machinery the deferred `dwell_too_long` needed.
+> - **D (PR #41)** — **monitoring drill-down** on Pengangkutan → Peta: **plate search → map zoom**,
+>   click-a-vehicle **detail drawer** (today's trips + late/deviation badges + the **activity
+>   timeline** keberangkatan→tiba→timbang→selesai→kembali), a day **GPS trail** polyline, and a
+>   webhook-registration empty-state signpost. Backend `GET /monitoring/vehicles/:id/day-activity`.
+>
+> **Cross-phase review fix (folded into #41):** the operation day was UTC-derived in the activity
+> matcher AND the (already-merged) deviation matcher — corrected to the **WIB** calendar day
+> (`operationDateOf` / `wibDayRangeUtc`), so pings between 00:00–07:00 WIB no longer resolve to the
+> wrong day and miss the active haul.
+>
+> **Still deferred after A–D:** `off_sequence` matcher; a **global header alert-bell + filterable
+> history** view; `adherencePct`/`dwellMinutes` efficiency replay (the activity feed now supplies
+> the arrival/dwell data to feed it); a **live geofence + webhook→SSE E2E + load test**; and known
+> limitations — multi-assignment-haul activity attribution, pull-batch activity granularity (the
+> push path processes every ping), and i18n of the drill-down's hardcoded id-ID labels.
+>
 > ### PRs & as-built master-data reconciliation
 > **PR #16 (merged)** = Epics 7.0–7.7 GPS foundation. **PR #17 (open, `feat/phase-7.8-corridor-model`)**
 > = Epic 7.8 first-class Corridor + scheduling shifts + the master-data review below.
