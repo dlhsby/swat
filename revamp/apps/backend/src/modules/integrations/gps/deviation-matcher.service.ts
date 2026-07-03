@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { type DeviationRule, type DeviationType } from '@prisma/client';
 
+import { operationDateOf } from '../../../common/dates';
 import { CacheService } from '../../cache/cache.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -143,9 +144,10 @@ export class DeviationMatcherService {
    * has no open leg today.
    */
   private async resolveActiveTrip(vehicleId: string, now: Date): Promise<ActiveTrip | null> {
-    const operationDate = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
+    // Operation day is the WIB calendar date (how trips store operationDate), not
+    // the UTC date — otherwise pings in the 00:00–07:00 WIB window resolve to the
+    // wrong day and match no active trip.
+    const operationDate = operationDateOf(now);
     const trips = await this.prisma.trip.findMany({
       where: {
         operationDate,

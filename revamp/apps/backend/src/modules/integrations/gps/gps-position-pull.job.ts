@@ -1,4 +1,4 @@
-import { Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 
 import { AppConfigService } from '../../../config';
@@ -45,8 +45,9 @@ export function historyPointToPing(imei: string, p: GpsidHistoryPoint): Canonica
  * or to backfill gaps. No-ops cleanly when disabled or unconfigured.
  */
 @Injectable()
-export class GpsPositionPullJob implements OnModuleInit {
+export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(GpsPositionPullJob.name);
+  private handle: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly config: AppConfigService,
@@ -72,8 +73,21 @@ export class GpsPositionPullJob implements OnModuleInit {
     }, intervalMin * 60_000);
     // Don't let the poll timer keep the process alive on its own.
     handle.unref();
+    this.handle = handle;
     this.scheduler.addInterval(INTERVAL_NAME, handle);
     this.logger.log(`GPS.id position pull enabled — polling every ${intervalMin} min.`);
+  }
+
+  onModuleDestroy(): void {
+    // Clear the timer + registry entry so a re-init (tests, hot restart) never
+    // orphans an interval or collides on the registry name.
+    if (this.handle) {
+      clearInterval(this.handle);
+      this.handle = null;
+      if (this.scheduler.doesExist('interval', INTERVAL_NAME)) {
+        this.scheduler.deleteInterval(INTERVAL_NAME);
+      }
+    }
   }
 
   /**

@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 
 import { type RouteMapEdge, type RouteMapSite } from '@/lib/monitoring-api';
-import { type VehiclePosition } from '@/lib/tracking-api';
+import { type TrackPoint, type VehiclePosition } from '@/lib/tracking-api';
 
 /** Surabaya city centre — the default view before bounds are fit to the data. */
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
@@ -34,10 +34,16 @@ function MapOverlays({
   sites,
   edges,
   vehicles,
+  selectedVehicleId,
+  onSelectVehicle,
+  trail,
 }: {
   sites: readonly RouteMapSite[];
   edges: readonly RouteMapEdge[];
   vehicles: readonly VehiclePosition[];
+  selectedVehicleId?: string | null;
+  onSelectVehicle?: (vehicleId: string) => void;
+  trail?: readonly TrackPoint[];
 }): null {
   const map = useMap();
 
@@ -81,32 +87,55 @@ function MapOverlays({
       ];
     });
 
-    // Vehicle layer (Phase 7): live-gps (green/grey) + recorded-activity (amber).
-    const vehicleMarkers = vehicles.map(
-      (v) =>
-        new google.maps.Marker({
-          position: { lat: v.latitude, lng: v.longitude },
-          map,
-          title:
-            `${v.plate} — ` +
-            (v.source === 'recorded-activity'
-              ? (v.legLabel ?? 'aktivitas tercatat')
-              : v.status === 'online'
-                ? 'live'
-                : 'offline'),
-          zIndex: 1000,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 7,
-            fillColor: vehicleColor(v),
-            fillOpacity: v.source === 'recorded-activity' ? 0.65 : 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 2,
-          },
-        }),
-    );
+    // The selected vehicle's breadcrumb trail (Phase 7 drill-down) — drawn under
+    // the markers so the vehicle dot stays on top.
+    const trailLine =
+      trail && trail.length > 1
+        ? new google.maps.Polyline({
+            map,
+            path: trail.map((p) => ({ lat: p.latitude, lng: p.longitude })),
+            strokeColor: '#1d4ed8',
+            strokeOpacity: 0.9,
+            strokeWeight: 3,
+            zIndex: 500,
+          })
+        : null;
 
-    if (sites.length > 0 || vehicles.length > 0) {
+    // Vehicle layer (Phase 7): live-gps (green/grey) + recorded-activity (amber).
+    // A click selects the vehicle (opens the detail drawer); the selected one is
+    // enlarged + ringed.
+    const vehicleMarkers = vehicles.map((v) => {
+      const selected = v.vehicleId === selectedVehicleId;
+      const marker = new google.maps.Marker({
+        position: { lat: v.latitude, lng: v.longitude },
+        map,
+        title:
+          `${v.plate} — ` +
+          (v.source === 'recorded-activity'
+            ? (v.legLabel ?? 'aktivitas tercatat')
+            : v.status === 'online'
+              ? 'live'
+              : 'offline'),
+        zIndex: selected ? 2000 : 1000,
+        cursor: onSelectVehicle ? 'pointer' : undefined,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: selected ? 10 : 7,
+          fillColor: vehicleColor(v),
+          fillOpacity: v.source === 'recorded-activity' ? 0.65 : 1,
+          strokeColor: selected ? '#1d4ed8' : '#ffffff',
+          strokeWeight: selected ? 3 : 2,
+        },
+      });
+      if (onSelectVehicle) {
+        marker.addListener('click', () => onSelectVehicle(v.vehicleId));
+      }
+      return marker;
+    });
+
+    // Only auto-fit when nothing is focused, so selecting a vehicle (which pans +
+    // zooms in a separate effect) isn't yanked back on the next positions poll.
+    if (!selectedVehicleId && (sites.length > 0 || vehicles.length > 0)) {
       const bounds = new google.maps.LatLngBounds();
       sites.forEach((s) => bounds.extend({ lat: s.latitude, lng: s.longitude }));
       vehicles.forEach((v) => bounds.extend({ lat: v.latitude, lng: v.longitude }));
@@ -116,9 +145,25 @@ function MapOverlays({
     return () => {
       markers.forEach((m) => m.setMap(null));
       lines.forEach((l) => l.setMap(null));
-      vehicleMarkers.forEach((m) => m.setMap(null));
+      vehicleMarkers.forEach((m) => {
+        google.maps.event.clearInstanceListeners(m);
+        m.setMap(null);
+      });
+      trailLine?.setMap(null);
     };
-  }, [map, sites, edges, vehicles]);
+  }, [map, sites, edges, vehicles, selectedVehicleId, onSelectVehicle, trail]);
+
+  // Pan/zoom to the selected vehicle once when the selection changes.
+  useEffect(() => {
+    if (!map || !selectedVehicleId) return;
+    const v = vehicles.find((x) => x.vehicleId === selectedVehicleId);
+    if (v) {
+      map.panTo({ lat: v.latitude, lng: v.longitude });
+      map.setZoom(15);
+    }
+    // Intentionally only re-run on selection change, not on every positions poll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, selectedVehicleId]);
 
   return null;
 }
@@ -143,11 +188,17 @@ export function HaulingMap({
   edges,
   loading,
   vehicles = [],
+  selectedVehicleId,
+  onSelectVehicle,
+  trail,
 }: {
   sites: readonly RouteMapSite[];
   edges: readonly RouteMapEdge[];
   loading: boolean;
   vehicles?: readonly VehiclePosition[];
+  selectedVehicleId?: string | null;
+  onSelectVehicle?: (vehicleId: string) => void;
+  trail?: readonly TrackPoint[];
 }): JSX.Element {
   const t = useTranslations('monitoring.hauling');
 
@@ -168,7 +219,14 @@ export function HaulingMap({
           disableDefaultUI={false}
           style={{ width: '100%', height: '100%' }}
         >
-          <MapOverlays sites={sites} edges={edges} vehicles={vehicles} />
+          <MapOverlays
+            sites={sites}
+            edges={edges}
+            vehicles={vehicles}
+            selectedVehicleId={selectedVehicleId}
+            onSelectVehicle={onSelectVehicle}
+            trail={trail}
+          />
         </GoogleMap>
       </APIProvider>
     </div>

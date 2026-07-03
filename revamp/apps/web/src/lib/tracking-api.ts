@@ -107,6 +107,17 @@ export interface UpsertDeviationRuleBody {
   readonly enabled?: boolean;
 }
 
+/** One GPS activity milestone in a vehicle's day (drill-down timeline). */
+export interface DayActivityEvent {
+  readonly id: string;
+  readonly kind: string;
+  readonly source: string;
+  readonly siteId: string | null;
+  readonly siteType: string | null;
+  readonly tripId: string | null;
+  readonly occurredAt: string;
+}
+
 /** Phase 7 GPS tracking API — fleet positions, breadcrumb track, deviation alerts + rules. */
 export const trackingApi = {
   efficiency: (from: string, to: string): Promise<EfficiencyDashboard> =>
@@ -114,6 +125,8 @@ export const trackingApi = {
   positions: (): Promise<VehiclePosition[]> => apiClient.get('/monitoring/fleet-positions'),
   track: (vehicleId: string, minutes = 60): Promise<TrackPoint[]> =>
     apiClient.get(`/gps/vehicles/${vehicleId}/track?minutes=${minutes}`),
+  dayActivity: (vehicleId: string, date: string): Promise<DayActivityEvent[]> =>
+    apiClient.get(`/monitoring/vehicles/${vehicleId}/day-activity?date=${date}`),
   alerts: (filter: AlertFilter = {}): Promise<DeviationAlert[]> =>
     apiClient.get(`/gps/alerts?${alertQuery(filter)}`),
   acknowledge: (id: string, notes?: string): Promise<DeviationAlert> =>

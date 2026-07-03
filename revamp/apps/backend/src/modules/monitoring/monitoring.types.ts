@@ -124,6 +124,17 @@ export interface LevyByCategoryMonthRow {
   readonly totalAmount: number;
 }
 
+/** One GPS activity milestone in a vehicle's day (Phase 7 drill-down timeline). */
+export interface DayActivityEventRow {
+  readonly id: string;
+  readonly kind: string;
+  readonly source: string;
+  readonly siteId: string | null;
+  readonly siteType: string | null;
+  readonly tripId: string | null;
+  readonly occurredAt: string;
+}
+
 export interface KpiOverview {
   readonly totalTonnageKg: number;
   readonly haulsCompleted: number;
