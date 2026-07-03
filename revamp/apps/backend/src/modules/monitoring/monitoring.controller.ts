@@ -1,16 +1,18 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { type PaginationMeta } from '../../common/types/api-response';
 
 import { DateRangeQueryDto } from './dto/date-range.query.dto';
+import { DayActivityQueryDto } from './dto/day-activity.query.dto';
 import { FuelConsumptionQueryDto } from './dto/fuel.query.dto';
 import { TonnageBySourceQueryDto } from './dto/tonnage-source.query.dto';
 import { TripSummaryQueryDto } from './dto/trip-summary.query.dto';
 import { MonitoringService } from './monitoring.service';
 import {
   type DailyTonnageRow,
+  type DayActivityEventRow,
   type FuelByTypeRow,
   type FuelConsumptionRow,
   type KpiOverview,
@@ -89,6 +91,15 @@ export class MonitoringController {
   @ApiOperation({ summary: 'Active routes + site coordinates for the hauling map' })
   routeMap(@Query() query: DateRangeQueryDto): Promise<RouteMapResponse> {
     return this.monitoring.routeMap(query);
+  }
+
+  @Get('vehicles/:vehicleId/day-activity')
+  @ApiOperation({ summary: "A vehicle's GPS activity milestones for one day" })
+  dayActivity(
+    @Param('vehicleId') vehicleId: string,
+    @Query() query: DayActivityQueryDto,
+  ): Promise<DayActivityEventRow[]> {
+    return this.monitoring.dayActivity(vehicleId, query.date);
   }
 
   @Get('kpi-overview')

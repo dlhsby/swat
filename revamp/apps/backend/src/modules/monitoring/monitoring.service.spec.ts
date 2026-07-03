@@ -18,6 +18,7 @@ function createRepo(): jest.Mocked<MonitoringRepository> {
     levySummary: jest.fn().mockResolvedValue([]),
     tripSummary: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
     routeMap: jest.fn().mockResolvedValue({ sites: [], edges: [] }),
+    dayActivity: jest.fn().mockResolvedValue([]),
   } as unknown as jest.Mocked<MonitoringRepository>;
 }
 
@@ -39,6 +40,28 @@ describe('MonitoringService', () => {
     repo = createRepo();
     cache = createCache();
     service = new MonitoringService(repo, cache as unknown as CacheService);
+  });
+
+  describe('dayActivity', () => {
+    it('reads the vehicle day feed straight from the repo (uncached)', async () => {
+      repo.dayActivity.mockResolvedValue([
+        {
+          id: 'e1',
+          kind: 'ARRIVE',
+          source: 'GPS',
+          siteId: 's1',
+          siteType: 'TPS',
+          tripId: 't1',
+          occurredAt: '2026-07-03T04:00:00.000Z',
+        },
+      ]);
+
+      const result = await service.dayActivity('veh-1', '2026-07-03');
+
+      expect(repo.dayActivity).toHaveBeenCalledWith('veh-1', '2026-07-03');
+      expect(result).toHaveLength(1);
+      expect(cache.get).not.toHaveBeenCalled();
+    });
   });
 
   describe('caching', () => {

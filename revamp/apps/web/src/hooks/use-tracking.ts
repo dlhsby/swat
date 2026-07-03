@@ -102,6 +102,25 @@ export function useAcknowledgeAlert() {
   });
 }
 
+/** A vehicle's breadcrumb track (last `minutes`); only fetched when one is selected. */
+export function useVehicleTrack(vehicleId: string | null, minutes = 1440) {
+  return useQuery({
+    queryKey: [KEY, 'track', vehicleId, minutes],
+    queryFn: () => trackingApi.track(vehicleId ?? '', minutes),
+    enabled: Boolean(vehicleId),
+  });
+}
+
+/** A vehicle's GPS activity feed for a day (the drill-down timeline). */
+export function useVehicleDayActivity(vehicleId: string | null, date: string) {
+  return useQuery({
+    queryKey: [KEY, 'day-activity', vehicleId, date],
+    queryFn: () => trackingApi.dayActivity(vehicleId ?? '', date),
+    enabled: Boolean(vehicleId),
+    refetchInterval: 30_000,
+  });
+}
+
 /** The tunable deviation rules (Phase 7) — gated `deviation-rule:manage`. */
 export function useDeviationRules() {
   return useQuery({

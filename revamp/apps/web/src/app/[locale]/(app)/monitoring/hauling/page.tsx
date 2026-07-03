@@ -3,14 +3,18 @@
 import { type ColumnDef } from '@tanstack/react-table';
 import { MapPin, Route as RouteIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useMemo, useState } from 'react';
 
 import { ChartCard } from '@/components/monitoring/chart-card';
 import { DateRangeControl } from '@/components/monitoring/date-range-control';
 import { ExportMenu } from '@/components/monitoring/export-menu';
 import { HaulingMap } from '@/components/monitoring/hauling-map';
+import { VehicleDetailSheet } from '@/components/monitoring/vehicle-detail-sheet';
 import { PageHead } from '@/components/shell/page-head';
 import { AlertCenter } from '@/components/tracking/alert-center';
 import {
+  Combobox,
+  type ComboboxOption,
   DataTable,
   MetricCard,
   StatusPill,
@@ -22,7 +26,7 @@ import {
 import { useRouteMap, useRoutesActive, useTripSummary } from '@/hooks/use-monitoring';
 import { useMonitoringRange } from '@/hooks/use-monitoring-range';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useFleetPositions } from '@/hooks/use-tracking';
+import { useAlerts, useFleetPositions, useVehicleTrack } from '@/hooks/use-tracking';
 import { formatDateDisplay, formatDistance, formatNumber, formatTime } from '@/lib/format';
 import { type RouteActivityRow, type TripSummaryRow } from '@/lib/monitoring-api';
 
@@ -40,6 +44,26 @@ export default function HaulingPage(): JSX.Element {
   // Live vehicle layer (Phase 7) — gated by tracking:read; the map + sites/routes
   // still render for users without it (graceful degradation).
   const fleet = useFleetPositions(canTrack);
+  const alerts = useAlerts(canAlerts);
+
+  // Drill-down: search/click a vehicle → focus + detail drawer + optional trail.
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [showTrail, setShowTrail] = useState(false);
+  const trail = useVehicleTrack(showTrail && selectedVehicleId ? selectedVehicleId : null);
+
+  const vehicleOptions = useMemo<ComboboxOption[]>(
+    () => fleet.positions.map((v) => ({ value: v.vehicleId, label: v.plate })),
+    [fleet.positions],
+  );
+  const selectedPlate =
+    fleet.positions.find((v) => v.vehicleId === selectedVehicleId)?.plate ?? null;
+  const openAlertCount = selectedVehicleId
+    ? alerts.alerts.filter((a) => a.vehicleId === selectedVehicleId).length
+    : 0;
+  const closeDetail = (): void => {
+    setSelectedVehicleId(null);
+    setShowTrail(false);
+  };
 
   const routeRows = routes.data ?? [];
   const tripRows = trips.data?.data ?? [];
@@ -138,12 +162,30 @@ export default function HaulingPage(): JSX.Element {
 
         <TabsContent value="map">
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-            <ChartCard title={t('mapTitle')}>
+            <ChartCard
+              title={t('mapTitle')}
+              right={
+                canTrack && vehicleOptions.length > 0 ? (
+                  <div className="w-56">
+                    <Combobox
+                      options={vehicleOptions}
+                      value={selectedVehicleId ?? ''}
+                      onValueChange={(v) => setSelectedVehicleId(v || null)}
+                      placeholder="Cari nopol → fokus"
+                      searchPlaceholder="Cari nopol…"
+                    />
+                  </div>
+                ) : undefined
+              }
+            >
               <HaulingMap
                 sites={map.data?.sites ?? []}
                 edges={map.data?.edges ?? []}
                 loading={map.isLoading}
                 vehicles={canTrack ? fleet.positions : []}
+                selectedVehicleId={selectedVehicleId}
+                onSelectVehicle={canTrack ? setSelectedVehicleId : undefined}
+                trail={showTrail ? (trail.data ?? []) : []}
               />
             </ChartCard>
             {canAlerts ? <AlertCenter enabled={canAlerts} /> : null}
@@ -178,6 +220,20 @@ export default function HaulingPage(): JSX.Element {
           </ChartCard>
         </TabsContent>
       </Tabs>
+
+      {canTrack ? (
+        <VehicleDetailSheet
+          vehicleId={selectedVehicleId}
+          plate={selectedPlate}
+          date={today}
+          openAlertCount={openAlertCount}
+          showTrail={showTrail}
+          onToggleTrail={setShowTrail}
+          onOpenChange={(open) => {
+            if (!open) closeDetail();
+          }}
+        />
+      ) : null}
     </>
   );
 }

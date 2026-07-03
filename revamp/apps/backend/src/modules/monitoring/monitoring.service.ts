@@ -14,6 +14,7 @@ import {
   type DailyTonnageRow,
   type FuelByTypeRow,
   type FuelConsumptionRow,
+  type DayActivityEventRow,
   type KpiOverview,
   type LevyByCategoryMonthRow,
   type LevySummaryRow,
@@ -207,6 +208,12 @@ export class MonitoringService {
       monthFrom: startOfMonth(parseDateOnly(query.dateFrom)),
       monthTo: startOfMonth(parseDateOnly(query.dateTo)),
     };
+  }
+
+  /** A vehicle's GPS activity feed for one day (drill-down timeline). Not cached
+   * — it's a small, live, per-vehicle read that changes as pings arrive. */
+  dayActivity(vehicleId: string, date: string): Promise<DayActivityEventRow[]> {
+    return this.repo.dayActivity(vehicleId, date);
   }
 
   private key(endpoint: string, range: DateRangeQueryDto, extra: string | number = ''): string {
