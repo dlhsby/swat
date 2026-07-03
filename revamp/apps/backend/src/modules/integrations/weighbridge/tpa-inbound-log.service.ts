@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { GpsActivityRepository } from '../gps/gps-activity.repository';
 
 export interface TpaInboundLogInput {
   readonly dateLabel: string;
@@ -22,7 +23,12 @@ export interface TpaInboundLogInput {
  */
 @Injectable()
 export class TpaInboundLogService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(TpaInboundLogService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activity: GpsActivityRepository,
+  ) {}
 
   async create(input: TpaInboundLogInput): Promise<{ id: string }> {
     const row = await this.prisma.tpaInboundLog.create({
@@ -40,6 +46,13 @@ export class TpaInboundLogService {
       },
       select: { id: true },
     });
+    // Surface the weighing as a "timbang" (WEIGH) milestone on the GPS activity
+    // feed. Best-effort: never fail a posted weighing on an activity-write error.
+    try {
+      await this.activity.writeWeighForTrip(input.tripId, input.date);
+    } catch (err) {
+      this.logger.warn(`WEIGH activity event failed for trip ${input.tripId}: ${String(err)}`);
+    }
     return row;
   }
 

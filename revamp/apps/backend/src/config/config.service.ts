@@ -129,6 +129,11 @@ export class AppConfigService {
     return { baseUrl, username, password };
   }
 
+  /** Fallback geofence radius (metres) for the activity state machine. */
+  get gpsGeofenceDefaultRadiusM(): number {
+    return this.get('GPS_GEOFENCE_DEFAULT_RADIUS_M');
+  }
+
   /** Whether the near-real-time GPS.id position pull is enabled. */
   get gpsidPositionPull(): boolean {
     return this.get('GPSID_POSITION_PULL');
