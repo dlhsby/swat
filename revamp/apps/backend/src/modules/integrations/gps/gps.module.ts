@@ -14,6 +14,8 @@ import { DeviationMatcherService } from './deviation-matcher.service';
 import { DeviationRuleController } from './deviation-rule.controller';
 import { DeviationRuleRepository } from './deviation-rule.repository';
 import { DeviationRuleService } from './deviation-rule.service';
+import { GpsActivityRepository } from './gps-activity.repository';
+import { GpsActivityService } from './gps-activity.service';
 import { GpsAlertPublisher } from './gps-alert.publisher';
 import { GpsDeviceOfflineJob } from './gps-device-offline.job';
 import { GpsDeviceController } from './gps-device.controller';
@@ -83,6 +85,8 @@ import { VehiclePositionService } from './vehicle-position.service';
     DeviationRuleService,
     DeviationRuleRepository,
     DeviationMatcherService,
+    GpsActivityService,
+    GpsActivityRepository,
     DeviationAlertService,
     DeviationAlertRepository,
     GpsAlertPublisher,
@@ -98,5 +102,8 @@ import { VehiclePositionService } from './vehicle-position.service';
     // imported BY IntegrationsModule, so it cannot inject that module's provider.
     ApiAuditService,
   ],
+  // Exported so the weighbridge (in IntegrationsModule, which imports GpsModule)
+  // can emit the WEIGH activity event when a weighing is posted.
+  exports: [GpsActivityRepository],
 })
 export class GpsModule {}

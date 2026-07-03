@@ -71,6 +71,10 @@ export const envSchema = z
     GPS_INGEST_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(600),
     // A device with no ping within this many minutes is considered offline.
     GPS_DEVICE_OFFLINE_MINUTES: z.coerce.number().int().positive().default(10),
+    // Fallback geofence radius (metres) for the activity state machine when a Site
+    // has no geofence_radius_m of its own — how close a vehicle must be to count as
+    // "at" the site (arrive/depart detection).
+    GPS_GEOFENCE_DEFAULT_RADIUS_M: z.coerce.number().int().positive().default(100),
 
     // GPS.id pull API (secondary, nightly batch — backfill + mileage reconcile).
     // Credentials are required only when the nightly pull is enabled; left unset the

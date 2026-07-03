@@ -4,6 +4,7 @@ import { type Prisma } from '@prisma/client';
 import { type Job } from 'bullmq';
 
 import { DeviationMatcherService } from './deviation-matcher.service';
+import { GpsActivityService } from './gps-activity.service';
 import { GpsPingRepository, type DeviceRef } from './gps-ping.repository';
 import { GpsPositionPublisher } from './gps-position.publisher';
 import { type CanonicalPing, type GpsIngestJobData, GPS_INGEST_QUEUE } from './gps.types';
@@ -26,6 +27,7 @@ export class GpsIngestWorker extends WorkerHost {
     private readonly repo: GpsPingRepository,
     private readonly publisher: GpsPositionPublisher,
     private readonly matcher: DeviationMatcherService,
+    private readonly activity: GpsActivityService,
   ) {
     super();
   }
@@ -109,6 +111,19 @@ export class GpsIngestWorker extends WorkerHost {
         });
       } catch (err) {
         this.logger.warn(`Deviation match failed for vehicle ${device.vehicleId}: ${String(err)}`);
+      }
+      // Activity state machine (geofence enter/exit → depart/arrive/complete/return).
+      // Best-effort too: a failure must not fail (and retry) the ingest job.
+      try {
+        await this.activity.track({
+          vehicleId: device.vehicleId,
+          latitude: ping.latitude,
+          longitude: ping.longitude,
+          speedKmh: ping.speedKmh,
+          recordedAt: new Date(ping.recordedAt),
+        });
+      } catch (err) {
+        this.logger.warn(`Activity track failed for vehicle ${device.vehicleId}: ${String(err)}`);
       }
     }
 
