@@ -51,8 +51,27 @@ enum RouteCategory {
 
 enum TripStatus {
   IN_PROGRESS
+  ARRIVED
   DONE
   VERIFIED
+}
+
+/// How a GPS activity milestone was produced (Phase 7 activity state machine).
+enum GpsActivitySource {
+  GPS
+  WEIGHBRIDGE
+  MANUAL
+}
+
+/// A geofence lifecycle milestone for a haul (Phase 7 activity state machine):
+/// leaving the pool (DEPART), arriving at a site (ARRIVE), weighing at the TPA
+/// jembatan timbang (WEIGH), leaving a site (COMPLETE), returning to pool (RETURN).
+enum GpsActivityKind {
+  DEPART
+  ARRIVE
+  WEIGH
+  COMPLETE
+  RETURN
 }
 
 enum DayStatus {
@@ -790,6 +809,10 @@ model Trip {
   status              TripStatus     @default(IN_PROGRESS)
   name                String         @db.VarChar(256)
   targetTime          DateTime?      @map("target_time") @db.Timestamptz(6)
+  // Geofence arrival at this leg's destination site (Phase 7 activity state
+  // machine). Set on ARRIVE (status → ARRIVED); actualTime is set on COMPLETE
+  // (leaving the site, status → DONE).
+  arrivedAt           DateTime?      @map("arrived_at") @db.Timestamptz(6)
   actualTime          DateTime?      @map("actual_time") @db.Timestamptz(6)
   targetOdometer      Int            @default(0) @map("target_odometer")
   actualOdometer      Int            @default(0) @map("actual_odometer")
@@ -1240,6 +1263,31 @@ model GpsUnmatchedPing {
   @@index([imei])
   @@index([receivedAt])
   @@map("gps_unmatched_ping")
+}
+
+/// Geofence lifecycle milestones for a haul (Phase 7 activity state machine): an
+/// append-only feed of DEPART/ARRIVE/WEIGH/COMPLETE/RETURN events derived from GPS
+/// enter/exit of site geofences (source GPS) plus the weighbridge WEIGH (source
+/// WEIGHBRIDGE). FK-free by design (haul/trip live on partitioned tables) — the
+/// ids are indexed reference columns, queried by vehicle+time or haul.
+model GpsActivityEvent {
+  id               String            @id @default(uuid(7)) @db.Uuid
+  vehicleId        String            @map("vehicle_id") @db.Uuid
+  haulId           String?           @map("haul_id") @db.Uuid
+  haulAssignmentId String?           @map("haul_assignment_id") @db.Uuid
+  tripId           String?           @map("trip_id") @db.Uuid
+  siteId           String?           @map("site_id") @db.Uuid
+  siteType         SiteType?         @map("site_type")
+  kind             GpsActivityKind
+  source           GpsActivitySource @default(GPS)
+  latitude         Decimal?          @db.Decimal(11, 6)
+  longitude        Decimal?          @db.Decimal(11, 6)
+  occurredAt       DateTime          @map("occurred_at") @db.Timestamptz(6)
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([vehicleId, occurredAt])
+  @@index([haulId])
+  @@map("gps_activity_event")
 }
 
 /// A drawn path that belongs to a Route (Phase 7.8 — revised). A Route owns one or
