@@ -23,6 +23,7 @@ import { VehicleInspectionsSheet } from '@/components/fleet/vehicle-inspections-
 import { VehicleMaintenanceSheet } from '@/components/fleet/vehicle-maintenance-sheet';
 import { VehicleWasteSourcesSheet } from '@/components/fleet/vehicle-waste-sources-sheet';
 import { GpsSyncButton } from '@/components/tracking/gps-sync-button';
+import { UnrecognizedImeiButton } from '@/components/tracking/unrecognized-imei-button';
 import { DropdownMenuItem, StatusPill } from '@/components/ui';
 import { useOptions } from '@/hooks/use-options';
 import { useResourceList } from '@/hooks/use-resource-list';
@@ -353,7 +354,12 @@ export function VehiclesTab(): JSX.Element {
       manager={manager}
       columns={columns}
       searchPlaceholder="Cari nopol / model…"
-      toolbar={<GpsSyncButton className="ml-2" onSynced={() => void manager.reload()} />}
+      toolbar={
+        <>
+          <GpsSyncButton className="ml-2" onSynced={() => void manager.reload()} />
+          <UnrecognizedImeiButton onMapped={() => void manager.reload()} />
+        </>
+      }
     >
       <CrudFormDialog
         manager={manager}

@@ -34,6 +34,8 @@ export interface UnmatchedPingDto {
   imei: string;
   count: number;
   lastReceivedAt: string;
+  /** Reported plate/number from the payload (or GPS.id roster), if any. */
+  vehicleNumber: string | null;
 }
 
 export const gpsDevicesApi = makeResourceApi<GpsDeviceDto>('/gps/devices');
@@ -69,6 +71,7 @@ export interface GpsSyncResult {
   unchangedCount: number;
   skippedNoPlateCount: number;
   conflictCount: number;
+  queuedUnknownCount: number;
   created: Array<{ imei: string; plate: string; vehicleId: string; inactiveDueToConflict: boolean }>;
   remapped: Array<{ imei: string; plate: string; vehicleId: string; inactiveDueToConflict: boolean }>;
   unmatchedVehicles: UnmatchedVehicle[];

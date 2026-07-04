@@ -16,6 +16,8 @@ function makeService(opts: {
     { id: string; vehicleId: string; active: boolean; deviceType: string } | null
   >;
   activeHardwareByVehicle?: Record<string, { id: string } | null>;
+  existingDeviceIds?: string[];
+  queuedImeis?: string[];
 }): {
   service: GpsVehicleSyncService;
   repo: Record<string, jest.Mock>;
@@ -34,6 +36,9 @@ function makeService(opts: {
     create: jest.fn().mockResolvedValue({ id: 'new' }),
     update: jest.fn().mockResolvedValue({ id: 'upd' }),
     deleteUnmatchedForImei: jest.fn().mockResolvedValue({ count: 0 }),
+    listDeviceIds: jest.fn().mockResolvedValue(opts.existingDeviceIds ?? []),
+    listQueuedImeis: jest.fn().mockResolvedValue(opts.queuedImeis ?? []),
+    addUnmatchedPings: jest.fn().mockResolvedValue({ count: 0 }),
   };
   const gpsid = {
     isConfigured: opts.isConfigured ?? true,
@@ -144,14 +149,34 @@ describe('GpsVehicleSyncService', () => {
     expect(repo.create).not.toHaveBeenCalled();
   });
 
-  it('reports a GPS.id vehicle whose plate has no SWAT vehicle', async () => {
-    const { service } = makeService({
+  it('reports a GPS.id vehicle whose plate has no SWAT vehicle and queues its IMEI', async () => {
+    const { service, repo } = makeService({
       remote: [{ imei: '444', plate: 'X9999ZZ' }],
       plates: [{ id: V1, plateNumber: 'L1' }],
     });
     const result = await service.sync();
     expect(result.unmatchedVehicles).toEqual([{ imei: '444', plate: 'X9999ZZ' }]);
     expect(result.createdCount).toBe(0);
+    expect(result.queuedUnknownCount).toBe(1);
+    expect(repo.addUnmatchedPings).toHaveBeenCalledWith([
+      { imei: '444', payload: { VehicleNumber: 'X9999ZZ', source: 'gpsid-roster' } },
+    ]);
+  });
+
+  it('does not re-queue an unmatched IMEI that is already a device or already queued', async () => {
+    const { service, repo } = makeService({
+      remote: [
+        { imei: 'known-device', plate: 'X1' },
+        { imei: 'already-queued', plate: 'X2' },
+      ],
+      plates: [{ id: V1, plateNumber: 'L1' }],
+      existingDeviceIds: ['known-device'],
+      queuedImeis: ['already-queued'],
+    });
+    const result = await service.sync();
+    expect(result.unmatchedVehicles).toHaveLength(2);
+    expect(result.queuedUnknownCount).toBe(0);
+    expect(repo.addUnmatchedPings).not.toHaveBeenCalled();
   });
 
   it('skips a roster row with no plate', async () => {

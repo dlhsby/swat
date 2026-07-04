@@ -124,7 +124,13 @@ export function GpsSyncResultDialog({
           {result.unmatchedVehicles.length > 0 ? (
             <Section
               title={`Tak cocok dengan data SWAT (${result.unmatchedVehicles.length})`}
-              hint="Nomor polisi ini ada di GPS.id tetapi tidak ditemukan pada master kendaraan. Periksa penulisan plat atau daftarkan kendaraannya."
+              hint={
+                `Nomor polisi ini ada di GPS.id tetapi tidak ditemukan pada master kendaraan. ` +
+                (result.queuedUnknownCount > 0
+                  ? `${result.queuedUnknownCount} IMEI baru ditambahkan ke antrean “IMEI tak dikenal” untuk dipetakan manual. `
+                  : '') +
+                `Periksa penulisan plat atau daftarkan kendaraannya.`
+              }
             >
               <DeviceList rows={result.unmatchedVehicles} />
             </Section>

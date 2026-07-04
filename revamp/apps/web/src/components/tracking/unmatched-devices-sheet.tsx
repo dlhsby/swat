@@ -88,7 +88,14 @@ export function UnmatchedDevicesSheet({
                   className="rounded-base border border-neutral-200 p-3 dark:border-neutral-700"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-body-sm font-semibold">{row.imei}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono text-body-sm font-semibold">{row.imei}</span>
+                      {row.vehicleNumber ? (
+                        <span className="rounded-[5px] bg-neutral-100 px-1.5 py-0.5 font-mono text-tiny font-semibold text-neutral-600 dark:bg-neutral-800">
+                          {row.vehicleNumber}
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="text-tiny text-neutral-500">
                       {row.count}× · {formatDateDisplay(row.lastReceivedAt)}{' '}
                       {formatTime(row.lastReceivedAt)}

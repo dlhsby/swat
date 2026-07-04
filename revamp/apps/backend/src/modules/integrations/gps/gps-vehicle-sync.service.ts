@@ -28,6 +28,8 @@ export interface GpsSyncResult {
   readonly skippedNoPlateCount: number;
   /** Devices linked as inactive because the vehicle had active hardware already. */
   readonly conflictCount: number;
+  /** Unmatched GPS.id vehicles newly parked in the "IMEI tak dikenal" queue. */
+  readonly queuedUnknownCount: number;
   readonly created: SyncedDevice[];
   readonly remapped: SyncedDevice[];
   readonly unmatchedVehicles: UnmatchedVehicle[];
@@ -91,10 +93,15 @@ export class GpsVehicleSyncService {
     const remote = await this.gpsid.getVehicles();
     const vehicles = await this.repo.listVehiclePlates();
     const byPlate = new Map(vehicles.map((v) => [extractPlate(v.plateNumber), v]));
+    // Preloaded once so the (many) unmatched rows don't each hit the DB.
+    const knownDeviceIds = new Set(await this.repo.listDeviceIds());
+    const queuedImeis = new Set(await this.repo.listQueuedImeis());
 
     const created: SyncedDevice[] = [];
     const remapped: SyncedDevice[] = [];
     const unmatchedVehicles: UnmatchedVehicle[] = [];
+    // Unknown GPS.id vehicles to park in the "IMEI tak dikenal" queue (bulk-inserted).
+    const toQueue: Array<{ imei: string; payload: Record<string, string> }> = [];
     let unchangedCount = 0;
     let skippedNoPlateCount = 0;
     let conflictCount = 0;
@@ -111,6 +118,12 @@ export class GpsVehicleSyncService {
       const vehicle = byPlate.get(extractPlate(row.plate));
       if (!vehicle) {
         unmatchedVehicles.push({ imei, plate: row.plate });
+        // Surface it into the unmatched-IMEI queue for manual mapping, unless the IMEI
+        // is already a registered device or already parked in the queue.
+        if (!knownDeviceIds.has(imei) && !queuedImeis.has(imei)) {
+          queuedImeis.add(imei);
+          toQueue.push({ imei, payload: { VehicleNumber: row.plate, source: 'gpsid-roster' } });
+        }
         continue;
       }
 
@@ -159,12 +172,17 @@ export class GpsVehicleSyncService {
       await this.repo.deleteUnmatchedForImei(imei);
     }
 
+    if (toQueue.length > 0) {
+      await this.repo.addUnmatchedPings(toQueue);
+    }
+
     const result: GpsSyncResult = {
       createdCount: created.length,
       remappedCount: remapped.length,
       unchangedCount,
       skippedNoPlateCount,
       conflictCount,
+      queuedUnknownCount: toQueue.length,
       created,
       remapped,
       unmatchedVehicles,
@@ -172,7 +190,7 @@ export class GpsVehicleSyncService {
     this.logger.log(
       `GPS.id sync: +${result.createdCount} created, ${result.remappedCount} remapped, ` +
         `${result.unchangedCount} unchanged, ${result.conflictCount} conflicts, ` +
-        `${result.unmatchedVehicles.length} unmatched vehicles.`,
+        `${result.unmatchedVehicles.length} unmatched (${result.queuedUnknownCount} newly queued).`,
     );
     return result;
   }

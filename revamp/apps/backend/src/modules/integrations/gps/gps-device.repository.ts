@@ -112,7 +112,7 @@ export class GpsDeviceRepository {
   async listUnmatched(
     params: PageParams,
   ): Promise<{
-    rows: Array<{ imei: string; count: number; lastReceivedAt: Date }>;
+    rows: Array<{ imei: string; count: number; lastReceivedAt: Date; vehicleNumber: string | null }>;
     total: number;
   }> {
     // Collapse the raw queue (one row per parked ping) to one entry per IMEI.
@@ -123,10 +123,19 @@ export class GpsDeviceRepository {
       orderBy: { _max: { receivedAt: 'desc' } },
     });
     const { skip, take } = toSkipTake(params);
+    const pageImeis = grouped.slice(skip, skip + take).map((g) => g.imei);
+    // One payload sample per paged IMEI, to surface the reported plate as a hint.
+    const samples = await this.prisma.gpsUnmatchedPing.findMany({
+      where: { imei: { in: pageImeis } },
+      distinct: ['imei'],
+      select: { imei: true, payload: true },
+    });
+    const hintByImei = new Map(samples.map((s) => [s.imei, plateHint(s.payload)]));
     const page = grouped.slice(skip, skip + take).map((g) => ({
       imei: g.imei,
       count: g._count._all,
       lastReceivedAt: g._max.receivedAt ?? new Date(0),
+      vehicleNumber: hintByImei.get(g.imei) ?? null,
     }));
     return { rows: page, total: grouped.length };
   }
@@ -138,4 +147,38 @@ export class GpsDeviceRepository {
   deleteUnmatchedForImei(imei: string): Promise<{ count: number }> {
     return this.prisma.gpsUnmatchedPing.deleteMany({ where: { imei } });
   }
+
+  /** All registered device ids (IMEIs) — for the sync to skip already-known IMEIs. */
+  async listDeviceIds(): Promise<string[]> {
+    const rows = await this.prisma.gpsDevice.findMany({ select: { deviceId: true } });
+    return rows.map((r) => r.deviceId);
+  }
+
+  /** Distinct IMEIs already parked in the unmatched queue (dedup for the sync). */
+  async listQueuedImeis(): Promise<string[]> {
+    const rows = await this.prisma.gpsUnmatchedPing.findMany({
+      distinct: ['imei'],
+      select: { imei: true },
+    });
+    return rows.map((r) => r.imei);
+  }
+
+  /** Bulk-park unknown IMEIs in the queue (from the GPS.id roster sync). */
+  addUnmatchedPings(
+    rows: ReadonlyArray<{ imei: string; payload: Prisma.InputJsonValue }>,
+  ): Promise<{ count: number }> {
+    return this.prisma.gpsUnmatchedPing.createMany({ data: rows as Prisma.GpsUnmatchedPingCreateManyInput[] });
+  }
+}
+
+/** Pull a display plate/number out of an unmatched-ping payload, if present. */
+function plateHint(payload: unknown): string | null {
+  if (payload && typeof payload === 'object') {
+    const p = payload as Record<string, unknown>;
+    const value = p.VehicleNumber ?? p.plate ?? p.Plate;
+    if (typeof value === 'string' && value.trim()) {
+      return value;
+    }
+  }
+  return null;
 }
