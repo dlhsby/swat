@@ -136,4 +136,33 @@ describe('GpsPositionPullJob', () => {
       expect(m.queue.enqueue.mock.calls[0][0][0]).toMatchObject({ imei: 'B' });
     });
   });
+
+  describe('pullDeviceNow (on-demand)', () => {
+    it('enqueues the points and returns the most recent one', async () => {
+      const { job, m } = build();
+      m.gpsid.getHistory.mockResolvedValue([
+        point({ recordedAt: '2026-07-02T03:00:00.000Z' }),
+        point({ recordedAt: '2026-07-02T05:00:00.000Z' }), // newest
+        point({ recordedAt: '2026-07-02T04:00:00.000Z' }),
+      ]);
+      const res = await job.pullDeviceNow('IMEI-1');
+      expect(res.enqueued).toBe(3);
+      expect(res.latest?.recordedAt).toBe('2026-07-02T05:00:00.000Z');
+      expect(m.queue.enqueue).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns a null latest and enqueues nothing when GPS.id has no data', async () => {
+      const { job, m } = build();
+      m.gpsid.getHistory.mockResolvedValue([]);
+      const res = await job.pullDeviceNow('IMEI-1');
+      expect(res).toEqual({ enqueued: 0, latest: null });
+      expect(m.queue.enqueue).not.toHaveBeenCalled();
+    });
+
+    it('rejects when GPS.id credentials are not configured', async () => {
+      const { job, m } = build();
+      m.gpsid.isConfigured = false;
+      await expect(job.pullDeviceNow('IMEI-1')).rejects.toThrow(/belum dikonfigurasi/);
+    });
+  });
 });
