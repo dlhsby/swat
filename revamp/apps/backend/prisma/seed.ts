@@ -29,8 +29,6 @@
  */
 import {
   type DayStatus,
-  type DeviationSeverity,
-  type DeviationType,
   type InspectionItemStatus,
   type InspectionResult,
   type MaintenanceStatus,
@@ -50,9 +48,13 @@ import {
   describePermission,
   expandPatterns,
 } from '../src/common/auth/permission-catalog';
+import { EncryptionService } from '../src/common/crypto/encryption.service';
 import { pgAdapter } from '../src/common/prisma/pg-adapter';
+import { CONFIG_CATALOG } from '../src/config/system-config.catalog';
+import { PRESEED_MARKER, buildConfigPreseedRows } from '../src/config/system-config.preseed';
 import { RollupRepository } from '../src/modules/analytics/rollup.repository';
 import { RollupService } from '../src/modules/analytics/rollup.service';
+import { DEFAULT_DEVIATION_RULES } from '../src/modules/integrations/gps/deviation-rule.service';
 import { GpsEfficiencyRepository } from '../src/modules/integrations/gps/gps-efficiency.repository';
 import { GpsEfficiencyService } from '../src/modules/integrations/gps/gps-efficiency.service';
 import { type PrismaService } from '../src/modules/prisma/prisma.service';
@@ -193,24 +195,49 @@ async function seedPermissions(): Promise<Map<string, string>> {
  * demo data); idempotent upsert by type.
  */
 async function seedDeviationRules(): Promise<void> {
-  const rules: ReadonlyArray<{
-    deviationType: DeviationType;
-    threshold: number | null;
-    hysteresisSec: number;
-    severity: DeviationSeverity;
-  }> = [
-    { deviationType: 'off_corridor', threshold: 150, hysteresisSec: 30, severity: 'WARNING' },
-    { deviationType: 'off_sequence', threshold: null, hysteresisSec: 0, severity: 'WARNING' },
-    { deviationType: 'dwell_too_long', threshold: 600, hysteresisSec: 0, severity: 'INFO' },
-    { deviationType: 'late_to_schedule', threshold: 900, hysteresisSec: 0, severity: 'INFO' },
-  ];
-  for (const rule of rules) {
+  for (const rule of DEFAULT_DEVIATION_RULES) {
     await prisma.deviationRule.upsert({
       where: { deviationType: rule.deviationType },
       update: {},
       create: { ...rule, enabled: true },
     });
   }
+}
+
+/**
+ * One-time env→DB preseed of `system_config` (marker-guarded), mirroring the boot
+ * preseed so `db:seed` alone leaves a populated, editable config. Secrets are
+ * encrypted with CONFIG_ENCRYPTION_KEY (skipped when unset). Idempotent — skips if
+ * the marker is already present (e.g. the app booted first).
+ */
+async function seedSystemConfigFromEnv(): Promise<void> {
+  const done = await prisma.systemConfig.findUnique({
+    where: { key: PRESEED_MARKER },
+    select: { key: true },
+  });
+  if (done) return;
+  const encryption = new EncryptionService({
+    configEncryptionKey: process.env.CONFIG_ENCRYPTION_KEY,
+  } as never);
+  const rows = buildConfigPreseedRows(CONFIG_CATALOG, {
+    readEnv: (envKey) => process.env[envKey],
+    encrypt: (plaintext) => encryption.encrypt(plaintext),
+    canEncrypt: encryption.available,
+  });
+  if (rows.length > 0) {
+    await prisma.systemConfig.createMany({ data: rows, skipDuplicates: true });
+  }
+  await prisma.systemConfig.create({
+    data: {
+      key: PRESEED_MARKER,
+      value: 'true',
+      isSecret: false,
+      valueType: 'boolean',
+      group: '__meta',
+    },
+  });
+  // eslint-disable-next-line no-console
+  console.log(`system_config: preseeded ${rows.length} settings from env.`);
 }
 
 async function seedRoles(permissionIdByKey: Map<string, string>): Promise<Map<string, string>> {
@@ -1587,6 +1614,9 @@ async function main(): Promise<void> {
   // Operational config (always seeded, like permissions/roles): Phase 7 default
   // deviation rules so the matcher + rule-tuning API have a baseline.
   await seedDeviationRules();
+  // System settings: populate system_config from env once, so a freshly-seeded DB
+  // shows the real config (incl. which secrets are set) in the admin UI.
+  await seedSystemConfigFromEnv();
 
   // Legacy-migration target: seed ONLY the auth bootstrap (permissions, roles,
   // admin). All reference + master + transactional data comes from the legacy DB

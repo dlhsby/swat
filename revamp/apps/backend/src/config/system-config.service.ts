@@ -12,11 +12,10 @@ import {
   type ConfigCatalogEntry,
   type ConfigValueType,
 } from './system-config.catalog';
+import { PRESEED_MARKER, buildConfigPreseedRows } from './system-config.preseed';
 
 const CHANGE_CHANNEL = 'system-config:changed';
 const RELOAD_INTERVAL_MS = 5 * 60_000; // backstop if a pub/sub message is missed
-/** Sentinel row marking that the one-time env→DB preseed already ran (per DB). */
-const PRESEED_MARKER = '__preseeded__';
 
 /** A catalog entry plus its current resolution state (for the admin API). */
 export interface ConfigDescription {
@@ -80,21 +79,11 @@ export class SystemConfigService implements OnModuleInit, OnModuleDestroy {
       });
       if (done) return;
 
-      const rows = CONFIG_CATALOG.flatMap((entry) => {
-        if (this.cache.has(entry.key)) return []; // already overridden
-        if (entry.isSecret && !this.encryption.available) return []; // can't encrypt → skip
-        const envValue = this.config.raw(entry.envKey);
-        if (envValue === undefined || envValue === null || envValue === '') return [];
-        const str = String(envValue);
-        return [
-          {
-            key: entry.key,
-            value: entry.isSecret ? this.encryption.encrypt(str) : str,
-            isSecret: entry.isSecret,
-            valueType: entry.valueType,
-            group: entry.group,
-          },
-        ];
+      const rows = buildConfigPreseedRows(CONFIG_CATALOG, {
+        readEnv: (envKey) => this.config.raw(envKey as Parameters<typeof this.config.raw>[0]),
+        encrypt: (plaintext) => this.encryption.encrypt(plaintext),
+        canEncrypt: this.encryption.available,
+        isOverridden: (key) => this.cache.has(key),
       });
 
       await this.prisma.$transaction([

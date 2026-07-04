@@ -101,7 +101,8 @@ export interface DeviationRule {
 }
 
 export interface UpsertDeviationRuleBody {
-  readonly threshold?: number;
+  /** Metres or seconds per type; `null` clears it (valid for off_sequence). */
+  readonly threshold?: number | null;
   readonly hysteresisSec?: number;
   readonly severity?: DeviationSeverity;
   readonly enabled?: boolean;
