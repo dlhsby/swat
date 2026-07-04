@@ -359,12 +359,13 @@ export function SystemConfigSection(): JSX.Element | null {
   const saveable = cards.length > 0;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-      {/* Group rail */}
-      <nav
-        aria-label={t('systemTitle')}
-        className="h-fit overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0"
-      >
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+        {/* Group rail */}
+        <nav
+          aria-label={t('systemTitle')}
+          className="h-fit overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0"
+        >
         {groups.map((group) => {
           const isActive = active?.id === group.id;
           const keys = configKeysOf(group);
@@ -447,19 +448,21 @@ export function SystemConfigSection(): JSX.Element | null {
           </Card>
         ))}
 
-        {saveable && active ? (
-          <SettingsSaveBar
-            visible
-            dirty={groupDirty > 0}
-            message={groupDirty > 0 ? t('sys.unsavedCount', { count: groupDirty }) : t('noChanges')}
-            saving={saving}
-            onCancel={() => cancelGroup(active)}
-            onSave={() => void saveGroup(active)}
-            saveLabel={t('saveChanges')}
-            cancelLabel={t('cancel')}
-          />
-        ) : null}
       </div>
+      </div>
+
+      {saveable && active ? (
+        <SettingsSaveBar
+          visible
+          dirty={groupDirty > 0}
+          message={groupDirty > 0 ? t('sys.unsavedCount', { count: groupDirty }) : t('noChanges')}
+          saving={saving}
+          onCancel={() => cancelGroup(active)}
+          onSave={() => void saveGroup(active)}
+          saveLabel={t('saveChanges')}
+          cancelLabel={t('cancel')}
+        />
+      ) : null}
     </div>
   );
 }
