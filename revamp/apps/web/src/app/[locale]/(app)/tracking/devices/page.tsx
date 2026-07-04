@@ -1,11 +1,12 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { Inbox } from 'lucide-react';
+import { Inbox, LocateFixed } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { z } from 'zod';
 
+import { ProtectedAction } from '@/components/auth/protected-action';
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
 import { CrudListShell } from '@/components/crud/crud-list-shell';
 import { SelectField } from '@/components/crud/fields';
@@ -19,11 +20,12 @@ import {
 } from '@/components/fleet/gps-device-fields';
 import { GpsSyncButton } from '@/components/tracking/gps-sync-button';
 import { UnmatchedDevicesSheet } from '@/components/tracking/unmatched-devices-sheet';
-import { Button, type ComboboxOption, StatusPill } from '@/components/ui';
+import { Button, type ComboboxOption, StatusPill, notify } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
+import { ApiError } from '@/lib/api-error';
 import { formatDateDisplay, formatTime } from '@/lib/format';
-import { type GpsDeviceDto, gpsDevicesApi } from '@/lib/gps-device-api';
+import { type GpsDeviceDto, gpsDevicesApi, pullDevicePosition } from '@/lib/gps-device-api';
 import { type VehicleDto, vehiclesApi } from '@/lib/master-api';
 
 // The registry page adds `vehicleId` on top of the shared device fields.
@@ -45,6 +47,32 @@ export default function GpsDevicesPage(): JSX.Element {
     [vehicles],
   );
   const [unmatchedOpen, setUnmatchedOpen] = useState(false);
+  const [pullingId, setPullingId] = useState<string | null>(null);
+
+  // On-demand "Tarik Posisi" — pull the device's latest GPS.id position now instead of
+  // waiting for the scheduled job, then refresh the list so online/last-ping update.
+  const onPull = useCallback(
+    async (device: GpsDeviceDto): Promise<void> => {
+      setPullingId(device.id);
+      try {
+        const res = await pullDevicePosition(device.id);
+        if (res.latest) {
+          notify.success(
+            `Posisi terkini ditarik (${res.enqueued} titik)`,
+            `${formatDateDisplay(res.latest.recordedAt)} ${formatTime(res.latest.recordedAt)}`,
+          );
+        } else {
+          notify.info('Belum ada data posisi terbaru dari GPS.id untuk perangkat ini.');
+        }
+        await manager.reload();
+      } catch (err) {
+        notify.error(err instanceof ApiError ? err.message : 'Gagal menarik posisi.');
+      } finally {
+        setPullingId(null);
+      }
+    },
+    [manager],
+  );
 
   const columns = useMemo<ColumnDef<GpsDeviceDto, unknown>[]>(
     () => [
@@ -101,7 +129,22 @@ export default function GpsDevicesPage(): JSX.Element {
         enableHiding: false,
         meta: { label: 'Aksi' },
         cell: ({ row }) => (
-          <div className="text-right">
+          <div className="flex items-center justify-end gap-1">
+            {row.original.imei ? (
+              <ProtectedAction permission="tracking:read">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-neutral-500"
+                  title="Tarik posisi terkini dari GPS.id"
+                  loading={pullingId === row.original.id}
+                  onClick={() => void onPull(row.original)}
+                >
+                  <LocateFixed className="h-4 w-4" aria-hidden />
+                  Tarik Posisi
+                </Button>
+              </ProtectedAction>
+            ) : null}
             <RowActions
               resource="gps-device"
               onView={() => manager.openView(row.original)}
@@ -112,7 +155,7 @@ export default function GpsDevicesPage(): JSX.Element {
         ),
       },
     ],
-    [manager],
+    [manager, onPull, pullingId],
   );
 
   return (
