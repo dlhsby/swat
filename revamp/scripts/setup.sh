@@ -13,6 +13,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# Silence the pnpm / turbo "update available" banners on local runs — versions are
+# pinned via corepack + package.json, so the ad-hoc upgrade nudges are just noise.
+export npm_config_update_notifier=false
+export TURBO_NO_UPDATE_NOTIFIER=1
+
 SYNTHETIC=0
 START_DOCKER=1
 for arg in "$@"; do

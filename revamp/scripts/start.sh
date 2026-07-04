@@ -8,13 +8,18 @@
 #   ./scripts/start.sh             # infra + both apps (pnpm dev)
 #   ./scripts/start.sh --infra     # only start/ensure the Docker infra
 #   ./scripts/start.sh --no-docker # skip Docker, just run the apps
-#   ./scripts/start.sh --clean     # wipe web .next + backend dist first
-#                                  # (use after adding/moving routes or pnpm install)
+#   ./scripts/start.sh --clean     # also wipe backend dist first
+#                                  # (web .next is always wiped to avoid stale 404s)
 #
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+# Silence the pnpm / turbo "update available" banners on local runs — versions are
+# pinned via corepack + package.json, so the ad-hoc upgrade nudges are just noise.
+export npm_config_update_notifier=false
+export TURBO_NO_UPDATE_NOTIFIER=1
 
 INFRA_ONLY=0
 START_DOCKER=1
@@ -65,12 +70,15 @@ if [ "$INFRA_ONLY" = 1 ]; then
   exit 0
 fi
 
-# --clean: drop the dev build caches so Turbopack/SWC re-scan from scratch. Only
-# needed after structural changes (added/moved/deleted routes, pnpm install) — a
-# normal start keeps the caches for fast warm reloads.
+# Always drop the web build cache: a stale apps/web/.next is the usual cause of
+# spurious 404s on freshly added/moved routes. Cheap insurance — Turbopack rebuilds
+# on first request. --clean additionally drops the backend dist (after schema/route
+# changes or a fresh pnpm install).
+log 'Clearing web build cache (apps/web/.next)'
+rm -rf apps/web/.next
 if [ "$CLEAN" = 1 ]; then
-  log 'Cleaning dev build caches (apps/web/.next, apps/backend/dist)'
-  rm -rf apps/web/.next apps/backend/dist
+  log 'Cleaning backend build cache (apps/backend/dist)'
+  rm -rf apps/backend/dist
 fi
 
 log "Starting apps — backend :${BE_PORT:-3000} · web :${WEB_PORT:-3001}  (Ctrl-C to stop)"

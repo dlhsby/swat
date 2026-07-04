@@ -123,7 +123,12 @@ export default function GpsDevicesPage(): JSX.Element {
       columns={columns}
       searchPlaceholder="Cari IMEI / kendaraan…"
       toolbar={
-        <Button variant="secondary" size="sm" onClick={() => setUnmatchedOpen(true)}>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="ml-2"
+          onClick={() => setUnmatchedOpen(true)}
+        >
           <Inbox className="h-4 w-4" aria-hidden /> IMEI tak dikenal
         </Button>
       }
