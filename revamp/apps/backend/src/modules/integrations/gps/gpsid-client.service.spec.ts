@@ -1,6 +1,6 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 
-import { type AppConfigService } from '../../../config/config.service';
+import { type SystemConfigService } from '../../../config';
 import { type CacheService } from '../../cache/cache.service';
 
 import { GpsidClientService } from './gpsid-client.service';
@@ -16,18 +16,18 @@ function jsonResponse(data: unknown, init: { ok?: boolean; status?: number } = {
 }
 
 describe('GpsidClientService', () => {
-  let config: { gpsidPullCredentials: typeof CREDS | null };
+  let config: { getGpsidCredentials: () => typeof CREDS | null };
   let cache: { increment: jest.Mock };
   let fetchMock: jest.Mock;
   let service: GpsidClientService;
 
   beforeEach(() => {
-    config = { gpsidPullCredentials: { ...CREDS } };
+    config = { getGpsidCredentials: () => ({ ...CREDS }) };
     cache = { increment: jest.fn().mockResolvedValue(1) };
     fetchMock = jest.fn();
     globalThis.fetch = fetchMock as unknown as typeof fetch;
     service = new GpsidClientService(
-      config as unknown as AppConfigService,
+      config as unknown as SystemConfigService,
       cache as unknown as CacheService,
     );
   });
@@ -50,7 +50,7 @@ describe('GpsidClientService', () => {
 
   it('reports whether the pull API is configured', () => {
     expect(service.isConfigured).toBe(true);
-    config.gpsidPullCredentials = null;
+    config.getGpsidCredentials = () => null;
     expect(service.isConfigured).toBe(false);
   });
 
@@ -99,7 +99,7 @@ describe('GpsidClientService', () => {
   });
 
   it('fails loudly when the pull API is not configured', async () => {
-    config.gpsidPullCredentials = null;
+    config.getGpsidCredentials = () => null;
     await expect(service.getVehicles()).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 

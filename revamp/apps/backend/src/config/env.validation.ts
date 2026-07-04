@@ -17,6 +17,12 @@ export const envSchema = z
     SESSION_SECRET: z.string().min(16, 'SESSION_SECRET must be at least 16 chars'),
     JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 chars'),
 
+    // AES-256-GCM key (32 bytes, base64) that encrypts SECRET runtime settings stored
+    // in the system_config table. Optional at boot; required only when a secret setting
+    // is actually written/read (EncryptionService fails loudly then). Bootstrap-only —
+    // it can never itself be a DB-configured value (chicken-and-egg).
+    CONFIG_ENCRYPTION_KEY: z.string().min(1).optional(),
+
     // Session cookie scoping. Defaults preserve the same-origin on-prem prod
     // behaviour (host-only cookie, SameSite=Strict). For the AWS staging split —
     // web on `swat.wahyutrip.com`, API on `api.swat.wahyutrip.com` — set
@@ -106,6 +112,10 @@ export const envSchema = z
     // for snapping a route's auto-default corridor to roads. Optional: unset → the
     // default falls back to a straight line. Restrict by IP + enable Directions API.
     GOOGLE_MAPS_SERVER_KEY: z.string().min(1).optional(),
+    // Browser Google Maps key (referrer-restricted, public by design) served to the
+    // web at runtime via GET /config/public. Optional; the web also accepts a
+    // build-time NEXT_PUBLIC_GOOGLE_MAPS_API_KEY. A DB system_config value overrides.
+    GOOGLE_MAPS_BROWSER_KEY: z.string().min(1).optional(),
   })
   .superRefine((env, ctx) => {
     // In production the webhook token must be set — an open GPS ingress is a

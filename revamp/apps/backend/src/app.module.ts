@@ -3,11 +3,13 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { ActorContextMiddleware } from './common/audit/actor-context.middleware';
+import { CryptoModule } from './common/crypto/crypto.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
 import { SecurityModule } from './common/security.module';
 import { AppConfigModule } from './config';
+import { SystemConfigModule } from './config/system-config.module';
 import { HealthModule } from './health/health.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ArchivingModule } from './modules/archiving/archiving.module';
@@ -30,6 +32,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { SchedulingModule } from './modules/scheduling/scheduling.module';
 import { ServiceAccountsModule } from './modules/service-accounts/service-accounts.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { SystemConfigApiModule } from './modules/system-config/system-config.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
 import { WasteModule } from './modules/waste/waste.module';
@@ -48,6 +51,8 @@ import { SessionModule } from './session.module';
     AppConfigModule,
     PrismaModule,
     CacheModule,
+    CryptoModule,
+    SystemConfigModule,
     SessionModule,
     SecurityModule,
     ScheduleModule.forRoot(),
@@ -73,6 +78,7 @@ import { SessionModule } from './session.module';
     ServiceAccountsModule,
     IntegrationsModule,
     RealtimeModule,
+    SystemConfigApiModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },

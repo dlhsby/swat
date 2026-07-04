@@ -184,6 +184,8 @@
     "languageBody": "Pilih bahasa antarmuka aplikasi.",
     "tracking": "Pelacakan",
     "trackingBody": "Atur ambang aturan penyimpangan rute GPS (jarak koridor, durasi berhenti, keterlambatan).",
+    "systemTitle": "Pengaturan Sistem",
+    "systemBody": "Kredensial & integrasi (GPS.id, Peta, ambang GPS, jembatan timbang). Nilai di sini menimpa variabel lingkungan; kosongkan untuk kembali ke bawaan.",
     "about": "Tentang",
     "aboutApp": "Aplikasi",
     "aboutOrg": "Instansi",

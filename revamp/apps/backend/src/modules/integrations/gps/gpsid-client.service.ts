@@ -1,6 +1,6 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 
-import { AppConfigService } from '../../../config/config.service';
+import { SystemConfigService } from '../../../config';
 import { CacheService } from '../../cache/cache.service';
 
 /** Bearer token cached in-memory until just before its 24h expiry. */
@@ -59,13 +59,13 @@ export class GpsidClientService {
   private cachedToken: CachedToken | null = null;
 
   constructor(
-    private readonly config: AppConfigService,
+    private readonly systemConfig: SystemConfigService,
     private readonly cache: CacheService,
   ) {}
 
   /** Whether the nightly pull is configured at all (all creds present). */
   get isConfigured(): boolean {
-    return this.config.gpsidPullCredentials !== null;
+    return this.systemConfig.getGpsidCredentials() !== null;
   }
 
   async getVehicles(): Promise<GpsidVehicle[]> {
@@ -127,7 +127,7 @@ export class GpsidClientService {
   // --- internals ------------------------------------------------------------
 
   private creds(): { baseUrl: string; username: string; password: string } {
-    const creds = this.config.gpsidPullCredentials;
+    const creds = this.systemConfig.getGpsidCredentials();
     if (!creds) {
       // Fail loudly — never issue an unauthenticated pull or silently no-op.
       throw new ServiceUnavailableException(

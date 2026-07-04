@@ -19,8 +19,9 @@ import {
   SheetTitle,
   Switch,
 } from '@/components/ui';
+import { useMapsApiKey } from '@/hooks/use-maps-key';
 import { type CorridorWaypoint, type GeoJsonLineString } from '@/lib/geometry-api';
-import { isMapsConfigured, MAPS_API_KEY, SURABAYA } from '@/lib/google-maps';
+import { SURABAYA } from '@/lib/google-maps';
 
 type LatLng = google.maps.LatLngLiteral;
 
@@ -257,6 +258,7 @@ export function CorridorEditorCore({
   canSave?: boolean;
 }): JSX.Element {
   const t = useTranslations('corridor');
+  const mapKey = useMapsApiKey();
 
   const [nodes, setNodes] = useState<CorridorWaypoint[]>([]);
   const [path, setPath] = useState<LatLng[]>([]);
@@ -355,7 +357,7 @@ export function CorridorEditorCore({
 
         <SheetBody className="space-y-4">
           {extraFields}
-          {!isMapsConfigured ? (
+          {!mapKey ? (
             <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-base border border-dashed border-neutral-300 bg-neutral-50 text-center">
               <MapPinned className="h-8 w-8 text-neutral-400" aria-hidden />
               <p className="max-w-[24rem] text-body-sm text-neutral-500">{t('mapPlaceholder')}</p>
@@ -383,7 +385,7 @@ export function CorridorEditorCore({
               </div>
 
               {/* Keyed by target so the fit-bounds runs once per opened corridor. */}
-              <APIProvider apiKey={MAPS_API_KEY as string}>
+              <APIProvider apiKey={mapKey}>
                 <CorridorCanvas
                   key={entityKey}
                   nodes={nodes}
@@ -458,7 +460,7 @@ export function CorridorEditorCore({
           <Button
             onClick={handleSave}
             loading={saving}
-            disabled={!isMapsConfigured || isLoading || building || path.length < 2 || !canSave}
+            disabled={!mapKey || isLoading || building || path.length < 2 || !canSave}
           >
             {t('save')}
           </Button>

@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 
 import { type Locale, locales } from '@/i18n/config';
 import { usePathname, useRouter } from '@/i18n/navigation';
+import { updatePreferences } from '@/lib/auth-api';
 
 import { SegmentedControl } from './segmented-control';
 
@@ -22,6 +23,7 @@ export function LanguageControl(): JSX.Element {
 
   const onChange = (next: Locale): void => {
     if (next !== locale) {
+      void updatePreferences({ locale: next }).catch(() => undefined); // persist per-user (best-effort)
       router.replace(pathname, { locale: next });
     }
   };

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { operationDateOf } from '../../../common/dates';
-import { AppConfigService } from '../../../config';
+import { SystemConfigService } from '../../../config';
 import { CacheService } from '../../cache/cache.service';
 
 import { type MatchPing } from './deviation-matcher.service';
@@ -53,7 +53,7 @@ export class GpsActivityService {
   constructor(
     private readonly repo: GpsActivityRepository,
     private readonly cache: CacheService,
-    private readonly config: AppConfigService,
+    private readonly systemConfig: SystemConfigService,
   ) {}
 
   async track(ping: MatchPing): Promise<void> {
@@ -100,7 +100,7 @@ export class GpsActivityService {
         continue;
       }
       const dist = haversineMeters(ping.latitude, ping.longitude, s.latitude, s.longitude);
-      const radius = s.geofenceRadiusM ?? this.config.gpsGeofenceDefaultRadiusM;
+      const radius = s.geofenceRadiusM ?? this.systemConfig.getGpsGeofenceDefaultRadiusM();
       if (dist <= radius && dist < bestDist) {
         best = s;
         bestDist = dist;

@@ -22,6 +22,8 @@ export interface MeResult {
   readonly roleName: string;
   readonly permissions: string[];
   readonly mustChangePassword: boolean;
+  /** Personal preferences (null = follow default: theme=system, locale=id-ID). */
+  readonly preferences: { theme: string | null; locale: string | null };
 }
 
 /** Admin force-reset result; the temporary password is handed out of band. */
