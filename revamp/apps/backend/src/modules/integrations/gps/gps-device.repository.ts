@@ -76,6 +76,25 @@ export class GpsDeviceRepository {
     return this.prisma.vehicle.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }
 
+  /** All active vehicles' plates — used to match a GPS.id roster by plate number. */
+  listVehiclePlates(): Promise<Array<{ id: string; plateNumber: string }>> {
+    return this.prisma.vehicle.findMany({
+      where: { deletedAt: null },
+      select: { id: true, plateNumber: true },
+    });
+  }
+
+  /** Device lookup by its globally-unique deviceId (IMEI), with the fields the
+   *  GPS.id sync needs to decide create vs. remap vs. unchanged. */
+  findDeviceForSync(
+    deviceId: string,
+  ): Promise<{ id: string; vehicleId: string; active: boolean; deviceType: string } | null> {
+    return this.prisma.gpsDevice.findUnique({
+      where: { deviceId },
+      select: { id: true, vehicleId: true, active: true, deviceType: true },
+    });
+  }
+
   create(data: Prisma.GpsDeviceCreateInput): Promise<GpsDeviceWithVehicle> {
     return this.prisma.gpsDevice.create({ data, include: deviceInclude });
   }

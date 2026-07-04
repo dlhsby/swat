@@ -31,6 +31,8 @@ import { GpsIngestWorker } from './gps-ingest.worker';
 import { GpsPingRepository } from './gps-ping.repository';
 import { GpsPositionPullJob } from './gps-position-pull.job';
 import { GpsPositionPublisher } from './gps-position.publisher';
+import { GpsVehicleSyncJob } from './gps-vehicle-sync.job';
+import { GpsVehicleSyncService } from './gps-vehicle-sync.service';
 import { GpsWebhookController } from './gps-webhook.controller';
 import { GpsWebhookGuard } from './gps-webhook.guard';
 import { GPS_INGEST_QUEUE } from './gps.types';
@@ -73,6 +75,8 @@ import { VehiclePositionService } from './vehicle-position.service';
   providers: [
     GpsDeviceService,
     GpsDeviceRepository,
+    GpsVehicleSyncService,
+    GpsVehicleSyncJob,
     GpsIngestQueue,
     GpsIngestWorker,
     GpsPingRepository,
