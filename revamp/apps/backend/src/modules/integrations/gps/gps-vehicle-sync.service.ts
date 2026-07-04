@@ -57,6 +57,8 @@ export interface GpsSyncResult {
 @Injectable()
 export class GpsVehicleSyncService {
   private readonly logger = new Logger(GpsVehicleSyncService.name);
+  /** Guards against overlapping runs on this instance (manual + scheduled). */
+  private running = false;
 
   constructor(
     private readonly repo: GpsDeviceRepository,
@@ -69,7 +71,22 @@ export class GpsVehicleSyncService {
         'Integrasi GPS.id belum dikonfigurasi (kredensial pull tidak lengkap).',
       );
     }
+    // Serialize runs (manual + scheduled) on this instance: two overlapping syncs
+    // could each deactivate a vehicle's prior tracker then race to create the active
+    // one, tripping the one-active-hardware unique index and leaving it untracked.
+    // A single-instance guard suffices (staging/prod run one backend container).
+    if (this.running) {
+      throw new BadRequestException('Sinkronisasi GPS.id sedang berjalan — coba lagi sebentar.');
+    }
+    this.running = true;
+    try {
+      return await this.runSync();
+    } finally {
+      this.running = false;
+    }
+  }
 
+  private async runSync(): Promise<GpsSyncResult> {
     const remote = await this.gpsid.getVehicles();
     const vehicles = await this.repo.listVehiclePlates();
     const byPlate = new Map(vehicles.map((v) => [extractPlate(v.plateNumber), v]));

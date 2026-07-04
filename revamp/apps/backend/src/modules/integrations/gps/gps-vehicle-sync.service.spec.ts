@@ -79,6 +79,15 @@ describe('GpsVehicleSyncService', () => {
     await expect(service.sync()).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('rejects an overlapping sync on the same instance', async () => {
+    const { service } = makeService({ remote: [], plates: [] });
+    const first = service.sync(); // sets running=true synchronously, then awaits
+    await expect(service.sync()).rejects.toBeInstanceOf(BadRequestException);
+    await first;
+    // Once the first run settles, a fresh sync is allowed again.
+    await expect(service.sync()).resolves.toBeDefined();
+  });
+
   it('creates a device for an unknown IMEI whose plate matches a vehicle', async () => {
     const { service, repo } = makeService({
       remote: [{ imei: '350000000000001', plate: 'L 1234 AB' }],

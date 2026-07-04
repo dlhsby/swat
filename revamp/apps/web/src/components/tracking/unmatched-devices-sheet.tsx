@@ -114,7 +114,7 @@ export function UnmatchedDevicesSheet({
                     <Button
                       size="sm"
                       onClick={() => void map(row.imei)}
-                      disabled={savingImei === row.imei}
+                      loading={savingImei === row.imei}
                     >
                       Petakan
                     </Button>
