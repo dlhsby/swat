@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { type Request, type Response } from 'express';
 
-import { AppConfigService } from '../../../config/config.service';
+import { SystemConfigService } from '../../../config';
 import { CacheService } from '../../cache/cache.service';
 import { ApiAuditService } from '../api-audit.service';
 
@@ -30,7 +30,7 @@ const WEBHOOK_PRINCIPAL = 'GPS.id Webhook';
 @Injectable()
 export class GpsWebhookGuard implements CanActivate {
   constructor(
-    private readonly config: AppConfigService,
+    private readonly systemConfig: SystemConfigService,
     private readonly cache: CacheService,
     private readonly apiAudit: ApiAuditService,
   ) {}
@@ -54,7 +54,9 @@ export class GpsWebhookGuard implements CanActivate {
   }
 
   private async authorize(request: Request, response: Response): Promise<void> {
-    const { webhookToken, allowedIps, ingestRateLimitPerMin } = this.config.gps;
+    const webhookToken = this.systemConfig.getGpsWebhookToken();
+    const allowedIps = this.systemConfig.getGpsAllowedIps();
+    const ingestRateLimitPerMin = this.systemConfig.getGpsIngestRateLimitPerMin();
 
     // 1. Token. An unset server token means the webhook is not configured →
     //    reject everything (never an open ingress).

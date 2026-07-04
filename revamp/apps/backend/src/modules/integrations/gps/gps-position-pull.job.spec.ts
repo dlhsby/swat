@@ -1,6 +1,6 @@
 import { type SchedulerRegistry } from '@nestjs/schedule';
 
-import { type AppConfigService } from '../../../config';
+import { type SystemConfigService } from '../../../config';
 
 import { type GpsEfficiencyRepository } from './gps-efficiency.repository';
 import { type GpsIngestQueue } from './gps-ingest.queue';
@@ -16,23 +16,30 @@ const point = (over: Partial<GpsidHistoryPoint> = {}): GpsidHistoryPoint => ({
 });
 
 interface Mocks {
-  config: { gpsidPositionPull: boolean; gpsidPullIntervalMinutes: number };
+  config: { getGpsidPositionPull: jest.Mock; getGpsidPullIntervalMinutes: jest.Mock; onChange: jest.Mock };
   gpsid: { isConfigured: boolean; getHistory: jest.Mock };
   repo: { activeDeviceImeis: jest.Mock };
   queue: { enqueue: jest.Mock };
   scheduler: { addInterval: jest.Mock };
 }
 
-function build(over: Partial<Mocks['config']> = {}): { job: GpsPositionPullJob; m: Mocks } {
+function build(over: { positionPull?: boolean; intervalMin?: number } = {}): {
+  job: GpsPositionPullJob;
+  m: Mocks;
+} {
   const m: Mocks = {
-    config: { gpsidPositionPull: true, gpsidPullIntervalMinutes: 60, ...over },
+    config: {
+      getGpsidPositionPull: jest.fn().mockReturnValue(over.positionPull ?? true),
+      getGpsidPullIntervalMinutes: jest.fn().mockReturnValue(over.intervalMin ?? 60),
+      onChange: jest.fn(),
+    },
     gpsid: { isConfigured: true, getHistory: jest.fn().mockResolvedValue([]) },
     repo: { activeDeviceImeis: jest.fn().mockResolvedValue([]) },
     queue: { enqueue: jest.fn().mockResolvedValue(undefined) },
     scheduler: { addInterval: jest.fn() },
   };
   const job = new GpsPositionPullJob(
-    m.config as unknown as AppConfigService,
+    m.config as unknown as SystemConfigService,
     m.gpsid as unknown as GpsidClientService,
     m.repo as unknown as GpsEfficiencyRepository,
     m.queue as unknown as GpsIngestQueue,
@@ -63,7 +70,7 @@ describe('historyPointToPing', () => {
 describe('GpsPositionPullJob', () => {
   describe('onModuleInit', () => {
     it('does nothing when the pull is disabled', () => {
-      const { job, m } = build({ gpsidPositionPull: false });
+      const { job, m } = build({ positionPull: false });
       job.onModuleInit();
       expect(m.scheduler.addInterval).not.toHaveBeenCalled();
     });

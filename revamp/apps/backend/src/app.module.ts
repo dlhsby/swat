@@ -31,6 +31,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { SchedulingModule } from './modules/scheduling/scheduling.module';
 import { ServiceAccountsModule } from './modules/service-accounts/service-accounts.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { SystemConfigApiModule } from './modules/system-config/system-config.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { UsersModule } from './modules/users/users.module';
 import { WasteModule } from './modules/waste/waste.module';
@@ -76,6 +77,7 @@ import { SessionModule } from './session.module';
     ServiceAccountsModule,
     IntegrationsModule,
     RealtimeModule,
+    SystemConfigApiModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },

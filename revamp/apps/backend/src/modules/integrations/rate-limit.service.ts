@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { AppConfigService } from '../../config';
+import { SystemConfigService } from '../../config';
 import { CacheService } from '../cache/cache.service';
 
 import { type ApiPrincipal } from './types/principal';
@@ -31,11 +31,11 @@ export class RateLimitService {
 
   constructor(
     private readonly cache: CacheService,
-    private readonly config: AppConfigService,
+    private readonly systemConfig: SystemConfigService,
   ) {}
 
   async check(principal: ApiPrincipal): Promise<RateLimitResult> {
-    const limit = principal.rateLimitPerMin ?? this.config.weighbridgeRateLimitPerMin;
+    const limit = principal.rateLimitPerMin ?? this.systemConfig.getWeighbridgeRateLimitPerMin();
     const key = `wb:rl:${principal.type}:${principal.id}`;
     const count = await this.cache.increment(key, WINDOW_SECONDS);
     // `increment` returns 0 ONLY when Redis is unreachable (a real INCR is ≥1).

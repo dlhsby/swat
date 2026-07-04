@@ -15,7 +15,7 @@
  */
 import { type PrismaClient } from '@prisma/client';
 
-import { type AppConfigService } from '../../src/config/config.service';
+import { type SystemConfigService } from '../../src/config';
 import { CorridorsRepository } from '../../src/modules/geography/corridors/corridors.repository';
 import { CorridorsService } from '../../src/modules/geography/corridors/corridors.service';
 import { GoogleDirectionsService } from '../../src/modules/geography/corridors/google-directions.service';
@@ -36,12 +36,12 @@ function buildCorridorsService(prisma: PrismaClient): {
   repo: CorridorsRepository;
 } {
   const repo = new CorridorsRepository(prisma as unknown as PrismaService);
-  // GoogleDirectionsService only reads `config.googleMapsServerKey`, so a minimal
+  // GoogleDirectionsService only reads `getGoogleMapsServerKey()`, so a minimal
   // stub avoids wiring the full Nest config. Unset key → snapDrivingRoute returns
   // null → straight-line fallback (no API call billed).
   const directions = new GoogleDirectionsService({
-    googleMapsServerKey: process.env.GOOGLE_MAPS_SERVER_KEY,
-  } as unknown as AppConfigService);
+    getGoogleMapsServerKey: () => process.env.GOOGLE_MAPS_SERVER_KEY,
+  } as unknown as SystemConfigService);
   return { service: new CorridorsService(repo, directions), repo };
 }
 

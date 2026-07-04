@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { AppConfigService } from '../../../config/config.service';
+import { SystemConfigService } from '../../../config';
 
 import { GpsPingRepository } from './gps-ping.repository';
 import { GpsPositionPublisher } from './gps-position.publisher';
@@ -19,12 +19,12 @@ export class GpsDeviceOfflineJob {
   constructor(
     private readonly repo: GpsPingRepository,
     private readonly publisher: GpsPositionPublisher,
-    private readonly config: AppConfigService,
+    private readonly systemConfig: SystemConfigService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
   async sweep(): Promise<void> {
-    const cutoff = new Date(Date.now() - this.config.gps.deviceOfflineMinutes * 60_000);
+    const cutoff = new Date(Date.now() - this.systemConfig.getGpsDeviceOfflineMinutes() * 60_000);
     const flipped = await this.repo.markStaleDevicesOffline(cutoff);
     for (const device of flipped) {
       await this.publisher.publishStatus({ vehicleId: device.vehicleId, status: 'offline' });
