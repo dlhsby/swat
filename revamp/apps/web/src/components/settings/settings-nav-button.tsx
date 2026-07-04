@@ -32,10 +32,10 @@ export function SettingsNavButton({
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex w-full items-center gap-2.5 border-b border-l-[3px] border-b-neutral-100 px-4 py-3 text-left transition-colors last:border-b-0 dark:border-b-neutral-800',
+        'flex w-full items-center gap-2.5 border-b border-l-[3px] border-b-neutral-100 px-4 py-3 text-left transition-colors last:border-b-0',
         active
           ? 'border-l-primary-700 bg-primary-700 text-white'
-          : 'border-l-transparent text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800',
+          : 'border-l-transparent text-neutral-700 hover:bg-neutral-50',
       )}
     >
       <Icon

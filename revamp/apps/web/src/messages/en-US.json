@@ -180,6 +180,7 @@
     "saveChanges": "Save Changes",
     "cancel": "Cancel",
     "unsaved": "You have unsaved changes",
+    "noChanges": "No changes",
     "saved": "Changes saved.",
     "appearance": "Appearance",
     "appearanceBody": "Choose a light or dark theme, or follow the system.",

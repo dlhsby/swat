@@ -1,43 +1,65 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { MapPin, Navigation, RotateCcw, Satellite, Scale, Undo2 } from 'lucide-react';
+import { MapPin, Navigation, RotateCcw, Scale, Undo2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { DeviationRulesControl } from '@/components/settings/deviation-rules-control';
+import {
+  DeviationRulesControl,
+  rulesEqual,
+  snapshotOf,
+  type StagedRule,
+} from '@/components/settings/deviation-rules-control';
 import { SettingsNavButton } from '@/components/settings/settings-nav-button';
 import { SettingsSaveBar } from '@/components/settings/settings-save-bar';
-import { Button, Card, CardContent, InfoHint, Input, Spinner, Switch, notify } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  InfoHint,
+  Input,
+  Spinner,
+  Switch,
+  notify,
+} from '@/components/ui';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useSystemConfig } from '@/hooks/use-system-config';
+import { useDeviationRules } from '@/hooks/use-tracking';
 import { ApiError } from '@/lib/api-error';
 import { cn } from '@/lib/cn';
 import { type ConfigDescription, systemConfigApi } from '@/lib/system-config-api';
+import { type DeviationType, trackingApi } from '@/lib/tracking-api';
 
-/** A block within a group panel: a set of config keys, or the deviation-rules editor. */
-type Block =
-  | { kind: 'config'; requires: 'config'; title?: string; help?: string; keys: readonly string[] }
-  | { kind: 'deviation'; requires: 'deviation'; title: string; help: string };
+/** A card inside a group panel: a set of config keys, or the deviation-rules editor. */
+type CardDef =
+  | { title: string; help: string; requires: 'config'; keys: readonly string[] }
+  | { title: string; help: string; requires: 'deviation'; deviation: true };
 
 interface GroupDef {
   readonly id: string;
   readonly label: string;
   readonly help: string;
-  readonly icon: typeof Satellite;
-  readonly blocks: readonly Block[];
+  readonly icon: typeof Navigation;
+  readonly cards: readonly CardDef[];
 }
 
-/** Left-rail groups. GPS intake, movement detection, and route-deviation alerts are
- * merged into one "Pelacakan GPS" group (three labelled sections). */
+/**
+ * Left-rail groups. All GPS concerns (GPS.id integration, webhook intake, movement
+ * detection, route-deviation alerts) live under one "GPS.id & Pelacakan" group, split
+ * into clearly-separated cards.
+ */
 const GROUPS: readonly GroupDef[] = [
   {
-    id: 'gpsid',
-    label: 'Integrasi GPS.id',
-    help: 'Kredensial & sinkronisasi otomatis',
-    icon: Satellite,
-    blocks: [
+    id: 'gps',
+    label: 'GPS.id & Pelacakan',
+    help: 'Integrasi GPS.id, webhook, deteksi & alarm penyimpangan',
+    icon: Navigation,
+    cards: [
       {
-        kind: 'config',
+        title: 'Integrasi GPS.id',
+        help: 'Kredensial akun GPS.id dan sinkronisasi otomatis terjadwal.',
         requires: 'config',
         keys: [
           'gpsid.baseUrl',
@@ -49,6 +71,24 @@ const GROUPS: readonly GroupDef[] = [
           'gpsid.pullIntervalMin',
         ],
       },
+      {
+        title: 'Penerimaan Data & Webhook',
+        help: 'Keamanan dan laju endpoint yang menerima posisi dari GPS.id.',
+        requires: 'config',
+        keys: ['gps.webhookToken', 'gps.allowedIps', 'gps.ingestRateLimitPerMin'],
+      },
+      {
+        title: 'Deteksi Pergerakan',
+        help: 'Ambang penentuan status offline dan pagar geo tiba/berangkat.',
+        requires: 'config',
+        keys: ['gps.deviceOfflineMinutes', 'gps.geofenceDefaultRadiusM'],
+      },
+      {
+        title: 'Alarm Penyimpangan Rute',
+        help: 'Ambang & tingkat alarm saat kendaraan menyimpang dari rencana. Tiap aturan disimpan sendiri.',
+        requires: 'deviation',
+        deviation: true,
+      },
     ],
   },
   {
@@ -56,33 +96,12 @@ const GROUPS: readonly GroupDef[] = [
     label: 'Peta (Google Maps)',
     help: 'Kunci API peta (server & peramban)',
     icon: MapPin,
-    blocks: [{ kind: 'config', requires: 'config', keys: ['maps.serverKey', 'maps.browserKey'] }],
-  },
-  {
-    id: 'tracking',
-    label: 'Pelacakan GPS',
-    help: 'Penerimaan data, deteksi pergerakan & alarm penyimpangan',
-    icon: Navigation,
-    blocks: [
+    cards: [
       {
-        kind: 'config',
+        title: 'Kunci API Peta',
+        help: 'Kunci Google Maps untuk render peta dan snap-to-road koridor.',
         requires: 'config',
-        title: 'Penerimaan Data & Webhook',
-        help: 'Keamanan dan laju endpoint yang menerima posisi dari GPS.id.',
-        keys: ['gps.webhookToken', 'gps.allowedIps', 'gps.ingestRateLimitPerMin'],
-      },
-      {
-        kind: 'config',
-        requires: 'config',
-        title: 'Deteksi Pergerakan',
-        help: 'Ambang penentuan status offline dan pagar geo tiba/berangkat.',
-        keys: ['gps.deviceOfflineMinutes', 'gps.geofenceDefaultRadiusM'],
-      },
-      {
-        kind: 'deviation',
-        requires: 'deviation',
-        title: 'Alarm Penyimpangan Rute',
-        help: 'Ambang & tingkat alarm saat kendaraan menyimpang dari rencana rute/jadwal.',
+        keys: ['maps.serverKey', 'maps.browserKey'],
       },
     ],
   },
@@ -91,13 +110,20 @@ const GROUPS: readonly GroupDef[] = [
     label: 'Jembatan Timbang',
     help: 'Integrasi timbangan TPA',
     icon: Scale,
-    blocks: [{ kind: 'config', requires: 'config', keys: ['weighbridge.rateLimitPerMin'] }],
+    cards: [
+      {
+        title: 'Jembatan Timbang',
+        help: 'Batas laju permintaan API timbangan TPA.',
+        requires: 'config',
+        keys: ['weighbridge.rateLimitPerMin'],
+      },
+    ],
   },
 ];
 
 const SOURCE_META: Record<ConfigDescription['source'], { text: string; cls: string }> = {
-  db: { text: 'Kustom', cls: 'bg-primary-50 text-primary-700 dark:bg-neutral-800 dark:text-primary-400' },
-  env: { text: 'Dari env', cls: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800' },
+  db: { text: 'Kustom', cls: 'bg-primary-50 text-primary-700 dark:text-primary-400' },
+  env: { text: 'Dari env', cls: 'bg-neutral-100 text-neutral-600' },
   unset: { text: 'Belum diset', cls: 'bg-amber-100 text-amber-700' },
 };
 
@@ -124,8 +150,8 @@ interface ConfigRowProps {
   onUndo: (key: string) => void;
 }
 
-/** One setting: label + help tooltip + status + the appropriate control. Fully
- * controlled — edits stage into the section's pending map, applied only on Save. */
+/** One setting: label + help tooltip + status + control. Fully controlled — edits stage
+ * into the section's pending map, applied only on Save. */
 function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps): JSX.Element {
   const isStaged = staged !== undefined;
   const isClear = staged === null;
@@ -133,7 +159,7 @@ function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps):
   const boolChecked = isStaged ? staged === 'true' : item.value === true;
 
   return (
-    <div className="flex flex-col gap-2 rounded-base border border-neutral-200 bg-neutral-0 p-3 dark:border-neutral-700 dark:bg-neutral-900 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 rounded-base border border-neutral-200 bg-neutral-0 p-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <p className="text-body-sm font-semibold text-neutral-900">{item.label}</p>
@@ -146,7 +172,7 @@ function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps):
             <SourceBadge source={item.source} />
           )}
           {item.isSecret ? (
-            <span className="rounded-[5px] bg-neutral-100 px-1.5 py-0.5 text-tiny text-neutral-500 dark:bg-neutral-800">
+            <span className="rounded-[5px] bg-neutral-100 px-1.5 py-0.5 text-tiny text-neutral-500">
               rahasia
             </span>
           ) : null}
@@ -207,37 +233,48 @@ function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps):
 }
 
 /**
- * Admin system settings — a master/detail like the roles editor. Edits (text, number,
- * toggles) STAGE into a pending map and take effect only when the user clicks "Simpan
- * Perubahan" (so an accidental toggle/typo can't apply). Config groups need
- * `system-config:manage`; the deviation-rules section needs `deviation-rule:manage`.
+ * Admin system settings — a master/detail like the roles editor. Each left-rail group
+ * shows its settings as clearly-separated cards on the right, with its OWN staged Save
+ * (edits apply only on "Simpan Perubahan", so an accidental toggle/typo can't take
+ * effect). Config cards need `system-config:manage`; the deviation-rules card needs
+ * `deviation-rule:manage` and saves each rule itself.
  */
 export function SystemConfigSection(): JSX.Element | null {
   const { can } = usePermissions();
   const canConfig = can('system-config:manage');
   const canDeviation = can('deviation-rule:manage');
-  const allows = (b: Block): boolean => (b.requires === 'config' ? canConfig : canDeviation);
+  const cardAllowed = (c: CardDef): boolean => (c.requires === 'config' ? canConfig : canDeviation);
 
   const qc = useQueryClient();
   const { data, isLoading, isError } = useSystemConfig({ enabled: canConfig });
   const byKey = useMemo(() => new Map((data ?? []).map((d) => [d.key, d] as const)), [data]);
 
+  // Deviation rules (Phase 7) share the same staged Save as the config settings.
+  const {
+    data: rules,
+    isLoading: rulesLoading,
+    isError: rulesError,
+  } = useDeviationRules({ enabled: canDeviation });
+  const ruleByType = useMemo(
+    () => new Map((rules ?? []).map((r) => [r.deviationType, r] as const)),
+    [rules],
+  );
+
   // Staged edits: key → new string value, or `null` to clear (revert to env/default).
   const [pending, setPending] = useState<Map<string, string | null>>(new Map());
+  const [pendingRules, setPendingRules] = useState<Map<DeviationType, StagedRule>>(new Map());
   const [saving, setSaving] = useState(false);
 
   const stage = (key: string, value: string): void => {
     const item = byKey.get(key);
     setPending((prev) => {
       const next = new Map(prev);
-      // Editing back to the saved value clears the "dirty" mark.
       if (item && value === savedString(item)) next.delete(key);
       else next.set(key, value);
       return next;
     });
   };
-  const revert = (key: string): void =>
-    setPending((prev) => new Map(prev).set(key, null));
+  const revert = (key: string): void => setPending((prev) => new Map(prev).set(key, null));
   const undo = (key: string): void =>
     setPending((prev) => {
       const next = new Map(prev);
@@ -245,11 +282,27 @@ export function SystemConfigSection(): JSX.Element | null {
       return next;
     });
 
+  const stageRule = (type: DeviationType, patch: Partial<StagedRule>): void => {
+    const rule = ruleByType.get(type);
+    if (!rule) return;
+    setPendingRules((prev) => {
+      const next = new Map(prev);
+      const merged = { ...(prev.get(type) ?? snapshotOf(rule)), ...patch };
+      if (rulesEqual(merged, snapshotOf(rule))) next.delete(type);
+      else next.set(type, merged);
+      return next;
+    });
+  };
+
+  const configKeysOf = (g: GroupDef): string[] =>
+    g.cards.flatMap((c) => (c.requires === 'config' && canConfig ? [...c.keys] : []));
+  const groupHasDeviation = (g: GroupDef): boolean =>
+    canDeviation && g.cards.some((c) => c.requires === 'deviation');
+  const groupDirtyCount = (g: GroupDef): number =>
+    configKeysOf(g).filter((k) => pending.has(k)).length + (groupHasDeviation(g) ? pendingRules.size : 0);
+
   const groups = useMemo(
-    () =>
-      GROUPS.filter((g) =>
-        g.blocks.some((b) => (b.requires === 'config' ? canConfig : canDeviation)),
-      ),
+    () => GROUPS.filter((g) => g.cards.some((c) => (c.requires === 'config' ? canConfig : canDeviation))),
     [canConfig, canDeviation],
   );
 
@@ -258,36 +311,67 @@ export function SystemConfigSection(): JSX.Element | null {
     if (selected === null && groups.length > 0) setSelected(groups[0]?.id ?? null);
   }, [groups, selected]);
 
-  const dirtyInGroup = (g: GroupDef): number =>
-    g.blocks.reduce(
-      (n, b) => n + (b.kind === 'config' ? b.keys.filter((k) => pending.has(k)).length : 0),
-      0,
-    );
-
-  const saveAll = async (): Promise<void> => {
-    if (pending.size === 0) return;
+  const saveGroup = async (g: GroupDef): Promise<void> => {
+    const keys = configKeysOf(g).filter((k) => pending.has(k));
+    const ruleTypes = groupHasDeviation(g) ? [...pendingRules.keys()] : [];
+    if (keys.length === 0 && ruleTypes.length === 0) return;
     setSaving(true);
-    const failed = new Map<string, string | null>();
+    const nextPending = new Map(pending);
+    const nextRules = new Map(pendingRules);
     let ok = 0;
-    for (const [key, val] of pending) {
+    let firstError: { label: string; err: unknown } | null = null;
+    for (const key of keys) {
+      const val = pending.get(key) as string | null;
       try {
         if (val === null) await systemConfigApi.clear(key);
         else await systemConfigApi.set(key, val);
         ok += 1;
+        nextPending.delete(key);
       } catch (err) {
-        failed.set(key, val);
-        if (failed.size === 1) {
-          const item = byKey.get(key);
-          notify.error(
-            `${item?.label ?? key}: ${err instanceof ApiError ? err.message : 'gagal disimpan'}`,
-          );
-        }
+        firstError ??= { label: byKey.get(key)?.label ?? key, err };
       }
     }
-    await qc.invalidateQueries({ queryKey: ['system-config'] });
-    setPending(failed);
+    for (const type of ruleTypes) {
+      const snap = pendingRules.get(type) as StagedRule;
+      try {
+        await trackingApi.upsertDeviationRule(type, {
+          threshold: snap.threshold ?? undefined,
+          hysteresisSec: snap.hysteresisSec,
+          severity: snap.severity,
+          enabled: snap.enabled,
+        });
+        ok += 1;
+        nextRules.delete(type);
+      } catch (err) {
+        firstError ??= { label: `Aturan ${type}`, err };
+      }
+    }
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ['system-config'] }),
+      qc.invalidateQueries({ queryKey: ['gps-tracking', 'deviation-rules'] }),
+    ]);
+    setPending(nextPending);
+    setPendingRules(nextRules);
     setSaving(false);
-    if (failed.size === 0) notify.success(`${ok} setelan disimpan.`);
+    if (firstError) {
+      notify.error(
+        `${firstError.label}: ${
+          firstError.err instanceof ApiError ? firstError.err.message : 'gagal disimpan'
+        }`,
+      );
+    } else {
+      notify.success(`${ok} setelan disimpan.`);
+    }
+  };
+
+  const cancelGroup = (g: GroupDef): void => {
+    const keys = configKeysOf(g);
+    setPending((prev) => {
+      const next = new Map(prev);
+      keys.forEach((k) => next.delete(k));
+      return next;
+    });
+    if (groupHasDeviation(g)) setPendingRules(new Map());
   };
 
   if (canConfig && isLoading) {
@@ -305,117 +389,114 @@ export function SystemConfigSection(): JSX.Element | null {
   }
 
   const active = groups.find((g) => g.id === selected) ?? groups[0];
-  const blocks = (active?.blocks ?? []).filter(allows);
-  const hasConfigBlock = blocks.some((b) => b.kind === 'config');
-  const configKeyCount = (g: GroupDef): number =>
-    g.blocks.reduce(
-      (n, b) => n + (b.kind === 'config' && allows(b) ? b.keys.length : 0),
-      0,
-    );
+  const cards = (active?.cards ?? []).filter(cardAllowed);
+  const groupDirty = active ? groupDirtyCount(active) : 0;
+  const hasConfigCard = cards.some((c) => c.requires === 'config');
+  const saveable = cards.length > 0; // every visible card can be saved via this bar
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-        {/* Group rail */}
-        <nav
-          aria-label="Kelompok setelan"
-          className="h-fit overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0 dark:border-neutral-700 dark:bg-neutral-900"
-        >
-          {groups.map((group) => {
-            const isActive = active?.id === group.id;
-            const dirty = dirtyInGroup(group);
-            const meta = configKeyCount(group) > 0 ? `${configKeyCount(group)} setelan` : 'aturan';
-            return (
-              <SettingsNavButton
-                key={group.id}
-                icon={group.icon}
-                label={group.label}
-                help={group.help}
-                active={isActive}
-                right={
-                  dirty > 0 ? (
-                    <span
-                      className="shrink-0 rounded-full bg-amber-500 px-1.5 text-[11px] font-semibold text-white"
-                      title={`${dirty} perubahan belum disimpan`}
-                    >
-                      {dirty}
-                    </span>
-                  ) : (
-                    <span
-                      className={cn(
-                        'shrink-0 whitespace-nowrap font-mono text-[11px]',
-                        isActive ? 'text-white/75' : 'text-neutral-400',
-                      )}
-                    >
-                      {meta}
-                    </span>
-                  )
-                }
-                onSelect={() => setSelected(group.id)}
-              />
-            );
-          })}
-        </nav>
+    <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+      {/* Group rail */}
+      <nav
+        aria-label="Kelompok setelan"
+        className="h-fit overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0"
+      >
+        {groups.map((group) => {
+          const isActive = active?.id === group.id;
+          const keys = configKeysOf(group);
+          const dirty = groupDirtyCount(group);
+          return (
+            <SettingsNavButton
+              key={group.id}
+              icon={group.icon}
+              label={group.label}
+              help={group.help}
+              active={isActive}
+              right={
+                dirty > 0 ? (
+                  <span
+                    className="shrink-0 rounded-full bg-amber-500 px-1.5 text-[11px] font-semibold text-white"
+                    title={`${dirty} perubahan belum disimpan`}
+                  >
+                    {dirty}
+                  </span>
+                ) : keys.length > 0 ? (
+                  <span
+                    className={cn(
+                      'shrink-0 whitespace-nowrap font-mono text-[11px]',
+                      isActive ? 'text-white/75' : 'text-neutral-400',
+                    )}
+                  >
+                    {keys.length} setelan
+                  </span>
+                ) : undefined
+              }
+              onSelect={() => setSelected(group.id)}
+            />
+          );
+        })}
+      </nav>
 
-        {/* Detail */}
-        <Card>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="text-body-lg font-semibold text-neutral-900">{active?.label}</h3>
-              <p className="text-body-sm text-neutral-500">{active?.help}</p>
-            </div>
+      {/* Detail: one card per sub-section + a per-group save bar */}
+      <div className="space-y-4">
+        {hasConfigCard ? (
+          <p className="rounded-base bg-neutral-50 px-3 py-2 text-tiny text-neutral-500">
+            <b className="text-primary-700 dark:text-primary-400">Kustom</b> = nilai khusus tersimpan ·{' '}
+            <b>Dari env</b> = memakai nilai bawaan server ·{' '}
+            <b className="text-amber-700">Belum diset</b> = belum ada nilai. Perubahan berlaku setelah{' '}
+            <b>Simpan Perubahan</b>; <b>Bawaan</b> menghapus nilai kustom.
+          </p>
+        ) : null}
 
-            {hasConfigBlock ? (
-              <p className="rounded-base bg-neutral-50 px-3 py-2 text-tiny text-neutral-500 dark:bg-neutral-800/60">
-                <b className="text-primary-700 dark:text-primary-400">Kustom</b> = nilai khusus
-                tersimpan · <b>Dari env</b> = memakai nilai bawaan server ·{' '}
-                <b className="text-amber-700">Belum diset</b> = belum ada nilai. Perubahan berlaku
-                setelah <b>Simpan Perubahan</b>; <b>Bawaan</b> menghapus nilai kustom.
-              </p>
-            ) : null}
+        {cards.map((card) => (
+          <Card key={card.title}>
+            <CardHeader>
+              <CardTitle>{card.title}</CardTitle>
+              <p className="text-body-sm text-neutral-500">{card.help}</p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {card.requires === 'deviation' ? (
+                <DeviationRulesControl
+                  rules={rules}
+                  isLoading={rulesLoading}
+                  isError={rulesError}
+                  staged={pendingRules}
+                  onStage={stageRule}
+                />
+              ) : (
+                card.keys
+                  .map((k) => byKey.get(k))
+                  .filter((item): item is ConfigDescription => item !== undefined)
+                  .map((item) => (
+                    <ConfigRow
+                      key={item.key}
+                      item={item}
+                      staged={
+                        pending.has(item.key) ? (pending.get(item.key) as string | null) : undefined
+                      }
+                      onStage={stage}
+                      onRevert={revert}
+                      onUndo={undo}
+                    />
+                  ))
+              )}
+            </CardContent>
+          </Card>
+        ))}
 
-            {blocks.map((block, i) => (
-              <section key={block.kind === 'config' ? `cfg-${i}` : 'deviation'} className="space-y-2">
-                {block.title ? (
-                  <div className="flex items-center gap-1.5 pt-1">
-                    <h4 className="text-label font-semibold uppercase tracking-wide text-neutral-500">
-                      {block.title}
-                    </h4>
-                    {block.help ? <InfoHint label={block.help} srLabel={block.title} /> : null}
-                  </div>
-                ) : null}
-                {block.kind === 'deviation' ? (
-                  <DeviationRulesControl />
-                ) : (
-                  block.keys
-                    .map((k) => byKey.get(k))
-                    .filter((item): item is ConfigDescription => item !== undefined)
-                    .map((item) => (
-                      <ConfigRow
-                        key={item.key}
-                        item={item}
-                        staged={pending.has(item.key) ? (pending.get(item.key) as string | null) : undefined}
-                        onStage={stage}
-                        onRevert={revert}
-                        onUndo={undo}
-                      />
-                    ))
-                )}
-              </section>
-            ))}
-          </CardContent>
-        </Card>
+        {saveable && active ? (
+          <SettingsSaveBar
+            visible
+            dirty={groupDirty > 0}
+            message={groupDirty > 0 ? `${groupDirty} perubahan belum disimpan` : 'Tidak ada perubahan'}
+            saving={saving}
+            onCancel={() => cancelGroup(active)}
+            onSave={() => void saveGroup(active)}
+            saveLabel="Simpan Perubahan"
+            cancelLabel="Batal"
+          />
+        ) : null}
       </div>
-
-      <SettingsSaveBar
-        visible={pending.size > 0}
-        message={`${pending.size} perubahan belum disimpan`}
-        saving={saving}
-        onCancel={() => setPending(new Map())}
-        onSave={() => void saveAll()}
-        saveLabel="Simpan Perubahan"
-        cancelLabel="Batal"
-      />
     </div>
   );
 }

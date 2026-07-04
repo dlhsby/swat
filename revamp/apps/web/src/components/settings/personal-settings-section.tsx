@@ -93,7 +93,7 @@ export function PersonalSettingsSection(): JSX.Element {
         {/* Sub-menu rail */}
         <nav
           aria-label="Kelompok preferensi"
-          className="h-fit overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0 dark:border-neutral-700 dark:bg-neutral-900"
+          className="h-fit overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0"
         >
           {NAV.map((g) => (
             <SettingsNavButton
@@ -149,8 +149,9 @@ export function PersonalSettingsSection(): JSX.Element {
       </div>
 
       <SettingsSaveBar
-        visible={dirty}
-        message={t('unsaved')}
+        visible
+        dirty={dirty}
+        message={dirty ? t('unsaved') : t('noChanges')}
         saving={saving}
         onCancel={onCancel}
         onSave={() => void onSave()}

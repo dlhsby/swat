@@ -1,9 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
 import {
-  Button,
   InfoHint,
   Input,
   Label,
@@ -15,12 +12,33 @@ import {
   Skeleton,
   Switch,
 } from '@/components/ui';
-import { useDeviationRules, useUpsertDeviationRule } from '@/hooks/use-tracking';
-import {
-  type DeviationRule,
-  type DeviationSeverity,
-  type DeviationType,
-} from '@/lib/tracking-api';
+import { type DeviationRule, type DeviationSeverity, type DeviationType } from '@/lib/tracking-api';
+
+/** A full snapshot of a rule's editable fields (staged before Save). */
+export interface StagedRule {
+  readonly threshold: number | null;
+  readonly hysteresisSec: number;
+  readonly severity: DeviationSeverity;
+  readonly enabled: boolean;
+}
+
+export function snapshotOf(rule: DeviationRule): StagedRule {
+  return {
+    threshold: rule.threshold,
+    hysteresisSec: rule.hysteresisSec,
+    severity: rule.severity,
+    enabled: rule.enabled,
+  };
+}
+
+export function rulesEqual(a: StagedRule, b: StagedRule): boolean {
+  return (
+    a.threshold === b.threshold &&
+    a.hysteresisSec === b.hysteresisSec &&
+    a.severity === b.severity &&
+    a.enabled === b.enabled
+  );
+}
 
 /** Display metadata per deviation type — Indonesian label + the threshold's unit. */
 const RULE_META: Record<DeviationType, { label: string; unit: 'm' | 's' | null; hint: string }> = {
@@ -36,34 +54,38 @@ const SEVERITY_OPTIONS: { value: DeviationSeverity; label: string }[] = [
   { value: 'CRITICAL', label: 'Kritis' },
 ];
 
-function RuleRow({ rule }: { rule: DeviationRule }): JSX.Element {
+function RuleRow({
+  rule,
+  staged,
+  onStage,
+}: {
+  rule: DeviationRule;
+  staged: StagedRule | undefined;
+  onStage: (patch: Partial<StagedRule>) => void;
+}): JSX.Element {
   const meta = RULE_META[rule.deviationType];
-  const upsert = useUpsertDeviationRule();
-  const [threshold, setThreshold] = useState(rule.threshold?.toString() ?? '');
-  const [hysteresis, setHysteresis] = useState(rule.hysteresisSec.toString());
-  const [severity, setSeverity] = useState<DeviationSeverity>(rule.severity);
-  const [enabled, setEnabled] = useState(rule.enabled);
-
-  const save = (): void => {
-    upsert.mutate({
-      type: rule.deviationType,
-      body: {
-        ...(meta.unit ? { threshold: Number(threshold) || 0 } : {}),
-        hysteresisSec: Number(hysteresis) || 0,
-        severity,
-        enabled,
-      },
-    });
-  };
+  const v = staged ?? snapshotOf(rule);
+  const isStaged = staged !== undefined;
 
   return (
-    <div className="rounded-base border border-neutral-200 p-4 dark:border-neutral-700">
+    <div className="rounded-base border border-neutral-200 p-4">
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-body-sm font-semibold text-neutral-900">{meta.label}</p>
-          <p className="text-tiny text-neutral-500">{meta.hint}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <div>
+            <p className="text-body-sm font-semibold text-neutral-900">{meta.label}</p>
+            <p className="text-tiny text-neutral-500">{meta.hint}</p>
+          </div>
+          {isStaged ? (
+            <span className="rounded-[5px] bg-amber-100 px-1.5 py-0.5 text-tiny font-semibold text-amber-700">
+              Belum disimpan
+            </span>
+          ) : null}
         </div>
-        <Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Aktifkan aturan" />
+        <Switch
+          checked={v.enabled}
+          onCheckedChange={(c) => onStage({ enabled: c })}
+          aria-label="Aktifkan aturan"
+        />
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -85,8 +107,10 @@ function RuleRow({ rule }: { rule: DeviationRule }): JSX.Element {
               id={`thr-${rule.deviationType}`}
               type="number"
               min={0}
-              value={threshold}
-              onChange={(e) => setThreshold(e.target.value)}
+              value={v.threshold?.toString() ?? ''}
+              onChange={(e) =>
+                onStage({ threshold: e.target.value === '' ? null : Number(e.target.value) })
+              }
             />
           </div>
         ) : null}
@@ -99,8 +123,8 @@ function RuleRow({ rule }: { rule: DeviationRule }): JSX.Element {
             id={`hys-${rule.deviationType}`}
             type="number"
             min={0}
-            value={hysteresis}
-            onChange={(e) => setHysteresis(e.target.value)}
+            value={v.hysteresisSec.toString()}
+            onChange={(e) => onStage({ hysteresisSec: Number(e.target.value) || 0 })}
           />
         </div>
         <div className="space-y-1.5">
@@ -108,7 +132,7 @@ function RuleRow({ rule }: { rule: DeviationRule }): JSX.Element {
             <Label htmlFor={`sev-${rule.deviationType}`}>Tingkat</Label>
             <InfoHint label="Tingkat keparahan alarm saat aturan ini terpicu: Info (catatan), Peringatan, atau Kritis (paling mendesak)." />
           </div>
-          <Select value={severity} onValueChange={(v) => setSeverity(v as DeviationSeverity)}>
+          <Select value={v.severity} onValueChange={(s) => onStage({ severity: s as DeviationSeverity })}>
             <SelectTrigger id={`sev-${rule.deviationType}`}>
               <SelectValue />
             </SelectTrigger>
@@ -122,29 +146,30 @@ function RuleRow({ rule }: { rule: DeviationRule }): JSX.Element {
           </Select>
         </div>
       </div>
-
-      <div className="mt-3 flex justify-end">
-        <Button size="sm" onClick={save} loading={upsert.isPending}>
-          Simpan
-        </Button>
-      </div>
     </div>
   );
 }
 
-/**
- * Tune the GPS route-deviation rules (Phase 7). One card per rule type; each saves
- * independently via PUT /gps/deviation-rules/:type. Gated upstream by
- * `deviation-rule:manage`.
- */
-export function DeviationRulesControl(): JSX.Element {
-  const { data: rules, isLoading, isError } = useDeviationRules();
-  // Re-key rows by the loaded rule identity so local edit state resets on refetch.
-  const [version, setVersion] = useState(0);
-  useEffect(() => {
-    if (rules) setVersion((v) => v + 1);
-  }, [rules]);
+export interface DeviationRulesControlProps {
+  rules: DeviationRule[] | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  staged: Map<DeviationType, StagedRule>;
+  onStage: (type: DeviationType, patch: Partial<StagedRule>) => void;
+}
 
+/**
+ * Tune the GPS route-deviation rules (Phase 7). Presentational/controlled: edits stage
+ * into the parent's pending map and are committed by the group's single Save (no
+ * per-rule save button). Gated upstream by `deviation-rule:manage`.
+ */
+export function DeviationRulesControl({
+  rules,
+  isLoading,
+  isError,
+  staged,
+  onStage,
+}: DeviationRulesControlProps): JSX.Element {
   if (isLoading) {
     return <Skeleton className="h-40" />;
   }
@@ -155,7 +180,12 @@ export function DeviationRulesControl(): JSX.Element {
   return (
     <div className="space-y-3">
       {rules.map((rule) => (
-        <RuleRow key={`${rule.deviationType}-${version}`} rule={rule} />
+        <RuleRow
+          key={rule.deviationType}
+          rule={rule}
+          staged={staged.get(rule.deviationType)}
+          onStage={(patch) => onStage(rule.deviationType, patch)}
+        />
       ))}
     </div>
   );

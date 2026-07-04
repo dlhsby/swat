@@ -180,6 +180,7 @@
     "saveChanges": "Simpan Perubahan",
     "cancel": "Batal",
     "unsaved": "Ada perubahan yang belum disimpan",
+    "noChanges": "Tidak ada perubahan",
     "saved": "Perubahan disimpan.",
     "appearance": "Tampilan",
     "appearanceBody": "Pilih tema terang, gelap, atau ikuti sistem.",
