@@ -116,58 +116,70 @@ export class DailyInitService {
     });
     const byVehicle = this.groupByVehicle(schedules);
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const day = await tx.transactionDay.create({
-        data: { date, status: 'IN_PROGRESS' },
-        select: { id: true },
-      });
+    const groups = [...byVehicle.values()];
 
-      let hauls = 0;
-      let assignments = 0;
-      let trips = 0;
+    // Bulk-insert the whole tree in three round-trips (haul → assignment → trip)
+    // rather than one INSERT per row. The full operator roster is ~1.4k schedules,
+    // and per-row sequential creates blow the interactive-transaction timeout; a
+    // `timeout` is kept as a safety net. `createManyAndReturn` gives us the
+    // generated ids to wire the children.
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const day = await tx.transactionDay.create({
+          data: { date, status: 'IN_PROGRESS' },
+          select: { id: true },
+        });
+        if (groups.length === 0) {
+          return { transactionDayId: day.id, hauls: 0, assignments: 0, trips: 0 };
+        }
 
-      for (const group of byVehicle.values()) {
-        const haul = await tx.haul.create({
-          data: {
+        // 1. One Haul per vehicle.
+        const createdHauls = await tx.haul.createManyAndReturn({
+          data: groups.map((group) => ({
             transactionDayId: day.id,
             vehicleId: group.vehicleId,
             operationDate: date,
             status: 'IN_PROGRESS',
-          },
-          select: { id: true },
+          })),
+          select: { id: true, vehicleId: true },
         });
-        hauls += 1;
+        const haulIdByVehicle = new Map(createdHauls.map((h) => [h.vehicleId, h.id]));
 
-        for (const schedule of group.schedules) {
-          const assignment = await tx.haulAssignment.create({
-            data: {
-              haulId: haul.id,
-              driverId: schedule.driverId,
-              scheduleTemplateId: schedule.id,
-              operationDate: date,
-              status: 'IN_PROGRESS',
-              departTargetOdometer: group.currentOdometer,
-              returnTargetOdometer: group.currentOdometer,
-              departTargetTime: combineDateAndTime(date, schedule.departTime),
-              returnTargetTime: combineDateAndTime(date, schedule.returnTime),
-            },
-            select: { id: true },
-          });
-          assignments += 1;
+        // 2. One HaulAssignment per crew shift.
+        const assignmentData = groups.flatMap((group) =>
+          group.schedules.map((schedule) => ({
+            haulId: haulIdByVehicle.get(group.vehicleId) as string,
+            driverId: schedule.driverId,
+            scheduleTemplateId: schedule.id,
+            operationDate: date,
+            status: 'IN_PROGRESS' as const,
+            departTargetOdometer: group.currentOdometer,
+            returnTargetOdometer: group.currentOdometer,
+            departTargetTime: combineDateAndTime(date, schedule.departTime),
+            returnTargetTime: combineDateAndTime(date, schedule.returnTime),
+          })),
+        );
+        const createdAssignments = await tx.haulAssignment.createManyAndReturn({
+          data: assignmentData,
+          select: { id: true, scheduleTemplateId: true },
+        });
+        // Each schedule yields exactly one assignment, so scheduleTemplateId is a unique key.
+        const assignmentIdBySchedule = new Map(
+          createdAssignments.map((a) => [a.scheduleTemplateId, a.id]),
+        );
 
-          for (const template of schedule.tripTemplates) {
-            // Copy the template's default corridor down to the day's trip
-            // (Phase 7.8); the day can later switch it (T-727). A corridor that
-            // was soft-deleted after the template was set is skipped (the
-            // matcher's resolver falls back to the route default anyway).
-            const corridorId = this.carryTemplateCorridor(template);
-            await tx.trip.create({
-              data: {
-                haulAssignmentId: assignment.id,
+        // 3. One Trip per trip template. A corridor soft-deleted after the template
+        // was set is skipped (the matcher falls back to the route default).
+        const tripData = groups.flatMap((group) =>
+          group.schedules.flatMap((schedule) =>
+            schedule.tripTemplates.map((template) => {
+              const corridorId = this.carryTemplateCorridor(template);
+              return {
+                haulAssignmentId: assignmentIdBySchedule.get(schedule.id) as string,
                 routeId: template.routeId,
                 ...(corridorId ? { corridorId } : {}),
                 operationDate: date,
-                status: 'IN_PROGRESS',
+                status: 'IN_PROGRESS' as const,
                 name: tripName(template.route),
                 targetOdometer: group.currentOdometer,
                 targetTime: combineDateAndTime(date, template.targetTime),
@@ -175,15 +187,23 @@ export class DailyInitService {
                 ...(template.fuelRequestedLiters !== null
                   ? { fuelRequestedLiters: template.fuelRequestedLiters }
                   : {}),
-              },
-            });
-            trips += 1;
-          }
+              };
+            }),
+          ),
+        );
+        if (tripData.length > 0) {
+          await tx.trip.createMany({ data: tripData });
         }
-      }
 
-      return { transactionDayId: day.id, hauls, assignments, trips };
-    });
+        return {
+          transactionDayId: day.id,
+          hauls: createdHauls.length,
+          assignments: createdAssignments.length,
+          trips: tripData.length,
+        };
+      },
+      { timeout: 120_000, maxWait: 15_000 },
+    );
 
     this.logger.log(
       `Daily init for ${dateLabel}: ${result.hauls} hauls, ${result.assignments} assignments, ${result.trips} trips.`,

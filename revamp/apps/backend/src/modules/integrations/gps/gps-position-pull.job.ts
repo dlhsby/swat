@@ -1,4 +1,10 @@
-import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  type OnModuleDestroy,
+  type OnModuleInit,
+} from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 
 import { SystemConfigService } from '../../../config';
@@ -11,6 +17,15 @@ import { type GpsidHistoryPoint, GpsidClientService } from './gpsid-client.servi
 const INTERVAL_NAME = 'gpsid-position-pull';
 /** Extra minutes pulled beyond the interval so a slow tick never leaves a gap. */
 const OVERLAP_MIN = 5;
+/** Lookback for an on-demand "pull now" — wide enough to surface a quiet device's
+ * last known point, but bounded so the vendor call stays cheap. */
+const ON_DEMAND_LOOKBACK_MIN = 24 * 60;
+
+/** Result of an on-demand pull for one device. */
+export interface DevicePullResult {
+  readonly enqueued: number;
+  readonly latest: CanonicalPing | null;
+}
 
 /**
  * Map a GPS.id history point onto a canonical ping. History carries no engine /
@@ -79,6 +94,9 @@ export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
     this.handle = handle;
     this.scheduler.addInterval(INTERVAL_NAME, handle);
     this.logger.log(`GPS.id position pull enabled — polling every ${intervalMin} min.`);
+    // setInterval only fires AFTER the first interval — pull once now so enabling the
+    // job (or a boot with it on) yields positions immediately instead of a day later.
+    void this.pullPositions();
   }
 
   private stop(): void {
@@ -94,6 +112,32 @@ export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
   private restart(): void {
     this.stop();
     this.start();
+  }
+
+  /**
+   * On-demand pull for ONE device (the "Tarik Posisi" / pull-now button). Fetches a
+   * wide recent window so even a quiet device surfaces its last known point, feeds it
+   * through the SAME ingest pipeline (so the map/last-seen update), and returns the
+   * most recent point for immediate display. Independent of the scheduled-pull toggle;
+   * needs only GPS.id credentials.
+   */
+  async pullDeviceNow(imei: string): Promise<DevicePullResult> {
+    if (!this.gpsid.isConfigured) {
+      throw new BadRequestException('Integrasi GPS.id belum dikonfigurasi (kredensial kosong).');
+    }
+    const end = new Date();
+    const start = new Date(end.getTime() - ON_DEMAND_LOOKBACK_MIN * 60_000);
+    const points = await this.gpsid.getHistory(imei, start.toISOString(), end.toISOString());
+    const pings = points.map((p) => historyPointToPing(imei, p));
+    if (pings.length > 0) {
+      await this.queue.enqueue(pings);
+    }
+    const latest = pings.reduce<CanonicalPing | null>(
+      (acc, p) => (!acc || p.recordedAt > acc.recordedAt ? p : acc),
+      null,
+    );
+    this.logger.log(`GPS.id pull-now for ${imei}: ${pings.length} point(s).`);
+    return { enqueued: pings.length, latest };
   }
 
   /** Pull each active device's recent history and enqueue it. Best-effort per device. */

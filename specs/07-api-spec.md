@@ -743,6 +743,7 @@ Kitir bulk import is `POST /disposal-permits/bulk-import` (`disposal-permit:crea
 |--------|------|-----------|---|
 | POST | `/integrations/gps/webhook/:token` | secret path token + IP allowlist (no RBAC) | GPS.id push ingest (single or batch ping); validates+normalizes, enqueues, returns `200 {accepted}` fast |
 | GET/POST/PATCH/DELETE | `/gps/devices` | `gps-device:read|create|update|delete` | IMEI ↔ vehicle registry + unmatched-IMEI queue |
+| POST | `/gps/devices/:id/pull` | `tracking:read` | **on-demand position pull** for one device (the "Tarik Posisi" button) — fetches recent GPS.id history, feeds the ingest pipeline, returns the latest point. Enabling the scheduled pull also pulls once immediately. |
 | GET | `/monitoring/fleet-positions?date=today` | `tracking:read` | **whole active fleet** as `VehiclePosition[]` (`source: live-gps \| recorded-activity \| none`); powers the Pengangkutan → Peta map (live GPS vehicles + untracked vehicles placed from recorded realization activity) |
 | GET | `/gps/vehicles/:id/position` | `tracking:read` | latest known position (live or recorded) |
 | GET | `/gps/vehicles/:id/track?minutes=60` | `tracking:read` | live breadcrumb trail |

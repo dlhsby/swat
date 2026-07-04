@@ -49,13 +49,15 @@ function buildSchedule(overrides: Record<string, unknown> = {}): Record<string, 
   };
 }
 
+type DataArg = { data: Array<Record<string, unknown>>; select?: unknown };
+
 describe('DailyInitService', () => {
   const date = parseDateOnly('2026-06-08');
   let tx: {
     transactionDay: { create: jest.Mock };
-    haul: { create: jest.Mock };
-    haulAssignment: { create: jest.Mock };
-    trip: { create: jest.Mock };
+    haul: { createManyAndReturn: jest.Mock };
+    haulAssignment: { createManyAndReturn: jest.Mock };
+    trip: { createMany: jest.Mock };
   };
   let prisma: {
     transactionDay: { findUnique: jest.Mock };
@@ -67,9 +69,20 @@ describe('DailyInitService', () => {
   beforeEach(() => {
     tx = {
       transactionDay: { create: jest.fn().mockResolvedValue({ id: 10 }) },
-      haul: { create: jest.fn().mockResolvedValue({ id: 100n }) },
-      haulAssignment: { create: jest.fn().mockResolvedValue({ id: 1000n }) },
-      trip: { create: jest.fn().mockResolvedValue({ id: 10000n }) },
+      // Bulk inserts return the generated ids so children can be wired.
+      haul: {
+        createManyAndReturn: jest.fn(({ data }: DataArg) =>
+          Promise.resolve(data.map((d, i) => ({ id: `haul-${i}`, vehicleId: d.vehicleId }))),
+        ),
+      },
+      haulAssignment: {
+        createManyAndReturn: jest.fn(({ data }: DataArg) =>
+          Promise.resolve(
+            data.map((d, i) => ({ id: `asg-${i}`, scheduleTemplateId: d.scheduleTemplateId })),
+          ),
+        ),
+      },
+      trip: { createMany: jest.fn(({ data }: DataArg) => Promise.resolve({ count: data.length })) },
     };
     prisma = {
       transactionDay: { findUnique: jest.fn().mockResolvedValue(null) },
@@ -78,6 +91,13 @@ describe('DailyInitService', () => {
     };
     service = new DailyInitService(prisma as unknown as PrismaService);
   });
+
+  const haulData = (): Array<Record<string, unknown>> =>
+    (tx.haul.createManyAndReturn.mock.calls[0][0] as DataArg).data;
+  const assignmentData = (): Array<Record<string, unknown>> =>
+    (tx.haulAssignment.createManyAndReturn.mock.calls[0][0] as DataArg).data;
+  const tripData = (): Array<Record<string, unknown>> =>
+    (tx.trip.createMany.mock.calls[0][0] as DataArg).data;
 
   it('is idempotent — skips when the day already exists', async () => {
     prisma.transactionDay.findUnique.mockResolvedValue({ id: 5 });
@@ -111,29 +131,24 @@ describe('DailyInitService', () => {
 
   it('sets operationDate on every partitioned write (partition-aware)', async () => {
     await service.initializeForDate(date);
-    expect(tx.haul.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ operationDate: date }) }),
-    );
-    expect(tx.haulAssignment.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ operationDate: date }) }),
-    );
-    expect(tx.trip.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ operationDate: date }) }),
-    );
+    expect(haulData()[0]).toMatchObject({ operationDate: date });
+    expect(assignmentData()[0]).toMatchObject({ operationDate: date });
+    expect(tripData()[0]).toMatchObject({ operationDate: date });
+  });
+
+  it('wires each child to its generated parent id', async () => {
+    await service.initializeForDate(date);
+    expect(assignmentData()[0]?.haulId).toBe('haul-0'); // haul.vehicleId 7 → haul-0
+    expect(tripData()[0]?.haulAssignmentId).toBe('asg-0'); // schedule 1 → asg-0
   });
 
   it('seeds the target odometer from the vehicle and a composed trip name', async () => {
     await service.initializeForDate(date);
-    const assignmentArg = tx.haulAssignment.create.mock.calls[0][0] as {
-      data: { departTargetOdometer: number; returnTargetOdometer: number };
-    };
-    expect(assignmentArg.data.departTargetOdometer).toBe(12000);
-    expect(assignmentArg.data.returnTargetOdometer).toBe(12000);
-    const tripArg = tx.trip.create.mock.calls[0][0] as {
-      data: { name: string; targetOdometer: number };
-    };
-    expect(tripArg.data.name).toBe('DISPOSAL: TPS A → TPA B');
-    expect(tripArg.data.targetOdometer).toBe(12000);
+    expect(assignmentData()[0]).toMatchObject({
+      departTargetOdometer: 12000,
+      returnTargetOdometer: 12000,
+    });
+    expect(tripData()[0]).toMatchObject({ name: 'DISPOSAL: TPS A → TPA B', targetOdometer: 12000 });
   });
 
   it('excludes schedules whose vehicle or driver was soft-deleted', async () => {
@@ -153,8 +168,9 @@ describe('DailyInitService', () => {
     const result = await service.initializeForDate(date);
     expect(result.hauls).toBe(1);
     expect(result.assignments).toBe(2);
-    expect(tx.haul.create).toHaveBeenCalledTimes(1);
-    expect(tx.haulAssignment.create).toHaveBeenCalledTimes(2);
+    expect(tx.haul.createManyAndReturn).toHaveBeenCalledTimes(1);
+    expect(haulData()).toHaveLength(1);
+    expect(assignmentData()).toHaveLength(2);
   });
 
   it('runs for today via the manual trigger and the cron handler', async () => {
@@ -185,8 +201,7 @@ describe('DailyInitService', () => {
       }),
     ]);
     await service.initializeForDate(date);
-    const tripArg = tx.trip.create.mock.calls[0][0] as { data: { fuelRequestedLiters?: number } };
-    expect(tripArg.data.fuelRequestedLiters).toBe(40);
+    expect(tripData()[0]?.fuelRequestedLiters).toBe(40);
   });
 
   it('carries an active template corridor onto the day trip', async () => {
@@ -194,8 +209,7 @@ describe('DailyInitService', () => {
       buildSchedule({ tripTemplates: [templateWithCorridor(null)] }),
     ]);
     await service.initializeForDate(date);
-    const tripArg = tx.trip.create.mock.calls[0][0] as { data: { corridorId?: string } };
-    expect(tripArg.data.corridorId).toBe('c0000000-0000-0000-0000-000000000001');
+    expect(tripData()[0]?.corridorId).toBe('c0000000-0000-0000-0000-000000000001');
   });
 
   it('skips a soft-deleted template corridor and warns (resolver falls back to route default)', async () => {
@@ -204,8 +218,7 @@ describe('DailyInitService', () => {
       buildSchedule({ tripTemplates: [templateWithCorridor(new Date('2026-06-01T00:00:00Z'))] }),
     ]);
     await service.initializeForDate(date);
-    const tripArg = tx.trip.create.mock.calls[0][0] as { data: { corridorId?: string } };
-    expect(tripArg.data.corridorId).toBeUndefined();
+    expect(tripData()[0]?.corridorId).toBeUndefined();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('soft-deleted corridor'));
     warn.mockRestore();
   });

@@ -81,3 +81,22 @@ export interface GpsSyncResult {
 export function syncGpsidVehicles(): Promise<GpsSyncResult> {
   return apiClient.post<GpsSyncResult>('/gps/devices/sync', {});
 }
+
+/** The most recent point returned by an on-demand pull. */
+export interface DevicePullLatest {
+  latitude: number;
+  longitude: number;
+  speedKmh: number;
+  recordedAt: string;
+}
+
+/** Result of an on-demand "Tarik Posisi" (pull-now) for one device. */
+export interface DevicePullResult {
+  enqueued: number;
+  latest: DevicePullLatest | null;
+}
+
+/** Pull the latest GPS.id positions for a device on demand (the "Tarik Posisi" button). */
+export function pullDevicePosition(id: string): Promise<DevicePullResult> {
+  return apiClient.post<DevicePullResult>(`/gps/devices/${encodeURIComponent(id)}/pull`, {});
+}

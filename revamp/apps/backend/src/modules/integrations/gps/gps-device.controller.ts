@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -9,6 +19,7 @@ import { ListGpsDevicesQueryDto } from './dto/list-gps-devices.query.dto';
 import { MapUnmatchedPingDto } from './dto/map-unmatched-ping.dto';
 import { UpdateGpsDeviceDto } from './dto/update-gps-device.dto';
 import { type GpsDeviceDto, GpsDeviceService, type UnmatchedPingDto } from './gps-device.service';
+import { type DevicePullResult, GpsPositionPullJob } from './gps-position-pull.job';
 import { type GpsSyncResult, GpsVehicleSyncService } from './gps-vehicle-sync.service';
 
 /**
@@ -23,6 +34,7 @@ export class GpsDeviceController {
   constructor(
     private readonly devices: GpsDeviceService,
     private readonly sync: GpsVehicleSyncService,
+    private readonly pull: GpsPositionPullJob,
   ) {}
 
   @Get()
@@ -62,6 +74,17 @@ export class GpsDeviceController {
   @ApiOperation({ summary: 'Get a GPS device by id' })
   getById(@Param('id') id: string): Promise<GpsDeviceDto> {
     return this.devices.getById(id);
+  }
+
+  @Post(':id/pull')
+  @RequirePermissions('tracking:read')
+  @ApiOperation({ summary: 'Pull the latest GPS.id positions for a device on demand' })
+  async pullNow(@Param('id') id: string): Promise<DevicePullResult> {
+    const device = await this.devices.getById(id);
+    if (!device.imei) {
+      throw new BadRequestException('Perangkat tidak memiliki IMEI untuk ditarik posisinya.');
+    }
+    return this.pull.pullDeviceNow(device.imei);
   }
 
   @Post()
