@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 import { Injectable } from '@nestjs/common';
 
-import { AppConfigService } from '../../config';
+import { AppConfigService } from '../../config/config.service';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_BYTES = 12; // 96-bit nonce, the GCM recommendation
