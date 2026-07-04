@@ -300,7 +300,7 @@ export function SystemConfigSection(): JSX.Element | null {
       const snap = pendingRules.get(type) as StagedRule;
       try {
         await trackingApi.upsertDeviationRule(type, {
-          threshold: snap.threshold ?? undefined,
+          threshold: snap.threshold, // may be null (clear) — preserved, not dropped
           hysteresisSec: snap.hysteresisSec,
           severity: snap.severity,
           enabled: snap.enabled,

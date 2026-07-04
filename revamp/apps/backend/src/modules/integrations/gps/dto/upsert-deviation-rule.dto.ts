@@ -8,13 +8,17 @@ import { IsBoolean, IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator'
  * every field is optional so an operator can nudge just the threshold or toggle it.
  */
 export class UpsertDeviationRuleDto {
-  @ApiPropertyOptional({ minimum: 0, description: 'Metres or seconds, per the rule type' })
+  @ApiPropertyOptional({
+    minimum: 0,
+    nullable: true,
+    description: 'Metres or seconds, per the rule type; null clears it',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(86_400)
-  threshold?: number;
+  threshold?: number | null;
 
   @ApiPropertyOptional({ minimum: 0, maximum: 3600, default: 30, description: 'Debounce (s)' })
   @IsOptional()

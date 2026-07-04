@@ -53,6 +53,21 @@ describe('DeviationRuleService', () => {
     expect(repo.upsert).not.toHaveBeenCalled();
   });
 
+  it('clears the threshold when null is sent (null !== undefined → update)', async () => {
+    await service.upsert('off_corridor', { threshold: null });
+    expect(repo.upsert).toHaveBeenCalledWith(
+      'off_corridor',
+      expect.objectContaining({ threshold: null }),
+      expect.objectContaining({ threshold: null }),
+    );
+  });
+
+  it('leaves the threshold untouched when it is omitted (undefined)', async () => {
+    await service.upsert('off_corridor', { hysteresisSec: 40 });
+    const updateArg = repo.upsert.mock.calls[0][2] as Record<string, unknown>;
+    expect(updateArg).not.toHaveProperty('threshold');
+  });
+
   it('upserts a known type with defaults for a new rule', async () => {
     await service.upsert('dwell_too_long', { threshold: 720 });
     expect(repo.upsert).toHaveBeenCalledWith(

@@ -266,10 +266,10 @@ Information-only page — SWAT has no self-service reset. Lists the admin contac
 - **Edit:** PATCH `/api/users/me` (authenticated endpoint)
 
 ### Settings page (`/settings`)
-Account-level preferences, reachable from the topbar avatar menu (which holds **Profil · Pengaturan · Keluar** — change-password is *not* duplicated here; it lives under Profile). No permission gate.
-- **Tampilan (Appearance):** System / Light / Dark via a reusable `SegmentedControl`. "System" clears the stored override and follows the OS; persisted through `theme.ts` (`setThemePreference`).
-- **Bahasa (Language):** id-ID / en-US — switches the active locale via `router.replace(pathname, { locale })`, preserving the current route.
-- **Tentang (About):** app name, organisation, version (`APP_VERSION`).
+Reachable from the topbar avatar menu (**Profil · Pengaturan · Keluar** — change-password lives under Profile, not here). Two tabs (`Tabs`), each a **two-column master/detail** (left sub-menu rail + right content, mirroring the Access-Control page) with a **staged Save**: edits apply only on **Simpan Perubahan** (Save Changes) — so an accidental toggle/typo can't take effect — and **Batal** discards. Each tab's save bar spans the full content width and is always visible (Save disabled while there's nothing to save).
+
+- **Preferensi (Personal)** — no permission gate. Sub-menus: **Tampilan (Appearance)** (System / Light / Dark via `SegmentedControl`; "System" follows the OS), **Bahasa (Language)** (id-ID / en-US), **Tentang (About)** (app name, org, `APP_VERSION`). Theme + locale **stage** and apply only on Save — theme → `theme.ts setThemePreference` + `localStorage` (pre-paint cache); locale → `router.replace(pathname, { locale })`. Both persist per-user via `PATCH /auth/me/preferences` and re-hydrate from `/auth/me` on login.
+- **Sistem (System)** — shown only with `system-config:manage` **or** `deviation-rule:manage`. Runtime-editable global config (DB `system_config` overrides env → code default; secrets AES-256-GCM encrypted, write-only). Groups (left rail): **GPS.id & Pelacakan** (GPS.id credentials · webhook/intake · movement detection · route-deviation alarm rules — as separate cards), **Peta (Google Maps)** (server + browser keys), **Jembatan Timbang**. Each setting shows a **source badge** (Kustom / Dari env / Belum diset), a help tooltip (what to set + where to get it), and a **Bawaan** (revert-to-default) action. The config cards need `system-config:manage`; the deviation-rules card needs `deviation-rule:manage` and folds into the **same per-group Save**. All labels/help are localized under `settings.sys.*` (id + en). See the config system in `07-api-spec.md` (`/system-config`, `/config/public`).
 
 ---
 
@@ -353,7 +353,7 @@ apps/web/
 │   │   │   │   └── bahan-bakar/[haulId]/page.tsx
 │   │   │   ├── pengguna/page.tsx
 │   │   │   ├── profile/page.tsx
-│   │   │   ├── settings/page.tsx (appearance · language · about)
+│   │   │   ├── settings/page.tsx (Preferensi + Sistem tabs; staged master/detail)
 │   │   │   ├── layout.tsx (sidebar, nav)
 │   │   │   └── error.tsx, not-found.tsx
 │   │   ├── api/
@@ -379,7 +379,7 @@ apps/web/
 │   │   │   ├── skeleton.tsx, empty-state.tsx (illustration-aware)
 │   │   │   ├── password-input.tsx (Input + show/hide eye toggle)
 │   │   │   └── (matches 13-design/01-design-system.md §3 exactly)
-│   │   ├── settings/ (SegmentedControl, AppearanceControl, LanguageControl)
+│   │   ├── settings/ (PersonalSettingsSection, SystemConfigSection, DeviationRulesControl, SettingsNavButton, SettingsSaveBar, SegmentedControl, AppearanceControl, LanguageControl)
 │   │   ├── charts/ (Phase 2 — Recharts: StackedColumns, GroupedColumns, AreaTrend, Donut, KpiCard)
 │   │   ├── illustrations/ (Illustration.tsx + Icon.tsx wrapping lucide-react)
 │   │   ├── forms/

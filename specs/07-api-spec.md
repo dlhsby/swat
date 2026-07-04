@@ -763,6 +763,26 @@ Kitir bulk import is `POST /disposal-permits/bulk-import` (`disposal-permit:crea
 > the **same** pipeline — to track vehicles without a hardware tracker or complement those that have one. See
 > [`09-modules/gps-tracking.md`](09-modules/gps-tracking.md) §1.3 and `RFC-0003`.
 
+## 3b. Runtime configuration & personal preferences
+
+**System configuration** — DB-backed, admin-editable global settings that override env at runtime.
+Resolution order per key: **`system_config` row → env var → code default**. Secret values (GPS.id password,
+Maps server/browser keys, webhook token) are **AES-256-GCM encrypted** at rest (`CONFIG_ENCRYPTION_KEY`) and
+never returned by the API. Surfaced in **Settings → Sistem** (see `08-frontend-spec.md`).
+
+| Method | Path | Permission | Description |
+|--------|------|-----------|---|
+| GET | `/system-config` | `system-config:manage` | catalog + per-key `{isSet, source: db\|env\|unset, value?}` (secrets masked) |
+| PATCH | `/system-config/:key` | `system-config:manage` | set an override (validated per the catalog; secrets encrypted) |
+| DELETE | `/system-config/:key` | `system-config:manage` | clear the override → revert to env/default |
+| GET | `/config/public` | `@Public` | runtime browser Maps key `{ maps: { browserKey } }` (referrer-restricted) |
+| PATCH | `/auth/me/preferences` | session (self) | personal `{ theme?, locale? }`; `GET /auth/me` returns `preferences` |
+
+> Cache coherence: `SystemConfigService` caches values in memory, invalidated across instances by a Redis
+> pub/sub channel (`system-config:changed`) with a 5-min reload backstop; the GPS.id sync/pull jobs
+> re-register their intervals on a change. On first boot per DB the present env values are preseeded into
+> `system_config` (marker-guarded) so the admin UI shows the real config.
+
 ## 4. Conventions & documentation
 
 - **OpenAPI 3.0 spec** auto-generated from NestJS controllers + Swagger decorators.
