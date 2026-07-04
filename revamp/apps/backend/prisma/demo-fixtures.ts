@@ -848,7 +848,9 @@ export const DEMO_VEHICLES: readonly LegacyVehicle[] = [
     poolLegacyId: 2,
     modelLegacyId: 12,
     status: 'GOOD',
-    plateNumber: 'L8105HP',
+    // Real current plate (legacy note "NOPOL BARU L9454AP"); GPS.id tracks this as
+    // "DT 03 - L9454 AP", so the demo sync creates + tracks it. Was 'L8105HP'.
+    plateNumber: 'L9454AP',
     needsPlateReview: false,
     chassisNumber: 'MHFC1JU4284016937',
     engineNumber: 'W04DTMJ16779',
@@ -858,7 +860,7 @@ export const DEMO_VEHICLES: readonly LegacyVehicle[] = [
     currentOdometer: 0,
     registrationExpiry: '2018-09-27',
     taxExpiry: '2014-10-27',
-    notes: 'NOPOL BARU L9454AP',
+    notes: 'NOPOL lama L8105HP',
   },
   {
     legacyId: 43,
