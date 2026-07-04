@@ -16,7 +16,7 @@
  * yields a stable diff. Real plate numbers / driver names are kept so the demo
  * master-data pages look realistic.
  */
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -36,11 +36,16 @@ import {
   LEGACY_VEHICLES,
 } from '../prisma/legacy-fixtures';
 import { type LegacyVehicleModel, LEGACY_VEHICLE_MODELS } from '../prisma/legacy-vehicle-models';
+import { extractPlate } from '../src/common/plate';
 
 // Tunables — how broad the demo dataset is. Kept small but varied so monitoring
 // (by vehicle / route / source / site) has multi-dimensional data.
 const TARGET_VEHICLES = 15;
 const TARGET_DRIVERS = 12;
+// Of the 15, prefer this many that exist in the GPS.id roster (matched by plate) so
+// the demo can exercise the GPS.id sync; the rest stay off-GPS.id (the "tak cocok"
+// case). The plate list is a real GPS.id snapshot (prisma/gpsid-plates.json).
+const GPS_TARGET_VEHICLES = 10;
 const ROUTE_CAPS = {
   DISPOSAL: 10,
   REFUEL: 5,
@@ -87,24 +92,49 @@ function curate(): {
     keptSiteIds.add(r.destinationLegacyId);
   }
 
-  // 3. Vehicles: ~15 anchored on pools, maximising distinct models (→ varied
-  //    fuel types / vehicle types) before filling up to the target.
+  // 3. Vehicles: ~15 anchored on pools, maximising distinct models (→ varied fuel
+  //    types / vehicle types). Biased so ~GPS_TARGET_VEHICLES exist in the GPS.id
+  //    roster (matched by extracted plate) — those are the sync-able demo vehicles;
+  //    the rest are off-GPS.id. GPS.id vehicles that ALSO have a schedule template
+  //    are preferred so the scheduling pages stay populated.
+  const gpsidPlates = new Set<string>(
+    JSON.parse(readFileSync(join(__dirname, '..', 'prisma', 'gpsid-plates.json'), 'utf8')) as string[],
+  );
+  const scheduledVehicleIds = new Set(LEGACY_SCHEDULE_TEMPLATES.map((s) => s.vehicleLegacyId));
+  const isGpsid = (v: LegacyVehicle): boolean => gpsidPlates.has(extractPlate(v.plateNumber));
+
   const poolVehicles = [...LEGACY_VEHICLES]
     .filter((v) => poolIds.has(v.poolLegacyId))
     .sort(byLegacyId);
+  // GPS.id vehicles first, scheduled ones ahead of unscheduled; then the rest.
+  const gpsPool = poolVehicles
+    .filter(isGpsid)
+    .sort(
+      (a, b) =>
+        Number(scheduledVehicleIds.has(b.legacyId)) - Number(scheduledVehicleIds.has(a.legacyId)) ||
+        a.legacyId - b.legacyId,
+    );
+  const nonGpsPool = poolVehicles.filter((v) => !isGpsid(v));
+
   const vehicles: LegacyVehicle[] = [];
   const seenModels = new Set<number>();
-  for (const v of poolVehicles) {
-    if (vehicles.length >= TARGET_VEHICLES) break;
-    if (!seenModels.has(v.modelLegacyId)) {
-      seenModels.add(v.modelLegacyId);
-      vehicles.push(v);
+  // Model-diverse pass then fill, applied to a pool with a size cap.
+  const take = (pool: LegacyVehicle[], cap: number): void => {
+    for (const v of pool) {
+      if (vehicles.length >= cap) break;
+      if (!seenModels.has(v.modelLegacyId) && !vehicles.includes(v)) {
+        seenModels.add(v.modelLegacyId);
+        vehicles.push(v);
+      }
     }
-  }
-  for (const v of poolVehicles) {
-    if (vehicles.length >= TARGET_VEHICLES) break;
-    if (!vehicles.includes(v)) vehicles.push(v);
-  }
+    for (const v of pool) {
+      if (vehicles.length >= cap) break;
+      if (!vehicles.includes(v)) vehicles.push(v);
+    }
+  };
+  take(gpsPool, GPS_TARGET_VEHICLES); // ~10 GPS.id-syncable
+  take(nonGpsPool, TARGET_VEHICLES); // fill the remaining ~5 off-GPS.id
+  take(gpsPool, TARGET_VEHICLES); // top up from GPS.id if non-GPS.id ran short
   const vehicleIds = new Set(vehicles.map((v) => v.legacyId));
   const modelIds = new Set(vehicles.map((v) => v.modelLegacyId));
   const models = LEGACY_VEHICLE_MODELS.filter((m) => modelIds.has(m.legacyId)).sort(byLegacyId);
