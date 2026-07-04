@@ -162,6 +162,7 @@ export const PERMISSION_KEYS: readonly string[] = [
   'deviation-alert:read',
   'deviation-alert:acknowledge',
   'tracking:read',
+  'system-config:manage',
 ];
 
 const ACTION_LABELS: Readonly<Record<string, string>> = {

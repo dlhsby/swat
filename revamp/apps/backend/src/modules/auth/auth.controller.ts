@@ -23,6 +23,7 @@ import { AuthService } from './auth.service';
 import { type AuthContext, type ForceResetResult, type MeResult } from './auth.types';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 
 const SESSION_COOKIE = 'swat.sid';
 
@@ -86,6 +87,16 @@ export class AuthController {
   @ApiOperation({ summary: 'Current user with role and permissions' })
   getMe(@CurrentUser() user: SessionUser): Promise<MeResult> {
     return this.auth.getMe(user.id);
+  }
+
+  @Patch('me/preferences')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update the current user\'s personal preferences (theme/language)' })
+  updatePreferences(
+    @CurrentUser() user: SessionUser,
+    @Body() dto: UpdatePreferencesDto,
+  ): Promise<{ theme: string | null; locale: string | null }> {
+    return this.auth.updatePreferences(user.id, dto);
   }
 
   @Patch('change-password')

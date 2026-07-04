@@ -6,6 +6,7 @@ import { ProtectedAction } from '@/components/auth/protected-action';
 import { AppearanceControl } from '@/components/settings/appearance-control';
 import { DeviationRulesControl } from '@/components/settings/deviation-rules-control';
 import { LanguageControl } from '@/components/settings/language-control';
+import { SystemConfigSection } from '@/components/settings/system-config-section';
 import { PageHead } from '@/components/shell/page-head';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { APP_VERSION } from '@/lib/app-meta';
@@ -39,6 +40,16 @@ export default function SettingsPage(): JSX.Element {
             <LanguageControl />
           </CardContent>
         </Card>
+
+        <ProtectedAction permission="system-config:manage">
+          <div className="space-y-3">
+            <div>
+              <h2 className="text-h3 text-neutral-900">{t('systemTitle')}</h2>
+              <p className="text-body-sm text-neutral-500">{t('systemBody')}</p>
+            </div>
+            <SystemConfigSection />
+          </div>
+        </ProtectedAction>
 
         <ProtectedAction permission="deviation-rule:manage">
           <Card>

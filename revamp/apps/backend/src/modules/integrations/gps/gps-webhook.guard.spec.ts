@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
-import { type AppConfigService } from '../../../config/config.service';
+import { type SystemConfigService } from '../../../config';
 import { type CacheService } from '../../cache/cache.service';
 import { type ApiAuditService } from '../api-audit.service';
 
@@ -31,19 +31,21 @@ function makeContext(
 }
 
 describe('GpsWebhookGuard', () => {
-  let config: {
-    gps: { webhookToken?: string; allowedIps: string[]; ingestRateLimitPerMin: number };
-  };
+  let config: { webhookToken?: string; allowedIps: string[]; ingestRateLimitPerMin: number };
   let cache: { increment: jest.Mock };
   let apiAudit: { logWebhook: jest.Mock };
   let guard: GpsWebhookGuard;
 
   beforeEach(() => {
-    config = { gps: { webhookToken: TOKEN, allowedIps: [], ingestRateLimitPerMin: 600 } };
+    config = { webhookToken: TOKEN, allowedIps: [], ingestRateLimitPerMin: 600 };
     cache = { increment: jest.fn().mockResolvedValue(1) };
     apiAudit = { logWebhook: jest.fn().mockResolvedValue(undefined) };
     guard = new GpsWebhookGuard(
-      config as unknown as AppConfigService,
+      {
+        getGpsWebhookToken: () => config.webhookToken,
+        getGpsAllowedIps: () => config.allowedIps,
+        getGpsIngestRateLimitPerMin: () => config.ingestRateLimitPerMin,
+      } as unknown as SystemConfigService,
       cache as unknown as CacheService,
       apiAudit as unknown as ApiAuditService,
     );
@@ -63,20 +65,20 @@ describe('GpsWebhookGuard', () => {
   });
 
   it('rejects when the server token is unset (webhook disabled)', async () => {
-    config.gps.webhookToken = undefined;
+    config.webhookToken = undefined;
     const { ctx } = makeContext(TOKEN);
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('rejects + audits a source IP not on the allowlist (403)', async () => {
-    config.gps.allowedIps = ['198.51.100.1'];
+    config.allowedIps = ['198.51.100.1'];
     const { ctx } = makeContext(TOKEN, '203.0.113.99');
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(ForbiddenException);
     expect(apiAudit.logWebhook).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 403 }));
   });
 
   it('allows an IP that is on the allowlist', async () => {
-    config.gps.allowedIps = ['203.0.113.10'];
+    config.allowedIps = ['203.0.113.10'];
     const { ctx } = makeContext(TOKEN, '203.0.113.10');
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
   });

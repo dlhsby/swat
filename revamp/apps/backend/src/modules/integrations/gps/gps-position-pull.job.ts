@@ -1,7 +1,7 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 
-import { AppConfigService } from '../../../config';
+import { SystemConfigService } from '../../../config';
 
 import { GpsEfficiencyRepository } from './gps-efficiency.repository';
 import { GpsIngestQueue } from './gps-ingest.queue';
@@ -34,15 +34,12 @@ export function historyPointToPing(imei: string, p: GpsidHistoryPoint): Canonica
 }
 
 /**
- * Near-real-time GPS.id **position pull** (Phase 7 / Phase B). When
- * `GPSID_POSITION_PULL=true` and the pull credentials are set, poll
- * `report/history` per active device every `GPSID_PULL_INTERVAL_MIN` minutes and
- * feed the positions through the SAME ingest queue as the push webhook (so
- * matching + deviation + activity all run identically). Duplicate points across
- * overlapping windows are dropped by the ping repo's `skipDuplicates`.
- *
- * A secondary path to the push webhook: use it when the vendor push isn't wired,
- * or to backfill gaps. No-ops cleanly when disabled or unconfigured.
+ * Near-real-time GPS.id **position pull** (Phase 7 / Phase B). When `gpsid.positionPull`
+ * is on and credentials are set, polls `report/history` per active device every
+ * `gpsid.pullIntervalMin` minutes and feeds the positions through the SAME ingest
+ * queue as the push webhook. Settings come from {@link SystemConfigService} (DB → env
+ * → default); the interval re-registers on the fly when they change. No-ops cleanly
+ * when disabled or unconfigured; duplicate points are dropped by the ping repo.
  */
 @Injectable()
 export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
@@ -50,7 +47,7 @@ export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
   private handle: NodeJS.Timeout | null = null;
 
   constructor(
-    private readonly config: AppConfigService,
+    private readonly systemConfig: SystemConfigService,
     private readonly gpsid: GpsidClientService,
     private readonly repo: GpsEfficiencyRepository,
     private readonly queue: GpsIngestQueue,
@@ -58,29 +55,33 @@ export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit(): void {
-    if (!this.config.gpsidPositionPull) {
+    this.start();
+    this.systemConfig.onChange(() => this.restart());
+  }
+
+  onModuleDestroy(): void {
+    this.stop();
+  }
+
+  private start(): void {
+    if (!this.systemConfig.getGpsidPositionPull()) {
       return;
     }
     if (!this.gpsid.isConfigured) {
       this.logger.warn(
-        'GPSID_POSITION_PULL is on but GPS.id credentials are unset — position pull disabled.',
+        'Position pull is on but GPS.id credentials are unset — position pull disabled.',
       );
       return;
     }
-    const intervalMin = this.config.gpsidPullIntervalMinutes;
-    const handle = setInterval(() => {
-      void this.pullPositions();
-    }, intervalMin * 60_000);
-    // Don't let the poll timer keep the process alive on its own.
+    const intervalMin = this.systemConfig.getGpsidPullIntervalMinutes();
+    const handle = setInterval(() => void this.pullPositions(), intervalMin * 60_000);
     handle.unref();
     this.handle = handle;
     this.scheduler.addInterval(INTERVAL_NAME, handle);
     this.logger.log(`GPS.id position pull enabled — polling every ${intervalMin} min.`);
   }
 
-  onModuleDestroy(): void {
-    // Clear the timer + registry entry so a re-init (tests, hot restart) never
-    // orphans an interval or collides on the registry name.
+  private stop(): void {
     if (this.handle) {
       clearInterval(this.handle);
       this.handle = null;
@@ -90,19 +91,20 @@ export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  /**
-   * Pull each active device's recent history and enqueue it. Best-effort per
-   * device — a vendor error for one IMEI logs and moves on. The lookback window is
-   * the poll interval plus a small overlap so a delayed tick never drops points.
-   */
+  private restart(): void {
+    this.stop();
+    this.start();
+  }
+
+  /** Pull each active device's recent history and enqueue it. Best-effort per device. */
   async pullPositions(): Promise<void> {
     if (!this.gpsid.isConfigured) {
       return;
     }
     const end = new Date();
-    const lookbackMin = this.config.gpsidPullIntervalMinutes + OVERLAP_MIN;
-    const start = new Date(end.getTime() - lookbackMin * 60_000);
-    const startIso = start.toISOString();
+    const lookbackMin = this.systemConfig.getGpsidPullIntervalMinutes() + OVERLAP_MIN;
+    const startTime = new Date(end.getTime() - lookbackMin * 60_000);
+    const startIso = startTime.toISOString();
     const endIso = end.toISOString();
 
     const devices = await this.repo.activeDeviceImeis();

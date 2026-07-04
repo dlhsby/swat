@@ -1,4 +1,4 @@
-import { type AppConfigService } from '../../../config';
+import { type SystemConfigService } from '../../../config';
 import { type CacheService } from '../../cache/cache.service';
 
 import { type GpsActivityRepository, type HaulContext } from './gps-activity.repository';
@@ -72,7 +72,7 @@ function build(ctx: HaulContext | null, prevSiteId: string | null): { svc: GpsAc
   const svc = new GpsActivityService(
     m.repo as unknown as GpsActivityRepository,
     m.cache as unknown as CacheService,
-    { gpsGeofenceDefaultRadiusM: 100 } as unknown as AppConfigService,
+    { getGpsGeofenceDefaultRadiusM: () => 100 } as unknown as SystemConfigService,
   );
   return { svc, m };
 }

@@ -1,4 +1,4 @@
-import { type AppConfigService } from '../../config';
+import { type SystemConfigService } from '../../config';
 import { type CacheService } from '../cache/cache.service';
 
 import { RateLimitService } from './rate-limit.service';
@@ -15,15 +15,15 @@ const SA: ApiPrincipal = {
 
 describe('RateLimitService', () => {
   let cache: { increment: jest.Mock };
-  let config: { weighbridgeRateLimitPerMin: number };
+  let config: { getWeighbridgeRateLimitPerMin: () => number };
   let service: RateLimitService;
 
   beforeEach(() => {
     cache = { increment: jest.fn() };
-    config = { weighbridgeRateLimitPerMin: 3 };
+    config = { getWeighbridgeRateLimitPerMin: () => 3 };
     service = new RateLimitService(
       cache as unknown as CacheService,
-      config as unknown as AppConfigService,
+      config as unknown as SystemConfigService,
     );
   });
 

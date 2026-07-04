@@ -17,6 +17,15 @@ export class AppConfigService {
     return this.config.get(key, { infer: true });
   }
 
+  /**
+   * The validated env value for any key (already coerced + defaulted by the zod
+   * schema). Used by SystemConfigService as the `env` fallback layer beneath a
+   * DB-configured value. Prefer the named getters elsewhere.
+   */
+  raw<K extends keyof Env>(key: K): Env[K] {
+    return this.get(key);
+  }
+
   get nodeEnv(): Env['NODE_ENV'] {
     return this.get('NODE_ENV');
   }
@@ -39,6 +48,11 @@ export class AppConfigService {
 
   get jwtSecret(): string {
     return this.get('JWT_SECRET');
+  }
+
+  /** Base64 AES-256-GCM key for encrypting secret system_config values (optional). */
+  get configEncryptionKey(): string | undefined {
+    return this.get('CONFIG_ENCRYPTION_KEY');
   }
 
   /** Cookie `Domain` for the session cookie; `undefined` → host-only (default). */
@@ -112,6 +126,11 @@ export class AppConfigService {
   /** Server-side Directions key for snapping the auto-default corridor (optional). */
   get googleMapsServerKey(): string | undefined {
     return this.get('GOOGLE_MAPS_SERVER_KEY');
+  }
+
+  /** Browser (public) Google Maps key served to the web via GET /config/public. */
+  get googleMapsBrowserKey(): string | undefined {
+    return this.get('GOOGLE_MAPS_BROWSER_KEY');
   }
 
   /**

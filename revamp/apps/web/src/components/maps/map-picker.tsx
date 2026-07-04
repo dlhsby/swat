@@ -5,7 +5,8 @@ import { MapPinned, Search, Crosshair, LocateFixed } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button, Input } from '@/components/ui';
-import { isMapsConfigured, MAPS_API_KEY, SURABAYA } from '@/lib/google-maps';
+import { useMapsApiKey } from '@/hooks/use-maps-key';
+import { SURABAYA } from '@/lib/google-maps';
 
 export type LatLng = google.maps.LatLngLiteral;
 
@@ -238,7 +239,8 @@ export function MapPicker({
   /** Preview mode: show the pin but disable search, my-location, click + drag. */
   readOnly?: boolean;
 }): JSX.Element {
-  if (!isMapsConfigured) {
+  const mapKey = useMapsApiKey();
+  if (!mapKey) {
     return (
       <div
         className="flex flex-col items-center justify-center gap-2 rounded-base border border-dashed border-neutral-300 bg-neutral-50 text-center"
@@ -254,7 +256,7 @@ export function MapPicker({
     );
   }
   return (
-    <APIProvider apiKey={MAPS_API_KEY as string}>
+    <APIProvider apiKey={mapKey}>
       <MapPickerInner value={value} onChange={onChange} height={height} readOnly={readOnly} />
     </APIProvider>
   );

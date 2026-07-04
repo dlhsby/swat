@@ -167,6 +167,10 @@ model User {
   username           String    @unique @db.VarChar(100)
   passwordHash       String    @map("password_hash") @db.VarChar(255)
   mustChangePassword Boolean   @default(true) @map("must_change_password")
+  // Personal preferences (source of truth; the web caches them in localStorage for
+  // pre-paint). Null = follow the default (theme=system, locale=id-ID).
+  preferenceTheme    String?   @map("preference_theme") @db.VarChar(10)
+  preferenceLocale   String?   @map("preference_locale") @db.VarChar(10)
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
@@ -1365,6 +1369,23 @@ model DeviationRule {
   updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("deviation_rule")
+}
+
+/// Runtime-editable global system settings that OVERRIDE their env var (resolution
+/// order: this row → env → code default). One row per catalog key. Secret values
+/// (`isSecret`) are stored AES-256-GCM encrypted as `iv:tag:ciphertext`; the value
+/// is never returned to the UI. `value = null` means "cleared → fall back to env".
+model SystemConfig {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  key         String   @unique @db.VarChar(100)
+  value       String?  @db.Text
+  isSecret    Boolean  @default(false) @map("is_secret")
+  valueType   String   @default("string") @map("value_type") @db.VarChar(10)
+  group       String   @db.VarChar(40)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("system_config")
 }
 
 /// One confirmed deviation event (after hysteresis/coalescing). `tripId` is a

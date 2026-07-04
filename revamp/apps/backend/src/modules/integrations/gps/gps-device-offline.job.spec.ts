@@ -1,4 +1,4 @@
-import { type AppConfigService } from '../../../config/config.service';
+import { type SystemConfigService } from '../../../config';
 
 import { GpsDeviceOfflineJob } from './gps-device-offline.job';
 import { type GpsPingRepository } from './gps-ping.repository';
@@ -13,7 +13,7 @@ describe('GpsDeviceOfflineJob', () => {
     jest.clearAllMocks();
     repo = { markStaleDevicesOffline: jest.fn().mockResolvedValue([]) };
     publisher = { publishStatus: jest.fn().mockResolvedValue(undefined) };
-    const config = { gps: { deviceOfflineMinutes: 10 } } as unknown as AppConfigService;
+    const config = { getGpsDeviceOfflineMinutes: () => 10 } as unknown as SystemConfigService;
     job = new GpsDeviceOfflineJob(
       repo as unknown as GpsPingRepository,
       publisher as unknown as GpsPositionPublisher,

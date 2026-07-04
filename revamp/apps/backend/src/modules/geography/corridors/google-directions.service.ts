@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { AppConfigService } from '../../../config/config.service';
+import { SystemConfigService } from '../../../config';
 
 interface LatLng {
   readonly lat: number;
@@ -46,11 +46,11 @@ function decodePolyline(encoded: string): Array<[number, number]> {
 export class GoogleDirectionsService {
   private readonly logger = new Logger(GoogleDirectionsService.name);
 
-  constructor(private readonly config: AppConfigService) {}
+  constructor(private readonly systemConfig: SystemConfigService) {}
 
   /** Road-following driving route between two points as GeoJSON `[lng, lat]` pairs. */
   async snapDrivingRoute(origin: LatLng, dest: LatLng): Promise<Array<[number, number]> | null> {
-    const key = this.config.googleMapsServerKey;
+    const key = this.systemConfig.getGoogleMapsServerKey();
     if (!key) {
       return null;
     }

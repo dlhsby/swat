@@ -119,7 +119,24 @@ export class AuthService {
       roleName: user.role.name,
       permissions,
       mustChangePassword: user.mustChangePassword,
+      preferences: { theme: user.preferenceTheme, locale: user.preferenceLocale },
     };
+  }
+
+  /** Update the caller's own personal preferences (theme/locale). Self-service. */
+  async updatePreferences(
+    userId: string,
+    prefs: { theme?: string; locale?: string },
+  ): Promise<{ theme: string | null; locale: string | null }> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(prefs.theme !== undefined ? { preferenceTheme: prefs.theme } : {}),
+        ...(prefs.locale !== undefined ? { preferenceLocale: prefs.locale } : {}),
+      },
+      select: { preferenceTheme: true, preferenceLocale: true },
+    });
+    return { theme: user.preferenceTheme, locale: user.preferenceLocale };
   }
 
   /** Change the caller's own password; clears the forced-change flag. */

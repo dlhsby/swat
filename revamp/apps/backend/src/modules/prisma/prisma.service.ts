@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 import { auditExtension } from '../../common/audit/audit-prisma.extension';
 import { pgAdapter } from '../../common/prisma/pg-adapter';
-import { AppConfigService } from '../../config';
+import { AppConfigService } from '../../config/config.service';
 
 /**
  * Nest-managed PrismaClient (Prisma 7).
