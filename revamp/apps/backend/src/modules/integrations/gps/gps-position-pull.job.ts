@@ -94,9 +94,10 @@ export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
     this.handle = handle;
     this.scheduler.addInterval(INTERVAL_NAME, handle);
     this.logger.log(`GPS.id position pull enabled — polling every ${intervalMin} min.`);
-    // setInterval only fires AFTER the first interval — pull once now so enabling the
-    // job (or a boot with it on) yields positions immediately instead of a day later.
-    void this.pullPositions();
+    // NB: intentionally NO immediate pull here. The vendor guard is a tight
+    // 5-calls / 5-min budget shared by all GPS.id calls; bursting every device on
+    // each boot would exhaust it and 503 the on-demand "Tarik Posisi" pulls. The
+    // scheduled tick covers the periodic pull; the per-device button covers on-demand.
   }
 
   private stop(): void {
