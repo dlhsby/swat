@@ -15,6 +15,8 @@ import {
 
 const CHANGE_CHANNEL = 'system-config:changed';
 const RELOAD_INTERVAL_MS = 5 * 60_000; // backstop if a pub/sub message is missed
+/** Sentinel row marking that the one-time env→DB preseed already ran (per DB). */
+const PRESEED_MARKER = '__preseeded__';
 
 /** A catalog entry plus its current resolution state (for the admin API). */
 export interface ConfigDescription {
@@ -56,9 +58,64 @@ export class SystemConfigService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     await this.reload();
+    await this.preseedFromEnvOnce();
     this.subscribeForInvalidation();
     this.reloadTimer = setInterval(() => void this.reload(), RELOAD_INTERVAL_MS);
     this.reloadTimer.unref();
+  }
+
+  /**
+   * One-time, per-DB copy of the current env values into `system_config`, so a fresh
+   * environment shows its real config in the admin UI (incl. which secrets are set)
+   * instead of everything reading as "unset". Marker-guarded so it runs exactly once
+   * — after that, clearing a key genuinely reverts it to env (it isn't re-seeded).
+   * Best-effort: a failure never blocks boot (env fallback still works). Secrets are
+   * skipped when no encryption key is configured.
+   */
+  private async preseedFromEnvOnce(): Promise<void> {
+    try {
+      const done = await this.prisma.systemConfig.findUnique({
+        where: { key: PRESEED_MARKER },
+        select: { key: true },
+      });
+      if (done) return;
+
+      const rows = CONFIG_CATALOG.flatMap((entry) => {
+        if (this.cache.has(entry.key)) return []; // already overridden
+        if (entry.isSecret && !this.encryption.available) return []; // can't encrypt → skip
+        const envValue = this.config.raw(entry.envKey);
+        if (envValue === undefined || envValue === null || envValue === '') return [];
+        const str = String(envValue);
+        return [
+          {
+            key: entry.key,
+            value: entry.isSecret ? this.encryption.encrypt(str) : str,
+            isSecret: entry.isSecret,
+            valueType: entry.valueType,
+            group: entry.group,
+          },
+        ];
+      });
+
+      await this.prisma.$transaction([
+        ...(rows.length > 0
+          ? [this.prisma.systemConfig.createMany({ data: rows, skipDuplicates: true })]
+          : []),
+        this.prisma.systemConfig.create({
+          data: {
+            key: PRESEED_MARKER,
+            value: 'true',
+            isSecret: false,
+            valueType: 'boolean',
+            group: '__meta',
+          },
+        }),
+      ]);
+      await this.reload();
+      this.logger.log(`Preseeded ${rows.length} system settings from env.`);
+    } catch (err) {
+      this.logger.warn(`system_config preseed skipped: ${String(err)}`);
+    }
   }
 
   onModuleDestroy(): void {

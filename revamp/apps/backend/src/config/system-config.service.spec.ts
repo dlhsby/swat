@@ -9,17 +9,33 @@ import { SystemConfigService } from './system-config.service';
 
 const KEY = randomBytes(32).toString('base64');
 
+interface PrismaMock {
+  systemConfig: {
+    findMany: jest.Mock;
+    findUnique: jest.Mock;
+    upsert: jest.Mock;
+    deleteMany: jest.Mock;
+    create: jest.Mock;
+    createMany: jest.Mock;
+  };
+  $transaction: jest.Mock;
+}
+
 function make(envValues: Partial<Record<string, unknown>> = {}): {
   svc: SystemConfigService;
-  prisma: { systemConfig: { findMany: jest.Mock; upsert: jest.Mock; deleteMany: jest.Mock } };
+  prisma: PrismaMock;
   redis: { publish: jest.Mock };
 } {
-  const prisma = {
+  const prisma: PrismaMock = {
     systemConfig: {
       findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
       upsert: jest.fn().mockResolvedValue({}),
       deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+      create: jest.fn().mockResolvedValue({}),
+      createMany: jest.fn().mockResolvedValue({ count: 0 }),
     },
+    $transaction: jest.fn().mockImplementation((ops: unknown[]) => Promise.all(ops)),
   };
   const config = { raw: (k: string) => envValues[k] } as unknown as AppConfigService;
   const encryption = new EncryptionService({ configEncryptionKey: KEY } as never);
@@ -73,6 +89,31 @@ describe('SystemConfigService', () => {
     const { svc } = make();
     await expect(svc.set('gpsid.vehicleSyncIntervalMin', '0', 'a')).rejects.toThrow();
     await expect(svc.set('unknown.key', 'x', 'a')).rejects.toThrow(/tidak dikenal/);
+  });
+
+  const preseed = (svc: SystemConfigService): Promise<void> =>
+    (svc as unknown as { preseedFromEnvOnce(): Promise<void> }).preseedFromEnvOnce();
+
+  it('preseeds env values into DB once, encrypting secrets + writing a marker', async () => {
+    const { svc, prisma } = make({ GPSID_USERNAME: 'bob', GPSID_PASSWORD: 'p@ss' });
+    await preseed(svc);
+    const rows = (prisma.systemConfig.createMany.mock.calls[0] as [{ data: Array<{ key: string; value: string }> }])[0].data;
+    const uname = rows.find((r) => r.key === 'gpsid.username');
+    const pw = rows.find((r) => r.key === 'gpsid.password');
+    expect(uname?.value).toBe('bob'); // non-secret stored plain
+    expect(pw?.value).not.toBe('p@ss'); // secret encrypted
+    expect(pw?.value.split(':')).toHaveLength(3);
+    expect(prisma.systemConfig.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ key: '__preseeded__' }) }),
+    );
+  });
+
+  it('does not preseed twice (marker present)', async () => {
+    const { svc, prisma } = make({ GPSID_USERNAME: 'bob' });
+    prisma.systemConfig.findUnique.mockResolvedValue({ key: '__preseeded__' });
+    await preseed(svc);
+    expect(prisma.systemConfig.createMany).not.toHaveBeenCalled();
+    expect(prisma.systemConfig.create).not.toHaveBeenCalled();
   });
 
   it('clear() removes the override and re-publishes', async () => {
