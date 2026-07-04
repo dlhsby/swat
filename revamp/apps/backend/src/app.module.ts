@@ -3,11 +3,12 @@ import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { ActorContextMiddleware } from './common/audit/actor-context.middleware';
+import { CryptoModule } from './common/crypto/crypto.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ApiResponseInterceptor } from './common/interceptors/api-response.interceptor';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
 import { SecurityModule } from './common/security.module';
-import { AppConfigModule } from './config';
+import { AppConfigModule, SystemConfigModule } from './config';
 import { HealthModule } from './health/health.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ArchivingModule } from './modules/archiving/archiving.module';
@@ -48,6 +49,8 @@ import { SessionModule } from './session.module';
     AppConfigModule,
     PrismaModule,
     CacheModule,
+    CryptoModule,
+    SystemConfigModule,
     SessionModule,
     SecurityModule,
     ScheduleModule.forRoot(),
