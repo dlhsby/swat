@@ -72,6 +72,15 @@ export class GpsDeviceRepository {
     });
   }
 
+  /** Deactivate a device (retained on the vehicle — the link stays, 1:many). */
+  deactivateDevice(id: string): Promise<{ id: string }> {
+    return this.prisma.gpsDevice.update({
+      where: { id },
+      data: { active: false },
+      select: { id: true },
+    });
+  }
+
   vehicleExists(id: string): Promise<{ id: string } | null> {
     return this.prisma.vehicle.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   }

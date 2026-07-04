@@ -31,7 +31,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: 'wa
 function DeviceList({
   rows,
 }: {
-  rows: ReadonlyArray<{ imei: string; plate: string; inactiveDueToConflict?: boolean }>;
+  rows: ReadonlyArray<{ imei: string; plate: string; replacedPrior?: boolean }>;
 }): JSX.Element {
   return (
     <ul className="max-h-56 divide-y divide-neutral-100 overflow-y-auto rounded-base border border-neutral-200">
@@ -40,9 +40,9 @@ function DeviceList({
           <span className="font-mono text-neutral-500">{r.imei}</span>
           <span className="flex items-center gap-2">
             <span className="font-mono font-semibold text-neutral-800">{r.plate}</span>
-            {r.inactiveDueToConflict ? (
-              <span className="rounded-[5px] bg-amber-100 px-1.5 py-0.5 text-tiny font-semibold text-amber-700">
-                nonaktif
+            {r.replacedPrior ? (
+              <span className="rounded-[5px] bg-neutral-100 px-1.5 py-0.5 text-tiny font-semibold text-neutral-600 dark:bg-neutral-800">
+                ganti lama
               </span>
             ) : null}
           </span>
@@ -103,7 +103,7 @@ export function GpsSyncResultDialog({
           <Stat label="Dibuat" value={result.createdCount} />
           <Stat label="Dipetakan ulang" value={result.remappedCount} />
           <Stat label="Tetap" value={result.unchangedCount} />
-          <Stat label="Nonaktif (konflik)" value={result.conflictCount} tone="warn" />
+          <Stat label="Perangkat lama diganti" value={result.replacedActiveCount} />
           <Stat label="Tanpa plat" value={result.skippedNoPlateCount} tone="warn" />
           <Stat label="Tak cocok" value={result.unmatchedVehicles.length} tone="warn" />
         </div>

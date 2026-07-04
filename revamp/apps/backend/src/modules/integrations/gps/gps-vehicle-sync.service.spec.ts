@@ -35,6 +35,7 @@ function makeService(opts: {
       ),
     create: jest.fn().mockResolvedValue({ id: 'new' }),
     update: jest.fn().mockResolvedValue({ id: 'upd' }),
+    deactivateDevice: jest.fn().mockResolvedValue({ id: 'deact' }),
     deleteUnmatchedForImei: jest.fn().mockResolvedValue({ count: 0 }),
     listDeviceIds: jest.fn().mockResolvedValue(opts.existingDeviceIds ?? []),
     listQueuedImeis: jest.fn().mockResolvedValue(opts.queuedImeis ?? []),
@@ -133,8 +134,11 @@ describe('GpsVehicleSyncService', () => {
     });
     const result = await service.sync();
     expect(result.remappedCount).toBe(1);
-    expect(result.remapped[0]).toMatchObject({ vehicleId: V2, inactiveDueToConflict: false });
-    expect(repo.update).toHaveBeenCalledWith('d222', { vehicle: { connect: { id: V2 } } });
+    expect(result.remapped[0]).toMatchObject({ vehicleId: V2, replacedPrior: false });
+    expect(repo.update).toHaveBeenCalledWith('d222', {
+      vehicle: { connect: { id: V2 } },
+      active: true,
+    });
   });
 
   it('counts an IMEI already on the right vehicle as unchanged', async () => {
@@ -188,7 +192,7 @@ describe('GpsVehicleSyncService', () => {
     expect(result.skippedNoPlateCount).toBe(1);
   });
 
-  it('lands a new device inactive when the vehicle already has active hardware', async () => {
+  it('adds the new device as active and deactivates the prior tracker (1:many)', async () => {
     const { service, repo } = makeService({
       remote: [{ imei: '666', plate: 'L1' }],
       plates: [{ id: V1, plateNumber: 'L1' }],
@@ -196,7 +200,23 @@ describe('GpsVehicleSyncService', () => {
     });
     const result = await service.sync();
     expect(result.createdCount).toBe(1);
-    expect(result.conflictCount).toBe(1);
-    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ active: false }));
+    expect(result.replacedActiveCount).toBe(1);
+    expect(result.created[0]).toMatchObject({ replacedPrior: true });
+    // The prior active hardware is deactivated (retained), the new one is active.
+    expect(repo.deactivateDevice).toHaveBeenCalledWith('existing');
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ active: true }));
+  });
+
+  it('creates an active device with no prior when the vehicle is untracked', async () => {
+    const { service, repo } = makeService({
+      remote: [{ imei: '777', plate: 'L1' }],
+      plates: [{ id: V1, plateNumber: 'L1' }],
+    });
+    const result = await service.sync();
+    expect(result.createdCount).toBe(1);
+    expect(result.replacedActiveCount).toBe(0);
+    expect(result.created[0]).toMatchObject({ replacedPrior: false });
+    expect(repo.deactivateDevice).not.toHaveBeenCalled();
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ active: true }));
   });
 });

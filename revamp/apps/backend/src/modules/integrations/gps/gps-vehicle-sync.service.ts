@@ -1,7 +1,12 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
+import { extractPlate } from '../../../common/plate';
+
 import { GpsDeviceRepository } from './gps-device.repository';
 import { GpsidClientService } from './gpsid-client.service';
+
+// Re-exported so existing importers (and the spec) keep resolving it here.
+export { extractPlate };
 
 /** One GPS.id vehicle that could not be linked (its plate has no SWAT vehicle). */
 export interface UnmatchedVehicle {
@@ -14,9 +19,9 @@ export interface SyncedDevice {
   readonly imei: string;
   readonly plate: string;
   readonly vehicleId: string;
-  /** True when the vehicle already had another active hardware tracker, so this
-   *  device was linked as INACTIVE to preserve the one-active-hardware rule. */
-  readonly inactiveDueToConflict: boolean;
+  /** True when this device took over as the active tracker, deactivating a prior
+   *  active hardware device on the vehicle (retained — the relation is 1:many). */
+  readonly replacedPrior: boolean;
 }
 
 /** Outcome of a GPS.id → SWAT device roster sync. */
@@ -26,39 +31,13 @@ export interface GpsSyncResult {
   readonly unchangedCount: number;
   /** GPS.id rows skipped because they carried no plate to match on. */
   readonly skippedNoPlateCount: number;
-  /** Devices linked as inactive because the vehicle had active hardware already. */
-  readonly conflictCount: number;
+  /** Synced devices that took over as active tracker, deactivating a prior one. */
+  readonly replacedActiveCount: number;
   /** Unmatched GPS.id vehicles newly parked in the "IMEI tak dikenal" queue. */
   readonly queuedUnknownCount: number;
   readonly created: SyncedDevice[];
   readonly remapped: SyncedDevice[];
   readonly unmatchedVehicles: UnmatchedVehicle[];
-}
-
-/** Indonesian plate: 1–2 area letters · 1–4 digits · 1–3 series letters. */
-const PLATE_PATTERN = /([A-Z]{1,2})\s*(\d{1,4})\s*([A-Z]{1,3})/g;
-
-/**
- * Extract a normalized Indonesian license plate from a raw string.
- *
- * GPS.id names a vehicle by type + plate (e.g. `"ARMROLL 14M3-B 9552 EQ"`), and a
- * legacy SWAT plate may carry a dedup suffix (`"B9552EQ#43"`); both must reduce to
- * `"B9552EQ"` to match. Returns the LAST plate-shaped token (the vendor puts the
- * plate last, after the body type/size), or a punctuation-stripped fallback when no
- * plate shape is found. Applied to BOTH sides so the comparison is symmetric.
- */
-export function extractPlate(raw: string): string {
-  const upper = raw.toUpperCase();
-  PLATE_PATTERN.lastIndex = 0;
-  let last: RegExpExecArray | null = null;
-  let match: RegExpExecArray | null;
-  while ((match = PLATE_PATTERN.exec(upper)) !== null) {
-    last = match;
-  }
-  if (last) {
-    return `${last[1]}${last[2]}${last[3]}`;
-  }
-  return upper.replace(/[^A-Z0-9]/g, '');
 }
 
 /**
@@ -69,10 +48,11 @@ export function extractPlate(raw: string): string {
  *   - known IMEI already on the right vehicle           → unchanged
  *   - plate with no SWAT vehicle                        → reported (not linked)
  *
- * Additive + remap only — it never deletes SWAT devices. The one-active-hardware
- * rule is preserved: a device that would become a second active tracker on a
- * vehicle is linked INACTIVE and reported as a conflict for the operator to
- * resolve. Runs on demand (button) and, when enabled, on a schedule.
+ * Additive + remap only — it never deletes SWAT devices. A vehicle may hold many
+ * devices (1:many), so a synced device is LINKED and made the ACTIVE tracker; any
+ * prior active hardware (e.g. a seeded demo tracker) is deactivated but retained,
+ * keeping the one-active-hardware rule. Runs on demand (button) and, when enabled,
+ * on a schedule.
  */
 @Injectable()
 export class GpsVehicleSyncService {
@@ -104,7 +84,7 @@ export class GpsVehicleSyncService {
     const toQueue: Array<{ imei: string; payload: Record<string, string> }> = [];
     let unchangedCount = 0;
     let skippedNoPlateCount = 0;
-    let conflictCount = 0;
+    let replacedActiveCount = 0;
 
     for (const row of remote) {
       const imei = row.imei.trim();
@@ -133,39 +113,45 @@ export class GpsVehicleSyncService {
           unchangedCount += 1;
           continue;
         }
-        // Remap to the plate's vehicle. Preserve the one-active-hardware rule: if the
-        // target already has an active hardware tracker, land this one inactive.
-        const conflict =
-          existing.active &&
-          existing.deviceType === 'gps-hardware' &&
-          (await this.repo.findActiveHardwareForVehicle(vehicle.id)) !== null;
+        // Remap to the plate's vehicle and make it the active tracker, deactivating
+        // any other active hardware on that vehicle (retained — 1:many).
+        const prior = await this.repo.findActiveHardwareForVehicle(vehicle.id);
+        const replaced = prior !== null && prior.id !== existing.id;
+        if (replaced) {
+          await this.repo.deactivateDevice(prior.id);
+          replacedActiveCount += 1;
+        }
         await this.repo.update(existing.id, {
           vehicle: { connect: { id: vehicle.id } },
-          ...(conflict ? { active: false } : {}),
+          active: true,
         });
-        if (conflict) conflictCount += 1;
         remapped.push({
           imei,
           plate: vehicle.plateNumber,
           vehicleId: vehicle.id,
-          inactiveDueToConflict: conflict,
+          replacedPrior: replaced,
         });
       } else {
-        const conflict = (await this.repo.findActiveHardwareForVehicle(vehicle.id)) !== null;
+        // Add the real GPS.id device and make it active, deactivating any prior
+        // active hardware (e.g. a seeded demo tracker) — the relation is 1:many.
+        const prior = await this.repo.findActiveHardwareForVehicle(vehicle.id);
+        if (prior) {
+          await this.repo.deactivateDevice(prior.id);
+          replacedActiveCount += 1;
+        }
         await this.repo.create({
           vehicle: { connect: { id: vehicle.id } },
           deviceType: 'gps-hardware',
           deviceId: imei,
           imei,
           provider: 'gpsid',
-          active: !conflict,
+          active: true,
         });
-        if (conflict) conflictCount += 1;
         created.push({
           imei,
           plate: vehicle.plateNumber,
           vehicleId: vehicle.id,
-          inactiveDueToConflict: conflict,
+          replacedPrior: prior !== null,
         });
       }
       // A freshly linked IMEI no longer belongs in the unmatched-ping queue.
@@ -181,7 +167,7 @@ export class GpsVehicleSyncService {
       remappedCount: remapped.length,
       unchangedCount,
       skippedNoPlateCount,
-      conflictCount,
+      replacedActiveCount,
       queuedUnknownCount: toQueue.length,
       created,
       remapped,
@@ -189,7 +175,7 @@ export class GpsVehicleSyncService {
     };
     this.logger.log(
       `GPS.id sync: +${result.createdCount} created, ${result.remappedCount} remapped, ` +
-        `${result.unchangedCount} unchanged, ${result.conflictCount} conflicts, ` +
+        `${result.unchangedCount} unchanged, ${result.replacedActiveCount} replaced, ` +
         `${result.unmatchedVehicles.length} unmatched (${result.queuedUnknownCount} newly queued).`,
     );
     return result;

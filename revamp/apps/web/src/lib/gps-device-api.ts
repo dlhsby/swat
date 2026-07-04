@@ -70,10 +70,10 @@ export interface GpsSyncResult {
   remappedCount: number;
   unchangedCount: number;
   skippedNoPlateCount: number;
-  conflictCount: number;
+  replacedActiveCount: number;
   queuedUnknownCount: number;
-  created: Array<{ imei: string; plate: string; vehicleId: string; inactiveDueToConflict: boolean }>;
-  remapped: Array<{ imei: string; plate: string; vehicleId: string; inactiveDueToConflict: boolean }>;
+  created: Array<{ imei: string; plate: string; vehicleId: string; replacedPrior: boolean }>;
+  remapped: Array<{ imei: string; plate: string; vehicleId: string; replacedPrior: boolean }>;
   unmatchedVehicles: UnmatchedVehicle[];
 }
 
