@@ -177,6 +177,10 @@
     "subtitle": "Customize the app's appearance and preferences.",
     "tabPersonal": "Preferences",
     "tabSystem": "System",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "unsaved": "You have unsaved changes",
+    "saved": "Changes saved.",
     "appearance": "Appearance",
     "appearanceBody": "Choose a light or dark theme, or follow the system.",
     "themeSystem": "System",
@@ -189,6 +193,7 @@
     "systemTitle": "System Settings",
     "systemBody": "Credentials & integrations (GPS.id, Maps, GPS thresholds, weighbridge). Values here override the environment variables; clear to revert to the default.",
     "about": "About",
+    "aboutBody": "App version & information.",
     "aboutApp": "Application",
     "aboutOrg": "Organization",
     "aboutVersion": "Version"

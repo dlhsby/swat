@@ -177,6 +177,10 @@
     "subtitle": "Sesuaikan tampilan dan preferensi aplikasi.",
     "tabPersonal": "Preferensi",
     "tabSystem": "Sistem",
+    "saveChanges": "Simpan Perubahan",
+    "cancel": "Batal",
+    "unsaved": "Ada perubahan yang belum disimpan",
+    "saved": "Perubahan disimpan.",
     "appearance": "Tampilan",
     "appearanceBody": "Pilih tema terang, gelap, atau ikuti sistem.",
     "themeSystem": "Sistem",
@@ -189,6 +193,7 @@
     "systemTitle": "Pengaturan Sistem",
     "systemBody": "Kredensial & integrasi (GPS.id, Peta, ambang GPS, jembatan timbang). Nilai di sini menimpa variabel lingkungan; kosongkan untuk kembali ke bawaan.",
     "about": "Tentang",
+    "aboutBody": "Versi & informasi aplikasi.",
     "aboutApp": "Aplikasi",
     "aboutOrg": "Instansi",
     "aboutVersion": "Versi"
