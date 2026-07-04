@@ -1,10 +1,8 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 
 import { type Locale, locales } from '@/i18n/config';
-import { usePathname, useRouter } from '@/i18n/navigation';
-import { updatePreferences } from '@/lib/auth-api';
 
 import { SegmentedControl } from './segmented-control';
 
@@ -14,24 +12,21 @@ const LOCALE_LABELS: Record<Locale, string> = {
   'en-US': 'English',
 };
 
-/** Language picker — switches the active locale while preserving the route. */
-export function LanguageControl(): JSX.Element {
+export interface LanguageControlProps {
+  readonly value: Locale;
+  readonly onChange: (next: Locale) => void;
+}
+
+/**
+ * Language picker. Presentational (controlled): the parent holds the staged locale
+ * and navigates to it on Save (so an accidental tap doesn't switch language).
+ */
+export function LanguageControl({ value, onChange }: LanguageControlProps): JSX.Element {
   const t = useTranslations('settings');
-  const locale = useLocale() as Locale;
-  const router = useRouter();
-  const pathname = usePathname();
-
-  const onChange = (next: Locale): void => {
-    if (next !== locale) {
-      void updatePreferences({ locale: next }).catch(() => undefined); // persist per-user (best-effort)
-      router.replace(pathname, { locale: next });
-    }
-  };
-
   return (
     <SegmentedControl<Locale>
       ariaLabel={t('language')}
-      value={locale}
+      value={value}
       onChange={onChange}
       options={locales.map((l) => ({ value: l, label: LOCALE_LABELS[l] }))}
     />

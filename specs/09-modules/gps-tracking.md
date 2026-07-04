@@ -157,8 +157,11 @@ draggable handles), `toleranceMeters` (default 150), `lengthMeters` (server-comp
 
 ### 2.5 DeviationRule
 Tunable per type (optionally per route). Fields: `id`, `deviationType`
-(`off_corridor`|`off_sequence`|`dwell_too_long`|`late_to_schedule`), `threshold` (m or sec), `hysteresisSec`
-(default 30), `severity` (`INFO`|`WARNING`|`CRITICAL`), `enabled`.
+(`off_corridor`|`off_sequence`|`dwell_too_long`|`late_to_schedule`), `threshold` (m or sec, **nullable** —
+`off_sequence` has none, and a threshold may be cleared to null), `hysteresisSec` (default 30), `severity`
+(`INFO`|`WARNING`|`CRITICAL`), `enabled`. The **four default rules are ensured at boot** (idempotent
+`DeviationRuleService.onModuleInit`, never overwriting operator edits) so every environment — incl.
+legacy-seeded staging/prod — starts with a tunable baseline. Edited via **Settings → Sistem → Pelacakan**.
 
 ### 2.6 DeviationAlert
 Fields: `id`, `vehicleId`, `tripId?`, `alertType`, `severity`, `latitude`, `longitude`, `distanceM?`,

@@ -317,6 +317,12 @@ Examples:
 - The GPS.id inbound **webhook is not RBAC-gated** — it authenticates with a secret path token + IP
   allowlist + rate-limit + audit (it carries no vendor signature). See `gps-tracking.md` §7.
 
+**System configuration (admin):**
+- `system-config:manage` — view/edit runtime global settings (`system_config`: GPS.id credentials, Maps
+  keys, GPS/webhook thresholds, weighbridge rate) via **Settings → Sistem**; secrets are AES-256-GCM
+  encrypted at rest. See `07-api-spec.md` §3b. (`service-account:*`, `archive:*`, and `weighbridge:*` are
+  the other admin/machine-scoped resources — Phase 4 / Phase 2.)
+
 ## 2.2.1 Notes on `transaction-day` permissions
 
 - **`transaction-day:read`** — view transaction days, haul board, trip summaries

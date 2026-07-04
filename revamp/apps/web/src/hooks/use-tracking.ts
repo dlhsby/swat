@@ -122,10 +122,11 @@ export function useVehicleDayActivity(vehicleId: string | null, date: string) {
 }
 
 /** The tunable deviation rules (Phase 7) — gated `deviation-rule:manage`. */
-export function useDeviationRules() {
+export function useDeviationRules(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [KEY, 'deviation-rules'],
     queryFn: () => trackingApi.deviationRules(),
+    enabled: options?.enabled ?? true,
   });
 }
 
