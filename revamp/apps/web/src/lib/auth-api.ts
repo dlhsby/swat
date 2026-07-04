@@ -10,6 +10,8 @@ export interface CurrentUser {
   /** Flattened permission keys, e.g. `["trip:verify", "user:manage"]`. */
   readonly permissions: readonly string[];
   readonly mustChangePassword: boolean;
+  /** Personal preferences (null = follow default: theme=system, locale=id-ID). */
+  readonly preferences: { theme: string | null; locale: string | null };
 }
 
 /** The subset returned by `POST /auth/login` (no permission list yet). */
@@ -39,6 +41,14 @@ export function logout(): Promise<{ message: string }> {
 
 export function fetchMe(): Promise<CurrentUser> {
   return apiClient.get<CurrentUser>('/auth/me');
+}
+
+/** Persist the current user's personal preferences (theme / UI language). */
+export function updatePreferences(prefs: {
+  theme?: string;
+  locale?: string;
+}): Promise<{ theme: string | null; locale: string | null }> {
+  return apiClient.patch('/auth/me/preferences', { ...prefs });
 }
 
 export function changePassword(input: ChangePasswordInput): Promise<{ message: string }> {

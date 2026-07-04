@@ -5,12 +5,12 @@ import { MapPinned } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect } from 'react';
 
+import { useMapsApiKey } from '@/hooks/use-maps-key';
 import { type RouteMapEdge, type RouteMapSite } from '@/lib/monitoring-api';
 import { type TrackPoint, type VehiclePosition } from '@/lib/tracking-api';
 
 /** Surabaya city centre — the default view before bounds are fit to the data. */
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
-const MAP_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 /** Marker fill for a vehicle by source + device status (Phase 7 vehicle layer). */
 function vehicleColor(v: VehiclePosition): string {
@@ -201,8 +201,9 @@ export function HaulingMap({
   trail?: readonly TrackPoint[];
 }): JSX.Element {
   const t = useTranslations('monitoring.hauling');
+  const mapKey = useMapsApiKey();
 
-  if (!MAP_KEY) {
+  if (!mapKey) {
     return <MapNotice message={t('mapPlaceholder')} />;
   }
   if (!loading && sites.length === 0 && vehicles.length === 0) {
@@ -211,7 +212,7 @@ export function HaulingMap({
 
   return (
     <div className="h-[480px] overflow-hidden rounded-base">
-      <APIProvider apiKey={MAP_KEY}>
+      <APIProvider apiKey={mapKey}>
         <GoogleMap
           defaultCenter={SURABAYA}
           defaultZoom={11}

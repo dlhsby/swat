@@ -4,6 +4,7 @@ import { Monitor, Moon, Sun } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
+import { updatePreferences } from '@/lib/auth-api';
 import { getThemePreference, setThemePreference, type ThemePreference } from '@/lib/theme';
 
 import { SegmentedControl } from './segmented-control';
@@ -22,7 +23,8 @@ export function AppearanceControl(): JSX.Element {
 
   const onChange = (next: ThemePreference): void => {
     setPref(next);
-    setThemePreference(next);
+    setThemePreference(next); // localStorage + DOM (pre-paint cache)
+    void updatePreferences({ theme: next }).catch(() => undefined); // persist per-user (best-effort)
   };
 
   return (

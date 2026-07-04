@@ -184,6 +184,8 @@
     "languageBody": "Choose the application interface language.",
     "tracking": "Tracking",
     "trackingBody": "Tune the GPS route-deviation rule thresholds (corridor distance, dwell time, lateness).",
+    "systemTitle": "System Settings",
+    "systemBody": "Credentials & integrations (GPS.id, Maps, GPS thresholds, weighbridge). Values here override the environment variables; clear to revert to the default.",
     "about": "About",
     "aboutApp": "Application",
     "aboutOrg": "Organization",
