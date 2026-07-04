@@ -2,6 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { MapPin, Navigation, RotateCcw, Scale, Undo2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -12,18 +13,7 @@ import {
 } from '@/components/settings/deviation-rules-control';
 import { SettingsNavButton } from '@/components/settings/settings-nav-button';
 import { SettingsSaveBar } from '@/components/settings/settings-save-bar';
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  InfoHint,
-  Input,
-  Spinner,
-  Switch,
-  notify,
-} from '@/components/ui';
+import { Button, Card, CardContent, InfoHint, Input, Spinner, Switch, notify } from '@/components/ui';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useSystemConfig } from '@/hooks/use-system-config';
 import { useDeviationRules } from '@/hooks/use-tracking';
@@ -32,15 +22,14 @@ import { cn } from '@/lib/cn';
 import { type ConfigDescription, systemConfigApi } from '@/lib/system-config-api';
 import { type DeviationType, trackingApi } from '@/lib/tracking-api';
 
-/** A card inside a group panel: a set of config keys, or the deviation-rules editor. */
+/** A card inside a group panel: a set of config keys, or the deviation-rules editor.
+ * `id` keys the localized title/help under `settings.sys.cards.<id>`. */
 type CardDef =
-  | { title: string; help: string; requires: 'config'; keys: readonly string[] }
-  | { title: string; help: string; requires: 'deviation'; deviation: true };
+  | { id: string; requires: 'config'; keys: readonly string[] }
+  | { id: string; requires: 'deviation'; deviation: true };
 
 interface GroupDef {
   readonly id: string;
-  readonly label: string;
-  readonly help: string;
   readonly icon: typeof Navigation;
   readonly cards: readonly CardDef[];
 }
@@ -48,18 +37,15 @@ interface GroupDef {
 /**
  * Left-rail groups. All GPS concerns (GPS.id integration, webhook intake, movement
  * detection, route-deviation alerts) live under one "GPS.id & Pelacakan" group, split
- * into clearly-separated cards.
+ * into clearly-separated cards. Labels/help are localized (settings.sys.*).
  */
 const GROUPS: readonly GroupDef[] = [
   {
     id: 'gps',
-    label: 'GPS.id & Pelacakan',
-    help: 'Integrasi GPS.id, webhook, deteksi & alarm penyimpangan',
     icon: Navigation,
     cards: [
       {
-        title: 'Integrasi GPS.id',
-        help: 'Kredensial akun GPS.id dan sinkronisasi otomatis terjadwal.',
+        id: 'gpsid',
         requires: 'config',
         keys: [
           'gpsid.baseUrl',
@@ -72,59 +58,35 @@ const GROUPS: readonly GroupDef[] = [
         ],
       },
       {
-        title: 'Penerimaan Data & Webhook',
-        help: 'Keamanan dan laju endpoint yang menerima posisi dari GPS.id.',
+        id: 'webhook',
         requires: 'config',
         keys: ['gps.webhookToken', 'gps.allowedIps', 'gps.ingestRateLimitPerMin'],
       },
       {
-        title: 'Deteksi Pergerakan',
-        help: 'Ambang penentuan status offline dan pagar geo tiba/berangkat.',
+        id: 'detection',
         requires: 'config',
         keys: ['gps.deviceOfflineMinutes', 'gps.geofenceDefaultRadiusM'],
       },
-      {
-        title: 'Alarm Penyimpangan Rute',
-        help: 'Ambang & tingkat alarm saat kendaraan menyimpang dari rencana. Tiap aturan disimpan sendiri.',
-        requires: 'deviation',
-        deviation: true,
-      },
+      { id: 'deviation', requires: 'deviation', deviation: true },
     ],
   },
-  {
-    id: 'maps',
-    label: 'Peta (Google Maps)',
-    help: 'Kunci API peta (server & peramban)',
-    icon: MapPin,
-    cards: [
-      {
-        title: 'Kunci API Peta',
-        help: 'Kunci Google Maps untuk render peta dan snap-to-road koridor.',
-        requires: 'config',
-        keys: ['maps.serverKey', 'maps.browserKey'],
-      },
-    ],
-  },
+  { id: 'maps', icon: MapPin, cards: [{ id: 'maps', requires: 'config', keys: ['maps.serverKey', 'maps.browserKey'] }] },
   {
     id: 'weighbridge',
-    label: 'Jembatan Timbang',
-    help: 'Integrasi timbangan TPA',
     icon: Scale,
-    cards: [
-      {
-        title: 'Jembatan Timbang',
-        help: 'Batas laju permintaan API timbangan TPA.',
-        requires: 'config',
-        keys: ['weighbridge.rateLimitPerMin'],
-      },
-    ],
+    cards: [{ id: 'weighbridge', requires: 'config', keys: ['weighbridge.rateLimitPerMin'] }],
   },
 ];
 
-const SOURCE_META: Record<ConfigDescription['source'], { text: string; cls: string }> = {
-  db: { text: 'Kustom', cls: 'bg-primary-50 text-primary-700 dark:text-primary-400' },
-  env: { text: 'Dari env', cls: 'bg-neutral-100 text-neutral-600' },
-  unset: { text: 'Belum diset', cls: 'bg-amber-100 text-amber-700' },
+const SOURCE_CLASS: Record<ConfigDescription['source'], string> = {
+  db: 'bg-primary-50 text-primary-700 dark:text-primary-400',
+  env: 'bg-neutral-100 text-neutral-600',
+  unset: 'bg-amber-100 text-amber-700',
+};
+const SOURCE_KEY: Record<ConfigDescription['source'], string> = {
+  db: 'sys.sourceDb',
+  env: 'sys.sourceEnv',
+  unset: 'sys.sourceUnset',
 };
 
 /** The current saved value of a setting as a comparable string (secrets are opaque). */
@@ -132,13 +94,6 @@ function savedString(item: ConfigDescription): string {
   if (item.valueType === 'boolean') return item.value === true ? 'true' : 'false';
   if (item.isSecret || item.value === undefined) return '';
   return String(item.value);
-}
-
-function SourceBadge({ source }: { source: ConfigDescription['source'] }): JSX.Element {
-  const m = SOURCE_META[source];
-  return (
-    <span className={`rounded-[5px] px-1.5 py-0.5 text-tiny font-semibold ${m.cls}`}>{m.text}</span>
-  );
 }
 
 interface ConfigRowProps {
@@ -151,8 +106,13 @@ interface ConfigRowProps {
 }
 
 /** One setting: label + help tooltip + status + control. Fully controlled — edits stage
- * into the section's pending map, applied only on Save. */
+ * into the section's pending map, applied only on Save. Labels/help are localized, with
+ * the API's catalog label as a fallback for keys not yet translated. */
 function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps): JSX.Element {
+  const t = useTranslations('settings');
+  const label = t.has(`sys.fields.${item.key}.label`) ? t(`sys.fields.${item.key}.label`) : item.label;
+  const help = t.has(`sys.fields.${item.key}.help`) ? t(`sys.fields.${item.key}.help`) : item.help;
+
   const isStaged = staged !== undefined;
   const isClear = staged === null;
   const textValue = isStaged ? (staged ?? '') : item.isSecret ? '' : String(item.value ?? '');
@@ -162,18 +122,22 @@ function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps):
     <div className="flex flex-col gap-2 rounded-base border border-neutral-200 bg-neutral-0 p-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className="text-body-sm font-semibold text-neutral-900">{item.label}</p>
-          {item.help ? <InfoHint label={item.help} srLabel={`Penjelasan ${item.label}`} /> : null}
+          <p className="text-body-sm font-semibold text-neutral-900">{label}</p>
+          {help ? <InfoHint label={help} srLabel={label} /> : null}
           {isStaged ? (
             <span className="rounded-[5px] bg-amber-100 px-1.5 py-0.5 text-tiny font-semibold text-amber-700">
-              Belum disimpan
+              {t('sys.staged')}
             </span>
           ) : (
-            <SourceBadge source={item.source} />
+            <span
+              className={`rounded-[5px] px-1.5 py-0.5 text-tiny font-semibold ${SOURCE_CLASS[item.source]}`}
+            >
+              {t(SOURCE_KEY[item.source])}
+            </span>
           )}
           {item.isSecret ? (
             <span className="rounded-[5px] bg-neutral-100 px-1.5 py-0.5 text-tiny text-neutral-500">
-              rahasia
+              {t('sys.secret')}
             </span>
           ) : null}
         </div>
@@ -183,7 +147,7 @@ function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps):
         <Switch
           checked={boolChecked}
           onCheckedChange={(c) => onStage(item.key, String(c))}
-          aria-label={item.label}
+          aria-label={label}
         />
       ) : (
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:flex-nowrap">
@@ -193,11 +157,11 @@ function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps):
             onChange={(e) => onStage(item.key, e.target.value)}
             placeholder={
               isClear
-                ? '↩ akan dikembalikan ke bawaan'
+                ? t('sys.phRevert')
                 : item.isSecret
                   ? item.isSet
-                    ? '• • • • • •  (isi untuk mengganti)'
-                    : 'Belum diset'
+                    ? t('sys.phSecretSet')
+                    : t('sys.phUnset')
                   : undefined
             }
             className="w-full min-w-0 flex-1 sm:w-64 sm:flex-none"
@@ -208,22 +172,22 @@ function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps):
               variant="ghost"
               size="sm"
               className="text-neutral-500"
-              title="Urungkan perubahan baris ini"
+              title={t('sys.undoTitle')}
               onClick={() => onUndo(item.key)}
             >
               <Undo2 className="h-3.5 w-3.5" aria-hidden />
-              Urungkan
+              {t('sys.undo')}
             </Button>
           ) : item.isSet ? (
             <Button
               variant="ghost"
               size="sm"
               className="text-neutral-500"
-              title="Kembalikan ke nilai bawaan (hapus nilai kustom saat disimpan)"
+              title={t('sys.revertTitle')}
               onClick={() => onRevert(item.key)}
             >
               <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-              Bawaan
+              {t('sys.revert')}
             </Button>
           ) : null}
         </div>
@@ -234,12 +198,12 @@ function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps):
 
 /**
  * Admin system settings — a master/detail like the roles editor. Each left-rail group
- * shows its settings as clearly-separated cards on the right, with its OWN staged Save
- * (edits apply only on "Simpan Perubahan", so an accidental toggle/typo can't take
- * effect). Config cards need `system-config:manage`; the deviation-rules card needs
- * `deviation-rule:manage` and saves each rule itself.
+ * shows its settings as clearly-separated cards on the right, with its OWN staged Save.
+ * Config cards need `system-config:manage`; the deviation-rules card needs
+ * `deviation-rule:manage` and shares the same Save.
  */
 export function SystemConfigSection(): JSX.Element | null {
+  const t = useTranslations('settings');
   const { can } = usePermissions();
   const canConfig = can('system-config:manage');
   const canDeviation = can('deviation-rule:manage');
@@ -318,17 +282,18 @@ export function SystemConfigSection(): JSX.Element | null {
     setSaving(true);
     const nextPending = new Map(pending);
     const nextRules = new Map(pendingRules);
-    let ok = 0;
     let firstError: { label: string; err: unknown } | null = null;
     for (const key of keys) {
       const val = pending.get(key) as string | null;
       try {
         if (val === null) await systemConfigApi.clear(key);
         else await systemConfigApi.set(key, val);
-        ok += 1;
         nextPending.delete(key);
       } catch (err) {
-        firstError ??= { label: byKey.get(key)?.label ?? key, err };
+        const label = t.has(`sys.fields.${key}.label`)
+          ? t(`sys.fields.${key}.label`)
+          : (byKey.get(key)?.label ?? key);
+        firstError ??= { label, err };
       }
     }
     for (const type of ruleTypes) {
@@ -340,10 +305,9 @@ export function SystemConfigSection(): JSX.Element | null {
           severity: snap.severity,
           enabled: snap.enabled,
         });
-        ok += 1;
         nextRules.delete(type);
       } catch (err) {
-        firstError ??= { label: `Aturan ${type}`, err };
+        firstError ??= { label: t(`sys.deviation.rules.${type}.label`), err };
       }
     }
     await Promise.all([
@@ -356,11 +320,11 @@ export function SystemConfigSection(): JSX.Element | null {
     if (firstError) {
       notify.error(
         `${firstError.label}: ${
-          firstError.err instanceof ApiError ? firstError.err.message : 'gagal disimpan'
+          firstError.err instanceof ApiError ? firstError.err.message : t('sys.saveError')
         }`,
       );
     } else {
-      notify.success(`${ok} setelan disimpan.`);
+      notify.success(t('saved'));
     }
   };
 
@@ -382,7 +346,7 @@ export function SystemConfigSection(): JSX.Element | null {
     );
   }
   if (canConfig && (isError || !data)) {
-    return <p className="text-body-sm text-danger-600">Gagal memuat setelan sistem.</p>;
+    return <p className="text-body-sm text-danger-600">{t('sys.loadError')}</p>;
   }
   if (groups.length === 0) {
     return null;
@@ -392,13 +356,13 @@ export function SystemConfigSection(): JSX.Element | null {
   const cards = (active?.cards ?? []).filter(cardAllowed);
   const groupDirty = active ? groupDirtyCount(active) : 0;
   const hasConfigCard = cards.some((c) => c.requires === 'config');
-  const saveable = cards.length > 0; // every visible card can be saved via this bar
+  const saveable = cards.length > 0;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
       {/* Group rail */}
       <nav
-        aria-label="Kelompok setelan"
+        aria-label={t('systemTitle')}
         className="h-fit overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0"
       >
         {groups.map((group) => {
@@ -409,14 +373,14 @@ export function SystemConfigSection(): JSX.Element | null {
             <SettingsNavButton
               key={group.id}
               icon={group.icon}
-              label={group.label}
-              help={group.help}
+              label={t(`sys.groups.${group.id}.label`)}
+              help={t(`sys.groups.${group.id}.help`)}
               active={isActive}
               right={
                 dirty > 0 ? (
                   <span
                     className="shrink-0 rounded-full bg-amber-500 px-1.5 text-[11px] font-semibold text-white"
-                    title={`${dirty} perubahan belum disimpan`}
+                    title={t('sys.unsavedCount', { count: dirty })}
                   >
                     {dirty}
                   </span>
@@ -427,7 +391,7 @@ export function SystemConfigSection(): JSX.Element | null {
                       isActive ? 'text-white/75' : 'text-neutral-400',
                     )}
                   >
-                    {keys.length} setelan
+                    {t('sys.settingsCount', { count: keys.length })}
                   </span>
                 ) : undefined
               }
@@ -441,45 +405,44 @@ export function SystemConfigSection(): JSX.Element | null {
       <div className="space-y-4">
         {hasConfigCard ? (
           <p className="rounded-base bg-neutral-50 px-3 py-2 text-tiny text-neutral-500">
-            <b className="text-primary-700 dark:text-primary-400">Kustom</b> = nilai khusus tersimpan ·{' '}
-            <b>Dari env</b> = memakai nilai bawaan server ·{' '}
-            <b className="text-amber-700">Belum diset</b> = belum ada nilai. Perubahan berlaku setelah{' '}
-            <b>Simpan Perubahan</b>; <b>Bawaan</b> menghapus nilai kustom.
+            {t.rich('sys.legend', { b: (c) => <b className="text-neutral-700">{c}</b> })}
           </p>
         ) : null}
 
         {cards.map((card) => (
-          <Card key={card.title}>
-            <CardHeader>
-              <CardTitle>{card.title}</CardTitle>
-              <p className="text-body-sm text-neutral-500">{card.help}</p>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {card.requires === 'deviation' ? (
-                <DeviationRulesControl
-                  rules={rules}
-                  isLoading={rulesLoading}
-                  isError={rulesError}
-                  staged={pendingRules}
-                  onStage={stageRule}
-                />
-              ) : (
-                card.keys
-                  .map((k) => byKey.get(k))
-                  .filter((item): item is ConfigDescription => item !== undefined)
-                  .map((item) => (
-                    <ConfigRow
-                      key={item.key}
-                      item={item}
-                      staged={
-                        pending.has(item.key) ? (pending.get(item.key) as string | null) : undefined
-                      }
-                      onStage={stage}
-                      onRevert={revert}
-                      onUndo={undo}
-                    />
-                  ))
-              )}
+          <Card key={card.id}>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="text-h3 text-neutral-900">{t(`sys.cards.${card.id}.title`)}</h3>
+                <p className="mt-1 text-body-sm text-neutral-500">{t(`sys.cards.${card.id}.help`)}</p>
+              </div>
+              <div className="space-y-2">
+                {card.requires === 'deviation' ? (
+                  <DeviationRulesControl
+                    rules={rules}
+                    isLoading={rulesLoading}
+                    isError={rulesError}
+                    staged={pendingRules}
+                    onStage={stageRule}
+                  />
+                ) : (
+                  card.keys
+                    .map((k) => byKey.get(k))
+                    .filter((item): item is ConfigDescription => item !== undefined)
+                    .map((item) => (
+                      <ConfigRow
+                        key={item.key}
+                        item={item}
+                        staged={
+                          pending.has(item.key) ? (pending.get(item.key) as string | null) : undefined
+                        }
+                        onStage={stage}
+                        onRevert={revert}
+                        onUndo={undo}
+                      />
+                    ))
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -488,12 +451,12 @@ export function SystemConfigSection(): JSX.Element | null {
           <SettingsSaveBar
             visible
             dirty={groupDirty > 0}
-            message={groupDirty > 0 ? `${groupDirty} perubahan belum disimpan` : 'Tidak ada perubahan'}
+            message={groupDirty > 0 ? t('sys.unsavedCount', { count: groupDirty }) : t('noChanges')}
             saving={saving}
             onCancel={() => cancelGroup(active)}
             onSave={() => void saveGroup(active)}
-            saveLabel="Simpan Perubahan"
-            cancelLabel="Batal"
+            saveLabel={t('saveChanges')}
+            cancelLabel={t('cancel')}
           />
         ) : null}
       </div>

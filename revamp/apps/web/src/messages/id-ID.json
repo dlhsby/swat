@@ -189,15 +189,177 @@
     "themeDark": "Gelap",
     "language": "Bahasa",
     "languageBody": "Pilih bahasa antarmuka aplikasi.",
-    "tracking": "Pelacakan",
-    "trackingBody": "Atur ambang aturan penyimpangan rute GPS (jarak koridor, durasi berhenti, keterlambatan).",
     "systemTitle": "Pengaturan Sistem",
     "systemBody": "Kredensial & integrasi (GPS.id, Peta, ambang GPS, jembatan timbang). Nilai di sini menimpa variabel lingkungan; kosongkan untuk kembali ke bawaan.",
     "about": "Tentang",
     "aboutBody": "Versi & informasi aplikasi.",
     "aboutApp": "Aplikasi",
     "aboutOrg": "Instansi",
-    "aboutVersion": "Versi"
+    "aboutVersion": "Versi",
+    "sys": {
+      "settingsCount": "{count} setelan",
+      "loadError": "Gagal memuat setelan sistem.",
+      "legend": "<b>Kustom</b> = nilai khusus tersimpan · <b>Dari env</b> = memakai nilai bawaan server · <b>Belum diset</b> = belum ada nilai. Perubahan berlaku setelah <b>Simpan Perubahan</b>; <b>Bawaan</b> menghapus nilai kustom.",
+      "unsavedCount": "{count} perubahan belum disimpan",
+      "sourceDb": "Kustom",
+      "sourceEnv": "Dari env",
+      "sourceUnset": "Belum diset",
+      "staged": "Belum disimpan",
+      "secret": "rahasia",
+      "revert": "Bawaan",
+      "revertTitle": "Kembalikan ke nilai bawaan (hapus nilai kustom saat disimpan)",
+      "undo": "Urungkan",
+      "undoTitle": "Urungkan perubahan baris ini",
+      "phSecretSet": "• • • • • •  (isi untuk mengganti)",
+      "phUnset": "Belum diset",
+      "phRevert": "↩ akan dikembalikan ke bawaan",
+      "groups": {
+        "gps": {
+          "label": "GPS.id & Pelacakan",
+          "help": "Integrasi GPS.id, webhook, deteksi & alarm penyimpangan"
+        },
+        "maps": {
+          "label": "Peta (Google Maps)",
+          "help": "Kunci API peta (server & peramban)"
+        },
+        "weighbridge": {
+          "label": "Jembatan Timbang",
+          "help": "Integrasi timbangan TPA"
+        }
+      },
+      "cards": {
+        "gpsid": {
+          "title": "Integrasi GPS.id",
+          "help": "Kredensial akun GPS.id dan sinkronisasi otomatis terjadwal."
+        },
+        "webhook": {
+          "title": "Penerimaan Data & Webhook",
+          "help": "Keamanan dan laju endpoint yang menerima posisi dari GPS.id."
+        },
+        "detection": {
+          "title": "Deteksi Pergerakan",
+          "help": "Ambang penentuan status offline dan pagar geo tiba/berangkat."
+        },
+        "deviation": {
+          "title": "Alarm Penyimpangan Rute",
+          "help": "Ambang & tingkat alarm saat kendaraan menyimpang dari rencana rute/jadwal."
+        },
+        "maps": {
+          "title": "Kunci API Peta",
+          "help": "Kunci Google Maps untuk render peta dan snap-to-road koridor."
+        },
+        "weighbridge": {
+          "title": "Jembatan Timbang",
+          "help": "Batas laju permintaan API timbangan TPA."
+        }
+      },
+      "fields": {
+        "gpsid": {
+          "baseUrl": {
+            "label": "URL API GPS.id",
+            "help": "Alamat endpoint API GPS.id. Bawaan: https://portal.gps.id/backend/seen/public — ubah hanya bila vendor memberi endpoint berbeda."
+          },
+          "username": {
+            "label": "Username GPS.id",
+            "help": "Username akun API GPS.id. Didapat dari dashboard GPS.id atau vendor GPS.id."
+          },
+          "password": {
+            "label": "Password GPS.id",
+            "help": "Password akun API GPS.id (dari vendor GPS.id). Disimpan terenkripsi; kosong = tidak diubah."
+          },
+          "vehicleSync": {
+            "label": "Sinkronisasi kendaraan otomatis",
+            "help": "Bila aktif, roster kendaraan GPS.id disinkronkan otomatis secara terjadwal (mencocokkan perangkat GPS ke kendaraan berdasarkan plat)."
+          },
+          "vehicleSyncIntervalMin": {
+            "label": "Interval sinkronisasi (menit)",
+            "help": "Selang waktu sinkronisasi roster otomatis, dalam menit. Mis. 1440 = sekali sehari."
+          },
+          "positionPull": {
+            "label": "Tarik posisi otomatis",
+            "help": "Bila aktif, riwayat posisi tiap perangkat aktif ditarik dari GPS.id secara berkala (pelengkap webhook push)."
+          },
+          "pullIntervalMin": {
+            "label": "Interval tarik posisi (menit)",
+            "help": "Selang waktu tarik posisi otomatis, dalam menit. Mis. 1440 = sekali sehari."
+          }
+        },
+        "gps": {
+          "webhookToken": {
+            "label": "Token webhook GPS.id",
+            "help": "Token rahasia pada URL webhook (POST /integrations/gps/webhook/:token). Buat string acak ≥16 karakter, lalu daftarkan URL berisi token ini ke GPS.id. Disimpan terenkripsi."
+          },
+          "allowedIps": {
+            "label": "IP webhook diizinkan (pisah koma)",
+            "help": "Daftar alamat IP sumber webhook yang diizinkan, dipisah koma (mis. IP egress GPS.id). Kosongkan untuk mengizinkan semua IP dan mengandalkan token."
+          },
+          "ingestRateLimitPerMin": {
+            "label": "Batas laju webhook (per menit)",
+            "help": "Batas jumlah kiriman webhook per menit per IP (pelindung dari banjir data). Bawaan 600."
+          },
+          "deviceOfflineMinutes": {
+            "label": "Batas perangkat offline (menit)",
+            "help": "Perangkat yang tidak mengirim posisi selama menit ini ditandai offline di peta. Bawaan 10."
+          },
+          "geofenceDefaultRadiusM": {
+            "label": "Radius geofence default (m)",
+            "help": "Radius pagar geo (meter) untuk deteksi tiba/berangkat di lokasi, dipakai bila lokasi belum punya radius sendiri. Bawaan 100."
+          }
+        },
+        "maps": {
+          "serverKey": {
+            "label": "Kunci Maps (server)",
+            "help": "Kunci Google Maps sisi server untuk snap-to-road koridor. Buat di Google Cloud Console → aktifkan Directions API, batasi per alamat IP server. Disimpan terenkripsi."
+          },
+          "browserKey": {
+            "label": "Kunci Maps (browser)",
+            "help": "Kunci Google Maps untuk menampilkan peta di peramban. Buat di Google Cloud Console → aktifkan Maps JavaScript API, batasi per HTTP referrer (domain aplikasi). Disimpan terenkripsi."
+          }
+        },
+        "weighbridge": {
+          "rateLimitPerMin": {
+            "label": "Batas laju jembatan timbang (per menit)",
+            "help": "Batas jumlah permintaan API jembatan timbang TPA per menit. Bawaan 500."
+          }
+        }
+      },
+      "deviation": {
+        "loadError": "Gagal memuat aturan penyimpangan.",
+        "enableRule": "Aktifkan aturan",
+        "thresholdMeter": "Ambang (meter)",
+        "thresholdSecond": "Ambang (detik)",
+        "hysteresis": "Jeda konfirmasi (detik)",
+        "severity": "Tingkat",
+        "hintThresholdM": "Jarak batas sebelum dianggap menyimpang, dalam meter — mis. 150 berarti kendaraan dianggap keluar koridor bila lebih dari 150 m dari jalur.",
+        "hintThresholdS": "Nilai batas sebelum kondisi dicatat sebagai penyimpangan, dalam detik.",
+        "hintHysteresis": "Lama kondisi harus bertahan terus-menerus sebelum alarm dibunyikan — meredam lonjakan GPS sesaat agar tidak memicu alarm palsu. Mis. 30 berarti harus menyimpang selama 30 detik dulu.",
+        "hintSeverity": "Tingkat keparahan alarm saat aturan ini terpicu: Info (catatan), Peringatan, atau Kritis (paling mendesak).",
+        "sev": {
+          "INFO": "Info",
+          "WARNING": "Peringatan",
+          "CRITICAL": "Kritis"
+        },
+        "rules": {
+          "off_corridor": {
+            "label": "Keluar koridor",
+            "hint": "Jarak dari koridor sebelum dianggap menyimpang"
+          },
+          "off_sequence": {
+            "label": "Urutan lokasi salah",
+            "hint": "Mengunjungi lokasi di luar urutan rencana"
+          },
+          "dwell_too_long": {
+            "label": "Berhenti terlalu lama",
+            "hint": "Diam di luar geofence lokasi melebihi batas"
+          },
+          "late_to_schedule": {
+            "label": "Terlambat dari jadwal",
+            "hint": "Tiba melebihi waktu target"
+          }
+        }
+      },
+      "saveError": "gagal disimpan"
+    }
   },
   "dashboard": {
     "greetingMorning": "Selamat pagi",

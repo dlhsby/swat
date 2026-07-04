@@ -189,15 +189,177 @@
     "themeDark": "Dark",
     "language": "Language",
     "languageBody": "Choose the application interface language.",
-    "tracking": "Tracking",
-    "trackingBody": "Tune the GPS route-deviation rule thresholds (corridor distance, dwell time, lateness).",
     "systemTitle": "System Settings",
     "systemBody": "Credentials & integrations (GPS.id, Maps, GPS thresholds, weighbridge). Values here override the environment variables; clear to revert to the default.",
     "about": "About",
     "aboutBody": "App version & information.",
     "aboutApp": "Application",
     "aboutOrg": "Organization",
-    "aboutVersion": "Version"
+    "aboutVersion": "Version",
+    "sys": {
+      "settingsCount": "{count} settings",
+      "loadError": "Failed to load system settings.",
+      "legend": "<b>Custom</b> = a saved override · <b>From env</b> = using the server default · <b>Unset</b> = no value yet. Changes apply after <b>Save Changes</b>; <b>Default</b> clears the override.",
+      "unsavedCount": "{count} unsaved change(s)",
+      "sourceDb": "Custom",
+      "sourceEnv": "From env",
+      "sourceUnset": "Unset",
+      "staged": "Unsaved",
+      "secret": "secret",
+      "revert": "Default",
+      "revertTitle": "Revert to default (removes the custom value on save)",
+      "undo": "Undo",
+      "undoTitle": "Undo this row's change",
+      "phSecretSet": "• • • • • •  (enter to change)",
+      "phUnset": "Not set",
+      "phRevert": "↩ will revert to default",
+      "groups": {
+        "gps": {
+          "label": "GPS.id & Tracking",
+          "help": "GPS.id integration, webhook, detection & deviation alerts"
+        },
+        "maps": {
+          "label": "Maps (Google Maps)",
+          "help": "Map API keys (server & browser)"
+        },
+        "weighbridge": {
+          "label": "Weighbridge",
+          "help": "TPA weighbridge integration"
+        }
+      },
+      "cards": {
+        "gpsid": {
+          "title": "GPS.id Integration",
+          "help": "GPS.id account credentials and scheduled auto-sync."
+        },
+        "webhook": {
+          "title": "Data Intake & Webhook",
+          "help": "Security and rate of the endpoint that receives positions from GPS.id."
+        },
+        "detection": {
+          "title": "Movement Detection",
+          "help": "Offline threshold and geofence for arrive/depart detection."
+        },
+        "deviation": {
+          "title": "Route Deviation Alerts",
+          "help": "Thresholds & severity for alerts when a vehicle deviates from its planned route/schedule."
+        },
+        "maps": {
+          "title": "Map API Keys",
+          "help": "Google Maps keys for rendering maps and snap-to-road corridors."
+        },
+        "weighbridge": {
+          "title": "Weighbridge",
+          "help": "Rate limit for TPA weighbridge API requests."
+        }
+      },
+      "fields": {
+        "gpsid": {
+          "baseUrl": {
+            "label": "GPS.id API URL",
+            "help": "GPS.id API endpoint. Default: https://portal.gps.id/backend/seen/public — change only if the vendor provides a different one."
+          },
+          "username": {
+            "label": "GPS.id Username",
+            "help": "GPS.id API account username, from the GPS.id dashboard or vendor."
+          },
+          "password": {
+            "label": "GPS.id Password",
+            "help": "GPS.id API account password (from the vendor). Stored encrypted; leave blank to keep unchanged."
+          },
+          "vehicleSync": {
+            "label": "Auto vehicle sync",
+            "help": "When on, the GPS.id vehicle roster is synced on a schedule (matching GPS devices to vehicles by plate)."
+          },
+          "vehicleSyncIntervalMin": {
+            "label": "Sync interval (minutes)",
+            "help": "How often the roster auto-syncs, in minutes. E.g. 1440 = once a day."
+          },
+          "positionPull": {
+            "label": "Auto position pull",
+            "help": "When on, each active device's position history is pulled from GPS.id periodically (complements the push webhook)."
+          },
+          "pullIntervalMin": {
+            "label": "Pull interval (minutes)",
+            "help": "How often positions are auto-pulled, in minutes. E.g. 1440 = once a day."
+          }
+        },
+        "gps": {
+          "webhookToken": {
+            "label": "GPS.id webhook token",
+            "help": "Secret token in the webhook URL (POST /integrations/gps/webhook/:token). Generate a random string ≥16 chars and register the URL with GPS.id. Stored encrypted."
+          },
+          "allowedIps": {
+            "label": "Allowed webhook IPs (comma-separated)",
+            "help": "Comma-separated allowlist of webhook source IPs (e.g. GPS.id egress IPs). Leave empty to allow any IP and rely on the token."
+          },
+          "ingestRateLimitPerMin": {
+            "label": "Webhook rate limit (per minute)",
+            "help": "Max webhook posts per minute per IP (flood protection). Default 600."
+          },
+          "deviceOfflineMinutes": {
+            "label": "Device offline after (minutes)",
+            "help": "A device sending no position for this many minutes is marked offline on the map. Default 10."
+          },
+          "geofenceDefaultRadiusM": {
+            "label": "Default geofence radius (m)",
+            "help": "Geofence radius (meters) for arrive/depart detection, used when a site has no radius of its own. Default 100."
+          }
+        },
+        "maps": {
+          "serverKey": {
+            "label": "Maps key (server)",
+            "help": "Server-side Google Maps key for snap-to-road corridors. Create in Google Cloud Console → enable Directions API, restrict by server IP. Stored encrypted."
+          },
+          "browserKey": {
+            "label": "Maps key (browser)",
+            "help": "Google Maps key for rendering maps in the browser. Create in Google Cloud Console → enable Maps JavaScript API, restrict by HTTP referrer (app domain). Stored encrypted."
+          }
+        },
+        "weighbridge": {
+          "rateLimitPerMin": {
+            "label": "Weighbridge rate limit (per minute)",
+            "help": "Max TPA weighbridge API requests per minute. Default 500."
+          }
+        }
+      },
+      "deviation": {
+        "loadError": "Failed to load deviation rules.",
+        "enableRule": "Enable rule",
+        "thresholdMeter": "Threshold (meters)",
+        "thresholdSecond": "Threshold (seconds)",
+        "hysteresis": "Confirmation delay (seconds)",
+        "severity": "Severity",
+        "hintThresholdM": "Distance limit before it counts as a deviation, in meters — e.g. 150 means off-corridor beyond 150 m from the path.",
+        "hintThresholdS": "Limit before the condition is recorded as a deviation, in seconds.",
+        "hintHysteresis": "How long the condition must persist before the alarm fires — damps brief GPS spikes to avoid false alarms. E.g. 30 = must deviate for 30 s first.",
+        "hintSeverity": "Alarm severity when this rule triggers: Info (note), Warning, or Critical (most urgent).",
+        "sev": {
+          "INFO": "Info",
+          "WARNING": "Warning",
+          "CRITICAL": "Critical"
+        },
+        "rules": {
+          "off_corridor": {
+            "label": "Off corridor",
+            "hint": "Distance from the corridor before it counts as a deviation"
+          },
+          "off_sequence": {
+            "label": "Wrong stop order",
+            "hint": "Visiting sites out of the planned order"
+          },
+          "dwell_too_long": {
+            "label": "Idle too long",
+            "hint": "Stationary outside a site geofence beyond the limit"
+          },
+          "late_to_schedule": {
+            "label": "Late vs schedule",
+            "hint": "Arriving later than the target time"
+          }
+        }
+      },
+      "saveError": "failed to save"
+    }
   },
   "dashboard": {
     "greetingMorning": "Good morning",
