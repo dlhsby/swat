@@ -175,6 +175,8 @@
   "settings": {
     "title": "Settings",
     "subtitle": "Customize the app's appearance and preferences.",
+    "tabPersonal": "Preferences",
+    "tabSystem": "System",
     "appearance": "Appearance",
     "appearanceBody": "Choose a light or dark theme, or follow the system.",
     "themeSystem": "System",

@@ -1,7 +1,7 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 
 import { type DeviationRuleRepository } from './deviation-rule.repository';
-import { DeviationRuleService } from './deviation-rule.service';
+import { DEFAULT_DEVIATION_RULES, DeviationRuleService } from './deviation-rule.service';
 
 describe('DeviationRuleService', () => {
   let repo: { list: jest.Mock; upsert: jest.Mock };
@@ -22,6 +22,15 @@ describe('DeviationRuleService', () => {
       upsert: jest.fn().mockImplementation((_type, create) => Promise.resolve({ ...create })),
     };
     service = new DeviationRuleService(repo as unknown as DeviationRuleRepository);
+  });
+
+  it('ensures the default rules at boot without overwriting operator edits', async () => {
+    await service.onModuleInit();
+    expect(repo.upsert).toHaveBeenCalledTimes(DEFAULT_DEVIATION_RULES.length);
+    // Empty update → existing rows are preserved (create-only semantics).
+    for (const call of repo.upsert.mock.calls) {
+      expect(call[2]).toEqual({});
+    }
   });
 
   it('lists rules as DTOs', async () => {

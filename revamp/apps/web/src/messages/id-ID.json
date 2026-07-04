@@ -175,6 +175,8 @@
   "settings": {
     "title": "Pengaturan",
     "subtitle": "Sesuaikan tampilan dan preferensi aplikasi.",
+    "tabPersonal": "Preferensi",
+    "tabSystem": "Sistem",
     "appearance": "Tampilan",
     "appearanceBody": "Pilih tema terang, gelap, atau ikuti sistem.",
     "themeSystem": "Sistem",

@@ -1,31 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { Gauge, type LucideIcon, MapPin, Satellite, Scale, Waypoints } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Input,
-  Spinner,
-  Switch,
-} from '@/components/ui';
+import { DeviationRulesControl } from '@/components/settings/deviation-rules-control';
+import { Button, Input, Spinner, Switch } from '@/components/ui';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   useClearSystemConfig,
   useSetSystemConfig,
   useSystemConfig,
 } from '@/hooks/use-system-config';
+import { cn } from '@/lib/cn';
 import { type ConfigDescription } from '@/lib/system-config-api';
 
-const GROUP_LABELS: Record<string, string> = {
-  gpsid: 'Integrasi GPS.id',
-  maps: 'Peta (Google Maps)',
-  gps: 'Ambang GPS',
-  weighbridge: 'Jembatan Timbang',
+/** A group shown in the left rail: either a config group (keyed by `group`) or the
+ * special deviation-rules panel. `id` is a stable selection key. */
+interface GroupDef {
+  readonly id: string;
+  readonly label: string;
+  readonly help: string;
+  readonly icon: LucideIcon;
+  /** The `system_config` group these rows belong to; absent for the rules panel. */
+  readonly configGroup?: string;
+  /** Renders the deviation-rules editor instead of config rows. */
+  readonly deviation?: boolean;
+}
+
+const CONFIG_GROUPS: readonly GroupDef[] = [
+  { id: 'gpsid', configGroup: 'gpsid', label: 'Integrasi GPS.id', help: 'Kredensial & sinkronisasi otomatis', icon: Satellite },
+  { id: 'maps', configGroup: 'maps', label: 'Peta (Google Maps)', help: 'Kunci API peta (server & peramban)', icon: MapPin },
+  { id: 'gps', configGroup: 'gps', label: 'Ambang GPS', help: 'Batas offline, geofence, webhook', icon: Gauge },
+  { id: 'weighbridge', configGroup: 'weighbridge', label: 'Jembatan Timbang', help: 'Integrasi timbangan TPA', icon: Scale },
+];
+const DEVIATION_GROUP: GroupDef = {
+  id: 'pelacakan',
+  label: 'Aturan Penyimpangan',
+  help: 'Ambang deteksi penyimpangan rute GPS',
+  icon: Waypoints,
+  deviation: true,
 };
-const GROUP_ORDER = ['gpsid', 'maps', 'gps', 'weighbridge'];
 
 const SOURCE_META: Record<ConfigDescription['source'], { text: string; cls: string }> = {
   db: { text: 'Kustom', cls: 'bg-primary-50 text-primary-700 dark:bg-neutral-800 dark:text-primary-400' },
@@ -118,43 +132,134 @@ function ConfigRow({ item }: { item: ConfigDescription }): JSX.Element {
   );
 }
 
-/**
- * Admin system settings — runtime-editable global config (GPS.id integration, Maps
- * keys, GPS thresholds, weighbridge). A value here overrides the env var; "Bawaan"
- * reverts. Secrets are write-only (never shown). Gated by `system-config:manage`.
- */
-export function SystemConfigSection(): JSX.Element {
-  const { data, isLoading, isError } = useSystemConfig();
+/** Left-rail entry for one group. */
+function GroupNavButton({
+  group,
+  active,
+  meta,
+  onSelect,
+}: {
+  group: GroupDef;
+  active: boolean;
+  meta: string;
+  onSelect: () => void;
+}): JSX.Element {
+  const Icon = group.icon;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        'flex w-full items-center gap-2.5 border-b border-l-[3px] border-b-neutral-100 px-4 py-3 text-left transition-colors last:border-b-0 dark:border-b-neutral-800',
+        active
+          ? 'border-l-primary-700 bg-primary-700 text-white'
+          : 'border-l-transparent text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800',
+      )}
+    >
+      <Icon
+        className={cn('h-4 w-4 shrink-0', active ? 'text-white' : 'text-neutral-400')}
+        aria-hidden
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-body-sm font-semibold">{group.label}</span>
+        <span className={cn('block truncate text-tiny', active ? 'text-white/75' : 'text-neutral-500')}>
+          {group.help}
+        </span>
+      </span>
+      <span
+        className={cn('shrink-0 font-mono text-[11px]', active ? 'text-white/75' : 'text-neutral-400')}
+      >
+        {meta}
+      </span>
+    </button>
+  );
+}
 
-  if (isLoading) {
+/**
+ * Admin system settings — a master/detail like the roles editor: pick a group in the
+ * left rail, edit its settings on the right (so the page doesn't grow endlessly).
+ * Config groups (GPS.id, Maps, thresholds, weighbridge) need `system-config:manage`;
+ * the deviation-rules group needs `deviation-rule:manage`. Secrets are write-only.
+ */
+export function SystemConfigSection(): JSX.Element | null {
+  const { can } = usePermissions();
+  const canConfig = can('system-config:manage');
+  const canDeviation = can('deviation-rule:manage');
+
+  const { data, isLoading, isError } = useSystemConfig({ enabled: canConfig });
+
+  const groups = useMemo<GroupDef[]>(() => {
+    const configGroups = canConfig
+      ? CONFIG_GROUPS.filter((g) => (data ?? []).some((d) => d.group === g.configGroup))
+      : [];
+    return [...configGroups, ...(canDeviation ? [DEVIATION_GROUP] : [])];
+  }, [canConfig, canDeviation, data]);
+
+  const [selected, setSelected] = useState<string | null>(null);
+  // Default to the first available group once we know what's available.
+  useEffect(() => {
+    if (selected === null && groups.length > 0) {
+      setSelected(groups[0]?.id ?? null);
+    }
+  }, [groups, selected]);
+
+  if (canConfig && isLoading) {
     return (
       <div className="flex justify-center py-8">
         <Spinner className="h-6 w-6 text-neutral-400" />
       </div>
     );
   }
-  if (isError || !data) {
+  if (canConfig && (isError || !data)) {
     return <p className="text-body-sm text-danger-600">Gagal memuat setelan sistem.</p>;
   }
+  if (groups.length === 0) {
+    return null;
+  }
 
-  const groups = GROUP_ORDER.filter((g) => data.some((d) => d.group === g));
+  const active = groups.find((g) => g.id === selected) ?? groups[0];
+  const rows = active?.configGroup
+    ? (data ?? []).filter((d) => d.group === active.configGroup)
+    : [];
 
   return (
-    <div className="space-y-6">
-      {groups.map((group) => (
-        <Card key={group}>
-          <CardHeader>
-            <CardTitle>{GROUP_LABELS[group] ?? group}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {data
-              .filter((d) => d.group === group)
-              .map((item) => (
-                <ConfigRow key={item.key} item={item} />
-              ))}
-          </CardContent>
-        </Card>
-      ))}
+    <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+      {/* Group rail */}
+      <nav
+        aria-label="Kelompok setelan"
+        className="h-fit overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0 dark:border-neutral-700 dark:bg-neutral-900"
+      >
+        {groups.map((group) => (
+          <GroupNavButton
+            key={group.id}
+            group={group}
+            active={active?.id === group.id}
+            meta={
+              group.deviation
+                ? 'aturan'
+                : `${(data ?? []).filter((d) => d.group === group.configGroup).length} setelan`
+            }
+            onSelect={() => setSelected(group.id)}
+          />
+        ))}
+      </nav>
+
+      {/* Detail */}
+      <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-700">
+        <div className="mb-3">
+          <h3 className="text-body-lg font-semibold text-neutral-900">{active?.label}</h3>
+          <p className="text-body-sm text-neutral-500">{active?.help}</p>
+        </div>
+        {active?.deviation ? (
+          <DeviationRulesControl />
+        ) : (
+          <div className="space-y-2">
+            {rows.map((item) => (
+              <ConfigRow key={item.key} item={item} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

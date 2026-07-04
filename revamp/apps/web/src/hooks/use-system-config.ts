@@ -9,8 +9,14 @@ import { type ConfigDescription, systemConfigApi } from '@/lib/system-config-api
 const KEY = 'system-config';
 
 /** All configurable global settings + their state (admin, `system-config:manage`). */
-export function useSystemConfig(): ReturnType<typeof useQuery<ConfigDescription[]>> {
-  return useQuery({ queryKey: [KEY], queryFn: () => systemConfigApi.list() });
+export function useSystemConfig(options?: {
+  enabled?: boolean;
+}): ReturnType<typeof useQuery<ConfigDescription[]>> {
+  return useQuery({
+    queryKey: [KEY],
+    queryFn: () => systemConfigApi.list(),
+    enabled: options?.enabled ?? true,
+  });
 }
 
 export function useSetSystemConfig(): ReturnType<

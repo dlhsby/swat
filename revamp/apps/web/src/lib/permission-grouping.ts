@@ -1,4 +1,12 @@
-import { Activity, Archive, ArrowLeftRight, Database, type LucideIcon, Users } from 'lucide-react';
+import {
+  Activity,
+  ArrowLeftRight,
+  Database,
+  type LucideIcon,
+  Navigation,
+  Settings,
+  Users,
+} from 'lucide-react';
 
 /**
  * Presentation taxonomy for the role permission editor: groups the flat
@@ -34,6 +42,7 @@ export const PERMISSION_CATEGORIES: readonly PermissionCategory[] = [
       'license',
       'site',
       'route',
+      'corridor',
       'waste-source',
       'schedule-template',
       'trip-template',
@@ -43,13 +52,27 @@ export const PERMISSION_CATEGORIES: readonly PermissionCategory[] = [
     id: 'operasional',
     label: 'Pengangkutan & Operasional',
     icon: ArrowLeftRight,
-    resources: ['transaction-day', 'haul', 'trip', 'disposal-permit', 'inspection', 'maintenance'],
+    resources: [
+      'transaction-day',
+      'haul',
+      'trip',
+      'disposal-permit',
+      'inspection',
+      'maintenance',
+      'weighbridge',
+    ],
   },
   {
     id: 'monitoring',
     label: 'Monitoring & Laporan',
     icon: Activity,
     resources: ['monitoring', 'report', 'levy'],
+  },
+  {
+    id: 'pelacakan',
+    label: 'GPS & Pelacakan',
+    icon: Navigation,
+    resources: ['gps-device', 'tracking', 'route-geometry', 'deviation-rule', 'deviation-alert'],
   },
   {
     id: 'akses',
@@ -60,8 +83,8 @@ export const PERMISSION_CATEGORIES: readonly PermissionCategory[] = [
   {
     id: 'sistem',
     label: 'Sistem',
-    icon: Archive,
-    resources: ['archive'],
+    icon: Settings,
+    resources: ['system-config', 'service-account', 'archive'],
   },
 ];
 
@@ -83,6 +106,7 @@ const RESOURCE_LABELS: Readonly<Record<string, string>> = {
   license: 'SIM',
   site: 'Lokasi',
   route: 'Rute',
+  corridor: 'Koridor',
   'waste-source': 'Sumber Sampah',
   'schedule-template': 'Template Jadwal',
   'trip-template': 'Template Perjalanan',
@@ -98,6 +122,14 @@ const RESOURCE_LABELS: Readonly<Record<string, string>> = {
   user: 'Pengguna',
   role: 'Peran',
   permission: 'Izin',
+  'gps-device': 'Perangkat GPS',
+  tracking: 'Pelacakan',
+  'route-geometry': 'Geometri Rute',
+  'deviation-rule': 'Aturan Penyimpangan',
+  'deviation-alert': 'Peringatan Penyimpangan',
+  'system-config': 'Setelan Sistem',
+  'service-account': 'Akun Layanan',
+  weighbridge: 'Jembatan Timbang',
   archive: 'Arsip',
 };
 
@@ -112,6 +144,9 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   export: 'Ekspor',
   generate: 'Hasilkan',
   approve: 'Setujui',
+  acknowledge: 'Konfirmasi',
+  resolve: 'Cocokkan',
+  post: 'Kirim',
   'record-pickup': 'Catat Pengambilan',
   'record-disposal': 'Catat Pembuangan',
   'record-fuel': 'Catat BBM',
