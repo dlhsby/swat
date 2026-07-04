@@ -9,6 +9,7 @@ import { ListGpsDevicesQueryDto } from './dto/list-gps-devices.query.dto';
 import { MapUnmatchedPingDto } from './dto/map-unmatched-ping.dto';
 import { UpdateGpsDeviceDto } from './dto/update-gps-device.dto';
 import { type GpsDeviceDto, GpsDeviceService, type UnmatchedPingDto } from './gps-device.service';
+import { type GpsSyncResult, GpsVehicleSyncService } from './gps-vehicle-sync.service';
 
 /**
  * GPS device registry (Phase 7, T-704). Attach/detach an IMEI↔vehicle — the only
@@ -19,7 +20,10 @@ import { type GpsDeviceDto, GpsDeviceService, type UnmatchedPingDto } from './gp
 @ApiTags('gps-devices')
 @Controller('gps/devices')
 export class GpsDeviceController {
-  constructor(private readonly devices: GpsDeviceService) {}
+  constructor(
+    private readonly devices: GpsDeviceService,
+    private readonly sync: GpsVehicleSyncService,
+  ) {}
 
   @Get()
   @RequirePermissions('gps-device:read')
@@ -44,6 +48,13 @@ export class GpsDeviceController {
   @ApiOperation({ summary: 'Map an unmatched IMEI to a vehicle (creates a hardware device)' })
   mapUnmatched(@Body() dto: MapUnmatchedPingDto): Promise<GpsDeviceDto> {
     return this.devices.mapUnmatched(dto);
+  }
+
+  @Post('sync')
+  @RequirePermissions('gps-device:create')
+  @ApiOperation({ summary: 'Sync devices from the GPS.id vehicle roster (match by plate)' })
+  syncFromGpsid(): Promise<GpsSyncResult> {
+    return this.sync.sync();
   }
 
   @Get(':id')

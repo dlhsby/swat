@@ -32,6 +32,8 @@ const ENV: Env = {
   GPSID_PASSWORD: 'gpsid-secret',
   GPSID_POSITION_PULL: false,
   GPSID_PULL_INTERVAL_MIN: 1440,
+  GPSID_VEHICLE_SYNC: false,
+  GPSID_VEHICLE_SYNC_INTERVAL_MIN: 1440,
 };
 
 describe('AppConfigService', () => {

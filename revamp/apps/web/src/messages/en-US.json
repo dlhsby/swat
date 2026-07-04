@@ -80,6 +80,7 @@
     "serviceAccounts": "Service Accounts",
     "apiAuditLog": "API Log",
     "hauling": "Hauling",
+    "settings": "Settings",
     "documentation": "Documentation"
   },
   "shell": {

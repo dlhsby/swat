@@ -196,22 +196,22 @@ export function SidebarNav({
       className={cn('flex flex-col gap-0.5 py-3.5 pb-7', collapsed ? 'px-2' : 'px-3')}
       aria-label="Navigasi utama"
     >
-      {NAV_GROUPS.map((group, i) => {
-        // The key-less single-leaf group is the standalone Dashboard item.
+      {NAV_GROUPS.flatMap((group, i) => {
+        // A key-less group is a set of standalone top-level items (Dashboard, and
+        // the bottom Settings + Documentation). Render every leaf, keyed uniquely.
         if (!group.key) {
-          const leaf = group.leaves[0];
-          return leaf ? (
-            <NavTop key="dashboard" leaf={leaf} collapsed={collapsed} onNavigate={onNavigate} />
-          ) : null;
+          return group.leaves.map((leaf) => (
+            <NavTop key={leaf.key} leaf={leaf} collapsed={collapsed} onNavigate={onNavigate} />
+          ));
         }
-        return (
+        return [
           <NavGroupBlock
             key={group.id ?? `group-${i}`}
             group={group}
             collapsed={collapsed}
             onNavigate={onNavigate}
-          />
-        );
+          />,
+        ];
       })}
     </nav>
   );

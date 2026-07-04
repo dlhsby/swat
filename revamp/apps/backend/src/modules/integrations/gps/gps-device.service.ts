@@ -38,6 +38,8 @@ export interface UnmatchedPingDto {
   readonly imei: string;
   readonly count: number;
   readonly lastReceivedAt: string;
+  /** Reported plate/number from the ping payload (or GPS.id roster), if any. */
+  readonly vehicleNumber: string | null;
 }
 
 function num(value: { toNumber(): number } | null): number | null {
@@ -167,6 +169,7 @@ export class GpsDeviceService {
       imei: r.imei,
       count: r.count,
       lastReceivedAt: r.lastReceivedAt.toISOString(),
+      vehicleNumber: r.vehicleNumber,
     }));
     return paginated(data, total, query);
   }

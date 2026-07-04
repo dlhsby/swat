@@ -30,6 +30,9 @@ export interface CorridorData {
   readonly pathGeojson: GeoJsonLineString;
   readonly waypoints: CorridorWaypoint[] | null;
   readonly toleranceMeters: number;
+  /** How the corridor was produced (`directions` = server road-snapped default). Lets
+   *  the editor reflect snap state for corridors that stored no control points. */
+  readonly source?: string;
 }
 
 export interface SaveCorridorPayload {
@@ -280,13 +283,26 @@ export function CorridorEditorCore({
       // Reflect the loaded corridor: the switch is ON only if every node is snapped.
       setSnapMode(nodes.every((n) => n.snapped));
     } else if (existing?.pathGeojson) {
-      // A legacy corridor stored only its dense path (no control points) → load the
-      // vertices as freehand and show the switch OFF, so flipping it ON re-routes.
-      setNodes(
-        existing.pathGeojson.coordinates.map(([lng, lat]) => ({ lng, lat, snapped: false })),
-      );
+      const coords = existing.pathGeojson.coordinates;
+      const first = coords[0];
+      const last = coords.at(-1);
+      if (existing.source === 'directions' && first && last) {
+        // A road-snapped default corridor that stored only its dense path (no control
+        // points). Load just the two endpoints as snapped control nodes so the editor
+        // shows snap ON and re-derives the road path — rather than dozens of freehand
+        // handles with the toggle wrongly OFF.
+        setNodes([
+          { lng: first[0], lat: first[1], snapped: true },
+          { lng: last[0], lat: last[1], snapped: true },
+        ]);
+        setSnapMode(true);
+      } else {
+        // A legacy/freehand corridor stored only its dense path → load the vertices
+        // as freehand and show the switch OFF, so flipping it ON re-routes.
+        setNodes(coords.map(([lng, lat]) => ({ lng, lat, snapped: false })));
+        setSnapMode(false);
+      }
       setTolerance(existing.toleranceMeters);
-      setSnapMode(false);
     } else {
       setNodes([]);
       setTolerance(150);

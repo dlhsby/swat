@@ -17,6 +17,7 @@ import {
   GpsDeviceFields,
   toDeviceFormValues,
 } from '@/components/fleet/gps-device-fields';
+import { GpsSyncButton } from '@/components/tracking/gps-sync-button';
 import { UnmatchedDevicesSheet } from '@/components/tracking/unmatched-devices-sheet';
 import { Button, type ComboboxOption, StatusPill } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
@@ -123,9 +124,12 @@ export default function GpsDevicesPage(): JSX.Element {
       columns={columns}
       searchPlaceholder="Cari IMEI / kendaraan…"
       toolbar={
-        <Button variant="secondary" size="sm" onClick={() => setUnmatchedOpen(true)}>
-          <Inbox className="h-4 w-4" aria-hidden /> IMEI tak dikenal
-        </Button>
+        <>
+          <GpsSyncButton className="ml-2" onSynced={() => void manager.reload()} />
+          <Button variant="secondary" size="sm" onClick={() => setUnmatchedOpen(true)}>
+            <Inbox className="h-4 w-4" aria-hidden /> IMEI tak dikenal
+          </Button>
+        </>
       }
     >
       <CrudFormDialog
@@ -159,6 +163,21 @@ export default function GpsDevicesPage(): JSX.Element {
         vehicleOptions={vehicleOptions}
         onMapped={() => void manager.reload()}
       />
+
+      {/* Setup signpost: an empty registry usually means the GPS.id webhook hasn't
+          been registered yet — the #1 "nothing shows up" cause. */}
+      {!manager.loading && manager.rows.length === 0 ? (
+        <div className="mt-4 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4">
+          <p className="text-body-sm font-medium text-neutral-800">
+            Belum ada perangkat GPS yang melapor.
+          </p>
+          <p className="mt-1 text-body-sm text-neutral-600">
+            Pastikan webhook GPS.id sudah didaftarkan ke SWAT (URL webhook + token), lalu petakan IMEI
+            yang masuk lewat tombol “IMEI tak dikenal”. Anda juga bisa menambahkan perangkat manual di
+            atas.
+          </p>
+        </div>
+      ) : null}
     </CrudListShell>
   );
 }

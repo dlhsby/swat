@@ -143,4 +143,14 @@ export class AppConfigService {
   get gpsidPullIntervalMinutes(): number {
     return this.get('GPSID_PULL_INTERVAL_MIN');
   }
+
+  /** Whether the scheduled GPS.id vehicle-roster sync is enabled. */
+  get gpsidVehicleSync(): boolean {
+    return this.get('GPSID_VEHICLE_SYNC');
+  }
+
+  /** How often (minutes) the scheduled vehicle-roster sync runs. */
+  get gpsidVehicleSyncIntervalMinutes(): number {
+    return this.get('GPSID_VEHICLE_SYNC_INTERVAL_MIN');
+  }
 }

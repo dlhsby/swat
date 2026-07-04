@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, type TripStatus } from '@prisma/client';
 
+import { wibDayRangeUtc } from '../../common/dates';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { type RouteMapEdge, type RouteMapSite, type TripSummaryRow } from './monitoring.types';
+import {
+  type DayActivityEventRow,
+  type RouteMapEdge,
+  type RouteMapSite,
+  type TripSummaryRow,
+} from './monitoring.types';
 
 /** Source-group filter from the Semua / Non-Swasta / Swasta toggle (by `code`). */
 export type SourceGroupFilter = 'NON_SWASTA' | 'SWASTA' | undefined;
@@ -518,5 +524,34 @@ export class MonitoringRepository {
       (edge) => placeable.has(edge.originSiteId) && placeable.has(edge.destinationSiteId),
     );
     return { sites, edges: plottableEdges };
+  }
+
+  /** A vehicle's GPS activity milestones for one operation date, oldest first. */
+  async dayActivity(vehicleId: string, date: string): Promise<DayActivityEventRow[]> {
+    // Bound by the operators' WIB day, not the UTC day, so the drill-down matches
+    // the day the events actually belong to.
+    const { start, end } = wibDayRangeUtc(date);
+    const rows = await this.prisma.gpsActivityEvent.findMany({
+      where: { vehicleId, occurredAt: { gte: start, lt: end } },
+      orderBy: { occurredAt: 'asc' },
+      select: {
+        id: true,
+        kind: true,
+        source: true,
+        siteId: true,
+        siteType: true,
+        tripId: true,
+        occurredAt: true,
+      },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      source: r.source,
+      siteId: r.siteId,
+      siteType: r.siteType,
+      tripId: r.tripId,
+      occurredAt: r.occurredAt.toISOString(),
+    }));
   }
 }

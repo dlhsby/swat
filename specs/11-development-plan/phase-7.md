@@ -61,6 +61,75 @@
 >   shipped; the webhook→ping→matcher→alert→SSE flow is covered end-to-end by unit
 >   tests — a live E2E spec + load test are a tracked follow-up.
 >
+> ### Post-Phase-7 GPS gap-fix program (A–D — merged to `main`, 2026-07)
+> Four follow-up PRs closed the operator-facing gaps and hardened the pipeline:
+> - **A (PR #30)** — device registry moved to **Data Master**; unified add/edit device form
+>   (the `/tracking/devices` registry and the per-vehicle "Perangkat GPS" sheet now at parity);
+>   Settings → **Pelacakan** deviation-rule tuning with `(?)` hint tooltips + "Debounce" →
+>   "Jeda konfirmasi"; fixed a poisoned `max-w-*` Tailwind-v4 token (collapsed Settings); fixed a
+>   create-blocking 422 (`active` was absent from `CreateGpsDeviceDto` under a whitelist pipe).
+> - **B (PR #35)** — dev **push-track simulator** (`pnpm --filter @swat/backend run dev:push-track`)
+>   for local pipeline testing; a **configurable-interval POSITION pull** (`GPSID_POSITION_PULL` +
+>   `GPSID_PULL_INTERVAL_MIN`) that feeds `report/history` through the SAME ingest pipeline as the
+>   push webhook (secondary/backfill path).
+> - **C (PR #38)** — **GPS activity state machine**: geofence enter/exit of the active haul's sites
+>   auto-drives the lifecycle and **auto-stamps the realization times** (previously manual-only) —
+>   leave POOL → DEPART, enter TPS/SPBU/TPA → ARRIVE (new **`ARRIVED`** trip status +
+>   `Trip.arrivedAt`), leave → COMPLETE, return POOL → RETURN; the TPA **timbang** (WEIGH) comes
+>   from the weighbridge integration. Appends an auditable **`GpsActivityEvent`** feed. This also
+>   delivers the Site-geofence machinery the deferred `dwell_too_long` needed.
+> - **D (PR #41)** — **monitoring drill-down** on Pengangkutan → Peta: **plate search → map zoom**,
+>   click-a-vehicle **detail drawer** (today's trips + late/deviation badges + the **activity
+>   timeline** keberangkatan→tiba→timbang→selesai→kembali), a day **GPS trail** polyline, and a
+>   webhook-registration empty-state signpost. Backend `GET /monitoring/vehicles/:id/day-activity`.
+>
+> **Cross-phase review fix (folded into #41):** the operation day was UTC-derived in the activity
+> matcher AND the (already-merged) deviation matcher — corrected to the **WIB** calendar day
+> (`operationDateOf` / `wibDayRangeUtc`), so pings between 00:00–07:00 WIB no longer resolve to the
+> wrong day and miss the active haul.
+>
+> **Still deferred after A–D:** `off_sequence` matcher; a **global header alert-bell + filterable
+> history** view; `adherencePct`/`dwellMinutes` efficiency replay (the activity feed now supplies
+> the arrival/dwell data to feed it); a **live geofence + webhook→SSE E2E + load test**; and known
+> limitations — multi-assignment-haul activity attribution, pull-batch activity granularity (the
+> push path processes every ping), and i18n of the drill-down's hardcoded id-ID labels.
+>
+> ### GPS.id device onboarding & roster sync (PR #44, 2026-07-04)
+> Closes the last onboarding gap (formerly "B4, deferred") — devices no longer have to be registered
+> by hand or await a webhook ping:
+> - **Sync by plate** — `POST /gps/devices/sync` (+ a **"Sinkronkan GPS.id"** button on BOTH the
+>   `/tracking/devices` registry and the **vehicle master**) pulls the GPS.id `/vehicle` roster and
+>   reconciles it with the device registry. A shared **`extractPlate`** (`src/common/plate.ts`) pulls
+>   the Indonesian plate out of BOTH sides — a GPS.id body-name (`"ARMROLL 14M3-B 9552 EQ"`) and a
+>   legacy dedup-suffixed plate (`"B9552EQ#43"`) both reduce to `"B9552EQ"` — which is what makes
+>   matching actually work (comparing whole strings matched almost nothing).
+> - **1:many, add + activate** — a matched vehicle already tracked by a (seeded/synthetic) device is
+>   NOT a conflict: the real GPS.id device is created/remapped as the **active** tracker and any prior
+>   active hardware is **deactivated but retained** (the relation is 1:many), preserving the
+>   one-active-hardware index. Result reports created / remapped / unchanged / **replacedActive** /
+>   skippedNoPlate / unmatched / queuedUnknown; idempotent (a 2nd run = all "Tetap"). A single-instance
+>   re-entrancy guard serializes overlapping manual + scheduled runs.
+> - **Unmatched roster → the same queue** — GPS.id vehicles whose plate has no SWAT vehicle are
+>   bulk-parked in **`GpsUnmatchedPing`** (idempotent; skip known/already-queued) with the plate as a
+>   hint, so they surface in the existing **"IMEI tak dikenal"** mapper (now reachable from the vehicle
+>   master too). A results **modal** shows the full created/remapped/unmatched breakdown.
+> - **Optional scheduled sync** — `GPSID_VEHICLE_SYNC` + `GPSID_VEHICLE_SYNC_INTERVAL_MIN` (default
+>   off / daily), mirroring the position-pull job.
+> - **Tooling** — `pnpm --filter @swat/backend run gpsid:coverage` prints the live roster ∩ SWAT
+>   vehicles (matched-in-demo / matched-not-in-demo / unmatched) to pick real vehicles for the demo.
+> - **Demo regenerated from REAL data** (not renamed) — `build-demo-fixtures` biases vehicle selection
+>   toward the GPS.id roster (`prisma/gpsid-plates.json`, 159 real plates), so **10 of 15** demo
+>   vehicles are genuine GPS.id-tracked vehicles with their real model/type/routes/schedule-templates;
+>   `demo-transactions.json` was re-sampled from the dump for the new set (60 days / 720 hauls / 3602
+>   trips). The other 5 stay off-GPS.id for the "tak cocok" case. Verified live: sync creates 10,
+>   idempotent, 1:many confirmed.
+> - **Corridor snap-state fix** — default corridors are road-snapped (`source:'directions'`) but stored
+>   `waypoints:null`, so the editor showed the "Ikuti jalan (snap)" toggle OFF and dozens of freehand
+>   handles. Now `createDefaultForRoute` persists the two Site endpoints as snapped control points, and
+>   the editor reads `source` so even legacy null-waypoint rows load their two endpoints snapped, toggle ON.
+> - **DevX** — `setup.sh`/`start.sh` silence the pnpm/turbo "update available" banners; `start.sh`
+>   always clears `apps/web/.next` (stale-route 404s); **Settings** added to the sidebar.
+>
 > ### PRs & as-built master-data reconciliation
 > **PR #16 (merged)** = Epics 7.0–7.7 GPS foundation. **PR #17 (open, `feat/phase-7.8-corridor-model`)**
 > = Epic 7.8 first-class Corridor + scheduling shifts + the master-data review below.
@@ -77,6 +146,10 @@
 >   **unmatched-IMEI mapper**; plus a per-vehicle **"Kelola Perangkat GPS"** sheet to attach/detach a
 >   device from the vehicle master. The device permissions were aligned to standard CRUD verbs
 >   (`gps-device:read|create|update|delete`, was `read|manage`) so the CRUD scaffold gates correctly.
+>   **✅ DONE (PR #44, 2026-07-04):** onboarding no longer needs a webhook ping first — a **plate-based
+>   GPS.id roster sync** (`extractPlate` normalizes both sides) creates/relinks devices 1:many and parks
+>   the rest in the unmatched queue; "Sinkronkan GPS.id" + "IMEI tak dikenal" both sit on the vehicle
+>   master and the registry. See "GPS.id device onboarding & roster sync" above.
 > - **Corridor (master geometry).** `Route` owns **1..N `Corridor`s** (road-snapped default + alternates);
 >   corridor owns route distance (`Route.distanceKm` = denormalized cache); default auto-created on route
 >   create and **re-snapped on route edit**. Server-side snap needs `GOOGLE_MAPS_SERVER_KEY` + backend

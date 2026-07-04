@@ -87,6 +87,7 @@ export function RouteCorridorEditor({
         pathGeojson: editing.corridor.pathGeojson,
         waypoints: editing.corridor.waypoints,
         toleranceMeters: editing.corridor.toleranceMeters,
+        source: editing.corridor.source,
       }
     : null;
 
