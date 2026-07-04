@@ -1,12 +1,11 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { Inbox, RefreshCw } from 'lucide-react';
+import { Inbox } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { z } from 'zod';
 
-import { ProtectedAction } from '@/components/auth/protected-action';
 import { CrudFormDialog } from '@/components/crud/crud-form-dialog';
 import { CrudListShell } from '@/components/crud/crud-list-shell';
 import { SelectField } from '@/components/crud/fields';
@@ -18,13 +17,13 @@ import {
   GpsDeviceFields,
   toDeviceFormValues,
 } from '@/components/fleet/gps-device-fields';
+import { GpsSyncButton } from '@/components/tracking/gps-sync-button';
 import { UnmatchedDevicesSheet } from '@/components/tracking/unmatched-devices-sheet';
-import { Button, type ComboboxOption, notify, StatusPill } from '@/components/ui';
+import { Button, type ComboboxOption, StatusPill } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
-import { ApiError } from '@/lib/api-error';
 import { formatDateDisplay, formatTime } from '@/lib/format';
-import { type GpsDeviceDto, gpsDevicesApi, syncGpsidVehicles } from '@/lib/gps-device-api';
+import { type GpsDeviceDto, gpsDevicesApi } from '@/lib/gps-device-api';
 import { type VehicleDto, vehiclesApi } from '@/lib/master-api';
 
 // The registry page adds `vehicleId` on top of the shared device fields.
@@ -46,34 +45,6 @@ export default function GpsDevicesPage(): JSX.Element {
     [vehicles],
   );
   const [unmatchedOpen, setUnmatchedOpen] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-
-  // Pull the GPS.id vehicle roster and reconcile devices by plate. A submit-level
-  // result → toast; conflicts/unmatched plates surface as follow-up warnings.
-  const handleSync = async (): Promise<void> => {
-    setSyncing(true);
-    try {
-      const r = await syncGpsidVehicles();
-      notify.success(
-        `Sinkronisasi GPS.id selesai — ${r.createdCount} dibuat, ${r.remappedCount} dipetakan ulang, ${r.unchangedCount} tetap.`,
-      );
-      if (r.conflictCount > 0) {
-        notify.error(
-          `${r.conflictCount} perangkat dinonaktifkan — kendaraannya sudah punya perangkat aktif.`,
-        );
-      }
-      if (r.unmatchedVehicles.length > 0) {
-        notify.error(
-          `${r.unmatchedVehicles.length} kendaraan GPS.id tak cocok dengan data SWAT (periksa nomor polisi).`,
-        );
-      }
-      await manager.reload();
-    } catch (err) {
-      notify.error(err instanceof ApiError ? err.message : 'Gagal menyinkronkan dari GPS.id.');
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const columns = useMemo<ColumnDef<GpsDeviceDto, unknown>[]>(
     () => [
@@ -154,17 +125,7 @@ export default function GpsDevicesPage(): JSX.Element {
       searchPlaceholder="Cari IMEI / kendaraan…"
       toolbar={
         <>
-          <ProtectedAction permission="gps-device:create">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="ml-2"
-              onClick={() => void handleSync()}
-              loading={syncing}
-            >
-              <RefreshCw className="h-4 w-4" aria-hidden /> Sinkronkan GPS.id
-            </Button>
-          </ProtectedAction>
+          <GpsSyncButton className="ml-2" onSynced={() => void manager.reload()} />
           <Button variant="secondary" size="sm" onClick={() => setUnmatchedOpen(true)}>
             <Inbox className="h-4 w-4" aria-hidden /> IMEI tak dikenal
           </Button>
