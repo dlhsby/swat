@@ -93,6 +93,15 @@ export const envSchema = z
       .default('false')
       .transform((v) => v === 'true'),
     GPSID_PULL_INTERVAL_MIN: z.coerce.number().int().positive().default(1440),
+    // Vehicle roster sync: when true AND the GPSID_* credentials are set, a background
+    // job reconciles the GPS.id `/vehicle` roster with the SWAT device registry by
+    // plate every GPSID_VEHICLE_SYNC_INTERVAL_MIN minutes (also runnable on demand from
+    // the devices page). Default off; no-ops when credentials are unset.
+    GPSID_VEHICLE_SYNC: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((v) => v === 'true'),
+    GPSID_VEHICLE_SYNC_INTERVAL_MIN: z.coerce.number().int().positive().default(1440),
     // Server-side Google Directions key (NOT the referrer-restricted browser key)
     // for snapping a route's auto-default corridor to roads. Optional: unset → the
     // default falls back to a straight line. Restrict by IP + enable Directions API.

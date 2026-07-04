@@ -80,6 +80,7 @@
     "serviceAccounts": "Akun Layanan",
     "apiAuditLog": "Log API",
     "hauling": "Pengangkutan",
+    "settings": "Pengaturan",
     "documentation": "Dokumentasi"
   },
   "shell": {

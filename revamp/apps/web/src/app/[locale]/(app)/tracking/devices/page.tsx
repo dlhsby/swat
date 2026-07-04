@@ -17,6 +17,7 @@ import {
   GpsDeviceFields,
   toDeviceFormValues,
 } from '@/components/fleet/gps-device-fields';
+import { GpsSyncButton } from '@/components/tracking/gps-sync-button';
 import { UnmatchedDevicesSheet } from '@/components/tracking/unmatched-devices-sheet';
 import { Button, type ComboboxOption, StatusPill } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
@@ -123,9 +124,12 @@ export default function GpsDevicesPage(): JSX.Element {
       columns={columns}
       searchPlaceholder="Cari IMEI / kendaraan…"
       toolbar={
-        <Button variant="secondary" size="sm" onClick={() => setUnmatchedOpen(true)}>
-          <Inbox className="h-4 w-4" aria-hidden /> IMEI tak dikenal
-        </Button>
+        <>
+          <GpsSyncButton className="ml-2" onSynced={() => void manager.reload()} />
+          <Button variant="secondary" size="sm" onClick={() => setUnmatchedOpen(true)}>
+            <Inbox className="h-4 w-4" aria-hidden /> IMEI tak dikenal
+          </Button>
+        </>
       }
     >
       <CrudFormDialog

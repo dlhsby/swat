@@ -13,6 +13,7 @@ import {
   type LucideIcon,
   MapPin,
   Satellite,
+  Settings,
   ShieldCheck,
   Ticket,
   Trash2,
@@ -182,10 +183,15 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       },
     ],
   },
-  // Standalone external link to the public user manual (docs.swat.wahyutrip.com).
-  // Key-less group → renders as a top-level item; `externalUrl` opens a new tab.
+  // Standalone bottom items (key-less group → rendered as top-level leaves).
+  // Settings (also reachable from the avatar menu) + the external user manual.
   {
     leaves: [
+      {
+        key: 'settings',
+        href: '/settings',
+        icon: Settings,
+      },
       {
         key: 'documentation',
         href: '#',

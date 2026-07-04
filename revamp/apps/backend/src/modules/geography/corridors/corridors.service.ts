@@ -148,12 +148,19 @@ export class CorridorsService {
     ];
     const line = { type: 'LineString' as const, coordinates };
     const lengthMeters = await this.lengthOrThrow(line);
+    // Persist the two Sites as the corridor's control points (not the dense snapped
+    // vertices) so the editor loads 2 handles + reflects snap state, rather than
+    // treating it as a legacy path-only corridor (toggle off, dozens of handles).
+    const waypoints = [
+      { lng: origin.lng, lat: origin.lat, snapped: Boolean(snapped) },
+      { lng: dest.lng, lat: dest.lat, snapped: Boolean(snapped) },
+    ];
     const corridor = await this.repo.create(
       routeId,
       {
         name: 'Jalur Utama',
         pathGeojson: line as unknown as Prisma.InputJsonValue,
-        waypoints: null,
+        waypoints: waypoints as unknown as Prisma.InputJsonValue,
         toleranceMeters: 150,
         lengthMeters,
         source: snapped ? 'directions' : 'straight',

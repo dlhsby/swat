@@ -1451,6 +1451,16 @@ async function seedDemoGpsDevices(
   const now = new Date();
   const staleAt = new Date(now.getTime() - 60 * 60 * 1000); // 1h ago → offline
 
+  // Idempotency: a re-seed onto a DB where the GPS.id sync already created a real
+  // active device would trip the one-active-hardware index when the synthetic
+  // tracker below is re-activated. Deactivate any active hardware on the tracked
+  // vehicles first; the upserts then re-establish the synthetic demo baseline.
+  const trackedIds = vehicles.slice(0, TRACKED).map((v) => v.id);
+  await prisma.gpsDevice.updateMany({
+    where: { vehicleId: { in: trackedIds }, deviceType: 'gps-hardware', active: true },
+    data: { active: false },
+  });
+
   let online = 0;
   let offline = 0;
   const onlineDevices: DemoTrackedDevice[] = [];

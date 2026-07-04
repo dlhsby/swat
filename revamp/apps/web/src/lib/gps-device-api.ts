@@ -34,6 +34,8 @@ export interface UnmatchedPingDto {
   imei: string;
   count: number;
   lastReceivedAt: string;
+  /** Reported plate/number from the payload (or GPS.id roster), if any. */
+  vehicleNumber: string | null;
 }
 
 export const gpsDevicesApi = makeResourceApi<GpsDeviceDto>('/gps/devices');
@@ -54,4 +56,28 @@ export function mapUnmatchedPing(body: {
   vehicleId: string;
 }): Promise<GpsDeviceDto> {
   return apiClient.post<GpsDeviceDto>('/gps/devices/unmatched/map', body);
+}
+
+/** A GPS.id vehicle whose plate matched no SWAT vehicle during a sync. */
+export interface UnmatchedVehicle {
+  imei: string;
+  plate: string;
+}
+
+/** Outcome of a GPS.id vehicle-roster sync (match by plate). */
+export interface GpsSyncResult {
+  createdCount: number;
+  remappedCount: number;
+  unchangedCount: number;
+  skippedNoPlateCount: number;
+  replacedActiveCount: number;
+  queuedUnknownCount: number;
+  created: Array<{ imei: string; plate: string; vehicleId: string; replacedPrior: boolean }>;
+  remapped: Array<{ imei: string; plate: string; vehicleId: string; replacedPrior: boolean }>;
+  unmatchedVehicles: UnmatchedVehicle[];
+}
+
+/** Reconcile the GPS.id `/vehicle` roster with the device registry, matched by plate. */
+export function syncGpsidVehicles(): Promise<GpsSyncResult> {
+  return apiClient.post<GpsSyncResult>('/gps/devices/sync', {});
 }
