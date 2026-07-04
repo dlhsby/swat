@@ -865,7 +865,7 @@ export const DEMO_VEHICLES: readonly LegacyVehicle[] = [
     poolLegacyId: 2,
     modelLegacyId: 125,
     status: 'GOOD',
-    plateNumber: 'B9552EQ#43',
+    plateNumber: 'B9552EQ',
     needsPlateReview: true,
     chassisNumber: 'MHCFTR90LCJ000022',
     engineNumber: '4HK1000289',

@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 
 import { type GpsDeviceRepository } from './gps-device.repository';
-import { normalizePlate, GpsVehicleSyncService } from './gps-vehicle-sync.service';
+import { extractPlate, GpsVehicleSyncService } from './gps-vehicle-sync.service';
 import { type GpsidClientService, type GpsidVehicle } from './gpsid-client.service';
 
 const V1 = '00000000-0000-0000-0000-0000000000a1';
@@ -46,11 +46,24 @@ function makeService(opts: {
   return { service, repo, gpsid };
 }
 
-describe('normalizePlate', () => {
-  it('strips whitespace and upper-cases', () => {
-    expect(normalizePlate('l 1234 ab')).toBe('L1234AB');
-    expect(normalizePlate('L1234AB')).toBe('L1234AB');
-    expect(normalizePlate(' l1234ab ')).toBe('L1234AB');
+describe('extractPlate', () => {
+  it('normalizes clean plates (whitespace/case)', () => {
+    expect(extractPlate('l 1234 ab')).toBe('L1234AB');
+    expect(extractPlate('L1234AB')).toBe('L1234AB');
+    expect(extractPlate(' l1234ab ')).toBe('L1234AB');
+    expect(extractPlate('L8048SP')).toBe('L8048SP');
+  });
+
+  it('extracts the plate from a GPS.id type-name (plate is last)', () => {
+    // The real vendor shape: "<body> <size>-<plate>".
+    expect(extractPlate('ARMROLL 14M3-B 9552 EQ')).toBe('B9552EQ');
+    expect(extractPlate('DUMP TRUCK-L 1234 AB')).toBe('L1234AB');
+  });
+
+  it('strips the legacy dedup suffix so both sides agree', () => {
+    expect(extractPlate('B9552EQ#43')).toBe('B9552EQ');
+    // GPS.id name and the suffixed legacy plate reduce to the same key.
+    expect(extractPlate('ARMROLL 14M3-B 9552 EQ')).toBe(extractPlate('B9552EQ#43'));
   });
 });
 
@@ -78,6 +91,23 @@ describe('GpsVehicleSyncService', () => {
     );
     // A newly linked IMEI is cleared from the unmatched queue.
     expect(repo.deleteUnmatchedForImei).toHaveBeenCalledWith('350000000000001');
+  });
+
+  it('matches a real GPS.id type-name to a suffixed legacy plate and creates the device', async () => {
+    // The exact shape from GPS.id: imei + "<body> <size>-<plate>" vs the legacy plate.
+    const { service, repo } = makeService({
+      remote: [{ imei: '860121060518621', plate: 'ARMROLL 14M3-B 9552 EQ' }],
+      plates: [{ id: V1, plateNumber: 'B9552EQ#43' }],
+    });
+    const result = await service.sync();
+    expect(result.createdCount).toBe(1);
+    expect(result.unmatchedVehicles).toHaveLength(0);
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deviceId: '860121060518621',
+        vehicle: { connect: { id: V1 } },
+      }),
+    );
   });
 
   it('matches despite plate spacing/case differences', async () => {
