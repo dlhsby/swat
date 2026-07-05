@@ -1,5 +1,7 @@
-# Local Claude Code agent state
-.claude/
+# Local Claude Code agent state (worktrees, permission allowlists, etc.) —
+# except skills/, which are reusable tooling worth sharing with the team.
+.claude/*
+!.claude/skills/
 
 # Temp scratch prompts (planning-session inputs, not part of the repo)
 prompts/
