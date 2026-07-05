@@ -33,4 +33,7 @@ export const corridorApi = {
     apiClient.patch<CorridorDto>(`/corridors/${id}`, { ...body }),
   remove: (id: string): Promise<{ message: string }> =>
     apiClient.delete<{ message: string }>(`/corridors/${id}`),
+  /** On-demand "Buat koridor default" — idempotent; null if sites still lack coords. */
+  backfillDefault: (routeId: string): Promise<CorridorDto | null> =>
+    apiClient.post<CorridorDto | null>(`/routes/${routeId}/corridors/backfill`, {}),
 };

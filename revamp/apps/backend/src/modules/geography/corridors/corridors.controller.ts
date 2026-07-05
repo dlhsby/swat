@@ -26,6 +26,16 @@ export class CorridorsController {
     return this.corridors.create(routeId, dto);
   }
 
+  @Post('routes/:routeId/corridors/backfill')
+  @RequirePermissions('corridor:create')
+  @ApiOperation({
+    summary:
+      "Generate a route's default corridor on demand (idempotent; null if sites lack coords)",
+  })
+  backfillDefault(@Param('routeId') routeId: string): Promise<CorridorDto | null> {
+    return this.corridors.backfillDefault(routeId);
+  }
+
   @Patch('corridors/:id')
   @RequirePermissions('corridor:update')
   @ApiOperation({ summary: 'Update a corridor (re-validates geometry when changed)' })

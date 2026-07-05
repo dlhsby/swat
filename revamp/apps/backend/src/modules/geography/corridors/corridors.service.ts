@@ -184,6 +184,17 @@ export class CorridorsService {
   }
 
   /**
+   * Explicit, user-triggered counterpart to the lazy `listForRoute` backfill — the
+   * "Buat koridor default" action in the route's corridor sheet. Same idempotent
+   * logic (skips if a corridor already exists), but validates the route exists
+   * first so a bad id 404s instead of silently no-oping.
+   */
+  async backfillDefault(routeId: string): Promise<CorridorDto | null> {
+    await this.assertRoute(routeId);
+    return this.ensureDefaultForRoute(routeId);
+  }
+
+  /**
    * Replace the route's default corridor with a fresh one — used when a route's
    * endpoints change so the auto-default tracks the new sites. Soft-deletes the
    * old default (alternates are kept) and recreates it. Returns null when neither
