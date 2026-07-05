@@ -9,7 +9,7 @@ Concise orientation so sessions don't re-explore. Global directives live in `~/.
   `revamp/` 2026-06.)
 - **Git repo root is the outer `projects/swat/`** → `.github/workflows/` sits at the outer root
   (CI uses `working-directory: revamp`). Husky: enable with `git config core.hooksPath revamp/.husky`.
-- **Docs site lives in `revamp/docs/`** — a **standalone npm project** (Docusaurus, React 18, own
+- **Docs site lives in `revamp/apps/docs/`** — a **standalone npm project** (Docusaurus, React 18, own
   `package-lock.json`), intentionally OUTSIDE the pnpm/Turbo workspace (React 19 conflict). Use `npm`
   there, not `pnpm`. Bilingual (id default / en). Content is authored **from the live code**
   (`scripts/extract-app-model.mjs` → `generated/app-model.json` + drift report); specs are guidance
@@ -24,11 +24,13 @@ pnpm + Turborepo · NestJS 11 (Express 5) + Prisma 7 + Postgres 15 · Next 16 + 
 Tailwind 4 + next-intl 4 · Zod 4 · ESLint 9 (flat config) · Vitest 4 / Jest 30 · TypeScript 5.9.
 (All deps on latest majors as of 2026-06; `pnpm audit` = 0. See `docs/DEPENDENCY-UPGRADE.md`.)
 Packages: `@swat/{schemas,prisma-client,eslint-config,tsconfig}`; backend = `@swat/backend`.
-Admin seed login: `admin / Password123!` (no forced reset). Dev/CI seed also creates
-`adminreset / Password123!` (`mustChangePassword=true`) to exercise the forced first-login
-change, plus one ready-to-use demo user per non-admin role for RBAC testing —
-`administrasi`, `checker`, `operator`, `petugastpa`, `supervisor` (all `/ Password123!`).
-None of these dev/CI accounts are created in production.
+Admin seed login: `admin / 12345678`, forced to change password on first login — like every
+seeded account (dev/CI's `adminreset`, `administrasi`, `checker`, `operator`, `petugastpa`,
+`supervisor`, all `/ 12345678`) EXCEPT `superadmin` (role **Super Administrator**, the only
+role above Administrator with `system-config:manage` — Administrator has every other
+permission). `superadmin`'s password comes from the required `SUPERADMIN_PASSWORD` env var
+(no hardcoded fallback) and it is never forced to reset. None of the dev/CI-only accounts
+(`adminreset` + the per-role demo users) are created in production.
 
 ## Frontend conventions (`apps/web`)
 

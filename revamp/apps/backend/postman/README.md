@@ -48,9 +48,10 @@ updates both `rootUrl` and `baseUrl`. Health endpoints (`/health`,
    (needs the docker-compose stack + a seeded admin).
 2. In Postman: **Import** both JSON files.
 3. Select the **SWAT Local** environment (top-right).
-4. Run **Auth → Login**. It authenticates `admin / Password123!` and Postman
-   stores the httpOnly `swat.sid` session cookie automatically — every other
-   request reuses it.
+4. Run **Auth → Login**. It authenticates `admin / 12345678` (forced password
+   change on first login, like every seeded account except `superadmin`) and
+   Postman stores the httpOnly `swat.sid` session cookie automatically — every
+   other request reuses it.
 
 ## How it chains
 

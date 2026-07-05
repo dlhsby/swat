@@ -61,5 +61,23 @@ describe('permission-catalog', () => {
     it('passes exact keys through and de-duplicates overlaps', () => {
       expect(expandPatterns(['vehicle:read', 'vehicle:read'])).toEqual(['vehicle:read']);
     });
+
+    it('excludes an exact key from a wildcard expansion', () => {
+      const keys = expandPatterns(['*:*'], ['system-config:manage']);
+      expect(keys).toHaveLength(PERMISSION_KEYS.length - 1);
+      expect(keys).not.toContain('system-config:manage');
+      expect(keys).toContain('user:read');
+    });
+
+    it('excludes an entire resource via a resource-wildcard exclude', () => {
+      const keys = expandPatterns(['*:*'], ['trip:*']);
+      expect(keys.some((k) => k.startsWith('trip:'))).toBe(false);
+      expect(keys).toContain('vehicle:read');
+    });
+
+    it('is a no-op when the exclude list matches nothing in the expansion', () => {
+      const keys = expandPatterns(['vehicle:read'], ['trip:verify']);
+      expect(keys).toEqual(['vehicle:read']);
+    });
   });
 });

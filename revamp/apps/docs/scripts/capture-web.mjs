@@ -19,9 +19,14 @@ mkdirSync(OUT, { recursive: true });
 
 const BASE = (process.argv[2] || 'https://swat.wahyutrip.com').replace(/\/$/, '');
 const LOCALE = process.argv[3] || 'id-ID';
-// Seed admin (dev/staging only): admin / Password123! — never a production account.
-const USER = process.env.DOCS_SHOT_USER || 'admin';
-const PASS = process.env.DOCS_SHOT_PASS || 'Password123!';
+// Seed superadmin (dev/staging only) — the only seeded account NOT forced to
+// change its password on first login, so the screenshot run lands straight on
+// the real pages instead of /change-password. Never a production account.
+const USER = process.env.DOCS_SHOT_USER || 'superadmin';
+const PASS = process.env.DOCS_SHOT_PASS || process.env.SUPERADMIN_PASSWORD;
+if (!PASS) {
+  throw new Error('Set DOCS_SHOT_PASS or SUPERADMIN_PASSWORD to log in for screenshots.');
+}
 
 // Software WebGL so any Mapbox/GPS map surface renders in headless.
 const LAUNCH = {

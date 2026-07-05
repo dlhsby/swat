@@ -43,6 +43,7 @@ import { hash } from 'argon2';
 
 import { backfillRouteCorridors } from '../scripts/corridors/backfill-route-corridors';
 import { completeRoutes } from '../scripts/migration/lib/route-completion';
+import { getSuperadminPassword } from '../src/common/auth/password';
 import {
   PERMISSION_CATALOG,
   describePermission,
@@ -79,9 +80,9 @@ import {
 
 const prisma = new PrismaClient({ adapter: pgAdapter() });
 
-// Default admin password — meets the policy in specs/06-auth-rbac.md §1.4
-// (≥12 chars, upper/lower/digit/symbol). Forced to change on first login.
-const ADMIN_DEFAULT_PASSWORD = 'Password123!';
+// Default password for every seeded demo/legacy user — intentionally weak, since
+// every account it's set on is forced to change it on first login (mustChangePassword).
+const ADMIN_DEFAULT_PASSWORD = '12345678';
 
 // Argon2id parameters per specs/06-auth-rbac.md §1.1.
 const ARGON2_OPTIONS = {
@@ -100,8 +101,15 @@ const ARGON2_OPTIONS = {
 // ---------------------------------------------------------------------------
 // 2. Roles (names + permission patterns) — specs/06-auth-rbac.md §2.3
 // ---------------------------------------------------------------------------
-const ROLES: ReadonlyArray<{ name: string; patterns: readonly string[] }> = [
-  { name: 'Administrator', patterns: ['*:*'] },
+const ROLES: ReadonlyArray<{
+  name: string;
+  patterns: readonly string[];
+  exclude?: readonly string[];
+}> = [
+  // Super Administrator: the only role with system-config:manage — everything else
+  // (master data, transactions, reports) is still available to Administrator below.
+  { name: 'Super Administrator', patterns: ['*:*'] },
+  { name: 'Administrator', patterns: ['*:*'], exclude: ['system-config:manage'] },
   {
     name: 'Administrasi Data',
     patterns: [
@@ -251,7 +259,7 @@ async function seedRoles(permissionIdByKey: Map<string, string>): Promise<Map<st
     });
     idByName.set(role.name, record.id);
 
-    const keys = expandPatterns(role.patterns);
+    const keys = expandPatterns(role.patterns, role.exclude);
     await prisma.rolePermission.deleteMany({ where: { roleId: record.id } });
     await prisma.rolePermission.createMany({
       data: keys
@@ -269,24 +277,25 @@ async function seedAdminUser(adminRoleId: string): Promise<void> {
   const isProd = process.env.NODE_ENV === 'production';
   const authOnly = process.env.SEED_AUTH_ONLY === 'true';
 
-  // Primary admin — ready to use, no forced reset. Outside production, re-seeding
-  // restores the documented bootstrap credential (admin / Password123!) AND its
-  // Administrator role even if a prior legacy load reassigned it (re-seedable),
-  // keeping local/CI runs repeatable; in production we never clobber a real admin.
+  // Primary admin — forced to reset on first login, like every other seeded
+  // account. Outside production, re-seeding restores the documented bootstrap
+  // credential (admin / 12345678) AND its Administrator role even if a prior
+  // legacy load reassigned it (re-seedable), keeping local/CI runs repeatable; in
+  // production we never clobber a real admin.
   await prisma.user.upsert({
     where: { username: 'admin' },
-    update: isProd ? {} : { passwordHash, mustChangePassword: false, roleId: adminRoleId },
+    update: isProd ? {} : { passwordHash, mustChangePassword: true, roleId: adminRoleId },
     create: {
       username: 'admin',
       name: 'Administrator',
       passwordHash,
       roleId: adminRoleId,
-      mustChangePassword: false,
+      mustChangePassword: true,
     },
   });
 
   // Dev/CI-only demo account for exercising the forced first-login password
-  // change (adminreset / Password123!, mustChangePassword=true). Skipped in
+  // change (adminreset / 12345678, mustChangePassword=true). Skipped in
   // production AND in auth-only mode (the clean base for a legacy-only load), so
   // it can't become a stray privileged account.
   if (!isProd && !authOnly) {
@@ -302,6 +311,27 @@ async function seedAdminUser(adminRoleId: string): Promise<void> {
       },
     });
   }
+}
+
+/**
+ * Super Administrator — the only role that keeps `system-config:manage`. Ready to
+ * use (no forced reset): its password comes from `SUPERADMIN_PASSWORD`, not the
+ * shared demo/legacy default, so it's never guessable from the codebase.
+ */
+async function seedSuperAdminUser(superAdminRoleId: string): Promise<void> {
+  const passwordHash = await hash(getSuperadminPassword(), ARGON2_OPTIONS);
+  const isProd = process.env.NODE_ENV === 'production';
+  await prisma.user.upsert({
+    where: { username: 'superadmin' },
+    update: isProd ? {} : { passwordHash, mustChangePassword: false, roleId: superAdminRoleId },
+    create: {
+      username: 'superadmin',
+      name: 'Super Administrator',
+      passwordHash,
+      roleId: superAdminRoleId,
+      mustChangePassword: false,
+    },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1375,7 +1405,7 @@ async function seedDemoPhotos(): Promise<void> {
 /**
  * Dev/CI-only demo users — one per non-admin role — so RBAC and permission-gated
  * UI can be exercised without hand-creating accounts. All share the default
- * password and are ready to use (no forced reset). Never seeded in production.
+ * password and are forced to change it on first login. Never seeded in production.
  */
 async function seedDemoRoleUsers(roleIdByName: Map<string, string>): Promise<void> {
   if (process.env.NODE_ENV === 'production') {
@@ -1396,13 +1426,13 @@ async function seedDemoRoleUsers(roleIdByName: Map<string, string>): Promise<voi
     }
     await prisma.user.upsert({
       where: { username: demo.username },
-      update: { passwordHash, mustChangePassword: false, roleId },
+      update: { passwordHash, mustChangePassword: true, roleId },
       create: {
         username: demo.username,
         name: demo.name,
         passwordHash,
         roleId,
-        mustChangePassword: false,
+        mustChangePassword: true,
       },
     });
   }
@@ -1670,6 +1700,12 @@ async function main(): Promise<void> {
     throw new Error('Administrator role was not created');
   }
   await seedAdminUser(adminRoleId);
+
+  const superAdminRoleId = roleIdByName.get('Super Administrator');
+  if (superAdminRoleId === undefined) {
+    throw new Error('Super Administrator role was not created');
+  }
+  await seedSuperAdminUser(superAdminRoleId);
   // Operational config (always seeded, like permissions/roles): Phase 7 default
   // deviation rules so the matcher + rule-tuning API have a baseline.
   await seedDeviationRules();
@@ -1737,7 +1773,13 @@ async function main(): Promise<void> {
   }
 
   // eslint-disable-next-line no-console
-  console.log('Seed complete. Admin login: admin / ' + ADMIN_DEFAULT_PASSWORD);
+  console.log(
+    'Seed complete. Admin login: admin / ' +
+      ADMIN_DEFAULT_PASSWORD +
+      ' (forced reset on first login).',
+  );
+  // eslint-disable-next-line no-console
+  console.log('Super Administrator login: superadmin / <SUPERADMIN_PASSWORD> (ready to use).');
   if (process.env.NODE_ENV !== 'production' && !authOnly) {
     // eslint-disable-next-line no-console
     console.log('Forced-reset demo: adminreset / ' + ADMIN_DEFAULT_PASSWORD);

@@ -92,9 +92,11 @@ Seeding is split into independent, re-runnable tracks:
   (`derivePermissionKeys`), so legacy roles carry exactly their legacy permissions —
   no demo patterns leak in (run it on a clean DB, not on top of `seed:demo`).
 - **Legacy logins.** Legacy MD5 is never copied: every migrated user gets
-  `LEGACY_SEED_PASSWORD` (default `Password123!`) **with a forced first-login reset**,
+  `LEGACY_SEED_PASSWORD` (default `12345678`) **with a forced first-login reset**,
   so they can sign in (web) to test their mapped RBAC and must then set a real password.
-  The bootstrap `admin / Password123!` is ready to use (full access).
+  The bootstrap `admin / 12345678` is likewise forced to reset on first login — only the
+  bootstrap `superadmin` (password from `SUPERADMIN_PASSWORD`, full access incl.
+  system preferences) is ready to use.
 - **Additive, no duplicates, demo login protected.** Demo rows carry no `legacyId`;
   legacy rows are keyed by `legacyId` with `skipDuplicates`. Re-running is a safe no-op
   on what exists (the "already applied" guard warns + proceeds; `--force-reset`

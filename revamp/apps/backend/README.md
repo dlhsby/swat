@@ -73,7 +73,8 @@ pnpm --filter @swat/backend dev          # watch mode on $BE_PORT (default :3000
 
 - Health: `GET http://localhost:3000/health` · Swagger UI: `http://localhost:3000/api/docs`
 - All routes are under the `api/v1` prefix; responses use the `ApiResponse<T>` envelope.
-- Default login: `admin / Password123!`.
+- Default login: `admin / 12345678` (forced password change on first login; `superadmin` is
+  the only seeded account that isn't, using the `SUPERADMIN_PASSWORD` env var).
 
 ## Test
 

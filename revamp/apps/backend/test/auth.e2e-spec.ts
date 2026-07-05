@@ -3,16 +3,24 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 
 import { AppModule } from '../src/app.module';
+import { getSuperadminPassword } from '../src/common/auth/password';
 import { AppConfigService } from '../src/config';
 import { configureApp } from '../src/configure-app';
 import { CacheService } from '../src/modules/cache/cache.service';
 
 /**
  * Live integration test for the auth + RBAC pipeline. Requires the docker-compose
- * stack (Postgres + Redis) and a seeded admin (`admin` / `Password123!`). Run
- * via `pnpm --filter @swat/backend test:e2e`.
+ * stack (Postgres + Redis) and a seeded admin (`admin` / `12345678`, forced to
+ * reset on first login like every other seeded account). Run via
+ * `pnpm --filter @swat/backend test:e2e`.
  */
-const ADMIN = { username: 'admin', password: 'Password123!' };
+const ADMIN = { username: 'admin', password: '12345678' };
+
+// The only seeded account NOT forced to reset — used to exercise the bearer-token
+// happy path (native clients refuse tokens for forced-reset accounts).
+function superadminCreds(): { username: string; password: string } {
+  return { username: 'superadmin', password: getSuperadminPassword() };
+}
 
 describe('Auth & RBAC (e2e)', () => {
   let app: INestApplication;
@@ -59,12 +67,12 @@ describe('Auth & RBAC (e2e)', () => {
     expect(res.headers['set-cookie']).toBeUndefined();
   });
 
-  it('logs in the admin and sets a secure session cookie (admin is not force-reset)', async () => {
+  it('logs in the admin and sets a secure session cookie (forced to reset like every seeded account)', async () => {
     const res = await request(server).post('/api/v1/auth/login').send(ADMIN).expect(200);
     expect(res.body.success).toBe(true);
-    // Admin is the ready-to-use bootstrap account: mustChangePassword is false.
-    // The forced first-login change is exercised by the dev-only `adminreset`.
-    expect(res.body.data).toMatchObject({ username: 'admin', mustChangePassword: false });
+    // Every seeded account is forced to change its password on first login except
+    // `superadmin` (env-provided password, never guessable from the codebase).
+    expect(res.body.data).toMatchObject({ username: 'admin', mustChangePassword: true });
     const cookie = cookiesOf(res)[0] ?? '';
     expect(cookie).toContain('swat.sid=');
     expect(cookie.toLowerCase()).toContain('httponly');
@@ -104,8 +112,14 @@ describe('Auth & RBAC (e2e)', () => {
   });
 
   describe('native-client bearer tokens', () => {
-    it('exchanges admin credentials for a bearer + refresh token pair', async () => {
-      const res = await request(server).post('/api/v1/auth/token').send(ADMIN).expect(200);
+    // ADMIN is forced to reset like every seeded account, so the token endpoint
+    // refuses it (see the 403 test below) — these happy-path tests use
+    // `superadmin`, the only seeded account that isn't forced to reset.
+    it('exchanges superadmin credentials for a bearer + refresh token pair', async () => {
+      const res = await request(server)
+        .post('/api/v1/auth/token')
+        .send(superadminCreds())
+        .expect(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toMatchObject({ tokenType: 'Bearer', expiresIn: 900 });
       expect(typeof res.body.data.accessToken).toBe('string');
@@ -113,17 +127,23 @@ describe('Auth & RBAC (e2e)', () => {
     });
 
     it('authenticates /auth/me with a bearer token (same principal as the cookie)', async () => {
-      const grant = await request(server).post('/api/v1/auth/token').send(ADMIN).expect(200);
+      const grant = await request(server)
+        .post('/api/v1/auth/token')
+        .send(superadminCreds())
+        .expect(200);
       const res = await request(server)
         .get('/api/v1/auth/me')
         .set('Authorization', `Bearer ${grant.body.data.accessToken}`)
         .expect(200);
-      expect(res.body.data.username).toBe('admin');
+      expect(res.body.data.username).toBe('superadmin');
       expect(res.body.data.permissions).toContain('user:read');
     });
 
     it('rotates a refresh token and rejects reuse of the old one', async () => {
-      const grant = await request(server).post('/api/v1/auth/token').send(ADMIN).expect(200);
+      const grant = await request(server)
+        .post('/api/v1/auth/token')
+        .send(superadminCreds())
+        .expect(200);
       const first = grant.body.data.refreshToken as string;
 
       const rotated = await request(server)
@@ -142,7 +162,7 @@ describe('Auth & RBAC (e2e)', () => {
     it('refuses to issue tokens for a forced-reset account (web-only change)', async () => {
       const res = await request(server)
         .post('/api/v1/auth/token')
-        .send({ username: 'adminreset', password: 'Password123!' })
+        .send({ username: 'adminreset', password: '12345678' })
         .expect(403);
       expect(res.body.error.code).toBe('FORBIDDEN');
     });

@@ -14,7 +14,7 @@ are in [`15-deployment.md`](./15-deployment.md); this doc is the subsystem's own
 
 ## Location & isolation
 
-- Lives in **`revamp/docs/`** as a **standalone npm project** (own `package-lock.json`),
+- Lives in **`revamp/apps/docs/`** as a **standalone npm project** (own `package-lock.json`),
   intentionally **outside** the pnpm/Turborepo workspace: Docusaurus pins **React 18** while
   the app is on React 19. Use `npm` there, not `pnpm`.
 - Stack: **Docusaurus 3.10** (docs-only, `routeBasePath: '/'`), offline search

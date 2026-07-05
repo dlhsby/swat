@@ -14,7 +14,7 @@ import { dirname, resolve, relative } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DOCS = resolve(__dirname, '..');
-const REPO = resolve(DOCS, '..'); // revamp/
+const REPO = resolve(DOCS, '../..'); // revamp/ (docs now lives at revamp/apps/docs)
 const WEB = resolve(REPO, 'apps/web');
 const BACKEND = resolve(REPO, 'apps/backend');
 const SPECS = resolve(REPO, '..', 'specs'); // projects/swat/specs

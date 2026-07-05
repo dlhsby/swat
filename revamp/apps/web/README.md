@@ -35,7 +35,8 @@ cp apps/web/.env.example apps/web/.env.local
 pnpm --filter @swat/web dev              # http://localhost:3001  → redirects to /id-ID
 ```
 
-- Login: **`admin` / `Password123!`** (demo seed). Locale switch + theme are in **Settings**.
+- Login: **`admin` / `12345678`** (demo seed; forced password change on first login). Locale switch +
+  theme are in **Settings**.
 
 ## Build & test
 

@@ -22,6 +22,7 @@
     "migrate:delta-sync": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/migration/delta-sync.ts",
     "migrate:backfill-tpa": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/migration/backfill-tpa-trip-links.ts",
     "rollup:backfill": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/backfill-rollups.ts",
+    "reset-staging-passwords": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/reset-staging-passwords.ts",
     "dev:push-track": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/push-gps-track.ts",
     "gpsid:coverage": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' ts-node scripts/gpsid-coverage.ts",
     "test": "jest --passWithNoTests",
