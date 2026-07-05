@@ -95,6 +95,28 @@ describe('CorridorsService', () => {
     });
   });
 
+  describe('backfillDefault', () => {
+    it('404s an unknown route', async () => {
+      repo.routeExists.mockResolvedValue(null);
+      await expect(service.backfillDefault(ROUTE)).rejects.toBeInstanceOf(NotFoundException);
+      expect(repo.hasAny).not.toHaveBeenCalled();
+    });
+
+    it('creates the default corridor when the route has none', async () => {
+      repo.hasAny.mockResolvedValue(false);
+      const result = await service.backfillDefault(ROUTE);
+      expect(repo.create).toHaveBeenCalledWith(ROUTE, expect.anything(), true);
+      expect(result).toMatchObject({ routeId: ROUTE });
+    });
+
+    it('is a no-op when the route already has a corridor', async () => {
+      repo.hasAny.mockResolvedValue(true);
+      const result = await service.backfillDefault(ROUTE);
+      expect(repo.create).not.toHaveBeenCalled();
+      expect(result).toBeNull();
+    });
+  });
+
   describe('create', () => {
     it("makes the route's first corridor the default", async () => {
       repo.hasAny.mockResolvedValue(false);

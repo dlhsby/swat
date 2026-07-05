@@ -27,6 +27,7 @@ const hooks = vi.hoisted(() => ({
   create: { mutate: vi.fn(), isPending: false },
   update: { mutate: vi.fn(), isPending: false },
   remove: { mutate: vi.fn(), isPending: false },
+  backfillDefault: { mutate: vi.fn(), isPending: false },
 }));
 
 vi.mock('@/hooks/use-corridors', () => ({
@@ -34,6 +35,7 @@ vi.mock('@/hooks/use-corridors', () => ({
   useCreateCorridor: () => hooks.create,
   useUpdateCorridor: () => hooks.update,
   useDeleteCorridor: () => hooks.remove,
+  useBackfillDefaultCorridor: () => hooks.backfillDefault,
 }));
 
 const ROUTE = {
@@ -90,6 +92,15 @@ describe('RouteCorridorEditor', () => {
     // Default corridor exposes Edit but not Delete; the alternate has both.
     expect(screen.queryByRole('button', { name: 'Hapus Jalur Utama' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Hapus Alternatif Tol' })).toBeInTheDocument();
+  });
+
+  it('offers to generate a default corridor when the route has none', async () => {
+    renderWithProviders(<RouteCorridorEditor route={ROUTE} onClose={() => undefined} />);
+    expect(screen.getByText('Belum ada koridor.')).toBeInTheDocument();
+
+    const button = screen.getByRole('button', { name: 'Buat koridor default' });
+    await userEvent.click(button);
+    expect(hooks.backfillDefault.mutate).toHaveBeenCalled();
   });
 
   it('opens the drawing canvas to add a new corridor; Save gated on a name', async () => {

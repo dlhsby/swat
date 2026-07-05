@@ -24,6 +24,7 @@ import {
   Spinner,
 } from '@/components/ui';
 import {
+  useBackfillDefaultCorridor,
   useCreateCorridor,
   useDeleteCorridor,
   useRouteCorridors,
@@ -63,6 +64,7 @@ export function RouteCorridorEditor({
   const create = useCreateCorridor(routeId);
   const update = useUpdateCorridor(routeId);
   const remove = useDeleteCorridor(routeId);
+  const backfillDefault = useBackfillDefaultCorridor(routeId);
 
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [name, setName] = useState('');
@@ -145,8 +147,19 @@ export function RouteCorridorEditor({
                 <p className="mt-3 text-body-sm text-neutral-500">Belum ada koridor.</p>
                 <p className="mx-auto mt-1 max-w-[20rem] text-tiny text-neutral-500">
                   Koridor utama dibuat otomatis mengikuti jalan — pastikan lokasi asal &amp; tujuan
-                  rute sudah punya koordinat di master Lokasi, lalu simpan ulang rutenya.
+                  rute sudah punya koordinat di master Lokasi.
                 </p>
+                {!viewOnly ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mt-4"
+                    loading={backfillDefault.isPending}
+                    onClick={() => backfillDefault.mutate()}
+                  >
+                    Buat koridor default
+                  </Button>
+                ) : null}
               </div>
             ) : (
               <ul className="space-y-2">

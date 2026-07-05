@@ -47,6 +47,25 @@ export function useUpdateCorridor(routeId: string | null) {
   });
 }
 
+/** On-demand "Buat koridor default" (idempotent; null when sites still lack coords). */
+export function useBackfillDefaultCorridor(routeId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (): Promise<CorridorDto | null> => corridorApi.backfillDefault(routeId as string),
+    onSuccess: (corridor) => {
+      if (corridor) {
+        notify.success('Koridor default dibuat.');
+        void queryClient.invalidateQueries({ queryKey: [KEY, routeId] });
+      } else {
+        notify.info(
+          'Lokasi asal/tujuan rute belum punya koordinat — lengkapi dulu di master Lokasi.',
+        );
+      }
+    },
+    onError: (err) => notify.error(errorMessage(err, 'Gagal membuat koridor default.')),
+  });
+}
+
 export function useDeleteCorridor(routeId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({

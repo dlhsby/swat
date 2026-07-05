@@ -59,6 +59,7 @@ import { GpsEfficiencyRepository } from '../src/modules/integrations/gps/gps-eff
 import { GpsEfficiencyService } from '../src/modules/integrations/gps/gps-efficiency.service';
 import { type PrismaService } from '../src/modules/prisma/prisma.service';
 
+import { DEMO_CORRIDORS, demoCorridorKey } from './demo-corridor-fixtures';
 import {
   DEMO_DRIVER_LICENSES,
   DEMO_DRIVERS,
@@ -1591,15 +1592,73 @@ async function seedDemoTracks(devices: DemoTrackedDevice[]): Promise<void> {
  * `GOOGLE_MAPS_SERVER_KEY` upgrades new routes' defaults to road-snapped paths.)
  */
 async function seedDemoCorridors(): Promise<void> {
-  // Shared backfill: a default corridor per route, road-snapped via Google when
-  // GOOGLE_MAPS_SERVER_KEY is set (else straight line). Idempotent; same logic the
-  // legacy/staging seeder uses, so demo and staging stay consistent.
+  // 1. Load the pre-derived corridors (baked once by scripts/build-demo-corridors.ts
+  //    against a Google-snapped run, keyed by (originSite, destinationSite, category)
+  //    so it covers both curated DEMO_ROUTES and completeRoutes()-generated routes) —
+  //    free, no vendor calls, so a fresh database doesn't re-bill Directions every seed.
+  const routeRows = await prisma.route.findMany({
+    select: {
+      id: true,
+      category: true,
+      originSite: { select: { legacyId: true } },
+      destinationSite: { select: { legacyId: true } },
+    },
+  });
+  const routeIdByKey = new Map<string, string>();
+  for (const r of routeRows) {
+    if (r.originSite.legacyId === null || r.destinationSite.legacyId === null) continue;
+    routeIdByKey.set(
+      demoCorridorKey(r.originSite.legacyId, r.destinationSite.legacyId, r.category),
+      r.id,
+    );
+  }
+  const existing = await prisma.corridor.findMany({
+    where: { deletedAt: null },
+    select: { routeId: true },
+  });
+  const hasCorridor = new Set(existing.map((c) => c.routeId));
+
+  const toInsert = DEMO_CORRIDORS.flatMap((c) => {
+    const routeId = routeIdByKey.get(
+      demoCorridorKey(c.originSiteLegacyId, c.destinationSiteLegacyId, c.category),
+    );
+    if (routeId === undefined || hasCorridor.has(routeId)) return [];
+    return [
+      {
+        routeId,
+        isDefault: true,
+        name: c.name,
+        pathGeojson: c.pathGeojson as Prisma.InputJsonValue,
+        waypoints: (c.waypoints ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        toleranceMeters: c.toleranceMeters,
+        lengthMeters: c.lengthMeters,
+        source: c.source,
+      },
+    ];
+  });
+  if (toInsert.length > 0) {
+    await prisma.corridor.createMany({ data: toInsert, skipDuplicates: true });
+    for (const c of toInsert) {
+      await prisma.route.update({
+        where: { id: c.routeId },
+        data: { distanceKm: Math.round(c.lengthMeters / 1000) },
+      });
+    }
+  }
+  // eslint-disable-next-line no-console
+  console.log(`Demo corridors: ${toInsert.length} loaded from fixture.`);
+
+  // 2. Shared backfill for anything the fixture didn't cover (e.g. routes generated
+  //    by completeRoutes() with no legacyId) — road-snapped via Google only when
+  //    GOOGLE_MAPS_SERVER_KEY is set (else straight line). Idempotent.
   const stats = await backfillRouteCorridors(prisma, {
     // eslint-disable-next-line no-console
     log: (m) => console.log(m),
   });
   // eslint-disable-next-line no-console
-  console.log(`Demo corridors: ${stats.created} default route corridor(s).`);
+  console.log(
+    `Demo corridors: ${stats.created} additional default route corridor(s) via backfill.`,
+  );
 }
 
 async function main(): Promise<void> {
