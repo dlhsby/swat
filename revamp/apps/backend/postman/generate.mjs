@@ -804,8 +804,10 @@ const ENV_VARS = [
   ['rootUrl', '{{protocol}}://{{host}}'],
   ['baseUrl', '{{rootUrl}}/{{apiPrefix}}'],
   ['adminUsername', 'admin'],
-  // Matches the demo/dev seed (admin / Password123!) so Login works out of the box.
-  ['adminPassword', 'Password123!'],
+  // Matches the demo/dev seed (admin / 12345678) so Login works out of the box.
+  // Note: admin is forced to change this password on first login, like every
+  // seeded account except superadmin.
+  ['adminPassword', '12345678'],
   'userId',
   'roleId',
   'siteId',

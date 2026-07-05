@@ -14,7 +14,7 @@ import { CacheService } from '../src/modules/cache/cache.service';
  * docker-compose stack with the synthetic seed (`SEED_SYNTHETIC=true`), which
  * provides crew schedules for the daily-init to materialize.
  */
-const ADMIN = { username: 'admin', password: 'Password123!' };
+const ADMIN = { username: 'admin', password: '12345678' };
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 

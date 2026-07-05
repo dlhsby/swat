@@ -5,14 +5,16 @@ import { type Page, expect } from '@playwright/test';
  * password; defaults match the seeded admin for a fresh dev stack.
  */
 export const ADMIN_USER = process.env.E2E_USER ?? 'admin';
-export const ADMIN_PASS = process.env.E2E_PASS ?? 'Password123!';
+export const ADMIN_PASS = process.env.E2E_PASS ?? '12345678';
 
 /**
- * Log in via the UI. The seeded `admin` is the ready-to-use account
- * (`mustChangePassword=false`) and lands on the dashboard; the dev-only
- * `adminreset` is the one that forces a first-login change. Field locators use
- * the stable input ids — a label regex would also match the password show/hide
- * toggle ("Tampilkan kata sandi").
+ * Log in via the UI. Every seeded account (including `admin`) is forced to
+ * change its password on first login except `superadmin` — so by default this
+ * lands on `/change-password`, not `/dashboard`. Specs that need a fully
+ * activated session should set `E2E_USER`/`E2E_PASS` to an already-activated
+ * user (e.g. `superadmin`), per e2e/README.md. Field locators use the stable
+ * input ids — a label regex would also match the password show/hide toggle
+ * ("Tampilkan kata sandi").
  */
 export async function login(page: Page, user = ADMIN_USER, pass = ADMIN_PASS): Promise<void> {
   await page.goto('/id-ID/login');

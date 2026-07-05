@@ -127,7 +127,7 @@ services:
   # URLs before cutover (DOCS_URL/APP_URL); DOCS_BASE_URL stays `/` for a subdomain.
   docs:
     build:
-      context: ../docs
+      context: ../apps/docs
       dockerfile: Dockerfile
       args:
         DOCS_URL: https://docs.swat.example.id

@@ -33,6 +33,21 @@ export async function verifyPassword(storedHash: string, plain: string): Promise
 }
 
 /**
+ * The Super Administrator's password is never a hardcoded default — it always
+ * comes from the environment (plaintext locally, dotenvx-encrypted in
+ * staging/production), and every seed/script path fails loudly if it's unset.
+ * Shared by prisma/seed.ts, migrate-legacy.ts, and reset-staging-passwords.ts so
+ * the env var name and failure behavior can't drift between them.
+ */
+export function getSuperadminPassword(): string {
+  const value = process.env.SUPERADMIN_PASSWORD;
+  if (!value) {
+    throw new Error('SUPERADMIN_PASSWORD env var is required to seed the superadmin user.');
+  }
+  return value;
+}
+
+/**
  * Generate a random temporary password that satisfies the policy
  * (≥12 chars, upper + lower + digit + symbol). Issued on user creation and
  * admin force-reset; the recipient must change it on first login. Uses CSPRNG

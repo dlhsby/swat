@@ -32,8 +32,9 @@ node scripts/capture-web.mjs https://swat.wahyutrip.com id-ID
 node scripts/capture-web.mjs http://localhost:4021 en-US
 ```
 
-Logs in as the seed admin (`admin` / `Password123!` — dev/staging only; override with
-`DOCS_SHOT_USER` / `DOCS_SHOT_PASS`) and writes `static/img/web/<name>.png`. Screenshot
+Logs in as the seed `superadmin` (dev/staging only — the only seeded account not
+forced to change its password on first login; requires `SUPERADMIN_PASSWORD` or
+override with `DOCS_SHOT_USER` / `DOCS_SHOT_PASS`) and writes `static/img/web/<name>.png`. Screenshot
 names match the `shot` fields in `content-map.json`, so guide pages reference them as
 `/img/web/<name>.png`. SWAT routes are locale-prefixed, so paths are visited under
 `/<locale>/…`.

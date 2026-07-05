@@ -1,3 +1,6 @@
 packages:
   - 'apps/*'
+  # Standalone Docusaurus project (React 18) — deliberately outside the pnpm/Turbo
+  # workspace to avoid conflicting with the React 19 apps.
+  - '!apps/docs'
   - 'packages/*'

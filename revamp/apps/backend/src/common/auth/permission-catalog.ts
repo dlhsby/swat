@@ -203,9 +203,8 @@ export const PERMISSION_CATALOG: readonly PermissionCatalogEntry[] = PERMISSION_
   group: permissionGroup(key),
 }));
 
-/** Expand wildcard patterns (`*:*`, `resource:*`, `*:action`) into concrete keys. */
-export function expandPatterns(patterns: readonly string[]): string[] {
-  const expanded = new Set<string>();
+function matchKeys(patterns: readonly string[]): Set<string> {
+  const matched = new Set<string>();
   for (const pattern of patterns) {
     const [pResource, pAction] = pattern.split(':');
     for (const key of PERMISSION_KEYS) {
@@ -213,9 +212,27 @@ export function expandPatterns(patterns: readonly string[]): string[] {
       const resourceMatch = pResource === '*' || pResource === kResource;
       const actionMatch = pAction === '*' || pAction === kAction;
       if (resourceMatch && actionMatch) {
-        expanded.add(key);
+        matched.add(key);
       }
     }
+  }
+  return matched;
+}
+
+/**
+ * Expand wildcard patterns (`*:*`, `resource:*`, `*:action`) into concrete keys,
+ * then drop any key matched by `exclude` (same wildcard matching) — used to carve
+ * out a narrower role from an otherwise-broad pattern (e.g. `*:*` minus
+ * `system-config:manage`).
+ */
+export function expandPatterns(
+  patterns: readonly string[],
+  exclude: readonly string[] = [],
+): string[] {
+  const expanded = matchKeys(patterns);
+  const excluded = matchKeys(exclude);
+  for (const key of excluded) {
+    expanded.delete(key);
   }
   return [...expanded];
 }

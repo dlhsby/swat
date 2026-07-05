@@ -5,7 +5,7 @@ import { RolePermissionsService } from '../../common/auth/role-permissions.servi
 import { PrismaService } from '../prisma/prisma.service';
 
 /** The superuser role (seed `*:*`); always reconciled to hold every permission. */
-const SUPERUSER_ROLE = 'Administrator';
+const SUPERUSER_ROLE = 'Super Administrator';
 
 /**
  * Reconciles the `permission` table against the code-defined catalog
@@ -13,9 +13,12 @@ const SUPERUSER_ROLE = 'Administrator';
  * (creating missing rows, refreshing descriptions) and never deletes rows or
  * touches custom-role grants — so adding a permission in code is safe against
  * existing roles. {@link ensureSuperuserGrants} additionally grants any new
- * permissions to the {@link SUPERUSER_ROLE} role (definitionally `*:*`) so the
- * admin never needs a reseed to use a newly-added screen. Together these are the
- * supported way to propagate a new permission to a running database.
+ * permissions to the {@link SUPERUSER_ROLE} role (definitionally `*:*`) so Super
+ * Administrator never needs a reseed to use a newly-added screen. Administrator is
+ * deliberately NOT the superuser role (it excludes `system-config:manage`), so it
+ * only picks up newly-added permissions on the next reseed, like any other role.
+ * Together these are the supported way to propagate a new permission to a running
+ * database.
  */
 @Injectable()
 export class PermissionsSyncService {

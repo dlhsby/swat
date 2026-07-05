@@ -21,7 +21,7 @@ The pattern is shared with the sibling **sekar** project, which co-tenants the s
 
 Domains: web `https://swat.wahyutrip.com`, API `https://api.swat.wahyutrip.com`, docs
 `https://docs.swat.wahyutrip.com` (all → the shared Elastic IP). The docs site is a public, static
-Docusaurus user manual (`revamp/docs/`, image `swat-docs`) with no auth or session — served straight
+Docusaurus user manual (`revamp/apps/docs/`, image `swat-docs`) with no auth or session — served straight
 from a small nginx container. The split-domain layout requires the session cookie to be
 `Domain=.swat.wahyutrip.com`,
 `SameSite=Lax`, `Secure`, with CORS pinned to the web origin — all config-driven

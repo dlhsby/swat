@@ -3,12 +3,12 @@
 Phase 7 raises **deviation alerts** when a tracked vehicle departs from its expected route corridor,
 sequence, or schedule. Each rule type is **tunable** at runtime — no redeploy needed.
 
-> Permission: tuning requires **`deviation-rule:manage`** (held by the *Administrasi Data* role).
+> Permission: tuning requires **`deviation-rule:manage`** (held by the _Administrasi Data_ role).
 > Read-only roles never see the controls.
 
 ## Where to tune
 
-- **UI:** Pengaturan (Settings) → **Pelacakan** → *Aturan Penyimpangan*. One card per rule type;
+- **UI:** Pengaturan (Settings) → **Pelacakan** → _Aturan Penyimpangan_. One card per rule type;
   each saves independently.
 - **API:** `GET /api/v1/gps/deviation-rules` to read; `PUT /api/v1/gps/deviation-rules/:type` to update
   (body: `{ threshold?, hysteresisSec?, severity?, enabled? }`).
@@ -17,12 +17,12 @@ sequence, or schedule. Each rule type is **tunable** at runtime — no redeploy 
 
 Seeded idempotently by `prisma/seed.ts` (so a reseed restores these):
 
-| Type | What it detects | `threshold` | `hysteresisSec` | `severity` | Notes |
-|------|------------------|-------------|-----------------|------------|-------|
-| `off_corridor` | Vehicle drifts farther than the buffer from its corridor | **150 m** | **30 s** | `WARNING` | The only rule that debounces GPS noise (see below) |
-| `off_sequence` | Visits a site out of the planned order | — (n/a) | 0 | `WARNING` | Membership/order check; no distance threshold |
-| `dwell_too_long` | Stationary **outside** any site geofence beyond the limit | **600 s** (10 min) | 0 | `INFO` | Dwell *inside* a site (loading/dumping) is legitimate and never alerts |
-| `late_to_schedule` | Arrives later than the trip's target time + grace | **900 s** (15 min) | 0 | `INFO` | |
+| Type               | What it detects                                           | `threshold`        | `hysteresisSec` | `severity` | Notes                                                                  |
+| ------------------ | --------------------------------------------------------- | ------------------ | --------------- | ---------- | ---------------------------------------------------------------------- |
+| `off_corridor`     | Vehicle drifts farther than the buffer from its corridor  | **150 m**          | **30 s**        | `WARNING`  | The only rule that debounces GPS noise (see below)                     |
+| `off_sequence`     | Visits a site out of the planned order                    | — (n/a)            | 0               | `WARNING`  | Membership/order check; no distance threshold                          |
+| `dwell_too_long`   | Stationary **outside** any site geofence beyond the limit | **600 s** (10 min) | 0               | `INFO`     | Dwell _inside_ a site (loading/dumping) is legitimate and never alerts |
+| `late_to_schedule` | Arrives later than the trip's target time + grace         | **900 s** (15 min) | 0               | `INFO`     |                                                                        |
 
 `threshold` units are **metres** for `off_corridor` and **seconds** for `dwell_too_long` /
 `late_to_schedule`. `off_sequence` has no threshold.
