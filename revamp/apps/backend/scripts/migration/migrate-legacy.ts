@@ -16,7 +16,8 @@ import { join } from 'node:path';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { hash } from 'argon2';
 
-import { PERMISSION_CATALOG } from '../../src/common/auth/permission-catalog';
+import { getSuperadminPassword } from '../../src/common/auth/password';
+import { PERMISSION_CATALOG, expandPatterns } from '../../src/common/auth/permission-catalog';
 import { loadScriptEnv } from '../../src/common/prisma/load-script-env';
 import { pgAdapter } from '../../src/common/prisma/pg-adapter';
 import { backfillRouteCorridors } from '../corridors/backfill-route-corridors';
@@ -155,7 +156,7 @@ function checkPartitionRange(date: Date): Date {
  * first-login reset; the bootstrap admin is ready to use. Not a production
  * secret — the legacy track is for staging/test loads.
  */
-const SEED_PASSWORD = process.env.LEGACY_SEED_PASSWORD ?? 'Password123!';
+const SEED_PASSWORD = process.env.LEGACY_SEED_PASSWORD ?? '12345678';
 
 // `findMany` selection that feeds toLegacyMap (legacy id → new UUID).
 const ID_LEGACY = { select: { id: true, legacyId: true } } as const;
@@ -222,36 +223,79 @@ async function ensureAuthBootstrap(): Promise<string> {
       create: { key, description },
     });
   }
-  const permIds = (await prisma.permission.findMany({ select: { id: true } })).map((p) => p.id);
+  const permissionRows = await prisma.permission.findMany({ select: { id: true, key: true } });
+  const permIdByKey = new Map(permissionRows.map((p) => [p.key, p.id]));
 
-  // 2. Administrator = the full-access bootstrap role (its concrete grants are a
-  //    superset of whatever the legacy "Administrator" menu maps to). Other roles
-  //    stay pure-legacy.
+  // 2. Super Administrator = the true full-access bootstrap role (every permission,
+  //    including system-config:manage). Administrator gets everything EXCEPT
+  //    system preferences — master data + transactions stay a superset of whatever
+  //    the legacy "Administrator" menu maps to; system config is superadmin-only.
+  //    Other roles stay pure-legacy.
+  const superAdminRole = await prisma.role.upsert({
+    where: { name: 'Super Administrator' },
+    update: {},
+    create: { name: 'Super Administrator' },
+  });
+  await prisma.rolePermission.createMany({
+    data: permissionRows.map(({ id: permissionId }) => ({
+      roleId: superAdminRole.id,
+      permissionId,
+    })),
+    skipDuplicates: true,
+  });
+
   const adminRole = await prisma.role.upsert({
     where: { name: 'Administrator' },
     update: {},
     create: { name: 'Administrator' },
   });
+  const adminKeys = expandPatterns(['*:*'], ['system-config:manage']);
   await prisma.rolePermission.createMany({
-    data: permIds.map((permissionId) => ({ roleId: adminRole.id, permissionId })),
+    data: adminKeys
+      .map((key) => permIdByKey.get(key))
+      .filter((id): id is string => id !== undefined)
+      .map((permissionId) => ({ roleId: adminRole.id, permissionId })),
     skipDuplicates: true,
   });
 
-  // 3. Bootstrap admin — ready to use (no forced reset). Re-seedable: restores the
-  //    credential + role even if a prior run changed them.
+  // 3. Bootstrap admin — forced to reset on first login, like every other seeded
+  //    account. Re-seedable: restores the credential + role even if a prior run
+  //    changed them.
   const passwordHash = await hash(SEED_PASSWORD);
   const admin = await prisma.user.upsert({
     where: { username: 'admin' },
-    update: { passwordHash, mustChangePassword: false, roleId: adminRole.id },
+    update: { passwordHash, mustChangePassword: true, roleId: adminRole.id },
     create: {
       username: 'admin',
       name: 'Administrator',
       passwordHash,
       roleId: adminRole.id,
+      mustChangePassword: true,
+    },
+  });
+
+  // 4. Bootstrap superadmin — ready to use (no forced reset), password from env,
+  //    never the shared SEED_PASSWORD.
+  const superAdminPasswordHash = await hash(getSuperadminPassword());
+  await prisma.user.upsert({
+    where: { username: 'superadmin' },
+    update: {
+      passwordHash: superAdminPasswordHash,
+      mustChangePassword: false,
+      roleId: superAdminRole.id,
+    },
+    create: {
+      username: 'superadmin',
+      name: 'Super Administrator',
+      passwordHash: superAdminPasswordHash,
+      roleId: superAdminRole.id,
       mustChangePassword: false,
     },
   });
-  log(`Auth bootstrap: ${permIds.length} permissions, Administrator role, admin user ready.`);
+
+  log(
+    `Auth bootstrap: ${permissionRows.length} permissions, Administrator + Super Administrator roles, admin + superadmin users ready.`,
+  );
   return admin.id;
 }
 

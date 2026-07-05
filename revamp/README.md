@@ -30,15 +30,15 @@ transactional migration, cutover) are the operator's on-prem steps.
 swat/
 ├── apps/
 │   ├── backend/        # NestJS API (+ Prisma schema, migrations, seed)
-│   └── web/            # Next.js PWA
+│   ├── web/            # Next.js PWA
+│   └── docs/           # public user manual (Docusaurus, bilingual id/en) — standalone
+│                       #   npm project (React 18), NOT in the pnpm workspace. Use `npm`.
+│                       #   → docs.swat.wahyutrip.com. See apps/docs/README.md.
 ├── packages/
 │   ├── schemas/        # @swat/schemas — shared Zod schemas
 │   ├── prisma-client/  # @swat/prisma-client — PrismaClient singleton
 │   ├── eslint-config/  # @swat/eslint-config
 │   └── tsconfig/       # @swat/tsconfig
-├── docs/               # public user manual (Docusaurus, bilingual id/en) — standalone
-│                       #   npm project (React 18), NOT in the pnpm workspace. Use `npm`.
-│                       #   → docs.swat.wahyutrip.com. See docs/README.md.
 ├── infra/              # Dockerfiles, nginx, compose env (+ .example)
 ├── scripts/            # setup.sh (bootstrap) · start.sh (run)
 └── docker-compose.yml  # Postgres · Adminer · Redis · MinIO · nginx
@@ -61,7 +61,8 @@ Two helper scripts in [`scripts/`](./scripts/) wrap the whole flow:
 ./scripts/start.sh
 #   Backend  http://localhost:3000  (GET /health · Swagger /api/docs)
 #   Frontend http://localhost:3001  (redirects to /id-ID)
-#   Admin login → admin / Password123!  (ready to use; `adminreset` exercises forced reset)
+#   Admin login → admin / 12345678  (forced password change on first login;
+#   `superadmin` / $SUPERADMIN_PASSWORD is the only account that isn't)
 ```
 
 `setup.sh` is idempotent — re-run it anytime. Flags: `--synthetic` (seed synthetic dataset),
@@ -150,10 +151,12 @@ Scripts in [`apps/backend/scripts/migration/`](./apps/backend/scripts/migration/
 run against the live DB + image filesystem is the operator's on-prem step.
 
 `migrate:legacy` (= `pnpm db:seed:legacy`) is **self-sufficient and demo-free**: it
-bootstraps the permission catalog + a full-access `admin / Password123!`, loads the
-real legacy users (each `Password123!` with a forced first-login reset; legacy MD5 is
-never copied) and their permissions derived from the legacy menu tree, plus master +
-aggregate data. Run it on a clean DB (`prisma migrate reset --force --skip-seed`), not
+bootstraps the permission catalog + a full-access `admin / 12345678` (forced reset on
+first login) + `superadmin / $SUPERADMIN_PASSWORD` (ready to use, the only role with
+`system-config:manage`), loads the real legacy users (each `12345678` with a forced
+first-login reset; legacy MD5 is never copied) and their permissions derived from the
+legacy menu tree, plus master + aggregate data. Run it on a clean DB
+(`prisma migrate reset --force --skip-seed`), not
 on top of `db:seed:demo`. The **transactional bulk load** (haritransaksi→TransactionDay,
 transaksiangkutsampah→Haul, detail→HaulAssignment, trayek→Trip, sampahmasuktpa→
 TpaInboundLog) is implemented and runs via `db:seed:staging`/`db:seed:production`

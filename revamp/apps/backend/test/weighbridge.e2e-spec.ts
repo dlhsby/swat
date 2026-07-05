@@ -16,7 +16,7 @@ import { PrismaService } from '../src/modules/prisma/prisma.service';
  * service-account API-key path. Requires the docker-compose stack with the demo
  * seed. If the required reference data is missing, the suite skips its body.
  */
-const ADMIN = { username: 'admin', password: 'Password123!' };
+const ADMIN = { username: 'admin', password: '12345678' };
 const today = (): string => new Date().toISOString().slice(0, 10);
 
 interface Fixture {

@@ -131,10 +131,10 @@ jobs:
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           # Docs is a standalone npm project (outside the pnpm workspace), so its
-          # build context is ./revamp/docs, not ./revamp. Site URLs are baked at
-          # build time (static-site constants) from build args.
-          context: ./revamp/docs
-          file: ./revamp/docs/Dockerfile
+          # build context is ./revamp/apps/docs, not ./revamp. Site URLs are baked
+          # at build time (static-site constants) from build args.
+          context: ./revamp/apps/docs
+          file: ./revamp/apps/docs/Dockerfile
           platforms: linux/amd64
           push: true
           build-args: |

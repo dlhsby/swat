@@ -12,7 +12,7 @@ React 19. Run `npm`, not `pnpm`, here.
 ## Local preview
 
 ```bash
-cd revamp/docs
+cd revamp/apps/docs
 npm ci
 npm start                 # http://localhost:3002  (Bahasa Indonesia)
 npm start -- --locale en  # English preview

@@ -13,7 +13,7 @@ import { PrismaService } from '../src/modules/prisma/prisma.service';
  * the plaintext key ONCE), list (key masked to its prefix), update, and revoke.
  * Requires the docker stack + auth seed.
  */
-const ADMIN = { username: 'admin', password: 'Password123!' };
+const ADMIN = { username: 'admin', password: '12345678' };
 
 describe('Service accounts admin API (e2e)', () => {
   let app: INestApplication;
