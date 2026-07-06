@@ -54,10 +54,27 @@ export class CorridorsRepository {
       .then((c) => c !== null);
   }
 
-  /** IDs of live routes that have no (non-deleted) corridor yet — the bulk-backfill work list. */
+  /** IDs of live routes that have no (non-deleted) corridor yet — the additive-backfill work list. */
   async routeIdsWithoutCorridor(): Promise<string[]> {
     const rows = await this.prisma.route.findMany({
       where: { deletedAt: null, corridors: { none: { deletedAt: null } } },
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
+
+  /**
+   * IDs of live routes whose two Sites both have coordinates — the **reset** work list.
+   * A route without coords can't have a real corridor, so it's excluded (its default,
+   * if any, is left as-is rather than deleted).
+   */
+  async routeIdsWithCoords(): Promise<string[]> {
+    const rows = await this.prisma.route.findMany({
+      where: {
+        deletedAt: null,
+        originSite: { latitude: { not: null }, longitude: { not: null } },
+        destinationSite: { latitude: { not: null }, longitude: { not: null } },
+      },
       select: { id: true },
     });
     return rows.map((r) => r.id);
