@@ -207,6 +207,27 @@ The "empty in data" notes on `trayek`/`detailtransaksiangkutsampah`/`transaksian
 - **Order within history:** migrate oldest→newest so archiving (see [`12-scalability-archiving.md`](./12-scalability-archiving.md) §3) can run immediately after.
 - **Reconciliation by partition:** row counts compared per year/partition, not just per table (§8); verify FK integrity across partitions.
 
+#### 3.1.1 Resume, re-dump delta, and post-load steps (implemented)
+
+The dump reseed (`infra/seed-legacy-from-dump.sh`) exposes the watermark as opt-in flags so a load is
+interruption-safe and a fresh dump can be applied **incrementally** rather than re-run whole:
+
+- **Resume:** `--resume` continues every stream from `reports/watermark.json` (never `--force-reset`);
+  `--reuse-mysql`/`--keep-mysql` avoid re-importing the dump; `--retry[=N]` self-heals transient
+  tunnel/RDS failures; `LEGACY_MYSQL_DATADIR` puts the multi-GB MySQL import on a roomy disk that
+  persists across a crash. `--since-year=YYYY` windows the 5 transactional tables + DisposalPermit.
+- **Re-dump delta:** because the streams are watermarked, re-running `--transactions-only --resume`
+  after a newer dump loads only rows with `legacyId` **beyond** the watermark = the newly-appended
+  transactions. Masters go through `migrate:delta-sync` (idempotent re-upsert by `legacyId` + KPI
+  parity). Caveat: a pure watermark resume captures **inserts**, not **edits** to already-loaded rows
+  (id below the watermark) — reload a recent window to capture those.
+- **Post-load (auto):** after a transactional load the seed runs `rollup:backfill` — the ETL writes
+  only raw `haul`/`trip`, but the monitoring dashboards read the `daily_tonnage`/monthly rollups —
+  then `archive:run` (13-month retention; no-ops without `pg_dump`/`ARCHIVE_DIR`). Corridors are a
+  separate idempotent step (`corridors:backfill`, skipped by `--transactions-only`).
+
+See `scripts/migration/README.md` §"Resumable / opt-in flags" and §"Incremental re-dump (delta)".
+
 ## 4. Data-quality fixes
 
 ### Dates
