@@ -117,8 +117,23 @@ STAGING_DATABASE_URL='postgresql://swat:PASS@127.0.0.1:15433/swat_staging?schema
 STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh --with-transactions
 ```
 
-**Over a flaky tunnel, load resumably** (the SSM tunnel can drop mid-load; `--retry` + the watermark
-make that a non-event — re-running continues from where it stopped rather than restarting):
+**Preferred: tunnel-free reseed (`reseed-via-ssm.sh`).** The SSM *port-forward* tunnel is fragile (it
+dies on IPv6/NAT64 networks) and the t3.micro box is too small to run the ETL's ephemeral MySQL — so
+split the work: build the seed artifact **locally**, then restore it **on the box** via SSM *Run
+Command* (a plain API call that works over NAT64; RDS is local to the box, so the bulk COPY is fast
+in-VPC and needs no tunnel). One command does build → S3 → send-command → poll:
+
+```bash
+bash infra/reseed-via-ssm.sh --since-year=2026
+```
+
+It restores as the **RDS master** (superuser, needed for the TRUNCATE + FK-trigger-disable), read on
+the box from SSM `/sekar/staging/RDS_MASTER_*`. The schema must already match the artifact's
+migrations (deploys keep staging current). This is the recommended path; the tunnel flow below is the
+fallback when you must drive it from your laptop against RDS directly.
+
+**Fallback — over a flaky tunnel, load resumably** (the SSM tunnel can drop mid-load; `--retry` + the
+watermark make that a non-event — re-running continues from where it stopped rather than restarting):
 
 ```bash
 STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh staging --with-transactions \
