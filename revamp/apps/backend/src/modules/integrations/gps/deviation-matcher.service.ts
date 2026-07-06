@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { type DeviationRule, type DeviationType } from '@prisma/client';
 
 import { operationDateOf } from '../../../common/dates';
+import { SystemConfigService } from '../../../config';
 import { CacheService } from '../../cache/cache.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import { CorridorRepository } from './corridor.repository';
 import { DeviationAlertService } from './deviation-alert.service';
 import { DeviationRuleRepository } from './deviation-rule.repository';
+import { type HaulContext, GpsActivityRepository } from './gps-activity.repository';
+import { findGeofenceSite } from './gps-activity.service';
 
 /** A normalized fix handed to the matcher (subset of the persisted ping). */
 export interface MatchPing {
@@ -25,8 +28,10 @@ interface ActiveTrip {
 }
 
 const RULE_CACHE_TTL_MS = 60_000;
-/** Redis key TTL for the off-corridor hysteresis marker (self-clears if pings stop). */
+/** Redis key TTL for the hysteresis/dwell/sequence markers (self-clear if pings stop). */
 const HYSTERESIS_TTL_SEC = 600;
+/** Below this speed a ping counts as "stationary" for the dwell check (GPS jitter tolerance). */
+const STATIONARY_SPEED_KMH = 2;
 
 /**
  * Route-deviation matcher (Phase 7, T-712). Runs per persisted ping for a
@@ -37,9 +42,16 @@ const HYSTERESIS_TTL_SEC = 600;
  *    noisy ping never alerts); auto-resolves on corridor re-entry.
  *  - **late_to_schedule** — ping time past targetTime + threshold for an
  *    un-actualized trip.
+ *  - **dwell_too_long** — stationary outside every site geofence for the active
+ *    haul, sustained beyond the rule's threshold; auto-resolves on movement or
+ *    entering a site (loading/dumping stops are legitimate, per the site-geofence
+ *    exclusion).
+ *  - **off_sequence** — enters a site that is not any IN_PROGRESS leg's
+ *    destination right now (mirrors `GpsActivityService.tripForSite`, so the two
+ *    subsystems agree on what "expected" means); auto-resolves on leaving the
+ *    wrong site or reaching the correct one.
  * Graceful degradation: no active trip → track only; no corridor → skip
- * off_corridor. `dwell_too_long` + `off_sequence` are deferred (need site-geofence
- * + leg-sequence logic) — tracked as a follow-up.
+ * off_corridor; no active haul context → skip dwell/sequence.
  */
 @Injectable()
 export class DeviationMatcherService {
@@ -51,6 +63,8 @@ export class DeviationMatcherService {
     private readonly alerts: DeviationAlertService,
     private readonly rules: DeviationRuleRepository,
     private readonly cache: CacheService,
+    private readonly activity: GpsActivityRepository,
+    private readonly systemConfig: SystemConfigService,
   ) {}
 
   async match(ping: MatchPing): Promise<void> {
@@ -61,6 +75,12 @@ export class DeviationMatcherService {
     const ruleMap = await this.getRules();
     await this.checkOffCorridor(ping, active, ruleMap.get('off_corridor'));
     await this.checkLate(ping, active, ruleMap.get('late_to_schedule'));
+
+    const ctx = await this.activity.loadContext(ping.vehicleId, operationDateOf(ping.recordedAt));
+    if (ctx) {
+      await this.checkDwell(ping, active, ctx, ruleMap.get('dwell_too_long'));
+      await this.checkSequence(ping, active, ctx, ruleMap.get('off_sequence'));
+    }
   }
 
   private async checkOffCorridor(
@@ -136,6 +156,104 @@ export class DeviationMatcherService {
         distanceM: null,
       });
     }
+  }
+
+  /**
+   * Stationary outside every site geofence, sustained beyond the rule's
+   * threshold. Loading/dumping stops are legitimate — being inside any site's
+   * geofence never dwells, regardless of how long the vehicle sits there.
+   */
+  private async checkDwell(
+    ping: MatchPing,
+    active: ActiveTrip,
+    ctx: HaulContext,
+    rule: DeviationRule | undefined,
+  ): Promise<void> {
+    if (!rule?.enabled) {
+      return;
+    }
+    const defaultRadiusM = this.systemConfig.getGpsGeofenceDefaultRadiusM();
+    const insideSite = findGeofenceSite(ctx.sites, ping, defaultRadiusM);
+    const dwelling = ping.speedKmh <= STATIONARY_SPEED_KMH && insideSite === null;
+    const key = `gps:hys:dwell:${ping.vehicleId}`;
+
+    if (!dwelling) {
+      await this.cache.del(key);
+      await this.alerts.autoResolve(ping.vehicleId, 'dwell_too_long');
+      return;
+    }
+
+    const firstSeen = await this.cache.get<number>(key);
+    const nowMs = ping.recordedAt.getTime();
+    if (firstSeen === null) {
+      await this.cache.set(key, nowMs, HYSTERESIS_TTL_SEC);
+      return;
+    }
+    if (nowMs - firstSeen < (rule.threshold ?? 0) * 1000) {
+      return; // Not sustained long enough yet.
+    }
+    await this.alerts.raiseOrCoalesce({
+      vehicleId: ping.vehicleId,
+      tripId: active.tripId,
+      alertType: 'dwell_too_long',
+      severity: rule.severity,
+      latitude: ping.latitude,
+      longitude: ping.longitude,
+      distanceM: null,
+    });
+  }
+
+  /**
+   * Entering a site that is not any IN_PROGRESS leg's destination right now —
+   * mirrors `GpsActivityService`'s own arrival predicate (destinationSiteId +
+   * status IN_PROGRESS) so the activity machine and this check never disagree
+   * about what "expected" means. Entering the POOL is never flagged (a return
+   * is always legitimate). Fires once per wrong-site visit, not every ping.
+   */
+  private async checkSequence(
+    ping: MatchPing,
+    active: ActiveTrip,
+    ctx: HaulContext,
+    rule: DeviationRule | undefined,
+  ): Promise<void> {
+    if (!rule?.enabled) {
+      return;
+    }
+    const defaultRadiusM = this.systemConfig.getGpsGeofenceDefaultRadiusM();
+    const site = findGeofenceSite(ctx.sites, ping, defaultRadiusM);
+    const key = `gps:hys:seq:${ping.vehicleId}`;
+    const flagged = await this.cache.get<string>(key);
+
+    if (site === null || site.type === 'POOL') {
+      if (flagged) {
+        await this.cache.del(key);
+        await this.alerts.autoResolve(ping.vehicleId, 'off_sequence');
+      }
+      return;
+    }
+    const expected = ctx.trips.some(
+      (t) => t.destinationSiteId === site.id && t.status === 'IN_PROGRESS',
+    );
+    if (expected) {
+      if (flagged) {
+        await this.cache.del(key);
+        await this.alerts.autoResolve(ping.vehicleId, 'off_sequence');
+      }
+      return;
+    }
+    if (flagged === site.id) {
+      return; // Already flagged for this same wrong site — don't re-raise every ping.
+    }
+    await this.cache.set(key, site.id, HYSTERESIS_TTL_SEC);
+    await this.alerts.raiseOrCoalesce({
+      vehicleId: ping.vehicleId,
+      tripId: active.tripId,
+      alertType: 'off_sequence',
+      severity: rule.severity,
+      latitude: ping.latitude,
+      longitude: ping.longitude,
+      distanceM: null,
+    });
   }
 
   /**

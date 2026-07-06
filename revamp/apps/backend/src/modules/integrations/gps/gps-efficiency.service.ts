@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import {
+  type ActivityEventRow,
   type DailyTripRealization,
   type FleetVehicle,
   GpsEfficiencyRepository,
@@ -19,16 +20,48 @@ function utcMidnight(date: Date): Date {
 }
 
 /**
+ * Sum each vehicle's ARRIVE → next-event duration (minutes) from the day's
+ * `GpsActivityEvent` feed — legitimate site dwell time (loading/dumping), not a
+ * deviation. Events are pre-sorted per vehicle by `occurredAt`; an ARRIVE with
+ * no matching close-out today (still open at day-end) contributes nothing.
+ */
+export function computeDwellMinutesByVehicle(
+  events: readonly ActivityEventRow[],
+): Map<string, number> {
+  const totals = new Map<string, number>();
+  let openVehicle: string | null = null;
+  let openArriveAt: Date | null = null;
+  for (const e of events) {
+    if (openVehicle !== e.vehicleId) {
+      openVehicle = e.vehicleId;
+      openArriveAt = null;
+    }
+    if (e.kind === 'ARRIVE') {
+      openArriveAt = e.occurredAt;
+      continue;
+    }
+    if (openArriveAt) {
+      const minutes = (e.occurredAt.getTime() - openArriveAt.getTime()) / 60_000;
+      totals.set(e.vehicleId, (totals.get(e.vehicleId) ?? 0) + Math.max(0, minutes));
+      openArriveAt = null;
+    }
+  }
+  return totals;
+}
+
+/**
  * Per-vehicle/day efficiency rollup (Phase 7, T-719/720). Degrades gracefully by
  * coverage:
  *  - tracked (has device): actual distance from the device odometer delta
  *    (primary); else recorded odometer.
  *  - untracked: actual distance from the operator-recorded `Trip.actualOdometer`.
  * Late minutes from realization; deviation count from the day's alerts; an
- * internal wasted-fuel estimate (extra distance ÷ km/L). `adherencePct` /
- * `dwellMinutes` are left NULL (need ping-vs-corridor replay + site-geofence
- * dwell — paired with the deferred dwell matcher) — null = "not measurable", not 0.
- * The nightly GPS.id mileage reconcile (T-720) fills `gpsidFuelLiters` separately.
+ * internal wasted-fuel estimate (extra distance ÷ km/L). `dwellMinutes` sums
+ * ARRIVE→exit durations from the activity feed; `adherencePct` is the share of
+ * the day's GPS pings within tolerance of any of today's corridors. Both stay
+ * NULL ("not measurable", not 0) for untracked vehicles or vehicles with no
+ * activity/corridor data that day. The nightly GPS.id mileage reconcile (T-720)
+ * fills `gpsidFuelLiters` separately.
  */
 @Injectable()
 export class GpsEfficiencyService {
@@ -47,6 +80,10 @@ export class GpsEfficiencyService {
     const trips = await this.repo.tripRealizations(day);
     const odoRanges = await this.repo.odometerRanges(day, dayEnd);
     const deviationCounts = await this.repo.deviationCounts(day, dayEnd);
+    const dwellByVehicle = computeDwellMinutesByVehicle(
+      await this.repo.activityEvents(day, dayEnd),
+    );
+    const corridorsByVehicle = await this.repo.dailyCorridorsByVehicle(day);
 
     const tripsByVehicle = this.aggregateTrips(trips, day);
     const vehicleIds = new Set<string>([...tripsByVehicle.keys(), ...odoRanges.keys()]);
@@ -70,6 +107,21 @@ export class GpsEfficiencyService {
       const wastedFuelLiters =
         vehicle.currentFuelRatio > 0 ? Number((extraKm / vehicle.currentFuelRatio).toFixed(2)) : 0;
 
+      const dwellMinutes = dwellByVehicle.get(vehicleId);
+      let adherencePct: number | null = null;
+      if (vehicle.hasDevice) {
+        const corridors = corridorsByVehicle.get(vehicleId) ?? [];
+        if (corridors.length > 0) {
+          const { within, total } = await this.repo.pingAdherence(
+            vehicleId,
+            day,
+            dayEnd,
+            corridors,
+          );
+          if (total > 0) adherencePct = Math.round((within / total) * 10_000) / 100;
+        }
+      }
+
       await this.repo.upsert(day, vehicleId, {
         positionSource: vehicle.hasDevice ? 'gps' : 'recorded',
         plannedMeters: Math.round(plannedMeters),
@@ -77,7 +129,8 @@ export class GpsEfficiencyService {
         lateMinutes,
         wastedFuelLiters,
         deviationCount: deviationCounts.get(vehicleId) ?? 0,
-        // adherencePct + dwellMinutes intentionally left unset (NULL = N/A).
+        adherencePct,
+        dwellMinutes: dwellMinutes !== undefined ? Number(dwellMinutes.toFixed(2)) : null,
       });
       written += 1;
     }

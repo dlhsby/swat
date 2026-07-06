@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import { notify } from '@/components/ui';
 import { ApiError } from '@/lib/api-error';
 import {
+  type AlertHistoryFilter,
   type DeviationAlert,
   type DeviationType,
   trackingApi,
@@ -88,6 +89,14 @@ export function useAlerts(enabled = true) {
   return { alerts, isLoading: list.isLoading, connectionState: live.connectionState };
 }
 
+/** Server-paginated, filterable alert history (all alerts, not just open ones). */
+export function useAlertHistory(filter: AlertHistoryFilter) {
+  return useQuery({
+    queryKey: [KEY, 'alert-history', filter],
+    queryFn: () => trackingApi.alertHistory(filter),
+  });
+}
+
 export function useAcknowledgeAlert() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -96,6 +105,7 @@ export function useAcknowledgeAlert() {
     onSuccess: () => {
       notify.success('Peringatan diakui.');
       void queryClient.invalidateQueries({ queryKey: [KEY, 'alerts'] });
+      void queryClient.invalidateQueries({ queryKey: [KEY, 'alert-history'] });
     },
     onError: (err) =>
       notify.error(err instanceof ApiError ? err.message : 'Gagal mengakui peringatan.'),

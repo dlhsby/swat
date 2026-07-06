@@ -1,9 +1,10 @@
 'use client';
 
-import { Bell, ChevronDown, LogOut, Menu, Settings, UserCircle } from 'lucide-react';
+import { Bell, BellRing, ChevronDown, LogOut, Menu, Settings, UserCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
+import { ProtectedAction } from '@/components/auth/protected-action';
 import { BrandMark } from '@/components/brand/BrandMark';
 import { useSidebar } from '@/components/shell/sidebar-context';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -17,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui';
 import { UserAvatar } from '@/components/user-avatar';
+import { useAlerts } from '@/hooks/use-tracking';
 import { useRouter } from '@/i18n/navigation';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -27,6 +29,7 @@ export function Topbar(): JSX.Element {
   const { setOpen } = useSidebar();
   const router = useRouter();
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const { alerts: openAlerts } = useAlerts();
 
   const onLogout = async (): Promise<void> => {
     await logout();
@@ -62,6 +65,24 @@ export function Topbar(): JSX.Element {
 
       <div className="flex items-center gap-1.5">
         <ThemeToggle />
+        <ProtectedAction permission="tracking:read">
+          <button
+            type="button"
+            aria-label={t('deviationAlerts')}
+            onClick={() => router.push('/monitoring/alert-history')}
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-base text-neutral-600 transition-colors hover:bg-neutral-100"
+          >
+            <BellRing className="h-[19px] w-[19px]" aria-hidden />
+            {openAlerts.length > 0 ? (
+              <span
+                className="absolute right-1.5 top-1 flex h-[15px] min-w-[15px] items-center justify-center rounded-full border-[1.5px] border-neutral-0 bg-danger-500 px-[3px] text-[9px] font-semibold leading-none text-white"
+                aria-hidden
+              >
+                {openAlerts.length > 99 ? '99+' : openAlerts.length}
+              </span>
+            ) : null}
+          </button>
+        </ProtectedAction>
         <button
           type="button"
           aria-label={t('notifications')}

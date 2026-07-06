@@ -174,6 +174,11 @@ Unique `(date, vehicleId)`: `positionSource` (`gps` | `recorded` — how this ro
 is no track), `dwellMinutes?` (**null for `recorded`**), `lateMinutes`, `wastedFuelLiters` (internal
 estimate), `gpsidFuelLiters?` (nightly cross-check), `deviationCount`. **`adherencePct`/`dwellMinutes` are
 nullable, not defaulted to 0** — `null` means "not measurable" (untracked), distinct from a real `0`.
+Computation (`GpsEfficiencyService.refreshForDate`): `dwellMinutes` sums each vehicle's ARRIVE→exit
+durations from the day's `GpsActivityEvent` feed; `adherencePct` is the share of the day's `GpsPing` rows
+within tolerance of **any** of that day's resolved corridors (a simplification, not an exact per-leg
+time-windowed replay). Both stay `null` when the vehicle has no corridor/activity data that day, even if
+`hasDevice` is true.
 
 ---
 
@@ -230,7 +235,8 @@ gateway, retained for audit.
 
 | Path | Purpose | Permission |
 |------|---------|-----------|
-| `/monitoring/hauling` → **Peta** tab (Pengangkutan, the Phase 6 `<HaulingMap>`) | **Whole-fleet** map: **live** markers for GPS vehicles (plate/driver/status, in/out-of-corridor colour, corridor overlay + breadcrumb on tap) **and** distinct markers for **untracked** vehicles placed from **recorded activity** (last-recorded Site + as-of timestamp); legend; alert badges. Live alert center (feed + acknowledge + history) surfaced here. | `tracking:read`, `deviation-alert:read\|acknowledge` |
+| `/monitoring/hauling` → **Peta** tab (Pengangkutan, the Phase 6 `<HaulingMap>`) | **Whole-fleet** map: **live** markers for GPS vehicles (plate/driver/status, in/out-of-corridor colour, corridor overlay + breadcrumb on tap) **and** distinct markers for **untracked** vehicles placed from **recorded activity** (last-recorded Site + as-of timestamp); legend; alert badges. Live alert center (feed + acknowledge, open alerts only) surfaced here. | `tracking:read`, `deviation-alert:read\|acknowledge` |
+| Topbar alert bell + `/monitoring/alert-history` | Header bell badged with the live open-alert count (`useAlerts()`); links to a filterable history page (vehicle, date range, alert type, acknowledged/resolved) covering **all** alerts, not just open ones — acknowledge action inline. | `tracking:read` (bell), `deviation-alert:read\|acknowledge` (page) |
 | `/monitoring/efficiency` | Management KPIs: route adherence % (tracked-only denominator), wasted time, wasted fuel (internal vs GPS.id), deviation counts, GPS-coverage + device-offline rate; per-vehicle/route/day trends | `monitoring:read` |
 | Vehicle list/detail (`/vehicles`) | Derived **GPS-coverage badge** ("Cakupan GPS" column: Terlacak · online / offline / Tidak terlacak) + a per-vehicle **"Kelola Perangkat GPS"** sheet (attach/detach the device). **✅ done.** | `vehicle:read`, `gps-device:read\|create\|update\|delete` |
 | `/tracking/devices` | Device registry CRUD + mappable unmatched-IMEI queue. **✅ done** (under Pengangkutan). | `gps-device:read\|create\|update\|delete` |

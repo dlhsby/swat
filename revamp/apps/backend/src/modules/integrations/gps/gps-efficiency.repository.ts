@@ -22,6 +22,17 @@ export interface OdometerRange {
   readonly maxM: bigint;
 }
 
+export interface ActivityEventRow {
+  readonly vehicleId: string;
+  readonly kind: string;
+  readonly occurredAt: Date;
+}
+
+export interface TripCorridor {
+  readonly pathGeojson: unknown;
+  readonly toleranceMeters: number;
+}
+
 @Injectable()
 export class GpsEfficiencyRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -110,6 +121,89 @@ export class GpsEfficiencyRepository {
       _count: { _all: true },
     });
     return new Map(rows.map((r) => [r.vehicleId, r._count._all]));
+  }
+
+  /**
+   * GpsActivityEvent rows for the day, ordered per vehicle for dwell-pairing
+   * (see `computeDwellMinutesByVehicle` in the service).
+   */
+  async activityEvents(dayStart: Date, dayEnd: Date): Promise<ActivityEventRow[]> {
+    return this.prisma.gpsActivityEvent.findMany({
+      where: { occurredAt: { gte: dayStart, lt: dayEnd } },
+      select: { vehicleId: true, kind: true, occurredAt: true },
+      orderBy: [{ vehicleId: 'asc' }, { occurredAt: 'asc' }],
+    });
+  }
+
+  /**
+   * Every corridor touched by a vehicle's trips today (dedup not needed — used
+   * as an "on any of today's routes" adherence check). Same corridor precedence
+   * as `tripRealizations`: the day's chosen corridor → the route's default.
+   */
+  async dailyCorridorsByVehicle(operationDate: Date): Promise<Map<string, TripCorridor[]>> {
+    const trips = await this.prisma.trip.findMany({
+      where: { operationDate },
+      select: {
+        haulAssignment: { select: { haul: { select: { vehicleId: true } } } },
+        corridor: { select: { pathGeojson: true, toleranceMeters: true, deletedAt: true } },
+        route: {
+          select: {
+            corridors: {
+              where: { isDefault: true, deletedAt: null },
+              select: { pathGeojson: true, toleranceMeters: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+    const map = new Map<string, TripCorridor[]>();
+    for (const t of trips) {
+      const chosen = t.corridor && t.corridor.deletedAt == null ? t.corridor : null;
+      const corridor = chosen ?? t.route?.corridors[0] ?? null;
+      if (!corridor) continue;
+      const vehicleId = t.haulAssignment.haul.vehicleId;
+      const list = map.get(vehicleId) ?? [];
+      list.push({ pathGeojson: corridor.pathGeojson, toleranceMeters: corridor.toleranceMeters });
+      map.set(vehicleId, list);
+    }
+    return map;
+  }
+
+  /**
+   * Adherence sample for one vehicle/day: how many of its GPS pings fall within
+   * tolerance of ANY of today's corridors, out of the day's total pings. One
+   * `ST_DWithin` query per distinct corridor (typically 1–3/vehicle/day) —
+   * fine for the nightly rollup, not a per-ping hot path.
+   */
+  async pingAdherence(
+    vehicleId: string,
+    dayStart: Date,
+    dayEnd: Date,
+    corridors: readonly TripCorridor[],
+  ): Promise<{ within: number; total: number }> {
+    const total = await this.prisma.gpsPing.count({
+      where: { vehicleId, recordedAt: { gte: dayStart, lt: dayEnd } },
+    });
+    if (total === 0 || corridors.length === 0) {
+      return { within: 0, total };
+    }
+    const withinIds = new Set<string>();
+    for (const c of corridors) {
+      const json = JSON.stringify(c.pathGeojson);
+      const rows = await this.prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM gps_ping
+        WHERE vehicle_id = ${vehicleId}
+          AND recorded_at >= ${dayStart} AND recorded_at < ${dayEnd}
+          AND ST_DWithin(
+            ST_SetSRID(ST_GeomFromGeoJSON(${json}), 4326)::geography,
+            ST_SetSRID(ST_MakePoint(longitude::float8, latitude::float8), 4326)::geography,
+            ${c.toleranceMeters}
+          )
+      `;
+      for (const r of rows) withinIds.add(r.id);
+    }
+    return { within: withinIds.size, total };
   }
 
   upsert(
