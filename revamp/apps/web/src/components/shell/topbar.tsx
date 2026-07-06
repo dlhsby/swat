@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, BellRing, ChevronDown, LogOut, Menu, Settings, UserCircle } from 'lucide-react';
+import { BellRing, ChevronDown, LogOut, Menu, Settings, UserCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
@@ -83,17 +83,6 @@ export function Topbar(): JSX.Element {
             ) : null}
           </button>
         </ProtectedAction>
-        <button
-          type="button"
-          aria-label={t('notifications')}
-          className="relative inline-flex h-10 w-10 items-center justify-center rounded-base text-neutral-600 transition-colors hover:bg-neutral-100"
-        >
-          <Bell className="h-[19px] w-[19px]" aria-hidden />
-          <span
-            className="absolute right-2 top-[7px] h-[7px] w-[7px] rounded-full border-[1.5px] border-neutral-0 bg-danger-500"
-            aria-hidden
-          />
-        </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger
