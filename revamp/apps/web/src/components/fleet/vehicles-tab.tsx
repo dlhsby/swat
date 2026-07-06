@@ -23,6 +23,7 @@ import { VehicleInspectionsSheet } from '@/components/fleet/vehicle-inspections-
 import { VehicleMaintenanceSheet } from '@/components/fleet/vehicle-maintenance-sheet';
 import { VehicleWasteSourcesSheet } from '@/components/fleet/vehicle-waste-sources-sheet';
 import { GpsSyncButton } from '@/components/tracking/gps-sync-button';
+import { PullAllPositionsButton } from '@/components/tracking/pull-all-positions-button';
 import { UnrecognizedImeiButton } from '@/components/tracking/unrecognized-imei-button';
 import { DropdownMenuItem, StatusPill } from '@/components/ui';
 import { useOptions } from '@/hooks/use-options';
@@ -47,34 +48,36 @@ const STATUS_OPTIONS: readonly SelectOption[] = [
   { value: 'LOST', label: 'Hilang' },
 ];
 
-const schema = z.object({
-  // Lenient: a road plate (L 1234 AB) OR an asset label for non-road equipment
-  // (EXCAVATOR, EXA CAT 31, DRUM) / annotated legacy plates (L9484NP(S)).
-  plateNumber: z
-    .string()
-    .min(1, 'Nomor polisi wajib diisi')
-    .max(20, 'Maksimal 20 karakter')
-    .regex(
-      /^[A-Za-z0-9 ()+\-./]{1,20}$/,
-      'Nomor polisi / kode aset maks 20 karakter (huruf, angka, spasi, ( ) + - . /)',
-    ),
-  // Transient cascade selector — chosen first to filter the model list. Stripped
-  // from the payload (the vehicle stores only modelId; its type is derived).
-  vehicleTypeId: z.string().min(1, 'Tipe kendaraan wajib dipilih'),
-  modelId: z.string().uuid('Model wajib dipilih'),
-  poolSiteId: z.string().uuid('Pool wajib dipilih'),
-  // '' is the "not chosen yet" sentinel — no default status; refine forces a pick.
-  status: z.enum(['GOOD', 'MINOR_DAMAGE', 'MAJOR_DAMAGE', 'LOST']).or(z.literal('')),
-  manufactureYear: z.coerce.number().int().min(1900, 'Tahun tidak valid').max(2100).optional(),
-  chassisNumber: z.string().min(1, 'Nomor rangka wajib diisi').max(100),
-  engineNumber: z.string().min(1, 'Nomor mesin wajib diisi').max(100),
-  currentTareWeight: z.coerce.number().int().min(0, 'Berat kosong tidak boleh negatif'),
-  currentOdometer: z.coerce.number().int().min(0, 'Odometer tidak boleh negatif'),
-  currentFuelRatio: z.coerce.number().int('Rasio harus bilangan bulat').min(1, 'Rasio minimal 1'),
-  registrationExpiry: z.string().min(1, 'Tanggal STNK wajib diisi'),
-  taxExpiry: z.string().min(1, 'Tanggal pajak wajib diisi'),
-  notes: z.string().max(512).optional(),
-}).refine((d) => d.status !== '', { message: 'Status wajib dipilih', path: ['status'] });
+const schema = z
+  .object({
+    // Lenient: a road plate (L 1234 AB) OR an asset label for non-road equipment
+    // (EXCAVATOR, EXA CAT 31, DRUM) / annotated legacy plates (L9484NP(S)).
+    plateNumber: z
+      .string()
+      .min(1, 'Nomor polisi wajib diisi')
+      .max(20, 'Maksimal 20 karakter')
+      .regex(
+        /^[A-Za-z0-9 ()+\-./]{1,20}$/,
+        'Nomor polisi / kode aset maks 20 karakter (huruf, angka, spasi, ( ) + - . /)',
+      ),
+    // Transient cascade selector — chosen first to filter the model list. Stripped
+    // from the payload (the vehicle stores only modelId; its type is derived).
+    vehicleTypeId: z.string().min(1, 'Tipe kendaraan wajib dipilih'),
+    modelId: z.string().uuid('Model wajib dipilih'),
+    poolSiteId: z.string().uuid('Pool wajib dipilih'),
+    // '' is the "not chosen yet" sentinel — no default status; refine forces a pick.
+    status: z.enum(['GOOD', 'MINOR_DAMAGE', 'MAJOR_DAMAGE', 'LOST']).or(z.literal('')),
+    manufactureYear: z.coerce.number().int().min(1900, 'Tahun tidak valid').max(2100).optional(),
+    chassisNumber: z.string().min(1, 'Nomor rangka wajib diisi').max(100),
+    engineNumber: z.string().min(1, 'Nomor mesin wajib diisi').max(100),
+    currentTareWeight: z.coerce.number().int().min(0, 'Berat kosong tidak boleh negatif'),
+    currentOdometer: z.coerce.number().int().min(0, 'Odometer tidak boleh negatif'),
+    currentFuelRatio: z.coerce.number().int('Rasio harus bilangan bulat').min(1, 'Rasio minimal 1'),
+    registrationExpiry: z.string().min(1, 'Tanggal STNK wajib diisi'),
+    taxExpiry: z.string().min(1, 'Tanggal pajak wajib diisi'),
+    notes: z.string().max(512).optional(),
+  })
+  .refine((d) => d.status !== '', { message: 'Status wajib dipilih', path: ['status'] });
 type Values = z.infer<typeof schema>;
 const defaults: Values = {
   plateNumber: '',
@@ -357,6 +360,7 @@ export function VehiclesTab(): JSX.Element {
       toolbar={
         <>
           <GpsSyncButton className="ml-2" onSynced={() => void manager.reload()} />
+          <PullAllPositionsButton onPulled={() => void manager.reload()} />
           <UnrecognizedImeiButton onMapped={() => void manager.reload()} />
         </>
       }

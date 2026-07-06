@@ -51,10 +51,7 @@ export function listUnmatchedPings(): Promise<UnmatchedPingDto[]> {
 }
 
 /** One-click map: create a hardware device from a queued IMEI and clear its pings. */
-export function mapUnmatchedPing(body: {
-  imei: string;
-  vehicleId: string;
-}): Promise<GpsDeviceDto> {
+export function mapUnmatchedPing(body: { imei: string; vehicleId: string }): Promise<GpsDeviceDto> {
   return apiClient.post<GpsDeviceDto>('/gps/devices/unmatched/map', body);
 }
 
@@ -99,4 +96,17 @@ export interface DevicePullResult {
 /** Pull the latest GPS.id positions for a device on demand (the "Tarik Posisi" button). */
 export function pullDevicePosition(id: string): Promise<DevicePullResult> {
   return apiClient.post<DevicePullResult>(`/gps/devices/${encodeURIComponent(id)}/pull`, {});
+}
+
+/** Result of an on-demand "Tarik Semua Posisi" (pull-all) run. */
+export interface PullAllResult {
+  totalDevices: number;
+  pulled: number;
+  enqueued: number;
+  rateLimited: number;
+}
+
+/** Pull the latest GPS.id positions for every registered device on demand. */
+export function pullAllDevicePositions(): Promise<PullAllResult> {
+  return apiClient.post<PullAllResult>('/gps/devices/pull-all', {});
 }

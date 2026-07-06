@@ -17,12 +17,7 @@ const INSIDE_TTL_SEC = 7200;
 const EARTH_RADIUS_M = 6_371_000;
 
 /** Great-circle distance in metres between two lat/lng points. */
-export function haversineMeters(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number {
+export function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (d: number): number => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
@@ -30,6 +25,33 @@ export function haversineMeters(
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/**
+ * The nearest candidate site whose geofence contains the ping, else null. Shared
+ * by the activity state machine (arrive/depart detection) and the deviation
+ * matcher (dwell/sequence checks) so both agree on "which site is this vehicle
+ * currently inside".
+ */
+export function findGeofenceSite(
+  sites: readonly GeoSite[],
+  ping: MatchPing,
+  defaultRadiusM: number,
+): GeoSite | null {
+  let best: GeoSite | null = null;
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (const s of sites) {
+    if (s.latitude === null || s.longitude === null) {
+      continue;
+    }
+    const dist = haversineMeters(ping.latitude, ping.longitude, s.latitude, s.longitude);
+    const radius = s.geofenceRadiusM ?? defaultRadiusM;
+    if (dist <= radius && dist < bestDist) {
+      best = s;
+      bestDist = dist;
+    }
+  }
+  return best;
 }
 
 /**
@@ -93,20 +115,7 @@ export class GpsActivityService {
 
   /** The nearest candidate site whose geofence contains the ping, else null. */
   private currentSite(sites: readonly GeoSite[], ping: MatchPing): GeoSite | null {
-    let best: GeoSite | null = null;
-    let bestDist = Number.POSITIVE_INFINITY;
-    for (const s of sites) {
-      if (s.latitude === null || s.longitude === null) {
-        continue;
-      }
-      const dist = haversineMeters(ping.latitude, ping.longitude, s.latitude, s.longitude);
-      const radius = s.geofenceRadiusM ?? this.systemConfig.getGpsGeofenceDefaultRadiusM();
-      if (dist <= radius && dist < bestDist) {
-        best = s;
-        bestDist = dist;
-      }
-    }
-    return best;
+    return findGeofenceSite(sites, ping, this.systemConfig.getGpsGeofenceDefaultRadiusM());
   }
 
   private async handleEnter(site: GeoSite, ctx: HaulContext, ping: MatchPing): Promise<void> {
@@ -115,7 +124,8 @@ export class GpsActivityService {
       // a recorded departure or any leg that progressed. Guarding on progress (not
       // strictly departActualTime) means a missed DEPART can't strand the haul
       // open; the initial at-pool state (no progress yet) still raises nothing.
-      const hasRun = Boolean(ctx.departActualTime) || ctx.trips.some((t) => t.arrivedAt ?? t.actualTime);
+      const hasRun =
+        Boolean(ctx.departActualTime) || ctx.trips.some((t) => t.arrivedAt ?? t.actualTime);
       if (hasRun && !ctx.returnActualTime) {
         if (await this.repo.stampReturn(ctx.assignmentId, ping.recordedAt)) {
           await this.emit(ctx, ping, site, 'RETURN', null);

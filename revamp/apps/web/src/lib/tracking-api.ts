@@ -1,4 +1,4 @@
-import { apiClient } from './api-client';
+import { apiClient, type PagedResult } from './api-client';
 
 export interface VehiclePosition {
   readonly vehicleId: string;
@@ -53,6 +53,31 @@ function alertQuery(filter: AlertFilter): string {
   return params.toString();
 }
 
+/** Filter + pagination for the alert-history page (`GET /gps/alerts`, server-paginated). */
+export interface AlertHistoryFilter {
+  readonly vehicleId?: string;
+  readonly acknowledged?: boolean;
+  readonly resolved?: boolean;
+  /** ISO date-time bounds on `createdAt`. */
+  readonly from?: string;
+  readonly to?: string;
+  /** 1-indexed page. */
+  readonly page?: number;
+  readonly limit?: number;
+}
+
+function alertHistoryQuery(filter: AlertHistoryFilter): string {
+  const params = new URLSearchParams();
+  if (filter.vehicleId) params.set('vehicleId', filter.vehicleId);
+  if (filter.acknowledged !== undefined) params.set('acknowledged', String(filter.acknowledged));
+  if (filter.resolved !== undefined) params.set('resolved', String(filter.resolved));
+  if (filter.from) params.set('from', filter.from);
+  if (filter.to) params.set('to', filter.to);
+  params.set('page', String(filter.page ?? 1));
+  params.set('limit', String(filter.limit ?? 20));
+  return params.toString();
+}
+
 export interface EfficiencyRow {
   readonly date: string;
   readonly vehicleId: string;
@@ -84,11 +109,7 @@ export interface EfficiencyDashboard {
   readonly rows: EfficiencyRow[];
 }
 
-export type DeviationType =
-  | 'off_corridor'
-  | 'off_sequence'
-  | 'dwell_too_long'
-  | 'late_to_schedule';
+export type DeviationType = 'off_corridor' | 'off_sequence' | 'dwell_too_long' | 'late_to_schedule';
 export type DeviationSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
 
 /** A tunable deviation rule (Phase 7). `threshold` is metres or seconds per type. */
@@ -130,9 +151,13 @@ export const trackingApi = {
     apiClient.get(`/monitoring/vehicles/${vehicleId}/day-activity?date=${date}`),
   alerts: (filter: AlertFilter = {}): Promise<DeviationAlert[]> =>
     apiClient.get(`/gps/alerts?${alertQuery(filter)}`),
+  alertHistory: (filter: AlertHistoryFilter = {}): Promise<PagedResult<DeviationAlert>> =>
+    apiClient.getPage(`/gps/alerts?${alertHistoryQuery(filter)}`),
   acknowledge: (id: string, notes?: string): Promise<DeviationAlert> =>
     apiClient.patch(`/gps/alerts/${id}/acknowledge`, notes ? { notes } : {}),
   deviationRules: (): Promise<DeviationRule[]> => apiClient.get('/gps/deviation-rules'),
-  upsertDeviationRule: (type: DeviationType, body: UpsertDeviationRuleBody): Promise<DeviationRule> =>
-    apiClient.put(`/gps/deviation-rules/${type}`, { ...body }),
+  upsertDeviationRule: (
+    type: DeviationType,
+    body: UpsertDeviationRuleBody,
+  ): Promise<DeviationRule> => apiClient.put(`/gps/deviation-rules/${type}`, { ...body }),
 };

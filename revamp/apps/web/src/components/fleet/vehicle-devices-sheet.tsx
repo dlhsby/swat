@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Pencil, Trash2 } from 'lucide-react';
+import { LocateFixed, Pencil, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { type Resolver, useForm } from 'react-hook-form';
 
@@ -30,7 +30,12 @@ import {
 } from '@/components/ui';
 import { ApiError } from '@/lib/api-error';
 import { formatDateDisplay, formatTime } from '@/lib/format';
-import { type GpsDeviceDto, gpsDevicesApi, listVehicleDevices } from '@/lib/gps-device-api';
+import {
+  type GpsDeviceDto,
+  gpsDevicesApi,
+  listVehicleDevices,
+  pullDevicePosition,
+} from '@/lib/gps-device-api';
 import { type VehicleDto } from '@/lib/master-api';
 
 export interface VehicleDevicesSheetProps {
@@ -57,6 +62,7 @@ export function VehicleDevicesSheet({
   // null = add mode; a device = editing that device.
   const [editing, setEditing] = useState<GpsDeviceDto | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pullingId, setPullingId] = useState<string | null>(null);
 
   const vehicleId = vehicle?.id ?? null;
   const form = useForm<DeviceFieldsValues>({
@@ -143,6 +149,29 @@ export function VehicleDevicesSheet({
     }
   };
 
+  // On-demand "Tarik Posisi" for one of this vehicle's devices — a vehicle can carry
+  // several (active + historical), so the pull must target a specific device row.
+  const onPull = async (device: GpsDeviceDto): Promise<void> => {
+    setPullingId(device.id);
+    try {
+      const res = await pullDevicePosition(device.id);
+      if (res.latest) {
+        notify.success(
+          `Posisi terkini ditarik (${res.enqueued} titik)`,
+          `${formatDateDisplay(res.latest.recordedAt)} ${formatTime(res.latest.recordedAt)}`,
+        );
+      } else {
+        notify.info('Belum ada data posisi terbaru dari GPS.id untuk perangkat ini.');
+      }
+      await reload();
+      onChanged?.();
+    } catch (err) {
+      notify.error(err instanceof ApiError ? err.message : 'Gagal menarik posisi.');
+    } finally {
+      setPullingId(null);
+    }
+  };
+
   return (
     <Sheet open={vehicle !== null} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[min(92vw,520px)]">
@@ -178,6 +207,21 @@ export function VehicleDevicesSheet({
                       domain="gpsDevice"
                       value={device.active ? device.status : 'offline'}
                     />
+                    {device.imei ? (
+                      <ProtectedAction permission="tracking:read">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          aria-label="Tarik posisi terkini"
+                          title="Tarik posisi terkini dari GPS.id"
+                          loading={pullingId === device.id}
+                          onClick={() => void onPull(device)}
+                        >
+                          <LocateFixed className="h-4 w-4" aria-hidden />
+                        </Button>
+                      </ProtectedAction>
+                    ) : null}
                     <ProtectedAction permission="gps-device:update">
                       <Button
                         variant="ghost"
