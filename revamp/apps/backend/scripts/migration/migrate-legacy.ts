@@ -86,6 +86,7 @@ import {
   legacyDbConfigFromEnv,
   log,
   parseFlags,
+  progressLogger,
   query,
   warn,
 } from './lib/runtime';
@@ -762,6 +763,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
   try {
     // 1. haritransaksi → TransactionDay (keyset-batched, idempotent on legacyId/date).
     let dayCount = 0;
+    const dayProgress = progressLogger('TransactionDay');
     const dayStart = flags.resume ? readWatermark(watermarkPath, 'transaction_day') : 0;
     for await (const { rows, lastId } of keysetBatches<LegacyTransactionDay>(
       (afterId, limit) =>
@@ -788,6 +790,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
       await prisma.transactionDay.createMany({ data, skipDuplicates: true });
       dayCount += data.length;
       writeWatermark(watermarkPath, 'transaction_day', lastId);
+      dayProgress(dayCount, lastId);
     }
     log(`TransactionDay: ${dayCount}`);
 
@@ -808,6 +811,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
     //    the distinct TransactionDay parents it references (never the whole table).
     //    Idempotent via the unique (operationDate, transactionDayId, vehicleId).
     let haulCount = 0;
+    const haulProgress = progressLogger('Haul');
     const haulStart = flags.resume ? readWatermark(watermarkPath, 'haul') : 0;
     for await (const { rows, lastId } of keysetBatches<LegacyHaul>(
       (afterId, limit) => query(conn, haulSql, [afterId, limit]),
@@ -841,6 +845,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
       await prisma.haul.createMany({ data, skipDuplicates: true });
       haulCount += data.length;
       writeWatermark(watermarkPath, 'haul', lastId);
+      haulProgress(haulCount, lastId);
     }
     log(`Haul: ${haulCount}`);
 
@@ -848,6 +853,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
     //    Haul parents; HaulAssignment.legacyId is NOT unique (partitioned), so dedupe
     //    via a per-batch existing-legacyId probe rather than createMany skipDuplicates.
     let assignmentCount = 0;
+    const assignmentProgress = progressLogger('HaulAssignment');
     const assignmentStart = flags.resume ? readWatermark(watermarkPath, 'haul_assignment') : 0;
     for await (const { rows, lastId } of keysetBatches<LegacyHaulAssignment>(
       (afterId, limit) => query(conn, assignmentSql, [afterId, limit]),
@@ -918,12 +924,14 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
       await prisma.haulAssignment.createMany({ data, skipDuplicates: true });
       assignmentCount += data.length;
       writeWatermark(watermarkPath, 'haul_assignment', lastId);
+      assignmentProgress(assignmentCount, lastId);
     }
     log(`HaulAssignment: ${assignmentCount}`);
 
     // 4. trayek → Trip (~8M). Per batch resolve the HaulAssignment parents; Trip.legacyId
     //    is NOT unique (partitioned), so dedupe via a per-batch existing-legacyId probe.
     let tripCount = 0;
+    const tripProgress = progressLogger('Trip');
     const tripStart = flags.resume ? readWatermark(watermarkPath, 'trip') : 0;
     for await (const { rows, lastId } of keysetBatches<LegacyTrip>(
       (afterId, limit) => query(conn, tripSql, [afterId, limit]),
@@ -990,6 +998,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
       await prisma.trip.createMany({ data, skipDuplicates: true });
       tripCount += data.length;
       writeWatermark(watermarkPath, 'trip', lastId);
+      tripProgress(tripCount, lastId);
     }
     log(`Trip: ${tripCount}`);
     if (outOfRangeOperationDates > 0) {
@@ -1013,6 +1022,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
     );
     let tpaCount = 0;
     let tpaSkipped = 0;
+    const tpaProgress = progressLogger('TpaInboundLog');
     const tpaStart = flags.resume ? readWatermark(watermarkPath, 'tpa_inbound_log') : 0;
     for await (const { rows, lastId } of keysetBatches<LegacyTpaInbound>(
       (afterId, limit) =>
@@ -1052,6 +1062,7 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
         tpaCount += chunk.length;
       }
       writeWatermark(watermarkPath, 'tpa_inbound_log', lastId);
+      tpaProgress(tpaCount, lastId);
     }
     log(`TpaInboundLog: ${tpaCount} inserted${tpaSkipped ? `, ${tpaSkipped} skipped` : ''}`);
   } finally {
@@ -1099,8 +1110,13 @@ async function main(): Promise<void> {
 
   // Ensure every route has a default corridor (road-snapped via Google when
   // GOOGLE_MAPS_SERVER_KEY is set, straight-line otherwise) — baked in here so it
-  // never needs regenerating.
-  await backfillRouteCorridors(prisma, { log });
+  // never needs regenerating. Skippable (--skip-corridors) when Site coords are absent
+  // (backfill is then a no-op that still fires ~17k Google calls).
+  if (flags.skipCorridors) {
+    log('Route-corridor backfill skipped (--skip-corridors).');
+  } else {
+    await backfillRouteCorridors(prisma, { log });
+  }
 
   if (flags.includeTransactions) {
     await migrateTransactions(sysUser, flags);

@@ -54,6 +54,15 @@ export class CorridorsRepository {
       .then((c) => c !== null);
   }
 
+  /** IDs of live routes that have no (non-deleted) corridor yet — the bulk-backfill work list. */
+  async routeIdsWithoutCorridor(): Promise<string[]> {
+    const rows = await this.prisma.route.findMany({
+      where: { deletedAt: null, corridors: { none: { deletedAt: null } } },
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
+
   /** A route's active default corridor, if any. */
   findDefault(routeId: string): Promise<Corridor | null> {
     return this.prisma.corridor.findFirst({

@@ -42,17 +42,20 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  notify,
 } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { type ServerQueryParams } from '@/hooks/use-server-resource-list';
 import { useServerResourceManager } from '@/hooks/use-server-resource-manager';
+import { ApiError } from '@/lib/api-error';
 import { formatNumber } from '@/lib/format';
 import {
   type RouteCategoryValue,
   type RouteDto,
   type SiteDto,
   type SiteType,
+  backfillCorridors,
   routesApi,
   sitesApi,
 } from '@/lib/master-api';
@@ -464,6 +467,31 @@ function RoutesTab(): JSX.Element {
   const manager = useServerResourceManager(routesApi, (r) => r.id, buildQuery);
   const { rows: sites } = useResourceList(sitesApi.list);
   const [corridorRoute, setCorridorRoute] = useState<CorridorRoute | null>(null);
+  const [backfilling, setBackfilling] = useState(false);
+
+  const handleBackfillCorridors = useCallback(async () => {
+    setBackfilling(true);
+    try {
+      const r = await backfillCorridors();
+      const detail =
+        `${r.created} dibuat (${r.snapped} ikut jalan, ${r.straightLine} garis lurus), ` +
+        `${r.skippedNoCoords} dilewati (tanpa koordinat)` +
+        (r.errored > 0 ? `, ${r.errored} gagal` : '') +
+        ` dari ${r.totalRoutes} rute tanpa koridor.`;
+      if (r.errored > 0 && r.created === 0) {
+        notify.error('Backfill koridor gagal', r.sampleError ?? detail);
+      } else if (r.errored > 0) {
+        notify.warning('Backfill koridor sebagian', `${detail}${r.sampleError ? ` — mis. ${r.sampleError}` : ''}`);
+      } else {
+        notify.success('Backfill koridor selesai', detail);
+      }
+      void manager.reload();
+    } catch (err) {
+      notify.error(err instanceof ApiError ? err.message : 'Gagal menjalankan backfill koridor.');
+    } finally {
+      setBackfilling(false);
+    }
+  }, [manager]);
   const columns = useMemo<ColumnDef<RouteDto, unknown>[]>(
     () => [
       {
@@ -531,25 +559,40 @@ function RoutesTab(): JSX.Element {
       createLabel="Tambah Rute"
       serverPagination={manager.serverPagination}
       toolbar={
-        <Select
-          value={category === '' ? 'ALL' : category}
-          onValueChange={(v) => {
-            setCategory(v === 'ALL' ? '' : (v as RouteCategoryValue));
-            manager.setPage(1);
-          }}
-        >
-          <SelectTrigger className="h-9 w-44" aria-label="Filter jenis rute">
-            <SelectValue placeholder="Semua jenis" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Semua jenis</SelectItem>
-            {ROUTE_CATEGORIES.map((c) => (
-              <SelectItem key={String(c.value)} value={String(c.value)}>
-                {c.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select
+            value={category === '' ? 'ALL' : category}
+            onValueChange={(v) => {
+              setCategory(v === 'ALL' ? '' : (v as RouteCategoryValue));
+              manager.setPage(1);
+            }}
+          >
+            <SelectTrigger className="h-9 w-44" aria-label="Filter jenis rute">
+              <SelectValue placeholder="Semua jenis" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Semua jenis</SelectItem>
+              {ROUTE_CATEGORIES.map((c) => (
+                <SelectItem key={String(c.value)} value={String(c.value)}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <ProtectedAction permission="corridor:create">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={() => void handleBackfillCorridors()}
+              disabled={backfilling}
+              title="Buat koridor default untuk semua rute yang punya koordinat asal & tujuan"
+            >
+              <Spline aria-hidden />
+              {backfilling ? 'Memproses…' : 'Backfill Koridor'}
+            </Button>
+          </ProtectedAction>
+        </div>
       }
       embedded
     >

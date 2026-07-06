@@ -3,7 +3,11 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
 
-import { type CorridorDto, CorridorsService } from './corridors.service';
+import {
+  type BackfillCorridorsResult,
+  type CorridorDto,
+  CorridorsService,
+} from './corridors.service';
 import { CreateCorridorDto } from './dto/create-corridor.dto';
 import { UpdateCorridorDto } from './dto/update-corridor.dto';
 
@@ -34,6 +38,17 @@ export class CorridorsController {
   })
   backfillDefault(@Param('routeId') routeId: string): Promise<CorridorDto | null> {
     return this.corridors.backfillDefault(routeId);
+  }
+
+  @Post('corridors/backfill')
+  @RequirePermissions('corridor:create')
+  @ApiOperation({
+    summary:
+      'Backfill the default corridor for every route that lacks one (idempotent; ' +
+      'skips routes whose sites have no/invalid coordinates; reports per-route errors)',
+  })
+  backfillAll(): Promise<BackfillCorridorsResult> {
+    return this.corridors.backfillAll();
   }
 
   @Patch('corridors/:id')

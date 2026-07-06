@@ -82,6 +82,12 @@ export interface Flags {
    * `--include-transactions`.
    */
   transactionsOnly: boolean;
+  /**
+   * Skip the route-corridor backfill (`--skip-corridors`). The backfill needs Site
+   * lat/lng to snap corridors; when those are absent it is a no-op that still fires
+   * ~17k Google Directions calls, so skipping it speeds up a master reseed.
+   */
+  skipCorridors: boolean;
 }
 
 export function parseFlags(argv: readonly string[]): Flags {
@@ -97,6 +103,7 @@ export function parseFlags(argv: readonly string[]): Flags {
     confirmProduction: argv.includes('--confirm-production'),
     sinceYear: Number.isInteger(sinceYear) && sinceYear > 2000 ? sinceYear : null,
     transactionsOnly,
+    skipCorridors: argv.includes('--skip-corridors'),
   };
 }
 
@@ -109,4 +116,23 @@ export function log(message: string): void {
 
 export function warn(message: string): void {
   console.warn(`[${new Date().toISOString()}] WARN ${message}`);
+}
+
+/**
+ * Throttled per-stage progress reporter for the high-volume keyset loops. Returns a
+ * function to call each batch with the running count (+ optional last keyset id); it
+ * emits a `<label>: N so far (last id X)…` line only when the count crosses the next
+ * `everyRows` boundary, so a durable log shows continuous movement without one line
+ * per 10k-row batch.
+ */
+export function progressLogger(
+  label: string,
+  everyRows = 50_000,
+): (count: number, lastId?: number | bigint) => void {
+  let nextThreshold = everyRows;
+  return (count, lastId) => {
+    if (count < nextThreshold) return;
+    log(`${label}: ${count.toLocaleString('en-US')} so far${lastId != null ? ` (last id ${lastId})` : ''}…`);
+    nextThreshold = (Math.floor(count / everyRows) + 1) * everyRows;
+  };
 }
