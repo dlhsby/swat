@@ -470,24 +470,33 @@ function RoutesTab(): JSX.Element {
   const [backfilling, setBackfilling] = useState(false);
 
   const handleBackfillCorridors = useCallback(async () => {
+    if (
+      !window.confirm(
+        'Reset koridor default semua rute? Koridor default lama tiap rute berkoordinat ' +
+          'dihapus lalu dibuat ulang mengikuti jalan (snap-to-road). Koridor alternatif ' +
+          'tidak terpengaruh. Proses ini bisa memakan waktu beberapa menit.',
+      )
+    ) {
+      return;
+    }
     setBackfilling(true);
     try {
       const r = await backfillCorridors();
       const detail =
-        `${r.created} dibuat (${r.snapped} ikut jalan, ${r.straightLine} garis lurus), ` +
-        `${r.skippedNoCoords} dilewati (tanpa koordinat)` +
+        `${r.created} dibuat ulang (${r.snapped} ikut jalan, ${r.straightLine} garis lurus)` +
+        (r.skippedNoCoords > 0 ? `, ${r.skippedNoCoords} dilewati` : '') +
         (r.errored > 0 ? `, ${r.errored} gagal` : '') +
-        ` dari ${r.totalRoutes} rute tanpa koridor.`;
+        ` dari ${r.totalRoutes} rute berkoordinat.`;
       if (r.errored > 0 && r.created === 0) {
-        notify.error('Backfill koridor gagal', r.sampleError ?? detail);
+        notify.error('Reset koridor gagal', r.sampleError ?? detail);
       } else if (r.errored > 0) {
-        notify.warning('Backfill koridor sebagian', `${detail}${r.sampleError ? ` — mis. ${r.sampleError}` : ''}`);
+        notify.warning('Reset koridor sebagian', `${detail}${r.sampleError ? ` — mis. ${r.sampleError}` : ''}`);
       } else {
-        notify.success('Backfill koridor selesai', detail);
+        notify.success('Reset koridor selesai', detail);
       }
       void manager.reload();
     } catch (err) {
-      notify.error(err instanceof ApiError ? err.message : 'Gagal menjalankan backfill koridor.');
+      notify.error(err instanceof ApiError ? err.message : 'Gagal menjalankan reset koridor.');
     } finally {
       setBackfilling(false);
     }
@@ -589,7 +598,7 @@ function RoutesTab(): JSX.Element {
               title="Buat koridor default untuk semua rute yang punya koordinat asal & tujuan"
             >
               <Spline aria-hidden />
-              {backfilling ? 'Memproses…' : 'Backfill Koridor'}
+              {backfilling ? 'Memproses…' : 'Reset & Snap Koridor'}
             </Button>
           </ProtectedAction>
         </div>

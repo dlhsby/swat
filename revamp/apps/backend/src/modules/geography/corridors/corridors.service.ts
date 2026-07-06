@@ -276,13 +276,24 @@ export class CorridorsService {
   }
 
   /**
-   * Bulk "backfill default corridors" — generate the default corridor for every route
-   * that lacks one and whose two Sites have valid coordinates (idempotent; existing
-   * corridors are left untouched). Per-route failures are counted and a sample message
-   * returned, so a stuck route is visible rather than silently swallowed.
+   * Bulk "backfill default corridors".
+   *
+   * `reset` (default **true**) → for every route whose two Sites have coordinates,
+   * soft-delete the existing default corridor and regenerate it **road-snapped**
+   * (Google Directions, straight-line fallback). This is what re-snaps every route
+   * after a Maps key is (re)configured or sites move — it deletes and recreates, so
+   * re-running always reflects the latest snap. Manual alternate corridors are kept.
+   *
+   * `reset = false` → additive/idempotent legacy behavior: only routes that currently
+   * lack any corridor; existing corridors are left untouched.
+   *
+   * Per-route failures are counted and a sample message returned, so a stuck route is
+   * visible rather than silently swallowed.
    */
-  async backfillAll(): Promise<BackfillCorridorsResult> {
-    const routeIds = await this.repo.routeIdsWithoutCorridor();
+  async backfillAll(reset = true): Promise<BackfillCorridorsResult> {
+    const routeIds = reset
+      ? await this.repo.routeIdsWithCoords()
+      : await this.repo.routeIdsWithoutCorridor();
     let created = 0;
     let snapped = 0;
     let straightLine = 0;
@@ -295,7 +306,9 @@ export class CorridorsService {
       await Promise.all(
         routeIds.slice(i, i + CONCURRENCY).map(async (routeId) => {
           try {
-            const corridor = await this.createDefaultForRoute(routeId);
+            const corridor = reset
+              ? await this.regenerateDefaultForRoute(routeId)
+              : await this.createDefaultForRoute(routeId);
             if (!corridor) {
               skippedNoCoords += 1;
               return;
@@ -314,10 +327,11 @@ export class CorridorsService {
     }
 
     this.logger.log(
-      `Corridor backfill: ${created} created (${snapped} snapped, ${straightLine} straight), ` +
+      `Corridor backfill (${reset ? 'reset' : 'additive'}): ${created} ` +
+        `${reset ? 'regenerated' : 'created'} (${snapped} snapped, ${straightLine} straight), ` +
         `${skippedNoCoords} skipped (no/invalid coords), ${errored} errored` +
         (sampleError ? ` — e.g. ${sampleError}` : '') +
-        ` of ${routeIds.length} routes without a corridor.`,
+        ` of ${routeIds.length} routes.`,
     );
     return {
       totalRoutes: routeIds.length,

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { RequirePermissions } from '../../../common/decorators/require-permissions.decorator';
@@ -44,11 +44,13 @@ export class CorridorsController {
   @RequirePermissions('corridor:create')
   @ApiOperation({
     summary:
-      'Backfill the default corridor for every route that lacks one (idempotent; ' +
-      'skips routes whose sites have no/invalid coordinates; reports per-route errors)',
+      'Bulk default-corridor backfill. Default (reset=true): delete + regenerate every ' +
+      "coord-having route's default corridor road-snapped. reset=false: additive, only " +
+      'routes lacking a corridor. Reports snapped/straight/skipped/errored counts.',
   })
-  backfillAll(): Promise<BackfillCorridorsResult> {
-    return this.corridors.backfillAll();
+  backfillAll(@Query('reset') reset?: string): Promise<BackfillCorridorsResult> {
+    // Reset by default; only an explicit `?reset=false` opts into the additive mode.
+    return this.corridors.backfillAll(reset !== 'false');
   }
 
   @Patch('corridors/:id')
