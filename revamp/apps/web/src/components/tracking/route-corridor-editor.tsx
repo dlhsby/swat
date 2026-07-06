@@ -27,6 +27,7 @@ import {
   useBackfillDefaultCorridor,
   useCreateCorridor,
   useDeleteCorridor,
+  usePreviewDefaultCorridor,
   useRouteCorridors,
   useUpdateCorridor,
 } from '@/hooks/use-corridors';
@@ -65,6 +66,7 @@ export function RouteCorridorEditor({
   const update = useUpdateCorridor(routeId);
   const remove = useDeleteCorridor(routeId);
   const backfillDefault = useBackfillDefaultCorridor(routeId);
+  const preview = usePreviewDefaultCorridor(routeId);
 
   const [editing, setEditing] = useState<EditTarget | null>(null);
   const [name, setName] = useState('');
@@ -202,6 +204,10 @@ export function RouteCorridorEditor({
         removing={remove.isPending}
         hasExisting={editing?.corridor != null && !editing.corridor.isDefault}
         canSave={name.trim().length > 0}
+        // Seed the canvas from the route's own endpoints + road-snapped mid-points
+        // (e.g. Pool Menur → SPBU Dupak), ready to customise. Off for view-only routes.
+        onBuildFromRoute={viewOnly ? undefined : () => preview.mutateAsync()}
+        buildingFromRoute={preview.isPending}
         onSave={handleSave}
         onDelete={() => editing?.corridor && setDeleteTarget(editing.corridor)}
         onClose={backToList}

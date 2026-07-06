@@ -40,6 +40,19 @@ export class CorridorsController {
     return this.corridors.backfillDefault(routeId);
   }
 
+  @Post('routes/:routeId/corridors/preview-default')
+  @RequirePermissions('corridor:create')
+  @ApiOperation({
+    summary:
+      "Preview a route's default corridor geometry (road-snapped path + mid-points from " +
+      'the route sites) WITHOUT saving — seeds the editor "build from route" action',
+  })
+  previewDefault(
+    @Param('routeId') routeId: string,
+  ): Promise<{ pathGeojson: unknown; waypoints: unknown } | null> {
+    return this.corridors.previewDefaultForRoute(routeId);
+  }
+
   @Post('corridors/backfill')
   @RequirePermissions('corridor:create')
   @ApiOperation({

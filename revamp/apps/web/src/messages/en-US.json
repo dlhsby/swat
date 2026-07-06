@@ -13,6 +13,7 @@
     "clear": "Clear",
     "addStart": "Add start point",
     "addFinish": "Add finish point",
+    "buildFromRoute": "Build from route",
     "snapToggle": "Follow roads (snap)",
     "snapHint": "On: new segments follow roads. Off (freehand): straight lines for areas without roads, e.g. inside a TPA.",
     "building": "Computing road route…",

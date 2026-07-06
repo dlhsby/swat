@@ -33,9 +33,11 @@ function coordInRange(lat: number, lng: number): boolean {
   );
 }
 
-/** Mid-route control points: ~one every 500 m, capped so the editor stays usable. */
-const MID_WAYPOINT_SPACING_METERS = 500;
-const MID_WAYPOINT_MAX = 20;
+/** Mid-route control points: ~one every 100 m, capped so the editor stays usable (each
+ *  handle costs a road-snap call when dragged). Longer routes get evenly-spaced points
+ *  at wider intervals once the cap is hit. */
+const MID_WAYPOINT_SPACING_METERS = 100;
+const MID_WAYPOINT_MAX = 60;
 
 /** Great-circle distance in metres between two `[lng, lat]` points. */
 function haversineMeters(a: readonly [number, number], b: readonly [number, number]): number {
@@ -208,12 +210,18 @@ export class CorridorsService {
   }
 
   /**
-   * Auto-create a route's default corridor: a **road-snapped** path between its two
-   * Sites (Google Directions, server-side), falling back to a straight line when no
-   * server key is set or Directions fails. Returns null (creates nothing) when either
-   * site lacks coords — the route is still usable, just not corridor-checked.
+   * Compute a route's default corridor geometry from its two Sites — a **road-snapped**
+   * path (Google Directions, server-side; straight-line fallback) plus start + evenly
+   * spaced mid-route + end control points — **without persisting**. Returns null when a
+   * site lacks usable coords. Shared by {@link createDefaultForRoute} (persists) and
+   * {@link previewDefaultForRoute} (editor "build from route" seed).
    */
-  async createDefaultForRoute(routeId: string): Promise<CorridorDto | null> {
+  private async buildDefaultGeometry(routeId: string): Promise<{
+    line: { type: 'LineString'; coordinates: Array<[number, number]> };
+    waypoints: Array<{ lng: number; lat: number; snapped: boolean }>;
+    lengthMeters: number;
+    source: string;
+  } | null> {
     const ep = await this.repo.routeEndpoints(routeId);
     if (!ep) {
       return null;
@@ -253,20 +261,47 @@ export class CorridorsService {
       ...midPoints.map(([lng, lat]) => ({ lng, lat, snapped: true })),
       { lng: dest.lng, lat: dest.lat, snapped: Boolean(snapped) },
     ];
+    return { line, waypoints, lengthMeters, source: snapped ? 'directions' : 'straight' };
+  }
+
+  /**
+   * Auto-create a route's default corridor (road-snapped path between its two Sites,
+   * straight-line fallback). Returns null (creates nothing) when either site lacks
+   * coords — the route is still usable, just not corridor-checked.
+   */
+  async createDefaultForRoute(routeId: string): Promise<CorridorDto | null> {
+    const geom = await this.buildDefaultGeometry(routeId);
+    if (!geom) {
+      return null;
+    }
     const corridor = await this.repo.create(
       routeId,
       {
         name: 'Jalur Utama',
-        pathGeojson: line as unknown as Prisma.InputJsonValue,
-        waypoints: waypoints as unknown as Prisma.InputJsonValue,
+        pathGeojson: geom.line as unknown as Prisma.InputJsonValue,
+        waypoints: geom.waypoints as unknown as Prisma.InputJsonValue,
         toleranceMeters: 150,
-        lengthMeters,
-        source: snapped ? 'directions' : 'straight',
+        lengthMeters: geom.lengthMeters,
+        source: geom.source,
       },
       true,
     );
     await this.syncRouteDistance(routeId);
     return toDto(corridor);
+  }
+
+  /**
+   * Preview a route's default corridor geometry (road-snapped path + start/mid/end
+   * control points from the route's Sites) **without persisting** — lets the editor's
+   * "build from route" action seed the canvas with the real endpoints + mid-handles to
+   * customise before saving. Returns null when a site lacks coords.
+   */
+  async previewDefaultForRoute(
+    routeId: string,
+  ): Promise<{ pathGeojson: unknown; waypoints: unknown } | null> {
+    await this.assertRoute(routeId);
+    const geom = await this.buildDefaultGeometry(routeId);
+    return geom ? { pathGeojson: geom.line, waypoints: geom.waypoints } : null;
   }
 
   /**
