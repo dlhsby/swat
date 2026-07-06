@@ -117,6 +117,22 @@ STAGING_DATABASE_URL='postgresql://swat:PASS@127.0.0.1:15433/swat_staging?schema
 STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh --with-transactions
 ```
 
+**Over a flaky tunnel, load resumably** (the SSM tunnel can drop mid-load; `--retry` + the watermark
+make that a non-event — re-running continues from where it stopped rather than restarting):
+
+```bash
+STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh staging --with-transactions \
+  --transactions-only --resume --reuse-mysql --keep-mysql --retry
+# watch from anywhere (reads the DB, not the log):
+STAGING_DATABASE_URL=... bash infra/reseed-progress.sh staging --watch
+```
+
+After a transactional load the seed auto-runs `rollup:backfill` (so the monitoring dashboards read
+non-empty) then `archive:run` (retention; no-ops without `pg_dump`). A **fresh dump the next day** can
+be applied as a delta — `migrate:delta-sync` for masters, then `--transactions-only --resume` for the
+newly-appended transactions, then `rollup:backfill -- <from> <to>` for the affected days (no corridor
+backfill, no Google calls). See `apps/backend/scripts/migration/README.md` §"Incremental re-dump".
+
 (Or run the helper **on the box**, where RDS is directly reachable — but it spins up MySQL, so
 mind the t3.micro's memory.) The helper decrypts the target `DATABASE_URL` from the encrypted
 `infra/env/backend/.env.staging` when `STAGING_DATABASE_URL` is unset, so there's no separate seed
