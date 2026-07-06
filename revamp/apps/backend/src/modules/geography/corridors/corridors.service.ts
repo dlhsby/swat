@@ -33,11 +33,11 @@ function coordInRange(lat: number, lng: number): boolean {
   );
 }
 
-/** Mid-route control points: ~one every 100 m, capped so the editor stays usable (each
+/** Mid-route control points: ~one every 500 m, capped so the editor stays usable (each
  *  handle costs a road-snap call when dragged). Longer routes get evenly-spaced points
  *  at wider intervals once the cap is hit. */
-const MID_WAYPOINT_SPACING_METERS = 100;
-const MID_WAYPOINT_MAX = 60;
+const MID_WAYPOINT_SPACING_METERS = 500;
+const MID_WAYPOINT_MAX = 20;
 
 /** Great-circle distance in metres between two `[lng, lat]` points. */
 function haversineMeters(a: readonly [number, number], b: readonly [number, number]): number {
