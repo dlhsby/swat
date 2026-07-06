@@ -187,7 +187,6 @@ export default function HaulingPage(): JSX.Element {
             >
               <HaulingMap
                 sites={map.data?.sites ?? []}
-                edges={map.data?.edges ?? []}
                 loading={map.isLoading}
                 vehicles={canTrack ? fleet.positions : []}
                 selectedVehicleId={selectedVehicleId}

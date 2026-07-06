@@ -19,14 +19,18 @@ import { ListGpsDevicesQueryDto } from './dto/list-gps-devices.query.dto';
 import { MapUnmatchedPingDto } from './dto/map-unmatched-ping.dto';
 import { UpdateGpsDeviceDto } from './dto/update-gps-device.dto';
 import { type GpsDeviceDto, GpsDeviceService, type UnmatchedPingDto } from './gps-device.service';
-import { type DevicePullResult, GpsPositionPullJob } from './gps-position-pull.job';
+import {
+  type DevicePullResult,
+  type PullAllResult,
+  GpsPositionPullJob,
+} from './gps-position-pull.job';
 import { type GpsSyncResult, GpsVehicleSyncService } from './gps-vehicle-sync.service';
 
 /**
  * GPS device registry (Phase 7, T-704). Attach/detach an IMEI↔vehicle — the only
  * join into the Vehicle master (the `Vehicle` table is never altered) — and work
- * the unmatched-IMEI queue. The literal `unmatched` routes are declared BEFORE
- * `:id` so Express matches them first.
+ * the unmatched-IMEI queue. The literal `unmatched`/`sync`/`pull-all` routes are
+ * declared BEFORE `:id` so Express matches them first.
  */
 @ApiTags('gps-devices')
 @Controller('gps/devices')
@@ -67,6 +71,15 @@ export class GpsDeviceController {
   @ApiOperation({ summary: 'Sync devices from the GPS.id vehicle roster (match by plate)' })
   syncFromGpsid(): Promise<GpsSyncResult> {
     return this.sync.sync();
+  }
+
+  @Post('pull-all')
+  @RequirePermissions('tracking:read')
+  @ApiOperation({
+    summary: 'Pull the latest GPS.id positions for every registered device on demand',
+  })
+  pullAll(): Promise<PullAllResult> {
+    return this.pull.pullPositions();
   }
 
   @Get(':id')

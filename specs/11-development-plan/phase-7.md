@@ -23,9 +23,9 @@
 >   `Route` is retained by design, so there is no collapse/backfill to run before the import.
 >
 > **All 24 tasks implemented** (corridor authoring + per-day switch complete after the 7.8
-> revision — see ¹). Remaining deferred follow-ups (tracked above): `dwell_too_long` +
-> `off_sequence` matcher checks (²), global alert-bell + history (³), `adherencePct`/`dwellMinutes`
-> efficiency (⁴), a live webhook→SSE E2E spec + load test (⁵).
+> revision — see ¹). `dwell_too_long`/`off_sequence` (²), the global alert-bell + history page (³),
+> and `adherencePct`/`dwellMinutes` (⁴) are now also implemented (see "Remaining-gap closure" below).
+> Still open: a live webhook→SSE E2E spec + load test (⁵), and the residual limitations noted there.
 >
 > ¹ T-710: route-template corridor editor shipped + tested. **Post-Phase-7
 >   enhancement (done):** the editor now snaps segments to roads via the Maps JS
@@ -47,14 +47,17 @@
 >   (`PUT /gps/trips/:id/corridor` sets `Trip.corridorId`), keeping the freehand override as
 >   a one-off escape hatch. So "per-day Trip corridor wiring" is **complete**, not deferred.
 > ² T-712: `off_corridor` (PostGIS ST_DWithin + Redis hysteresis + auto-resolve) and
->   `late_to_schedule` implemented; `dwell_too_long` (needs Site-geofence spatial
->   check) and `off_sequence` (leg-sequence logic) are tracked follow-ups.
+>   `late_to_schedule` implemented. **`dwell_too_long`/`off_sequence` done** (see
+>   "Remaining-gap closure" below) — both reuse the activity state machine's
+>   site-geofence detection, same Redis-hysteresis pattern as `off_corridor`.
 > ³ T-718: alert center lives on the Pengangkutan → Peta tab (live SSE + REST,
->   acknowledge); a global header-bell + filterable history view are follow-ups.
+>   acknowledge). **Global header alert-bell + filterable history page done**
+>   (see "Remaining-gap closure" below) — `/monitoring/alert-history`.
 > ⁴ T-719: efficiency rollup computes odometer-primary distance, late minutes,
 >   deviation count, internal wasted-fuel + nightly GPS.id mileage cross-check
->   (T-720) + dashboard (T-721); `adherencePct`/`dwellMinutes` left NULL (need
->   ping-vs-corridor replay + the deferred dwell logic) — tracked follow-up.
+>   (T-720) + dashboard (T-721). **`adherencePct`/`dwellMinutes` done** (see
+>   "Remaining-gap closure" below) — still `null` (not 0) when a vehicle has no
+>   corridor/activity data that day.
 > ⁵ T-723: docs (`docs/GPS-WEBHOOK-SECURITY.md`, `PRIVACY-NOTICE-GPS.md`,
 >   `GPSID-REGISTRATION.md`, `GPS-DEPLOYMENT.md`) + demo seed (corridor + synthetic
 >   tracks + efficiency rollup, alongside the online/offline/untracked devices)
@@ -88,11 +91,45 @@
 > (`operationDateOf` / `wibDayRangeUtc`), so pings between 00:00–07:00 WIB no longer resolve to the
 > wrong day and miss the active haul.
 >
-> **Still deferred after A–D:** `off_sequence` matcher; a **global header alert-bell + filterable
-> history** view; `adherencePct`/`dwellMinutes` efficiency replay (the activity feed now supplies
-> the arrival/dwell data to feed it); a **live geofence + webhook→SSE E2E + load test**; and known
-> limitations — multi-assignment-haul activity attribution, pull-batch activity granularity (the
-> push path processes every ping), and i18n of the drill-down's hardcoded id-ID labels.
+> **Still deferred after A–D:** ~~`off_sequence` matcher; a **global header alert-bell + filterable
+> history** view; `adherencePct`/`dwellMinutes` efficiency replay~~ — **all closed, see
+> "Remaining-gap closure" below.** Still open: a **live geofence + webhook→SSE E2E + load test**; and
+> known limitations — multi-assignment-haul activity attribution, pull-batch activity granularity
+> (the push path processes every ping), and i18n of the drill-down's (and the new alert-history
+> page's) hardcoded id-ID labels.
+>
+> ### Remaining-gap closure (2026-07-05, this session — not yet merged)
+> Closed the three gaps still open after A–D, in the `worktree-phase-7-monitoring-angkutan` worktree:
+> - **`dwell_too_long` matcher** — stationary (speed ≤ 2 km/h) outside every site geofence for the
+>   active haul, sustained beyond the rule's threshold (Redis-hysteresis marker, same mechanics as
+>   `off_corridor`); auto-resolves on movement or entering a site (loading/dumping stays legitimate).
+>   Extracted the activity state machine's geofence lookup into a shared `findGeofenceSite()` helper
+>   (`gps-activity.service.ts`) so both subsystems agree on "inside a site."
+> - **`off_sequence` matcher** — flags entering a site that is not any `IN_PROGRESS` leg's destination
+>   right now, reusing the **exact same predicate** the activity machine uses for its own ARRIVE
+>   detection (`destinationSiteId` + status `IN_PROGRESS`) so the two subsystems never disagree about
+>   "expected." Fires once per wrong-site visit (not every ping), auto-resolves on leaving. Known
+>   simplification: relies on live trip-progression state, not a hardened static leg-sequence check —
+>   a site visited twice in one day is only handled correctly because "expected" is re-resolved each
+>   time, not because of an explicit sequence index.
+> - **`adherencePct`/`dwellMinutes` backfill** — `dwellMinutes` sums each vehicle's ARRIVE→exit
+>   durations from the already-written `GpsActivityEvent` feed (no dependency on the new dwell
+>   matcher). `adherencePct` is the share of a day's GPS pings within tolerance of **any** of that
+>   day's resolved corridors (a simplification vs. an exact per-leg time-windowed replay — documented,
+>   not the ideal spec version). Both wired into `GpsEfficiencyService.refreshForDate` (nightly job
+>   + `rollup:backfill`); still `null` (not 0) when a vehicle has no corridor/activity data that day.
+> - **Global alert bell + history page** — new topbar bell (badge = live open-alert count via the
+>   existing `useAlerts()` hook, no new backend endpoint) distinct from the generic notification bell;
+>   links to a new **`/monitoring/alert-history`** page (filter by vehicle/date-range/type/status,
+>   acknowledge action) — the backend `GET /gps/alerts` filters (`vehicleId`/`acknowledged`/`resolved`/
+>   `from`/`to`) already supported this, no API changes needed. `alertType` filtering is client-side
+>   (backend has no such filter) — narrows the current page only, not the server total.
+> - Verified live via the **pull mechanism** (`POST /gps/devices/:id/pull`) against a real GPS.id IMEI
+>   — device flips online, position updates, ingest pipeline runs the new checks with no errors. Did
+>   **not** verify a live `dwell_too_long`/`off_sequence` firing end-to-end (no demo vehicle has an
+>   `IN_PROGRESS` haul scheduled for "today" in this environment) — covered instead by 43 new unit
+>   tests (hysteresis debounce, entry/exit, auto-resolve, both matcher checks + the dwell/adherence
+>   rollup math).
 >
 > ### GPS.id device onboarding & roster sync (PR #44, 2026-07-04)
 > Closes the last onboarding gap (formerly "B4, deferred") — devices no longer have to be registered

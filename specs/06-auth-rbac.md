@@ -104,6 +104,14 @@ On first login, if `User.mustChangePassword = true`, redirect to `/change-passwo
 
 **Forced vs voluntary change.** A *forced* change (`mustChangePassword = true`) does **not** ask for the current password — the active session plus the server-side flag authorise it, and the current password was just entered at login. The server still blocks reusing the existing password. A *voluntary* change (from Profile, flag already cleared) **requires and verifies** the current password. This branch lives in `auth.service.changePassword`; `ChangePasswordDto.currentPassword` is optional and the rule is enforced server-side, never trusting the client.
 
+**Seeded account defaults (2026-07):** every seeded/demo/legacy-migrated account gets the shared default
+password `12345678` with `mustChangePassword=true` — **except `superadmin`** (role Super Administrator),
+whose password comes from the required `SUPERADMIN_PASSWORD` env var and is ready-to-use
+(`mustChangePassword=false`), since it's the only account holding `system-config:manage`. `admin` and
+`superadmin` are both created in **every** environment including production; the dev/CI-only accounts
+(`adminreset` + the per-role demo users) are not. See [`04-migration.md`](./04-migration.md) §6 for the
+full migration password story.
+
 ### 1.5 Password reset flow (recovery & admin-forced)
 
 **Self-service password reset (forgot password):**
@@ -338,8 +346,9 @@ Examples:
 
 | Legacy Role | New Role | Permissions | Notes |
 |---|---|---|---|
+| — | **Super Administrator** | `*:*` (unrestricted) | New, not legacy-mapped. The **only** role that keeps `system-config:manage`; ready-to-use account `superadmin` (password from the required `SUPERADMIN_PASSWORD` env var, `mustChangePassword=false`) — see §1.4 |
 | Root | Root | `*:*` | System owner, unrestricted |
-| Administrator | Administrator | `*:*` | Full access; user/role mgmt |
+| Administrator | Administrator | `*:*` **excluding** `system-config:manage` | Full access; user/role mgmt. `system-config:manage` was carved out to Super Administrator only (2026-07) |
 | Administrasi Data | DataAdmin | `*:read`, `*:create`, `*:update`; `trip:*`; `transaction-day:manage` | Full CRUD for master data & transactions |
 | Checker | Checker | `vehicle:read`, `driver:read`, `trip:read`, `trip:verify` | Verify trips post-entry |
 | Operator Pool | PoolOperator | `vehicle:read`, `driver:read`, `crew-schedule:read`, `trip:read`, `trip:update` | Record trip actuals at pool |
