@@ -4,6 +4,7 @@ import {
   Logger,
   type OnModuleDestroy,
   type OnModuleInit,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 
@@ -25,6 +26,21 @@ const ON_DEMAND_LOOKBACK_MIN = 24 * 60;
 export interface DevicePullResult {
   readonly enqueued: number;
   readonly latest: CanonicalPing | null;
+}
+
+/** Result of an on-demand "pull all registered devices" run. */
+export interface PullAllResult {
+  readonly totalDevices: number;
+  readonly pulled: number;
+  readonly enqueued: number;
+  readonly rateLimited: number;
+}
+
+/** True for the vendor's own rate-limit guard (thrown before any network call) — distinct
+ * from other GPS.id failures (bad login, history endpoint error) so callers can report
+ * "hit the rate limit" separately from "this device failed". */
+function isRateLimited(err: unknown): boolean {
+  return err instanceof ServiceUnavailableException && err.message.includes('rate limit');
 }
 
 /**
@@ -141,10 +157,16 @@ export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
     return { enqueued: pings.length, latest };
   }
 
-  /** Pull each active device's recent history and enqueue it. Best-effort per device. */
-  async pullPositions(): Promise<void> {
+  /**
+   * Pull each active device's recent history and enqueue it. Best-effort per device —
+   * a device hitting the vendor's 5-calls/5-min rate limit is counted separately
+   * (`rateLimited`) from other per-device failures, since the guard throws before any
+   * network call (fast/cheap even when most of a large fleet gets rate-limited in one
+   * run). Used by both the scheduled tick and the on-demand "Tarik Semua Posisi" button.
+   */
+  async pullPositions(): Promise<PullAllResult> {
     if (!this.gpsid.isConfigured) {
-      return;
+      return { totalDevices: 0, pulled: 0, enqueued: 0, rateLimited: 0 };
     }
     const end = new Date();
     const lookbackMin = this.systemConfig.getGpsidPullIntervalMinutes() + OVERLAP_MIN;
@@ -154,6 +176,8 @@ export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
 
     const devices = await this.repo.activeDeviceImeis();
     let enqueued = 0;
+    let pulled = 0;
+    let rateLimited = 0;
     for (const { imei } of devices) {
       try {
         const points = await this.gpsid.getHistory(imei, startIso, endIso);
@@ -161,12 +185,20 @@ export class GpsPositionPullJob implements OnModuleInit, OnModuleDestroy {
           await this.queue.enqueue(points.map((p) => historyPointToPing(imei, p)));
           enqueued += points.length;
         }
+        pulled += 1;
       } catch (err) {
-        this.logger.warn(`GPS.id position pull failed for ${imei}: ${String(err)}`);
+        if (isRateLimited(err)) {
+          rateLimited += 1;
+        } else {
+          this.logger.warn(`GPS.id position pull failed for ${imei}: ${String(err)}`);
+        }
       }
     }
     this.logger.log(
-      `GPS.id position pull: enqueued ${enqueued} points from ${devices.length} device(s).`,
+      `GPS.id position pull: enqueued ${enqueued} points from ${pulled}/${devices.length} device(s)` +
+        (rateLimited > 0 ? ` (${rateLimited} rate-limited)` : '') +
+        '.',
     );
+    return { totalDevices: devices.length, pulled, enqueued, rateLimited };
   }
 }

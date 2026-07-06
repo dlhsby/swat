@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { type SchedulerRegistry } from '@nestjs/schedule';
 
 import { type SystemConfigService } from '../../../config';
@@ -16,7 +17,11 @@ const point = (over: Partial<GpsidHistoryPoint> = {}): GpsidHistoryPoint => ({
 });
 
 interface Mocks {
-  config: { getGpsidPositionPull: jest.Mock; getGpsidPullIntervalMinutes: jest.Mock; onChange: jest.Mock };
+  config: {
+    getGpsidPositionPull: jest.Mock;
+    getGpsidPullIntervalMinutes: jest.Mock;
+    onChange: jest.Mock;
+  };
   gpsid: { isConfigured: boolean; getHistory: jest.Mock };
   repo: { activeDeviceImeis: jest.Mock };
   queue: { enqueue: jest.Mock };
@@ -103,21 +108,23 @@ describe('GpsPositionPullJob', () => {
         Promise.resolve(imei === 'A' ? [point(), point({ speedKmh: 10 })] : []),
       );
 
-      await job.pullPositions();
+      const result = await job.pullPositions();
 
       // A had 2 points → one enqueue of 2 mapped pings; B had none → skipped.
       expect(m.queue.enqueue).toHaveBeenCalledTimes(1);
       const pings = m.queue.enqueue.mock.calls[0][0];
       expect(pings).toHaveLength(2);
       expect(pings[0]).toMatchObject({ imei: 'A', source: 'gpsid' });
+      expect(result).toEqual({ totalDevices: 2, pulled: 2, enqueued: 2, rateLimited: 0 });
     });
 
     it('no-ops when the client is unconfigured', async () => {
       const { job, m } = build();
       m.gpsid.isConfigured = false;
-      await job.pullPositions();
+      const result = await job.pullPositions();
       expect(m.repo.activeDeviceImeis).not.toHaveBeenCalled();
       expect(m.queue.enqueue).not.toHaveBeenCalled();
+      expect(result).toEqual({ totalDevices: 0, pulled: 0, enqueued: 0, rateLimited: 0 });
     });
 
     it('keeps going when one device errors', async () => {
@@ -130,10 +137,33 @@ describe('GpsPositionPullJob', () => {
         imei === 'A' ? Promise.reject(new Error('vendor 500')) : Promise.resolve([point()]),
       );
 
-      await job.pullPositions();
+      const result = await job.pullPositions();
 
       expect(m.queue.enqueue).toHaveBeenCalledTimes(1);
       expect(m.queue.enqueue.mock.calls[0][0][0]).toMatchObject({ imei: 'B' });
+      expect(result).toEqual({ totalDevices: 2, pulled: 1, enqueued: 1, rateLimited: 0 });
+    });
+
+    it('counts rate-limited devices separately from other failures', async () => {
+      const { job, m } = build();
+      m.repo.activeDeviceImeis.mockResolvedValue([
+        { imei: 'A', vehicleId: 'v1' },
+        { imei: 'B', vehicleId: 'v2' },
+        { imei: 'C', vehicleId: 'v3' },
+      ]);
+      m.gpsid.getHistory.mockImplementation((imei: string) => {
+        if (imei === 'A') return Promise.resolve([point()]);
+        if (imei === 'B') {
+          return Promise.reject(
+            new ServiceUnavailableException('GPS.id pull rate limit reached (5/300s) — try later.'),
+          );
+        }
+        return Promise.reject(new Error('vendor 500'));
+      });
+
+      const result = await job.pullPositions();
+
+      expect(result).toEqual({ totalDevices: 3, pulled: 1, enqueued: 1, rateLimited: 1 });
     });
   });
 

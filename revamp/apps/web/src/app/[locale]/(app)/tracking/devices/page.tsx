@@ -19,8 +19,9 @@ import {
   toDeviceFormValues,
 } from '@/components/fleet/gps-device-fields';
 import { GpsSyncButton } from '@/components/tracking/gps-sync-button';
+import { PullAllPositionsButton } from '@/components/tracking/pull-all-positions-button';
 import { UnmatchedDevicesSheet } from '@/components/tracking/unmatched-devices-sheet';
-import { Button, type ComboboxOption, StatusPill, notify } from '@/components/ui';
+import { Button, type ComboboxOption, DropdownMenuItem, StatusPill, notify } from '@/components/ui';
 import { useResourceList } from '@/hooks/use-resource-list';
 import { useResourceManager } from '@/hooks/use-resource-manager';
 import { ApiError } from '@/lib/api-error';
@@ -43,7 +44,11 @@ export default function GpsDevicesPage(): JSX.Element {
   const manager = useResourceManager(gpsDevicesApi, (r) => r.id);
   const { rows: vehicles } = useResourceList(vehiclesApi.list);
   const vehicleOptions = useMemo<ComboboxOption[]>(
-    () => vehicles.map((v: VehicleDto) => ({ value: v.id, label: `${v.plateNumber} · ${v.modelBrand}` })),
+    () =>
+      vehicles.map((v: VehicleDto) => ({
+        value: v.id,
+        label: `${v.plateNumber} · ${v.modelBrand}`,
+      })),
     [vehicles],
   );
   const [unmatchedOpen, setUnmatchedOpen] = useState(false);
@@ -89,7 +94,9 @@ export default function GpsDevicesPage(): JSX.Element {
         header: 'IMEI / ID',
         meta: { label: 'IMEI / ID' },
         cell: ({ row }) => (
-          <span className="font-mono text-body-sm">{row.original.imei ?? row.original.deviceId}</span>
+          <span className="font-mono text-body-sm">
+            {row.original.imei ?? row.original.deviceId}
+          </span>
         ),
       },
       {
@@ -107,7 +114,10 @@ export default function GpsDevicesPage(): JSX.Element {
         header: 'Status',
         meta: { label: 'Status' },
         cell: ({ row }) => (
-          <StatusPill domain="gpsDevice" value={row.original.active ? row.original.status : 'offline'} />
+          <StatusPill
+            domain="gpsDevice"
+            value={row.original.active ? row.original.status : 'offline'}
+          />
         ),
       },
       {
@@ -130,26 +140,24 @@ export default function GpsDevicesPage(): JSX.Element {
         meta: { label: 'Aksi' },
         cell: ({ row }) => (
           <div className="flex items-center justify-end gap-1">
-            {row.original.imei ? (
-              <ProtectedAction permission="tracking:read">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-neutral-500"
-                  title="Tarik posisi terkini dari GPS.id"
-                  loading={pullingId === row.original.id}
-                  onClick={() => void onPull(row.original)}
-                >
-                  <LocateFixed className="h-4 w-4" aria-hidden />
-                  Tarik Posisi
-                </Button>
-              </ProtectedAction>
-            ) : null}
             <RowActions
               resource="gps-device"
               onView={() => manager.openView(row.original)}
               onEdit={() => manager.openEdit(row.original)}
               onDelete={() => manager.setDeleteTarget(row.original)}
+              extra={
+                row.original.imei ? (
+                  <ProtectedAction permission="tracking:read">
+                    <DropdownMenuItem
+                      disabled={pullingId === row.original.id}
+                      onSelect={() => void onPull(row.original)}
+                    >
+                      <LocateFixed aria-hidden />
+                      {pullingId === row.original.id ? 'Menarik…' : 'Tarik Posisi'}
+                    </DropdownMenuItem>
+                  </ProtectedAction>
+                ) : null
+              }
             />
           </div>
         ),
@@ -169,6 +177,7 @@ export default function GpsDevicesPage(): JSX.Element {
       toolbar={
         <>
           <GpsSyncButton className="ml-2" onSynced={() => void manager.reload()} />
+          <PullAllPositionsButton onPulled={() => void manager.reload()} />
           <Button variant="secondary" size="sm" onClick={() => setUnmatchedOpen(true)}>
             <Inbox className="h-4 w-4" aria-hidden /> IMEI tak dikenal
           </Button>
@@ -215,9 +224,9 @@ export default function GpsDevicesPage(): JSX.Element {
             Belum ada perangkat GPS yang melapor.
           </p>
           <p className="mt-1 text-body-sm text-neutral-600">
-            Pastikan webhook GPS.id sudah didaftarkan ke SWAT (URL webhook + token), lalu petakan IMEI
-            yang masuk lewat tombol “IMEI tak dikenal”. Anda juga bisa menambahkan perangkat manual di
-            atas.
+            Pastikan webhook GPS.id sudah didaftarkan ke SWAT (URL webhook + token), lalu petakan
+            IMEI yang masuk lewat tombol “IMEI tak dikenal”. Anda juga bisa menambahkan perangkat
+            manual di atas.
           </p>
         </div>
       ) : null}
