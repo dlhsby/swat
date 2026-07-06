@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { type Corridor, type Prisma } from '@prisma/client';
 
 import { assertLineString, InvalidGeometryError } from '../../integrations/gps/geojson';
@@ -7,6 +7,31 @@ import { CorridorsRepository } from './corridors.repository';
 import { type CreateCorridorDto } from './dto/create-corridor.dto';
 import { type UpdateCorridorDto } from './dto/update-corridor.dto';
 import { GoogleDirectionsService } from './google-directions.service';
+
+/** Result of a bulk default-corridor backfill (the "Backfill default corridors" action). */
+export interface BackfillCorridorsResult {
+  readonly totalRoutes: number;
+  readonly created: number;
+  readonly snapped: number;
+  readonly straightLine: number;
+  /** Routes skipped because an endpoint has no / out-of-range coordinates. */
+  readonly skippedNoCoords: number;
+  /** Routes that threw — with a sample message so the real cause is visible, not hidden. */
+  readonly errored: number;
+  readonly sampleError: string | null;
+}
+
+/** A latitude/longitude is usable for a corridor only inside the WGS84 valid range. */
+function coordInRange(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
 
 export interface CorridorDto {
   readonly id: string;
@@ -40,6 +65,8 @@ function toDto(c: Corridor): CorridorDto {
 
 @Injectable()
 export class CorridorsService {
+  private readonly logger = new Logger(CorridorsService.name);
+
   constructor(
     private readonly repo: CorridorsRepository,
     private readonly directions: GoogleDirectionsService,
@@ -141,6 +168,16 @@ export class CorridorsService {
     }
     const origin = { lat: Number(o.latitude), lng: Number(o.longitude) };
     const dest = { lat: Number(d.latitude), lng: Number(d.longitude) };
+    // Skip (don't error) when a stored coordinate is out of the WGS84 range — e.g. a
+    // legacy row with lat/lng swapped. Building a corridor from it yields a nonsense
+    // geometry rather than a useful path, so treat it like "no coords".
+    if (!coordInRange(origin.lat, origin.lng) || !coordInRange(dest.lat, dest.lng)) {
+      this.logger.warn(
+        `Route ${routeId}: skipping default corridor — coordinate out of range ` +
+          `(origin ${origin.lat},${origin.lng} / dest ${dest.lat},${dest.lng}).`,
+      );
+      return null;
+    }
     const snapped = await this.directions.snapDrivingRoute(origin, dest);
     const coordinates: Array<[number, number]> = snapped ?? [
       [origin.lng, origin.lat],
@@ -228,8 +265,68 @@ export class CorridorsService {
   private async lengthOrThrow(line: unknown): Promise<number> {
     try {
       return await this.repo.computeLengthMeters(line);
-    } catch {
-      throw new UnprocessableEntityException('Geometri koridor tidak valid.');
+    } catch (err) {
+      // Surface the real cause (e.g. a PostGIS error) instead of hiding it behind a
+      // generic message — that opacity is what made a bulk backfill misreport every
+      // failure as "no coords". Logged in full; the API message carries a short hint.
+      const detail = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Corridor length computation failed: ${detail}`);
+      throw new UnprocessableEntityException(`Geometri koridor tidak valid: ${detail}`);
     }
+  }
+
+  /**
+   * Bulk "backfill default corridors" — generate the default corridor for every route
+   * that lacks one and whose two Sites have valid coordinates (idempotent; existing
+   * corridors are left untouched). Per-route failures are counted and a sample message
+   * returned, so a stuck route is visible rather than silently swallowed.
+   */
+  async backfillAll(): Promise<BackfillCorridorsResult> {
+    const routeIds = await this.repo.routeIdsWithoutCorridor();
+    let created = 0;
+    let snapped = 0;
+    let straightLine = 0;
+    let skippedNoCoords = 0;
+    let errored = 0;
+    let sampleError: string | null = null;
+
+    const CONCURRENCY = 8; // bounded so a road-snapping run doesn't hammer Google/DB.
+    for (let i = 0; i < routeIds.length; i += CONCURRENCY) {
+      await Promise.all(
+        routeIds.slice(i, i + CONCURRENCY).map(async (routeId) => {
+          try {
+            const corridor = await this.createDefaultForRoute(routeId);
+            if (!corridor) {
+              skippedNoCoords += 1;
+              return;
+            }
+            created += 1;
+            if (corridor.source === 'directions') snapped += 1;
+            else straightLine += 1;
+          } catch (err) {
+            errored += 1;
+            if (sampleError === null) {
+              sampleError = err instanceof Error ? err.message : String(err);
+            }
+          }
+        }),
+      );
+    }
+
+    this.logger.log(
+      `Corridor backfill: ${created} created (${snapped} snapped, ${straightLine} straight), ` +
+        `${skippedNoCoords} skipped (no/invalid coords), ${errored} errored` +
+        (sampleError ? ` — e.g. ${sampleError}` : '') +
+        ` of ${routeIds.length} routes without a corridor.`,
+    );
+    return {
+      totalRoutes: routeIds.length,
+      created,
+      snapped,
+      straightLine,
+      skippedNoCoords,
+      errored,
+      sampleError,
+    };
   }
 }

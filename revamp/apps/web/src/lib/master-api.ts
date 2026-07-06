@@ -215,6 +215,20 @@ export const routesApi = makeResourceApi<RouteDto>('/routes');
 /** All active routes, slimmed, in a single request — for the record board. */
 export const routesBoardSummary = (): Promise<BoardRouteDto[]> =>
   apiClient.get<BoardRouteDto[]>('/routes/board-summary');
+
+/** Outcome of the bulk "Backfill default corridors" action. */
+export interface BackfillCorridorsResult {
+  totalRoutes: number;
+  created: number;
+  snapped: number;
+  straightLine: number;
+  skippedNoCoords: number;
+  errored: number;
+  sampleError: string | null;
+}
+/** Generate the default corridor for every route that lacks one (both sites need coords). */
+export const backfillCorridors = (): Promise<BackfillCorridorsResult> =>
+  apiClient.post<BackfillCorridorsResult>('/corridors/backfill');
 export const wasteSourcesApi = makeResourceApi<WasteSourceDto>('/waste-sources');
 export const scheduleTemplatesApi = makeResourceApi<ScheduleTemplateDto>('/schedule-templates');
 export const disposalPermitsApi = makeResourceApi<DisposalPermitDto>('/disposal-permits');
