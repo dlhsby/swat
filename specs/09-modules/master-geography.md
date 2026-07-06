@@ -131,6 +131,18 @@ The geography module manages physical locations (pools, SPBU fuel stations, TPS 
 | POST | `/routes` | `route:create` | Define route (origin, destination, distanceKm, category) |
 | PATCH | `/routes/:id` | `route:update` | Update route (distance) |
 | DELETE | `/routes/:id` | `route:delete` | Delete unused route |
+| GET | `/routes/:routeId/corridors` | `corridor:read` | List a route's corridors (default first; lazily backfills the default on first open) |
+| POST | `/routes/:routeId/corridors` | `corridor:create` | Add a corridor to a route |
+| POST | `/routes/:routeId/corridors/backfill` | `corridor:create` | Generate this route's default corridor on demand (idempotent; `null` if a site lacks coords) |
+| POST | `/corridors/backfill` | `corridor:create` | **Bulk**: generate the default corridor for **every** route lacking one whose two sites have valid coords. Idempotent (won't clobber existing/manual corridors); returns `{totalRoutes, created, snapped, straightLine, skippedNoCoords, errored, sampleError}`. Surfaced as the **"Backfill Koridor"** button on the Rute tab. Per-route failures are counted with a sample message (never swallowed) |
+| PATCH | `/corridors/:id` | `corridor:update` | Update a corridor (re-validates geometry) |
+| DELETE | `/corridors/:id` | `corridor:delete` | Soft-delete a corridor |
+
+> **Corridor geometry needs PostGIS SRID 4326.** Corridor length (`ST_Length(::geography)`) and the
+> generated `corridor.geog` column require WGS84 (SRID 4326) present in `spatial_ref_sys`. On managed
+> Postgres this is an operational prerequisite — see [`../15-deployment.md`](../15-deployment.md)
+> §PostGIS. When it is missing, a corridor create/backfill fails with "Geometri koridor tidak valid:
+> … Cannot find SRID (4326) in spatial_ref_sys" (the bulk backfill reports it under `errored`).
 
 ## Business Rules
 
