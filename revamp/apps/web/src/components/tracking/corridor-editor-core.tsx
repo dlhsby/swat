@@ -1,7 +1,7 @@
 'use client';
 
 import { APIProvider, Map as GoogleMap, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
-import { MapPinned, Undo2, Trash2, Loader2 } from 'lucide-react';
+import { MapPin, MapPinned, Undo2, Trash2, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -51,6 +51,61 @@ interface BuildResult {
 
 const toLatLng = (w: CorridorWaypoint): LatLng => ({ lat: w.lat, lng: w.lng });
 
+/** ~one control point every 500 m along a corridor, capped, matching the backend default. */
+const MID_SPACING_METERS = 500;
+const MID_MAX = 20;
+
+/** Great-circle metres between two [lng, lat] points. */
+function haversineMeters(a: readonly [number, number], b: readonly [number, number]): number {
+  const R = 6_371_000;
+  const toRad = (deg: number): number => (deg * Math.PI) / 180;
+  const dLat = toRad(b[1] - a[1]);
+  const dLng = toRad(b[0] - a[0]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a[1])) * Math.cos(toRad(b[1])) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/**
+ * Evenly-spaced points along a dense [lng, lat] polyline, excluding its endpoints — so a
+ * road-snapped corridor that stored only its dense path still opens with draggable
+ * mid-route handles. Mirrors the backend sampler; [] for a path shorter than one spacing.
+ */
+function sampleAlong(
+  coords: ReadonlyArray<readonly [number, number]>,
+  everyMeters: number,
+  maxPoints: number,
+): Array<[number, number]> {
+  if (coords.length < 3 || maxPoints <= 0) return [];
+  let total = 0;
+  for (let i = 1; i < coords.length; i += 1) {
+    const prev = coords[i - 1];
+    const cur = coords[i];
+    if (prev && cur) total += haversineMeters(prev, cur);
+  }
+  if (total <= everyMeters) return [];
+  const count = Math.min(maxPoints, Math.floor(total / everyMeters) - 1);
+  if (count <= 0) return [];
+  const spacing = total / (count + 1);
+  const out: Array<[number, number]> = [];
+  let acc = 0;
+  let target = spacing;
+  for (let i = 1; i < coords.length && out.length < count; i += 1) {
+    const prev = coords[i - 1];
+    const cur = coords[i];
+    if (!prev || !cur) continue;
+    const segLen = haversineMeters(prev, cur);
+    while (segLen > 0 && acc + segLen >= target && out.length < count) {
+      const frac = (target - acc) / segLen;
+      out.push([prev[0] + (cur[0] - prev[0]) * frac, prev[1] + (cur[1] - prev[1]) * frac]);
+      target += spacing;
+    }
+    acc += segLen;
+  }
+  return out;
+}
+
 /**
  * Drawing layer: renders the (road-snapped) corridor polyline plus a numbered,
  * draggable handle per control node. Clicking the map appends a node; dragging a
@@ -61,14 +116,23 @@ function CorridorDrawing({
   nodes,
   onAddPoint,
   onMovePoint,
+  onMapReady,
 }: {
   path: readonly LatLng[];
   nodes: readonly CorridorWaypoint[];
   onAddPoint: (p: LatLng) => void;
   onMovePoint: (index: number, p: LatLng) => void;
+  onMapReady: (map: google.maps.Map | null) => void;
 }): null {
   const map = useMap();
   const fittedRef = useRef(false);
+
+  // Surface the map instance so the "add start/finish" buttons can drop a point at the
+  // current viewport centre.
+  useEffect(() => {
+    onMapReady(map);
+    return () => onMapReady(null);
+  }, [map, onMapReady]);
 
   useEffect(() => {
     if (!map) return undefined;
@@ -129,12 +193,14 @@ function CorridorCanvas({
   onBuilt,
   onAddPoint,
   onMovePoint,
+  onMapReady,
 }: {
   nodes: readonly CorridorWaypoint[];
   path: readonly LatLng[];
   onBuilt: (result: BuildResult) => void;
   onAddPoint: (p: LatLng) => void;
   onMovePoint: (index: number, p: LatLng) => void;
+  onMapReady: (map: google.maps.Map | null) => void;
 }): JSX.Element {
   const routesLib = useMapsLibrary('routes');
   const serviceRef = useRef<google.maps.DirectionsService | null>(null);
@@ -209,6 +275,7 @@ function CorridorCanvas({
           nodes={nodes}
           onAddPoint={onAddPoint}
           onMovePoint={onMovePoint}
+          onMapReady={onMapReady}
         />
       </GoogleMap>
     </div>
@@ -289,12 +356,15 @@ export function CorridorEditorCore({
       const first = coords[0];
       const last = coords.at(-1);
       if (existing.source === 'directions' && first && last) {
-        // A road-snapped default corridor that stored only its dense path (no control
-        // points). Load just the two endpoints as snapped control nodes so the editor
-        // shows snap ON and re-derives the road path — rather than dozens of freehand
-        // handles with the toggle wrongly OFF.
+        // A road-snapped corridor that stored only its dense path (no control points) —
+        // e.g. an older default or a Trip override. Load the two endpoints PLUS
+        // evenly-spaced mid-route handles sampled from the path, all snapped, so the
+        // editor opens with draggable points all along the route (not just start+finish)
+        // and re-derives the road path between them.
+        const mids = sampleAlong(coords, MID_SPACING_METERS, MID_MAX);
         setNodes([
           { lng: first[0], lat: first[1], snapped: true },
+          ...mids.map(([lng, lat]) => ({ lng, lat, snapped: true })),
           { lng: last[0], lat: last[1], snapped: true },
         ]);
         setSnapMode(true);
@@ -337,6 +407,21 @@ export function CorridorEditorCore({
   );
   const undo = useCallback(() => setNodes((prev) => prev.slice(0, -1)), []);
   const clear = useCallback(() => setNodes([]), []);
+
+  // Keep the live map so the "add start/finish" buttons can drop a point at the current
+  // viewport centre (the user then drags it into place) — the explicit way to start a
+  // corridor from an empty canvas without hunting for the exact spot to click.
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const handleMapReady = useCallback((m: google.maps.Map | null) => {
+    mapRef.current = m;
+  }, []);
+  const addAtCenter = useCallback(
+    (lngOffset: number) => {
+      const c = mapRef.current?.getCenter();
+      if (c) addPoint({ lat: c.lat(), lng: c.lng() + lngOffset });
+    },
+    [addPoint],
+  );
 
   const handleSave = (): void => {
     if (path.length < 2) return;
@@ -393,6 +478,7 @@ export function CorridorEditorCore({
                   onBuilt={onBuilt}
                   onAddPoint={addPoint}
                   onMovePoint={movePoint}
+                  onMapReady={handleMapReady}
                 />
               </APIProvider>
 
@@ -407,7 +493,17 @@ export function CorridorEditorCore({
                 <span className="text-body-sm text-neutral-600">
                   {t('pointCount', { count: nodes.length })}
                 </span>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
+                  {nodes.length === 0 ? (
+                    <Button variant="secondary" size="sm" onClick={() => addAtCenter(0)}>
+                      <MapPin className="h-4 w-4" aria-hidden /> {t('addStart')}
+                    </Button>
+                  ) : null}
+                  {nodes.length === 1 ? (
+                    <Button variant="secondary" size="sm" onClick={() => addAtCenter(0.006)}>
+                      <MapPin className="h-4 w-4" aria-hidden /> {t('addFinish')}
+                    </Button>
+                  ) : null}
                   <Button
                     variant="secondary"
                     size="sm"

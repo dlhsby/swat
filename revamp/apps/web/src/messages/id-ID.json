@@ -11,6 +11,8 @@
     "pointCount": "{count} titik",
     "undo": "Urungkan",
     "clear": "Bersihkan",
+    "addStart": "Tambah titik awal",
+    "addFinish": "Tambah titik akhir",
     "snapToggle": "Ikuti jalan (snap)",
     "snapHint": "Aktif: ruas baru mengikuti jalan. Nonaktif (bebas): garis lurus untuk area tanpa jalan, mis. di dalam TPA.",
     "building": "Menghitung rute jalan…",

@@ -11,6 +11,8 @@
     "pointCount": "{count} point(s)",
     "undo": "Undo",
     "clear": "Clear",
+    "addStart": "Add start point",
+    "addFinish": "Add finish point",
     "snapToggle": "Follow roads (snap)",
     "snapHint": "On: new segments follow roads. Off (freehand): straight lines for areas without roads, e.g. inside a TPA.",
     "building": "Computing road route…",
