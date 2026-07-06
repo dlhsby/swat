@@ -4,7 +4,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { notify } from '@/components/ui';
 import { ApiError } from '@/lib/api-error';
-import { type CorridorDto, type UpsertCorridorBody, corridorApi } from '@/lib/corridor-api';
+import {
+  type CorridorDto,
+  type CorridorSeed,
+  type UpsertCorridorBody,
+  corridorApi,
+} from '@/lib/corridor-api';
 
 const KEY = 'route-corridors';
 
@@ -63,6 +68,16 @@ export function useBackfillDefaultCorridor(routeId: string | null) {
       }
     },
     onError: (err) => notify.error(errorMessage(err, 'Gagal membuat koridor default.')),
+  });
+}
+
+/** Preview the route's default geometry (endpoints + road-snapped mid-points) without
+ *  saving — for the editor's "build from route" action. Does not touch the cache. */
+export function usePreviewDefaultCorridor(routeId: string | null) {
+  return useMutation({
+    mutationFn: (): Promise<CorridorSeed | null> =>
+      corridorApi.previewDefault(routeId as string),
+    onError: (err) => notify.error(errorMessage(err, 'Gagal menyusun koridor dari rute.')),
   });
 }
 

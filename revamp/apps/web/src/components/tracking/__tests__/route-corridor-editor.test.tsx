@@ -28,6 +28,7 @@ const hooks = vi.hoisted(() => ({
   update: { mutate: vi.fn(), isPending: false },
   remove: { mutate: vi.fn(), isPending: false },
   backfillDefault: { mutate: vi.fn(), isPending: false },
+  preview: { mutateAsync: vi.fn().mockResolvedValue(null), isPending: false },
 }));
 
 vi.mock('@/hooks/use-corridors', () => ({
@@ -36,6 +37,7 @@ vi.mock('@/hooks/use-corridors', () => ({
   useUpdateCorridor: () => hooks.update,
   useDeleteCorridor: () => hooks.remove,
   useBackfillDefaultCorridor: () => hooks.backfillDefault,
+  usePreviewDefaultCorridor: () => hooks.preview,
 }));
 
 const ROUTE = {
