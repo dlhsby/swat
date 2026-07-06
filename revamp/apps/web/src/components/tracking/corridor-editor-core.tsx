@@ -190,6 +190,7 @@ function CorridorDrawing({
 function CorridorCanvas({
   nodes,
   path,
+  pristine,
   onBuilt,
   onAddPoint,
   onMovePoint,
@@ -197,6 +198,8 @@ function CorridorCanvas({
 }: {
   nodes: readonly CorridorWaypoint[];
   path: readonly LatLng[];
+  /** When true the stored path is shown as-is — skip re-snapping on open. */
+  pristine: boolean;
   onBuilt: (result: BuildResult) => void;
   onAddPoint: (p: LatLng) => void;
   onMovePoint: (index: number, p: LatLng) => void;
@@ -210,6 +213,9 @@ function CorridorCanvas({
   }, [routesLib]);
 
   useEffect(() => {
+    // Freshly opened / seeded geometry is already snapped — display it without firing a
+    // Directions call per segment (a 100 m corridor has dozens). Edits clear `pristine`.
+    if (pristine) return undefined;
     let cancelled = false;
     const build = async (): Promise<void> => {
       if (nodes.length < 2) {
@@ -256,7 +262,7 @@ function CorridorCanvas({
     return () => {
       cancelled = true;
     };
-  }, [nodes, routesLib, onBuilt]);
+  }, [nodes, routesLib, onBuilt, pristine]);
 
   return (
     <div className="h-[360px] overflow-hidden rounded-base border border-neutral-200">
@@ -306,6 +312,8 @@ export function CorridorEditorCore({
   onClose,
   extraFields,
   canSave = true,
+  onBuildFromRoute,
+  buildingFromRoute = false,
 }: {
   open: boolean;
   /** Changes per opened target so the canvas remounts + re-fits bounds. */
@@ -323,6 +331,14 @@ export function CorridorEditorCore({
   extraFields?: ReactNode;
   /** Gate the Save button on caller-side validity (e.g. a required name). */
   canSave?: boolean;
+  /** Seed the canvas from the route's own endpoints + road-snapped mid-points (server
+   *  preview). When provided, a "Buat dari rute" button appears. Resolves null if the
+   *  route's sites lack coordinates. */
+  onBuildFromRoute?: () => Promise<{
+    pathGeojson: GeoJsonLineString;
+    waypoints: CorridorWaypoint[];
+  } | null>;
+  buildingFromRoute?: boolean;
 }): JSX.Element {
   const t = useTranslations('corridor');
   const mapKey = useMapsApiKey();
@@ -332,6 +348,10 @@ export function CorridorEditorCore({
   const [tolerance, setTolerance] = useState<number>(150);
   const [building, setBuilding] = useState(false);
   const [warning, setWarning] = useState(false);
+  // While `pristine`, the canvas shows the stored road-snapped path as-is and does NOT
+  // re-snap on open — dense (100 m) corridors would otherwise fire dozens of Directions
+  // calls just to view them. The first user edit flips it off so edits re-route.
+  const [pristine, setPristine] = useState(false);
 
   // Snap mode for newly dropped points; a ref keeps the click handler stable.
   const [snapMode, setSnapMode] = useState(true);
@@ -345,6 +365,15 @@ export function CorridorEditorCore({
   // without persisted waypoints (shape preserved exactly).
   useEffect(() => {
     if (!open) return;
+    // Show the stored road-snapped path immediately and mark pristine so the canvas
+    // doesn't re-snap on open (only edits do).
+    if (existing?.pathGeojson) {
+      setPath(existing.pathGeojson.coordinates.map(([lng, lat]) => ({ lat, lng })));
+      setPristine(true);
+    } else {
+      setPath([]);
+      setPristine(false);
+    }
     if (existing?.waypoints && existing.waypoints.length > 0) {
       const nodes = existing.waypoints.map((w) => ({ lng: w.lng, lat: w.lat, snapped: w.snapped }));
       setNodes(nodes);
@@ -388,25 +417,41 @@ export function CorridorEditorCore({
     setWarning(result.warning);
   }, []);
 
-  const addPoint = useCallback(
-    (p: LatLng) =>
-      setNodes((prev) => [
-        ...prev,
-        { lng: round6(p.lng), lat: round6(p.lat), snapped: snapModeRef.current },
-      ]),
-    [],
-  );
-  const movePoint = useCallback(
-    (index: number, p: LatLng) =>
-      setNodes((prev) =>
-        prev.map((node, i) =>
-          i === index ? { ...node, lng: round6(p.lng), lat: round6(p.lat) } : node,
-        ),
+  const addPoint = useCallback((p: LatLng) => {
+    setPristine(false);
+    setNodes((prev) => [
+      ...prev,
+      { lng: round6(p.lng), lat: round6(p.lat), snapped: snapModeRef.current },
+    ]);
+  }, []);
+  const movePoint = useCallback((index: number, p: LatLng) => {
+    setPristine(false);
+    setNodes((prev) =>
+      prev.map((node, i) =>
+        i === index ? { ...node, lng: round6(p.lng), lat: round6(p.lat) } : node,
       ),
-    [],
-  );
-  const undo = useCallback(() => setNodes((prev) => prev.slice(0, -1)), []);
-  const clear = useCallback(() => setNodes([]), []);
+    );
+  }, []);
+  const undo = useCallback(() => {
+    setPristine(false);
+    setNodes((prev) => prev.slice(0, -1));
+  }, []);
+  const clear = useCallback(() => {
+    setPristine(false);
+    setNodes([]);
+  }, []);
+
+  // Pull the route's own endpoints + road-snapped mid-points from the server (no save)
+  // into the canvas — the "build from route" seed (e.g. Pool Menur → SPBU Dupak).
+  const buildFromRoute = useCallback(async () => {
+    if (!onBuildFromRoute) return;
+    const seed = await onBuildFromRoute();
+    if (!seed) return;
+    setPath(seed.pathGeojson.coordinates.map(([lng, lat]) => ({ lat, lng })));
+    setNodes(seed.waypoints.map((w) => ({ lng: w.lng, lat: w.lat, snapped: w.snapped })));
+    setSnapMode(seed.waypoints.every((w) => w.snapped));
+    setPristine(true); // seeded geometry is already snapped — show it, don't re-route.
+  }, [onBuildFromRoute]);
 
   // Keep the live map so the "add start/finish" buttons can drop a point at the current
   // viewport centre (the user then drags it into place) — the explicit way to start a
@@ -461,6 +506,7 @@ export function CorridorEditorCore({
                   checked={snapMode}
                   onCheckedChange={(next) => {
                     setSnapMode(next);
+                    setPristine(false);
                     // Re-apply to EVERY node, not just new ones, so flipping the
                     // switch re-routes the whole path (snap → follow roads; off →
                     // straight). This is what makes a legacy straight corridor snap.
@@ -475,6 +521,7 @@ export function CorridorEditorCore({
                   key={entityKey}
                   nodes={nodes}
                   path={path}
+                  pristine={pristine}
                   onBuilt={onBuilt}
                   onAddPoint={addPoint}
                   onMovePoint={movePoint}
@@ -494,12 +541,22 @@ export function CorridorEditorCore({
                   {t('pointCount', { count: nodes.length })}
                 </span>
                 <div className="flex flex-wrap justify-end gap-2">
-                  {nodes.length === 0 ? (
+                  {onBuildFromRoute ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => void buildFromRoute()}
+                      loading={buildingFromRoute}
+                    >
+                      <MapPinned className="h-4 w-4" aria-hidden /> {t('buildFromRoute')}
+                    </Button>
+                  ) : null}
+                  {!onBuildFromRoute && nodes.length === 0 ? (
                     <Button variant="secondary" size="sm" onClick={() => addAtCenter(0)}>
                       <MapPin className="h-4 w-4" aria-hidden /> {t('addStart')}
                     </Button>
                   ) : null}
-                  {nodes.length === 1 ? (
+                  {!onBuildFromRoute && nodes.length === 1 ? (
                     <Button variant="secondary" size="sm" onClick={() => addAtCenter(0.006)}>
                       <MapPin className="h-4 w-4" aria-hidden /> {t('addFinish')}
                     </Button>
