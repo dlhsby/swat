@@ -89,6 +89,35 @@ fires from the governed `staging` branch.
 - **Containers** run **non-root** (`USER node`); base images are **digest-pinned**; the web dotenvx key
   is a BuildKit secret (never a layer).
 
+## PostGIS prerequisite (managed Postgres)
+
+The GPS/geography features (route **corridors**, `ST_DWithin` matching, corridor length) depend on
+PostGIS **with SRID 4326 (WGS84) present in `spatial_ref_sys`**. The dev/CI/prod containers run the
+`postgis/postgis:15-*` image whose `spatial_ref_sys` ships fully populated, so this is automatic there.
+
+**On managed Postgres (the staging AWS RDS `dlhsby`) it is NOT automatic.** PostGIS can be enabled
+(functions present) while `spatial_ref_sys` is left unpopulated — every `::geography` cast then fails
+with `Cannot find SRID (4326) in spatial_ref_sys`, silently breaking corridor generation and GPS
+matching. Migration `20260706000000_ensure_spatial_ref_sys_4326` inserts the row idempotently, **but
+`spatial_ref_sys` is owned by the PostGIS extension**, so the app role (`swat`) usually lacks INSERT —
+the migration then warns and skips (non-fatal, so it never blocks `migrate deploy`). In that case run
+the INSERT once as the **RDS master** (`kpi`, password in SSM `/sekar/staging/RDS_MASTER_PASSWORD`).
+Since RDS is private, do it on the box (no tunnel needed):
+
+```bash
+# via SSM Run Command on the shared instance (i-…), master reaches RDS directly:
+docker run --rm -e PGPASSWORD="$RDS_MASTER_PASSWORD" postgres:15 \
+  psql -h dlhsby.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com -U kpi -d swat_staging \
+  -c "INSERT INTO spatial_ref_sys (srid,auth_name,auth_srid,proj4text,srtext)
+      SELECT 4326,'EPSG',4326,'+proj=longlat +datum=WGS84 +no_defs ',
+        'GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433],AUTHORITY[\"EPSG\",\"4326\"]]'
+      WHERE NOT EXISTS (SELECT 1 FROM spatial_ref_sys WHERE srid=4326);"
+```
+
+**On-prem production:** verify `SELECT count(*) FROM spatial_ref_sys WHERE srid=4326` returns 1 after
+`CREATE EXTENSION postgis` before go-live; if the prod Postgres image is the `postgis/postgis` one this
+is already satisfied.
+
 ## First-run data
 
 Staging holds the **real legacy master data, no transactions** — users, roles/permissions (reconciled
