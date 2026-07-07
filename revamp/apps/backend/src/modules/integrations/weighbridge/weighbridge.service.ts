@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
@@ -9,6 +10,7 @@ import { paginated, toSkipTake } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TripFinderService } from '../../transactions/trip-finder.service';
+import { GpsActivityRepository } from '../gps/gps-activity.repository';
 import { type ApiPrincipal } from '../types/principal';
 
 import { type ListWeighingsQueryDto } from './dto/list-weighings.query.dto';
@@ -16,7 +18,6 @@ import { type PostWeighingDto } from './dto/post-weighing.dto';
 import { type ResolveKitirDto } from './dto/resolve-kitir.dto';
 import { type UpdateWeighingDto } from './dto/update-weighing.dto';
 import { IdempotencyService } from './idempotency.service';
-import { TpaInboundLogService } from './tpa-inbound-log.service';
 import { parseIsoDate, WeighbridgeResolutionService } from './weighbridge-resolution.service';
 import { WeighbridgeValidationService } from './weighbridge-validation.service';
 import { type PermitWithVehicleAndSite } from './weighbridge.repository';
@@ -33,12 +34,14 @@ function recorderId(principal: ApiPrincipal): string | null {
 
 @Injectable()
 export class WeighbridgeService {
+  private readonly logger = new Logger(WeighbridgeService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly resolution: WeighbridgeResolutionService,
     private readonly validation: WeighbridgeValidationService,
     private readonly tripFinder: TripFinderService,
-    private readonly inboundLog: TpaInboundLogService,
+    private readonly activity: GpsActivityRepository,
     private readonly idempotency: IdempotencyService,
   ) {}
 
@@ -122,7 +125,9 @@ export class WeighbridgeService {
         wasteVolume: dto.wasteVolume ?? 0,
         actualTime,
         status: dto.verified ? 'VERIFIED' : 'DONE',
-        notes: `[Weighbridge] ${dto.notes ?? dto.cctvReference ?? ''}`.trim(),
+        notes: `[Weighbridge] ${dto.notes ?? ''}`.trim(),
+        // CCTV evidence is stored directly on the Trip.
+        cctvReference: dto.cctvReference ?? null,
         recordedById,
         updatedById: recordedById,
         // Persist the kitir→trip link (legacy jatahKitir) for historical audit.
@@ -131,17 +136,13 @@ export class WeighbridgeService {
       },
     });
 
-    await this.inboundLog.create({
-      dateLabel: dto.date,
-      date: operationDate,
-      plateNumber: dto.plateNumber,
-      depot: null,
-      grossWeight: dto.grossWeight,
-      tareWeight: dto.tareWeight,
-      netWeight: check.netWeight,
-      cctvReference: dto.cctvReference ?? null,
-      tripId: trip.id,
-    });
+    // Surface the weighing as a "timbang" (WEIGH) milestone on the GPS activity
+    // feed. Best-effort: never fail a posted weighing on an activity-write error.
+    try {
+      await this.activity.writeWeighForTrip(trip.id, operationDate);
+    } catch (err) {
+      this.logger.warn(`WEIGH activity event failed for trip ${trip.id}: ${String(err)}`);
+    }
 
     const result: WeighingResult = {
       id: trip.id,
@@ -204,18 +205,12 @@ export class WeighbridgeService {
         netWeight: check.netWeight,
         ...(dto.wasteVolume !== undefined ? { wasteVolume: dto.wasteVolume } : {}),
         ...(dto.notes !== undefined ? { notes: `[Weighbridge] ${dto.notes}`.trim() } : {}),
+        ...(dto.cctvReference !== undefined ? { cctvReference: dto.cctvReference } : {}),
         updatedById: recordedById,
         ...(dto.verified
           ? { status: 'VERIFIED', verifiedById: recordedById, verifiedAt: recordedAt }
           : {}),
       },
-    });
-
-    await this.inboundLog.updateByTripId(tripId, {
-      grossWeight,
-      tareWeight,
-      netWeight: check.netWeight,
-      ...(dto.cctvReference !== undefined ? { cctvReference: dto.cctvReference } : {}),
     });
 
     return {
@@ -259,18 +254,6 @@ export class WeighbridgeService {
       this.prisma.trip.count({ where }),
     ]);
 
-    // cctvReference lives on the linked TpaInboundLog (not the Trip); fetch the
-    // page's references in one query and map them in.
-    const tripIds = rows.map((trip) => trip.id);
-    const logs =
-      tripIds.length > 0
-        ? await this.prisma.tpaInboundLog.findMany({
-            where: { tripId: { in: tripIds } },
-            select: { tripId: true, cctvReference: true },
-          })
-        : [];
-    const cctvByTrip = new Map(logs.map((log) => [log.tripId, log.cctvReference]));
-
     const data: WeighingListItem[] = rows.map((trip) => ({
       tripId: trip.id,
       date: trip.operationDate.toISOString().slice(0, 10),
@@ -282,7 +265,8 @@ export class WeighbridgeService {
       netWeight: trip.netWeight,
       wasteVolume: trip.wasteVolume,
       status: trip.status,
-      cctvReference: cctvByTrip.get(trip.id) ?? null,
+      // cctvReference now lives directly on the Trip.
+      cctvReference: trip.cctvReference,
       recordedAt: (trip.actualTime ?? trip.updatedAt).toISOString(),
     }));
     return paginated(data, total, query);

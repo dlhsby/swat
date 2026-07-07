@@ -4,6 +4,7 @@ import { type DayStatus } from '@prisma/client';
 import { formatDateOnly, parseDateOnly } from '../../../common/dates';
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
+import { StorageService } from '../../storage/storage.service';
 import { type DailyInitResult, DailyInitService } from '../daily-init/daily-init.service';
 import {
   type HaulAssignmentDto,
@@ -66,6 +67,7 @@ export class TransactionDaysService {
   constructor(
     private readonly repo: TransactionDaysRepository,
     private readonly dailyInit: DailyInitService,
+    private readonly storage: StorageService,
   ) {}
 
   async list(
@@ -91,7 +93,7 @@ export class TransactionDaysService {
     if (!day) {
       throw new NotFoundException('Hari transaksi tidak ditemukan.');
     }
-    return this.withCctv(toDto(day));
+    return this.withGasification(toDto(day));
   }
 
   async getByDate(date: string): Promise<TransactionDayDto> {
@@ -99,28 +101,50 @@ export class TransactionDaysService {
     if (!day) {
       throw new NotFoundException('Hari transaksi tidak ditemukan.');
     }
-    return this.withCctv(toDto(day));
+    return this.withGasification(toDto(day));
   }
 
-  /** Fill each trip's `cctvReference` from the TPA weighbridge log (disposal only). */
-  private async withCctv(dto: TransactionDayDto): Promise<TransactionDayDto> {
+  /**
+   * Fill each matched disposal trip's PTSI gasification capture (presigned photo URL
+   * + entry metadata). The `disposalDestination` flag itself rides the trip mapper;
+   * only the photo/metadata need this keyed lookup. `cctvReference` is now a Trip
+   * scalar, so it is already populated by the mapper — no enrichment needed.
+   */
+  private async withGasification(dto: TransactionDayDto): Promise<TransactionDayDto> {
     const tripIds = dto.hauls.flatMap((h) =>
       h.assignments.flatMap((a) => a.trips.map((t) => t.id)),
     );
-    const logs = await this.repo.cctvByTripIds(tripIds);
-    if (logs.length === 0) {
+    const entries = await this.repo.gasificationByTripIds(tripIds);
+    if (entries.length === 0) {
       return dto;
     }
-    const byTrip = new Map(logs.map((l) => [l.tripId, l.cctvReference]));
+    const byTrip = new Map(
+      await Promise.all(
+        entries.map(async (e) => {
+          const url = e.photoObjectKey
+            ? await this.storage.getPresignedGetUrl(e.photoObjectKey)
+            : null;
+          return [
+            e.tripId,
+            {
+              gasificationPhotoUrl: url,
+              gasificationEnteredAt: e.enteredAt.toISOString(),
+              gasificationUserTally: e.userTally,
+            },
+          ] as const;
+        }),
+      ),
+    );
     return {
       ...dto,
       hauls: dto.hauls.map((haul) => ({
         ...haul,
         assignments: haul.assignments.map((assignment) => ({
           ...assignment,
-          trips: assignment.trips.map((trip) =>
-            byTrip.has(trip.id) ? { ...trip, cctvReference: byTrip.get(trip.id) ?? null } : trip,
-          ),
+          trips: assignment.trips.map((trip) => {
+            const extra = byTrip.get(trip.id);
+            return extra ? { ...trip, ...extra } : trip;
+          }),
         })),
       })),
     };

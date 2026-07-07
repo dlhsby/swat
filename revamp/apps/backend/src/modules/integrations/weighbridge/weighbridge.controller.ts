@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -9,11 +8,9 @@ import {
   Patch,
   Post,
   Query,
-  UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiConsumes, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { type PaginationMeta } from '../../../common/types/api-response';
 import { CurrentPrincipal } from '../decorators/current-principal.decorator';
@@ -31,13 +28,6 @@ import {
   type WeighingListItem,
   type WeighingResult,
 } from './weighbridge.types';
-import { type WeighingImportSummary, WeighingImportService } from './weighing-import.service';
-
-/** Minimal shape of a multer upload (no `@types/multer` dependency needed). */
-interface UploadedExcel {
-  readonly buffer: Buffer;
-  readonly originalname: string;
-}
 
 /**
  * Weighbridge integration API (Phase 4) for the TPA "Jembatan Timbang" desktop
@@ -49,10 +39,7 @@ interface UploadedExcel {
 @Controller('weighbridge')
 @UseInterceptors(ApiAuditInterceptor)
 export class WeighbridgeController {
-  constructor(
-    private readonly weighbridge: WeighbridgeService,
-    private readonly weighingImport: WeighingImportService,
-  ) {}
+  constructor(private readonly weighbridge: WeighbridgeService) {}
 
   @Post('resolve-kitir')
   @HttpCode(200)
@@ -65,7 +52,7 @@ export class WeighbridgeController {
   @Post('post-weighing')
   @WeighbridgeAuth('weighbridge:post')
   @ApiHeader({ name: 'Idempotency-Key', required: false, description: 'UUID for safe retries' })
-  @ApiOperation({ summary: 'Post a weighing → create/update DISPOSAL trip + inbound log' })
+  @ApiOperation({ summary: 'Post a weighing → create/update the DISPOSAL trip' })
   postWeighing(
     @Body() dto: PostWeighingDto,
     @CurrentPrincipal() principal: ApiPrincipal,
@@ -92,17 +79,5 @@ export class WeighbridgeController {
     @Query() query: ListWeighingsQueryDto,
   ): Promise<{ data: WeighingListItem[]; meta: PaginationMeta }> {
     return this.weighbridge.listWeighings(query);
-  }
-
-  @Post('import-excel')
-  @WeighbridgeAuth('weighbridge:post')
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Bulk-import weighings from an Excel file (parity G14)' })
-  importExcel(@UploadedFile() file?: UploadedExcel): Promise<WeighingImportSummary> {
-    if (!file?.buffer) {
-      throw new BadRequestException('Berkas Excel wajib diunggah pada field "file"');
-    }
-    return this.weighingImport.importExcel(file.buffer);
   }
 }

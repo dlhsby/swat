@@ -75,7 +75,6 @@ describe('tonnageTrend', () => {
     date,
     totalTonnageKg: kg,
     haulCount: 3,
-    tpaInboundKg: null,
   });
 
   it('maps daily rows to labelled tonne points (first point has no delta)', () => {

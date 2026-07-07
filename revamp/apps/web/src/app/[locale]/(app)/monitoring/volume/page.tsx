@@ -70,12 +70,6 @@ export default function VolumePage(): JSX.Element {
       cell: ({ row }) => formatWeight(row.original.totalTonnageKg),
     },
     { accessorKey: 'haulCount', header: t('colHauls') },
-    {
-      accessorKey: 'tpaInboundKg',
-      header: t('colTpa'),
-      cell: ({ row }) =>
-        row.original.tpaInboundKg === null ? '—' : formatWeight(row.original.tpaInboundKg),
-    },
   ];
 
   const sourceColumns: ColumnDef<TonnageBySourceRow>[] = [

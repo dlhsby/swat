@@ -164,7 +164,7 @@ async function main(): Promise<void> {
   await resyncMasters(sysUser);
 
   // TODO(T-155 — revisit with live data): incremental transactional upsert by
-  // operationDate watermark (trayek/transaksiangkutsampah/detail/sampahmasuktpa).
+  // operationDate watermark (trayek/transaksiangkutsampah/detail).
   warn('Transactional incremental sync is the live-only streamed phase (see TODO(T-155)).');
 
   const report = await reconcileKpis();

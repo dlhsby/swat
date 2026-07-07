@@ -13,7 +13,7 @@
  */
 import { join } from 'node:path';
 
-import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { hash } from 'argon2';
 
 import { getSuperadminPassword } from '../../src/common/auth/password';
@@ -38,7 +38,6 @@ import type {
   LegacyRole,
   LegacyRoute,
   LegacySite,
-  LegacyTpaInbound,
   LegacyTransactionDay,
   LegacyTrip,
   LegacyTripTemplate,
@@ -98,7 +97,6 @@ import {
   grossOrNullIfBelowTare,
   legacyTimeToDate,
   nonNegativeOrNull,
-  parseDmyDate,
   resolveLegacyUsername,
   routeDedupeKey,
   trimOrNull,
@@ -198,10 +196,10 @@ async function checkIdempotency(forceReset: boolean, includeTransactions: boolea
       // and reset their keyset watermarks so the stream restarts from the top.
       warn('Force reset: truncating transaction tables + resetting watermarks.');
       await prisma.$executeRawUnsafe(
-        `TRUNCATE TABLE "trip","haul_assignment","haul","transaction_day","tpa_inbound_log"
+        `TRUNCATE TABLE "trip","haul_assignment","haul","transaction_day"
          RESTART IDENTITY CASCADE`,
       );
-      for (const key of ['transaction_day', 'haul', 'haul_assignment', 'trip', 'tpa_inbound_log']) {
+      for (const key of ['transaction_day', 'haul', 'haul_assignment', 'trip']) {
         writeWatermark(WATERMARK_PATH, key, 0);
       }
     }
@@ -727,8 +725,7 @@ async function migrateAggregates(sysUser: string): Promise<void> {
  *   transaksiangkutsampah       → Haul
  *   detailtransaksiangkutsampah → HaulAssignment
  *   trayek                      → Trip
- *   sampahmasuktpa              → TpaInboundLog (partitioned; raw insert)
- * The high-volume tables (TransactionDay, TpaInboundLog) stream in keyset batches
+ * The high-volume tables (TransactionDay, Trip) stream in keyset batches
  * with a resumable watermark. Idempotent: rows already present (by legacyId) are
  * skipped, so a re-run or `--resume` never duplicates.
  */
@@ -1008,63 +1005,6 @@ async function migrateTransactions(sysUser: string, flags: Flags): Promise<void>
           `20260608000100_partition_transactions range and reload to prune them properly.`,
       );
     }
-
-    // 5. sampahmasuktpa → TpaInboundLog. `operation_date` is the physical monthly
-    //    partition key (absent from the Prisma model), so insert via raw SQL.
-    //    Keyset-batched + watermarked; idempotent via the existing-legacyId set.
-    const existingTpa = new Set(
-      (
-        await prisma.tpaInboundLog.findMany({
-          where: { legacyId: { not: null } },
-          select: { legacyId: true },
-        })
-      ).map((t) => Number(t.legacyId)),
-    );
-    let tpaCount = 0;
-    let tpaSkipped = 0;
-    const tpaProgress = progressLogger('TpaInboundLog');
-    const tpaStart = flags.resume ? readWatermark(watermarkPath, 'tpa_inbound_log') : 0;
-    for await (const { rows, lastId } of keysetBatches<LegacyTpaInbound>(
-      (afterId, limit) =>
-        query(conn, 'SELECT * FROM sampahmasuktpa WHERE id > ? ORDER BY id LIMIT ?', [
-          afterId,
-          limit,
-        ]),
-      (r) => r.id,
-      flags.batchSize,
-      tpaStart,
-    )) {
-      const values = rows.flatMap((r) => {
-        if (existingTpa.has(r.id)) {
-          tpaSkipped += 1;
-          return [];
-        }
-        const date = parseDmyDate(r.tgltitle);
-        if (!date || (flags.sinceYear && date.getUTCFullYear() < flags.sinceYear)) {
-          tpaSkipped += 1;
-          return [];
-        }
-        return [
-          Prisma.sql`(${r.id}, ${r.tgltitle}, ${date}::date, ${date}::date, ${r.nopol}, ${r.lpsdepo}, ${r.trukasal}, ${r.bkotor}, ${r.bkosong}, ${r.bbersih}, now())`,
-        ];
-      });
-      // Postgres caps a prepared statement at 32767 bind variables; each row
-      // carries 10, so insert in sub-chunks well under that ceiling.
-      const ROWS_PER_INSERT = 2000;
-      for (let i = 0; i < values.length; i += ROWS_PER_INSERT) {
-        const chunk = values.slice(i, i + ROWS_PER_INSERT);
-        await prisma.$executeRaw`
-          INSERT INTO "tpa_inbound_log"
-            ("legacy_id", "date_label", "operation_date", "date", "plate_number", "depot",
-             "source_truck", "gross_weight", "tare_weight", "net_weight", "updated_at")
-          VALUES ${Prisma.join(chunk)}
-        `;
-        tpaCount += chunk.length;
-      }
-      writeWatermark(watermarkPath, 'tpa_inbound_log', lastId);
-      tpaProgress(tpaCount, lastId);
-    }
-    log(`TpaInboundLog: ${tpaCount} inserted${tpaSkipped ? `, ${tpaSkipped} skipped` : ''}`);
   } finally {
     await conn.end();
   }

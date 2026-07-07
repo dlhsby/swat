@@ -51,13 +51,6 @@ export class TonnageReportBuilder extends BaseReportBuilder {
         { header: 'Tanggal', key: 'date', width: 14, value: (r) => this.formatDate(r.date) },
         { header: 'Tonase (kg)', key: 'totalTonnageKg', width: 16, numFmt: FMT_KG },
         { header: 'Jumlah Angkut', key: 'haulCount', width: 16, numFmt: FMT_INT },
-        {
-          header: 'TPA Masuk (kg)',
-          key: 'tpaInboundKg',
-          width: 16,
-          numFmt: FMT_KG,
-          value: (r) => r.tpaInboundKg,
-        },
       ],
       data.daily,
       { totals: ['totalTonnageKg', 'haulCount'], freeze: true },

@@ -170,7 +170,6 @@ async function reconcileTransactions(
       detailDrop,
     ],
     ['trayek', () => prisma.trip.count({ where: { legacyId: { not: null } } }), tripDrop],
-    ['sampahmasuktpa', () => prisma.tpaInboundLog.count({ where: { legacyId: { not: null } } }), 0],
   ];
   for (const [table, count, drop] of txnPairs) {
     rows.push(reconcileRow(table, await safeCount(conn, table), await count(), 1, drop));

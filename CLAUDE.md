@@ -99,9 +99,10 @@ From inner `revamp/`:
   - **`seed:staging`** (root `pnpm seed:staging` → `infra/seed-legacy-from-dump.sh staging
 --with-transactions`) — stands up a throwaway MySQL from `legacy/db/dump/`, then the engine loads
     master + **full transactional history** (`--include-transactions`: haritransaksi→TransactionDay,
-    transaksiangkutsampah→Haul, detail→HaulAssignment, trayek→Trip, sampahmasuktpa→TpaInboundLog —
+    transaksiangkutsampah→Haul, detail→HaulAssignment, trayek→Trip —
     **every stage keyset-batched + watermarked with per-batch FK resolution**, so ~21M rows load at flat
-    memory). Targets the staging DB via `SEED_ENV=staging`. For UAT.
+    memory). Targets the staging DB via `SEED_ENV=staging`. For UAT. (The legacy weighbridge log
+    `sampahmasuktpa`/`TpaInboundLog` was **removed** — disposal weights + `cctvReference` live on `Trip`.)
   - **`seed:production`** (root `pnpm seed:production`) — same from `.env.production` with
     `SEED_ENV=production` + requires `--confirm-production` (the engine AND the script refuse without it).
     The real cutover.
@@ -139,7 +140,7 @@ From inner `revamp/`:
 - **Renamed entity:** `FuelQuota` → `DisposalPermit` (it is a TPA dumping permit, NOT fuel; buyer/payment deferred).
   Enum: `FuelQuotaStatus` → `DisposalPermitStatus`. Permissions: `fuel-quota:*` → `disposal-permit:*`.
   Routes: `/scheduling/fuel-quotas` → `/scheduling/disposal-permits`. UI label stays "Jatah Kitir".
-- **Partitioned tables** (`Trip`, `Haul`, `HaulAssignment`, `TpaInboundLog`) are converted to native
+- **Partitioned tables** (`Trip`, `Haul`, `HaulAssignment`) are converted to native
   monthly RANGE partitions by a raw-SQL migration (`*_partition_transactions`). PKs are UUIDs (strings);
   `legacyId` is a plain index. These are **migration-managed** — use `prisma migrate deploy`,
   **never `migrate dev`**, or Prisma reports drift.
