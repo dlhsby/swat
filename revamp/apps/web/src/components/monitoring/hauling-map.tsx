@@ -45,12 +45,16 @@ function MapOverlays({
   vehicles,
   selectedVehicleId,
   onSelectVehicle,
+  onSelectSite,
+  focusSiteId,
   trail,
 }: {
   sites: readonly RouteMapSite[];
   vehicles: readonly VehiclePosition[];
   selectedVehicleId?: string | null;
   onSelectVehicle?: (vehicleId: string) => void;
+  onSelectSite?: (siteId: string, type: string) => void;
+  focusSiteId?: string | null;
   trail?: readonly TrackPoint[];
 }): null {
   const map = useMap();
@@ -67,6 +71,7 @@ function MapOverlays({
         position: { lat: site.latitude, lng: site.longitude },
         map,
         title: `${site.name} (${style.label})`,
+        cursor: onSelectSite ? 'pointer' : undefined,
         label: { text: style.letter, color: '#ffffff', fontWeight: '700', fontSize: '11px' },
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
@@ -78,6 +83,12 @@ function MapOverlays({
         },
       });
       marker.addListener('click', () => {
+        // A consumer that wants rich per-day detail (dashboard/hauling drill-down)
+        // gets the click; otherwise fall back to the lightweight coord InfoWindow.
+        if (onSelectSite) {
+          onSelectSite(site.id, site.type);
+          return;
+        }
         infoWindow.setContent(
           `<div style="font:13px system-ui;padding:2px 0">` +
             `<strong>${site.name}</strong><br/>` +
@@ -159,7 +170,7 @@ function MapOverlays({
       });
       trailLine?.setMap(null);
     };
-  }, [map, sites, vehicles, selectedVehicleId, onSelectVehicle, trail]);
+  }, [map, sites, vehicles, selectedVehicleId, onSelectVehicle, onSelectSite, trail]);
 
   // Pan/zoom to the selected vehicle once when the selection changes.
   useEffect(() => {
@@ -172,6 +183,17 @@ function MapOverlays({
     // Intentionally only re-run on selection change, not on every positions poll.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, selectedVehicleId]);
+
+  // Pan/zoom to a searched/selected site (from the search box) when it changes.
+  useEffect(() => {
+    if (!map || !focusSiteId) return;
+    const site = sites.find((s) => s.id === focusSiteId);
+    if (site) {
+      map.panTo({ lat: site.latitude, lng: site.longitude });
+      map.setZoom(15);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, focusSiteId]);
 
   return null;
 }
@@ -260,6 +282,8 @@ export function HaulingMap({
   vehicles = [],
   selectedVehicleId,
   onSelectVehicle,
+  onSelectSite,
+  focusSiteId,
   trail,
 }: {
   sites: readonly RouteMapSite[];
@@ -267,6 +291,8 @@ export function HaulingMap({
   vehicles?: readonly VehiclePosition[];
   selectedVehicleId?: string | null;
   onSelectVehicle?: (vehicleId: string) => void;
+  onSelectSite?: (siteId: string, type: string) => void;
+  focusSiteId?: string | null;
   trail?: readonly TrackPoint[];
 }): JSX.Element {
   const t = useTranslations('monitoring.hauling');
@@ -296,6 +322,8 @@ export function HaulingMap({
             vehicles={vehicles}
             selectedVehicleId={selectedVehicleId}
             onSelectVehicle={onSelectVehicle}
+            onSelectSite={onSelectSite}
+            focusSiteId={focusSiteId}
             trail={trail}
           />
           <CurrentLocationControl />

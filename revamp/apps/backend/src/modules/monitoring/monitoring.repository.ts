@@ -4,15 +4,46 @@ import { Prisma, type TripStatus } from '@prisma/client';
 import { wibDayRangeUtc } from '../../common/dates';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { type TimeBucket } from './dto/bucket-range.query.dto';
 import {
   type DayActivityEventRow,
+  type DayStats,
+  type FuelDetailRow,
+  type FuelTrendRow,
   type RouteMapEdge,
   type RouteMapSite,
+  type SiteDaySummary,
+  type SiteDayVehicleRow,
+  type TonnageByTpsRow,
+  type TonnageByVehicleRow,
+  type TonnageDestinationRow,
   type TripSummaryRow,
 } from './monitoring.types';
 
 /** Source-group filter from the Semua / Non-Swasta / Swasta toggle (by `code`). */
 export type SourceGroupFilter = 'NON_SWASTA' | 'SWASTA' | undefined;
+
+/**
+ * A disposal trip counts as gasification when its destination flag is GASIFICATION
+ * OR its notes contain `GASIFIKASI` (case-insensitive) — the fallback covers rows
+ * the PTSI match/backfill hasn't flagged yet. COALESCE keeps the predicate boolean
+ * (never NULL) so the `NOT (...)` landfill side can't silently drop weight.
+ */
+const IS_GASIFICATION = Prisma.sql`(t."disposal_destination" = 'GASIFICATION' OR COALESCE(t."notes" ILIKE '%GASIFIKASI%', false))`;
+
+/** Realized, weighed DISPOSAL trips — the tonnage universe (mirrors the rollup). */
+const DISPOSAL_TRIP = Prisma.sql`t."status" IN ('DONE', 'VERIFIED') AND r."category" = 'DISPOSAL' AND t."net_weight" > 0`;
+
+/**
+ * `date_trunc` unit literal for a bucket. Mapped explicitly (never string-
+ * interpolated) so no caller can push arbitrary text into the SQL, even if the
+ * DTO whitelist is ever bypassed.
+ */
+function truncUnit(bucket: TimeBucket): Prisma.Sql {
+  if (bucket === 'year') return Prisma.sql`'year'`;
+  if (bucket === 'month') return Prisma.sql`'month'`;
+  return Prisma.sql`'day'`;
+}
 
 export interface DailyTonnageRecord {
   date: Date;
@@ -23,10 +54,13 @@ export interface DailyTonnageRecord {
 /**
  * Read-only aggregation queries for the monitoring API (Phase 2, Epic 2.2).
  *
- * Every query reads the rollup tables (never the partitioned trip history) so
- * dashboards stay sub-second across any range. Monthly cross-tabs are summed
- * over the months that intersect the requested date range. Thin Prisma wrapper —
- * exercised by the integration suite, excluded from unit coverage.
+ * The rollup-backed queries read the rollup tables (never the partitioned trip
+ * history) so dashboards stay sub-second across any range. The dashboard-revamp
+ * reads at the bottom of the class instead query the partitioned Trip table
+ * DIRECTLY, date-pruned — they need a gasifikasi/landfill split (and a notes
+ * fallback) the rollups don't carry, and the windows are bounded. Monthly
+ * cross-tabs are summed over the months intersecting the requested range. Thin
+ * Prisma wrapper — exercised by the integration suite, excluded from unit coverage.
  */
 @Injectable()
 export class MonitoringRepository {
@@ -538,5 +572,252 @@ export class MonitoringRepository {
       tripId: r.tripId,
       occurredAt: r.occurredAt.toISOString(),
     }));
+  }
+
+  // ── Dashboard revamp reads (live Trip/Haul, date-pruned) ──────────────────
+
+  /** The four stat-card values for one operation day (see {@link DayStats}). */
+  async dayStats(date: Date): Promise<DayStats> {
+    const [[vehicles], [disposal], [fuel]] = await Promise.all([
+      this.prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(DISTINCT "vehicle_id")::bigint AS "count"
+        FROM "haul"
+        WHERE "operation_date" = ${date}::date
+      `,
+      this.prisma.$queryRaw<Array<{ trips: bigint; tonnage: bigint }>>`
+        SELECT COUNT(t."id")::bigint                    AS "trips",
+               COALESCE(SUM(t."net_weight"), 0)::bigint AS "tonnage"
+        FROM "trip" t
+        JOIN "route" r ON r."id" = t."route_id"
+        WHERE t."operation_date" = ${date}::date AND ${DISPOSAL_TRIP}
+      `,
+      this.prisma.$queryRaw<Array<{ approved: number }>>`
+        SELECT COALESCE(SUM(t."fuel_approved_liters"), 0)::float8 AS "approved"
+        FROM "trip" t
+        JOIN "route" r ON r."id" = t."route_id"
+        WHERE t."operation_date" = ${date}::date
+          AND r."category" = 'REFUEL'
+          AND t."status" IN ('DONE', 'VERIFIED')
+      `,
+    ]);
+    return {
+      scheduledVehicles: Number(vehicles?.count ?? 0n),
+      disposalTripCount: Number(disposal?.trips ?? 0n),
+      disposalTonnageKg: Number(disposal?.tonnage ?? 0n),
+      fuelApprovedLiters: Number(fuel?.approved ?? 0),
+    };
+  }
+
+  /** Disposal tonnage split gasification/landfill, bucketed by day/month/year. */
+  async tonnageDestination(
+    from: Date,
+    to: Date,
+    bucket: TimeBucket,
+  ): Promise<TonnageDestinationRow[]> {
+    const unit = truncUnit(bucket);
+    const rows = await this.prisma.$queryRaw<
+      Array<{ bucket: Date; gasification: bigint; landfill: bigint; total: bigint }>
+    >`
+      SELECT date_trunc(${unit}, t."operation_date")::date AS "bucket",
+             COALESCE(SUM(CASE WHEN ${IS_GASIFICATION} THEN t."net_weight" ELSE 0 END), 0)::bigint       AS "gasification",
+             COALESCE(SUM(CASE WHEN NOT ${IS_GASIFICATION} THEN t."net_weight" ELSE 0 END), 0)::bigint   AS "landfill",
+             COALESCE(SUM(t."net_weight"), 0)::bigint                                                      AS "total"
+      FROM "trip" t
+      JOIN "route" r ON r."id" = t."route_id"
+      WHERE t."operation_date" >= ${from}::date AND t."operation_date" <= ${to}::date
+        AND ${DISPOSAL_TRIP}
+      GROUP BY date_trunc(${unit}, t."operation_date")
+      ORDER BY "bucket" ASC
+    `;
+    return rows.map((row) => ({
+      bucket: row.bucket.toISOString().slice(0, 10),
+      gasificationKg: Number(row.gasification),
+      landfillKg: Number(row.landfill),
+      totalKg: Number(row.total),
+    }));
+  }
+
+  /** Disposal tonnage + rit (trip count) per pickup site (TPS), ranked desc. */
+  async tonnageByTps(from: Date, to: Date): Promise<TonnageByTpsRow[]> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ siteId: string; name: string; total: bigint; rit: bigint }>
+    >`
+      SELECT r."origin_site_id"                       AS "siteId",
+             s."name"                                 AS "name",
+             COALESCE(SUM(t."net_weight"), 0)::bigint AS "total",
+             COUNT(t."id")::bigint                    AS "rit"
+      FROM "trip" t
+      JOIN "route" r ON r."id" = t."route_id"
+      JOIN "site" s  ON s."id" = r."origin_site_id"
+      WHERE t."operation_date" >= ${from}::date AND t."operation_date" <= ${to}::date
+        AND ${DISPOSAL_TRIP}
+      GROUP BY r."origin_site_id", s."name"
+      ORDER BY "total" DESC
+    `;
+    return rows.map((row) => ({
+      siteId: row.siteId,
+      name: row.name,
+      totalTonnageKg: Number(row.total),
+      rit: Number(row.rit),
+    }));
+  }
+
+  /** Disposal rit per (vehicle, pickup site) — ranked by rit then plate. */
+  async tonnageByVehicle(from: Date, to: Date): Promise<TonnageByVehicleRow[]> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{ plateNumber: string; siteId: string; siteName: string; total: bigint; rit: bigint }>
+    >`
+      SELECT v."plate_number"                         AS "plateNumber",
+             r."origin_site_id"                       AS "siteId",
+             s."name"                                 AS "siteName",
+             COALESCE(SUM(t."net_weight"), 0)::bigint AS "total",
+             COUNT(t."id")::bigint                    AS "rit"
+      FROM "trip" t
+      JOIN "route" r             ON r."id" = t."route_id"
+      JOIN "site" s              ON s."id" = r."origin_site_id"
+      JOIN "haul_assignment" ha  ON ha."operation_date" = t."operation_date"
+                                AND ha."id" = t."haul_assignment_id"
+      JOIN "haul" h              ON h."operation_date" = ha."operation_date"
+                                AND h."id" = ha."haul_id"
+      JOIN "vehicle" v           ON v."id" = h."vehicle_id"
+      WHERE t."operation_date" >= ${from}::date AND t."operation_date" <= ${to}::date
+        AND ${DISPOSAL_TRIP}
+      GROUP BY v."plate_number", r."origin_site_id", s."name"
+      ORDER BY "rit" DESC, "plateNumber" ASC
+    `;
+    return rows.map((row) => ({
+      plateNumber: row.plateNumber,
+      siteId: row.siteId,
+      siteName: row.siteName,
+      totalTonnageKg: Number(row.total),
+      rit: Number(row.rit),
+    }));
+  }
+
+  /** Fuel approved vs requested for REFUEL trips, bucketed by day/month/year. */
+  async fuelTrend(from: Date, to: Date, bucket: TimeBucket): Promise<FuelTrendRow[]> {
+    const unit = truncUnit(bucket);
+    const rows = await this.prisma.$queryRaw<
+      Array<{ bucket: Date; approved: number; requested: number }>
+    >`
+      SELECT date_trunc(${unit}, t."operation_date")::date        AS "bucket",
+             COALESCE(SUM(t."fuel_approved_liters"), 0)::float8   AS "approved",
+             COALESCE(SUM(t."fuel_requested_liters"), 0)::float8  AS "requested"
+      FROM "trip" t
+      JOIN "route" r ON r."id" = t."route_id"
+      WHERE t."operation_date" >= ${from}::date AND t."operation_date" <= ${to}::date
+        AND r."category" = 'REFUEL'
+        AND t."status" IN ('DONE', 'VERIFIED')
+      GROUP BY date_trunc(${unit}, t."operation_date")
+      ORDER BY "bucket" ASC
+    `;
+    return rows.map((row) => ({
+      bucket: row.bucket.toISOString().slice(0, 10),
+      approvedLiters: row.approved,
+      requestedLiters: row.requested,
+    }));
+  }
+
+  /** Paginated per-refuel-event rows for the BBM detail table. */
+  async fuelDetail(args: {
+    from: Date;
+    to: Date;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: FuelDetailRow[]; total: number }> {
+    const where: Prisma.TripWhereInput = {
+      operationDate: { gte: args.from, lte: args.to },
+      status: { in: ['DONE', 'VERIFIED'] },
+      route: { is: { category: 'REFUEL' } },
+    };
+    const [records, total] = await Promise.all([
+      this.prisma.trip.findMany({
+        where,
+        orderBy: [{ operationDate: 'desc' }, { id: 'desc' }],
+        skip: (args.page - 1) * args.limit,
+        take: args.limit,
+        select: {
+          id: true,
+          operationDate: true,
+          actualOdometer: true,
+          actualTime: true,
+          fuelApprovedLiters: true,
+          fuelRequestedLiters: true,
+          haulAssignment: {
+            select: {
+              haul: {
+                select: {
+                  vehicle: {
+                    select: {
+                      plateNumber: true,
+                      model: { select: { fuel: { select: { name: true } } } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+      this.prisma.trip.count({ where }),
+    ]);
+    const rows = records.map((trip) => ({
+      tripId: trip.id,
+      operationDate: trip.operationDate.toISOString().slice(0, 10),
+      plateNumber: trip.haulAssignment.haul.vehicle.plateNumber,
+      fuelName: trip.haulAssignment.haul.vehicle.model.fuel?.name ?? null,
+      requestedLiters: trip.fuelRequestedLiters === null ? null : Number(trip.fuelRequestedLiters),
+      approvedLiters: trip.fuelApprovedLiters === null ? null : Number(trip.fuelApprovedLiters),
+      odometer: trip.actualOdometer,
+      filledAt: trip.actualTime ? trip.actualTime.toISOString() : null,
+    }));
+    return { rows, total };
+  }
+
+  /**
+   * One site's disposal activity for a WIB day. A TPS aggregates trips picked up
+   * there (origin); any other site type (TPA) aggregates trips disposed there
+   * (destination). Returns null when the site doesn't exist.
+   */
+  async siteDaySummary(siteId: string, date: Date): Promise<SiteDaySummary | null> {
+    const [site] = await this.prisma.$queryRaw<Array<{ type: string }>>`
+      SELECT "type"::text AS "type" FROM "site" WHERE "id" = ${siteId}::uuid
+    `;
+    if (!site) return null;
+    // TPS → match on pickup (origin); everything else (TPA) → drop-off (destination).
+    // Fixed SQL fragments (not string interpolation) so the column can't be injected.
+    const sideColumn =
+      site.type === 'TPS' ? Prisma.sql`r."origin_site_id"` : Prisma.sql`r."destination_site_id"`;
+    const rows = await this.prisma.$queryRaw<
+      Array<{ plateNumber: string; tonnage: bigint; rit: bigint }>
+    >`
+      SELECT v."plate_number"                         AS "plateNumber",
+             COALESCE(SUM(t."net_weight"), 0)::bigint AS "tonnage",
+             COUNT(t."id")::bigint                    AS "rit"
+      FROM "trip" t
+      JOIN "route" r             ON r."id" = t."route_id"
+      JOIN "haul_assignment" ha  ON ha."operation_date" = t."operation_date"
+                                AND ha."id" = t."haul_assignment_id"
+      JOIN "haul" h              ON h."operation_date" = ha."operation_date"
+                                AND h."id" = ha."haul_id"
+      JOIN "vehicle" v           ON v."id" = h."vehicle_id"
+      WHERE t."operation_date" = ${date}::date
+        AND ${sideColumn} = ${siteId}::uuid
+        AND ${DISPOSAL_TRIP}
+      GROUP BY v."plate_number"
+      ORDER BY "tonnage" DESC
+    `;
+    const vehicles: SiteDayVehicleRow[] = rows.map((row) => ({
+      plateNumber: row.plateNumber,
+      tonnageKg: Number(row.tonnage),
+      rit: Number(row.rit),
+    }));
+    return {
+      siteId,
+      type: site.type,
+      tonnageKg: vehicles.reduce((sum, v) => sum + v.tonnageKg, 0),
+      tripCount: vehicles.reduce((sum, v) => sum + v.rit, 0),
+      vehicles,
+    };
   }
 }

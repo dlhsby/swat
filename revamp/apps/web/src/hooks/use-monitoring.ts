@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   type DateRange,
   type SourceGroup,
+  type TimeBucket,
   type TripQuery,
   monitoringApi,
 } from '@/lib/monitoring-api';
@@ -98,5 +99,59 @@ export function useLevyTrend(range: DateRange) {
   return useQuery({
     queryKey: [KEY, 'levy-trend', range],
     queryFn: () => monitoringApi.levyTrend(range),
+  });
+}
+
+// ── Dashboard revamp ────────────────────────────────────────────────────────
+
+export function useDayStats(date: string) {
+  return useQuery({
+    queryKey: [KEY, 'day-stats', date],
+    queryFn: () => monitoringApi.dayStats(date),
+  });
+}
+
+export function useTonnageDestination(range: DateRange, bucket: TimeBucket) {
+  return useQuery({
+    queryKey: [KEY, 'tonnage-destination', range, bucket],
+    queryFn: () => monitoringApi.tonnageDestination(range, bucket),
+  });
+}
+
+export function useTonnageByTps(range: DateRange) {
+  return useQuery({
+    queryKey: [KEY, 'tonnage-by-tps', range],
+    queryFn: () => monitoringApi.tonnageByTps(range),
+  });
+}
+
+export function useTonnageByVehicle(range: DateRange) {
+  return useQuery({
+    queryKey: [KEY, 'tonnage-by-vehicle', range],
+    queryFn: () => monitoringApi.tonnageByVehicle(range),
+  });
+}
+
+export function useFuelTrend(range: DateRange, bucket: TimeBucket) {
+  return useQuery({
+    queryKey: [KEY, 'fuel-trend', range, bucket],
+    queryFn: () => monitoringApi.fuelTrend(range, bucket),
+  });
+}
+
+export function useFuelDetail(range: DateRange) {
+  return useQuery({
+    queryKey: [KEY, 'fuel-detail', range],
+    // Day-scoped table: pull the whole day (up to the backend's 1000 cap) so refuels
+    // aren't silently truncated; the DataTable paginates client-side.
+    queryFn: () => monitoringApi.fuelDetail(range, 1, 1000),
+  });
+}
+
+export function useSiteDaySummary(siteId: string | null, date: string) {
+  return useQuery({
+    queryKey: [KEY, 'site-day-summary', siteId, date],
+    queryFn: () => monitoringApi.siteDaySummary(siteId as string, date),
+    enabled: siteId !== null,
   });
 }

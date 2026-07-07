@@ -142,3 +142,88 @@ export interface KpiOverview {
   readonly tripsRecorded: number;
   readonly routesActive: number;
 }
+
+/**
+ * The four dashboard stat-card values for one WIB operation day, computed from the
+ * live records (not the transaction-day tree): scheduled vehicles from `Haul`,
+ * disposal trip count + tonnage from weighed DISPOSAL trips, approved fuel from
+ * REFUEL trips.
+ */
+export interface DayStats {
+  readonly scheduledVehicles: number;
+  readonly disposalTripCount: number;
+  readonly disposalTonnageKg: number;
+  readonly fuelApprovedLiters: number;
+}
+
+/**
+ * One time-bucket of disposal tonnage, split by where the load went. A trip counts
+ * as gasification when `disposal_destination = GASIFICATION` OR its notes contain
+ * `GASIFIKASI` (the fallback for rows the PTSI match hasn't flagged yet).
+ */
+export interface TonnageDestinationRow {
+  /** Bucket start as `YYYY-MM-DD` (day/month/year truncated). */
+  readonly bucket: string;
+  readonly gasificationKg: number;
+  readonly landfillKg: number;
+  readonly totalKg: number;
+}
+
+/** Disposal tonnage + rit (disposal-trip count) for one pickup site (TPS). */
+export interface TonnageByTpsRow {
+  readonly siteId: string;
+  readonly name: string;
+  readonly totalTonnageKg: number;
+  /** rit = number of disposal trips (NOT distinct hauls). */
+  readonly rit: number;
+}
+
+/** Disposal rit for one (vehicle, pickup-site) pair — a vehicle serving 2 TPS yields 2 rows. */
+export interface TonnageByVehicleRow {
+  readonly plateNumber: string;
+  readonly siteId: string;
+  readonly siteName: string;
+  readonly totalTonnageKg: number;
+  readonly rit: number;
+}
+
+/** One time-bucket of fuel requested vs approved (REFUEL trips). */
+export interface FuelTrendRow {
+  readonly bucket: string;
+  readonly approvedLiters: number;
+  readonly requestedLiters: number;
+}
+
+/** One refuel event (REFUEL trip) for the BBM detail table. */
+export interface FuelDetailRow {
+  readonly tripId: string;
+  readonly operationDate: string;
+  readonly plateNumber: string;
+  /** Fuel type name (Solar / Bensin …) via vehicle → model → fuel. */
+  readonly fuelName: string | null;
+  readonly requestedLiters: number | null;
+  readonly approvedLiters: number | null;
+  readonly odometer: number;
+  /** ISO fill timestamp (Trip.actualTime), or null when not yet realized. */
+  readonly filledAt: string | null;
+}
+
+/** A vehicle's contribution to a site on one day (site drill-down). */
+export interface SiteDayVehicleRow {
+  readonly plateNumber: string;
+  readonly tonnageKg: number;
+  readonly rit: number;
+}
+
+/**
+ * Map site-click detail for one day: total tonnage + disposal-trip count at the
+ * site, plus the per-vehicle breakdown. For a TPS the trips are those *picked up*
+ * there (origin); for a TPA they are those *disposed* there (destination).
+ */
+export interface SiteDaySummary {
+  readonly siteId: string;
+  readonly type: string;
+  readonly tonnageKg: number;
+  readonly tripCount: number;
+  readonly vehicles: SiteDayVehicleRow[];
+}
