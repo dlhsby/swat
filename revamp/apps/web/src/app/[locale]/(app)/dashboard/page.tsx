@@ -5,13 +5,20 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
-import { MonitoringSummary } from '@/components/dashboard/monitoring-summary';
+import { DashboardMap } from '@/components/dashboard/dashboard-map';
+import { DashboardStats } from '@/components/dashboard/dashboard-stats';
+import { FuelTable } from '@/components/dashboard/fuel-table';
+import { FuelTrendChart } from '@/components/dashboard/fuel-trend-chart';
+import { OpenMonitoring } from '@/components/dashboard/open-monitoring';
+import { TonnageDestinationChart } from '@/components/dashboard/tonnage-destination-chart';
+import { TonnageTables } from '@/components/dashboard/tonnage-tables';
 import { PageHead } from '@/components/shell/page-head';
 import {
   Alert,
   Button,
   Card,
   CardContent,
+  DatePicker,
   MetricCard,
   Skeleton,
   StatusPill,
@@ -51,7 +58,9 @@ export default function DashboardPage(): JSX.Element {
   const { user } = useAuth();
   const router = useRouter();
   const { can } = usePermissions();
+  const canMonitor = can('monitoring:read');
 
+  const [date, setDate] = useState<string>(todayWIB());
   const [day, setDay] = useState<TransactionDayDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(false);
@@ -59,10 +68,10 @@ export default function DashboardPage(): JSX.Element {
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
     try {
-      const result = await getTransactionDayByDate(todayWIB());
+      const result = await getTransactionDayByDate(date);
       setDay(result);
     } catch (err) {
-      // 404 = no day initialized yet; anything else is a real error.
+      // 404 = no day initialized for that date; anything else is a real error.
       if (!(err instanceof ApiError) || err.status !== 404) {
         notify.error(err instanceof ApiError ? err.message : 'Gagal memuat data.');
       }
@@ -70,7 +79,7 @@ export default function DashboardPage(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [date]);
 
   useEffect(() => {
     void load();
@@ -98,56 +107,74 @@ export default function DashboardPage(): JSX.Element {
   };
 
   const metrics = deriveDayMetrics(day);
+  const isToday = date === todayWIB();
+  // The schedule initializer only ever seeds *today*; hide it once today's day
+  // exists (or while we're still loading it) so it can't create a duplicate.
+  const showInitDay = isToday && !loading && day === null;
 
   return (
     <>
       <PageHead
         title={`${t(greetingKey())}, ${user?.name ?? ''}`.trim()}
-        description={`${formatDateDisplay(todayWIB())} · ${t('subtitle')}`}
-        actions={
+        description={t('subtitle')}
+      />
+
+      {/* Date picker (+ optional initializer) — right-aligned below the subtitle. */}
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+        {showInitDay ? (
           <ProtectedAction permission="transaction-day:manage">
             <Button onClick={() => void onInitialize()} loading={initializing}>
               {t('initDay')}
             </Button>
           </ProtectedAction>
-        }
-      />
+        ) : null}
+        <div className="w-44">
+          <DatePicker value={date} onValueChange={(v) => v && setDate(v)} disableFuture nav />
+        </div>
+      </div>
 
-      {/* Metric grid */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {loading ? (
-          [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28" />)
+      {/* Stat cards for the picked day. From the live records (day-stats) when the
+          user can monitor; otherwise fall back to the transaction-day tree. */}
+      <div className="mt-6">
+        {canMonitor ? (
+          <DashboardStats date={date} />
         ) : (
-          <>
-            <MetricCard
-              icon={Truck}
-              label={t('metricActiveVehicles')}
-              value={formatNumber(metrics.activeVehicles)}
-              unit={t('unitVehicles')}
-            />
-            <MetricCard
-              icon={Gauge}
-              label={t('metricRunningHauls')}
-              value={formatNumber(metrics.runningHauls)}
-              unit={t('unitHauls')}
-            />
-            <MetricCard
-              icon={Fuel}
-              label={t('metricFuelToday')}
-              value={formatFuel(metrics.fuelLiters).replace(' L', '')}
-              unit={t('unitLiters')}
-            />
-            <MetricCard
-              icon={Scale}
-              label={t('metricTonnageToday')}
-              value={formatTonnage(metrics.tonnage).replace(' ton', '')}
-              unit={t('unitTon')}
-            />
-          </>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {loading ? (
+              [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-28" />)
+            ) : (
+              <>
+                <MetricCard
+                  icon={Truck}
+                  label={t('metricActiveVehicles')}
+                  value={formatNumber(metrics.activeVehicles)}
+                  unit={t('unitVehicles')}
+                />
+                <MetricCard
+                  icon={Gauge}
+                  label={t('metricHauls')}
+                  value={formatNumber(metrics.runningHauls)}
+                  unit={t('unitHauls')}
+                />
+                <MetricCard
+                  icon={Scale}
+                  label={t('metricTonnage')}
+                  value={formatTonnage(metrics.tonnage).replace(' ton', '')}
+                  unit={t('unitTon')}
+                />
+                <MetricCard
+                  icon={Fuel}
+                  label={t('metricFuel')}
+                  value={formatFuel(metrics.fuelLiters).replace(' L', '')}
+                  unit={t('unitLiters')}
+                />
+              </>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Recent day + attention */}
+      {/* Jadwal + attention (kept as-is, reflecting the picked date). */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardContent>
@@ -197,7 +224,9 @@ export default function DashboardPage(): JSX.Element {
                   </Alert>
                 ) : null}
                 {metrics.runningHauls > 0 ? (
-                  <Alert variant="info">{metrics.runningHauls} pengangkutan sampah masih berjalan.</Alert>
+                  <Alert variant="info">
+                    {metrics.runningHauls} pengangkutan sampah masih berjalan.
+                  </Alert>
                 ) : null}
               </div>
             )}
@@ -205,9 +234,17 @@ export default function DashboardPage(): JSX.Element {
         </Card>
       </div>
 
-      {/* Cross-domain monitoring summary (month-to-date), gated by monitoring:read.
-          Mounted conditionally so its queries don't run for users without access. */}
-      {can('monitoring:read') ? <MonitoringSummary /> : null}
+      {/* Date-driven tonase & BBM analytics + embedded map, gated by monitoring:read. */}
+      {canMonitor ? (
+        <div className="mt-6 space-y-6">
+          <TonnageDestinationChart dateKey={date} />
+          <TonnageTables date={date} />
+          <FuelTrendChart dateKey={date} />
+          <FuelTable date={date} />
+          <DashboardMap date={date} />
+          <OpenMonitoring />
+        </div>
+      ) : null}
     </>
   );
 }

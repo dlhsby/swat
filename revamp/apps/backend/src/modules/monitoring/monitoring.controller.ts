@@ -4,8 +4,11 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
 import { type PaginationMeta } from '../../common/types/api-response';
 
+import { BucketRangeQueryDto } from './dto/bucket-range.query.dto';
 import { DateRangeQueryDto } from './dto/date-range.query.dto';
 import { DayActivityQueryDto } from './dto/day-activity.query.dto';
+import { DayQueryDto } from './dto/day.query.dto';
+import { FuelDetailQueryDto } from './dto/fuel-detail.query.dto';
 import { FuelConsumptionQueryDto } from './dto/fuel.query.dto';
 import { TonnageBySourceQueryDto } from './dto/tonnage-source.query.dto';
 import { TripSummaryQueryDto } from './dto/trip-summary.query.dto';
@@ -13,16 +16,23 @@ import { MonitoringService } from './monitoring.service';
 import {
   type DailyTonnageRow,
   type DayActivityEventRow,
+  type DayStats,
   type FuelByTypeRow,
   type FuelConsumptionRow,
+  type FuelDetailRow,
+  type FuelTrendRow,
   type KpiOverview,
   type LevySummaryRow,
   type LevyTrendRow,
   type MonthlyTonnageRow,
   type RouteActivityRow,
   type RouteMapResponse,
+  type SiteDaySummary,
+  type TonnageByTpsRow,
+  type TonnageByVehicleRow,
   type TonnageBySiteRow,
   type TonnageBySourceRow,
+  type TonnageDestinationRow,
   type TripSummaryRow,
 } from './monitoring.types';
 
@@ -106,6 +116,55 @@ export class MonitoringController {
   @ApiOperation({ summary: 'Combined KPI tiles for the monitoring header' })
   kpiOverview(@Query() query: DateRangeQueryDto): Promise<KpiOverview> {
     return this.monitoring.kpiOverview(query);
+  }
+
+  @Get('day-stats')
+  @ApiOperation({ summary: 'Dashboard stat cards for one day (vehicles/pengangkutan/tonase/BBM)' })
+  dayStats(@Query() query: DayQueryDto): Promise<DayStats> {
+    return this.monitoring.dayStats(query);
+  }
+
+  @Get('tonnage-destination')
+  @ApiOperation({
+    summary: 'Disposal tonnage split gasifikasi/landfill, bucketed by day/month/year',
+  })
+  tonnageDestination(@Query() query: BucketRangeQueryDto): Promise<TonnageDestinationRow[]> {
+    return this.monitoring.tonnageDestination(query);
+  }
+
+  @Get('tonnage-by-tps')
+  @ApiOperation({ summary: 'Disposal tonnage + rit per pickup site (TPS)' })
+  tonnageByTps(@Query() query: DateRangeQueryDto): Promise<TonnageByTpsRow[]> {
+    return this.monitoring.tonnageByTps(query);
+  }
+
+  @Get('tonnage-by-vehicle')
+  @ApiOperation({ summary: 'Disposal rit per vehicle and pickup site' })
+  tonnageByVehicle(@Query() query: DateRangeQueryDto): Promise<TonnageByVehicleRow[]> {
+    return this.monitoring.tonnageByVehicle(query);
+  }
+
+  @Get('fuel-trend')
+  @ApiOperation({ summary: 'Fuel approved vs requested, bucketed by day/month/year' })
+  fuelTrend(@Query() query: BucketRangeQueryDto): Promise<FuelTrendRow[]> {
+    return this.monitoring.fuelTrend(query);
+  }
+
+  @Get('fuel-detail')
+  @ApiOperation({ summary: 'Paginated per-refuel-event rows for the BBM detail table' })
+  fuelDetail(
+    @Query() query: FuelDetailQueryDto,
+  ): Promise<{ data: FuelDetailRow[]; meta: PaginationMeta }> {
+    return this.monitoring.fuelDetail(query);
+  }
+
+  @Get('sites/:siteId/day-summary')
+  @ApiOperation({ summary: "A site's disposal activity for one day (map drill-down)" })
+  siteDaySummary(
+    @Param('siteId', new ParseUUIDPipe()) siteId: string,
+    @Query() query: DayQueryDto,
+  ): Promise<SiteDaySummary | null> {
+    return this.monitoring.siteDaySummary(siteId, query);
   }
 
   @Get('levy-summary')
