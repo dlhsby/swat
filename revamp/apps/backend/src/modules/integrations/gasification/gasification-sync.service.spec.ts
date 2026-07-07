@@ -155,6 +155,28 @@ describe('GasificationSyncService', () => {
     });
   });
 
+  describe('per-plate querying (PTSI needs nopol + tanggal)', () => {
+    it('queries PTSI once per distinct unmatched (LANDFILL) plate', async () => {
+      repo.disposalTripsForDate.mockResolvedValue([
+        trip('t1', 'L 9647 CM', '2026-05-07T06:00:00Z'), // LANDFILL
+        trip('t2', 'L9647CM', '2026-05-07T09:00:00Z'), // same plate normalized → 1 query
+        trip('t3', 'B1234XY', '2026-05-07T06:00:00Z'), // different plate
+        trip('t4', 'N5555ZZ', '2026-05-07T06:00:00Z', 'GASIFICATION'), // matched → skipped
+      ]);
+
+      await service.syncDate('2026-05-07');
+
+      const platesQueried = client.fetchByDate.mock.calls.map((c) => c[1]).sort();
+      expect(platesQueried).toEqual(['B1234XY', 'L9647CM']);
+    });
+
+    it('queries only the requested plate when nopol is given', async () => {
+      await service.syncDate('2026-05-07', 'L 9647 CM');
+      expect(client.fetchByDate).toHaveBeenCalledTimes(1);
+      expect(client.fetchByDate).toHaveBeenCalledWith('2026-05-07', 'L9647CM');
+    });
+  });
+
   describe('photo storage (dedup)', () => {
     it('downloads + stores the photo for a new entry, then records the key', async () => {
       client.fetchByDate.mockResolvedValue([makeRecord()]);
@@ -171,7 +193,7 @@ describe('GasificationSyncService', () => {
         contentType: 'image/jpeg',
       });
 
-      await service.syncDate('2026-05-07');
+      await service.syncDate('2026-05-07', 'L9647CM');
 
       expect(storage.uploadObject).toHaveBeenCalledTimes(1);
       expect(repo.setPhoto).toHaveBeenCalledWith(
@@ -191,7 +213,7 @@ describe('GasificationSyncService', () => {
         enteredAt: new Date('2026-05-07T07:00:00Z'),
       });
 
-      await service.syncDate('2026-05-07');
+      await service.syncDate('2026-05-07', 'L9647CM');
 
       expect(client.downloadPhoto).not.toHaveBeenCalled();
       expect(storage.uploadObject).not.toHaveBeenCalled();

@@ -67,24 +67,45 @@ export class GasificationSyncService {
   /**
    * Pull + persist + match PTSI records for one WIB date. Upserts every record
    * (idempotent), downloads each new photo to MinIO, then matches still-unmatched
-   * entries to DISPOSAL trips. Optionally narrowed to one plate.
+   * entries to DISPOSAL trips.
+   *
+   * PTSI's `/cari` requires BOTH `nopol` AND `tanggal` — a date-only query returns
+   * nothing — so we query per plate: the one requested, or (auto) every plate that
+   * still has an unmatched (LANDFILL) disposal trip that day. Matched plates drop out,
+   * so the call volume shrinks as the day's disposals resolve.
    */
   async syncDate(dateKey: string, nopol?: string): Promise<GasificationSyncResult> {
-    const records = await this.client.fetchByDate(dateKey, nopol);
+    const operationDate = parseDateOnly(dateKey);
+    const trips = await this.repo.disposalTripsForDate(operationDate);
+    const plates = nopol
+      ? [normalizePlate(nopol)].filter(Boolean)
+      : [
+          ...new Set(
+            trips
+              .filter((t) => t.disposalDestination === 'LANDFILL')
+              .map((t) => normalizePlate(t.plateNumber))
+              .filter(Boolean),
+          ),
+        ];
+
+    let fetched = 0;
     let upserted = 0;
-    for (const record of records) {
-      const entry = await this.repo.upsert(record);
-      upserted += 1;
-      if (!entry.photoObjectKey) {
-        await this.storePhoto(entry.id, record);
+    for (const plate of plates) {
+      const records = await this.client.fetchByDate(dateKey, plate);
+      fetched += records.length;
+      for (const record of records) {
+        const entry = await this.repo.upsert(record);
+        upserted += 1;
+        if (!entry.photoObjectKey) {
+          await this.storePhoto(entry.id, record);
+        }
       }
     }
 
-    const operationDate = parseDateOnly(dateKey);
-    const matched = await this.matchDate(operationDate);
+    const matched = await this.matchDate(operationDate, trips);
     // `skipped` = records the client dropped as malformed before they reached us.
     const skipped = 0;
-    return { date: dateKey, fetched: records.length, upserted, matched, skipped };
+    return { date: dateKey, fetched, upserted, matched, skipped };
   }
 
   /** Paginated review list, each entry with a short-lived presigned photo URL. */
@@ -160,11 +181,12 @@ export class GasificationSyncService {
   }
 
   /** Match every still-unmatched entry for a day to its closest unclaimed DISPOSAL trip. */
-  private async matchDate(operationDate: Date): Promise<number> {
-    const [unmatched, trips] = await Promise.all([
-      this.repo.findUnmatchedByDate(operationDate),
-      this.repo.disposalTripsForDate(operationDate),
-    ]);
+  private async matchDate(
+    operationDate: Date,
+    tripsArg?: DisposalTripCandidate[],
+  ): Promise<number> {
+    const unmatched = await this.repo.findUnmatchedByDate(operationDate);
+    const trips = tripsArg ?? (await this.repo.disposalTripsForDate(operationDate));
     if (unmatched.length === 0 || trips.length === 0) {
       return 0;
     }

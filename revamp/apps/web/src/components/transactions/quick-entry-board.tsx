@@ -1,7 +1,7 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { ChevronDown, Download, Spline, Trash2 } from 'lucide-react';
+import { ChevronDown, Download, RefreshCw, Spline, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ProtectedAction } from '@/components/auth/protected-action';
@@ -42,6 +42,7 @@ import { type ExportColumn, exportActivity } from '@/lib/activity-export';
 import { ApiError } from '@/lib/api-error';
 import { combineDateTimeWIB, nowTimeWIB } from '@/lib/dates';
 import { formatDateDisplay, formatNumber, formatTime } from '@/lib/format';
+import { gasificationApi } from '@/lib/gasification-api';
 import {
   type BoardRouteDto,
   type VehicleDto,
@@ -170,6 +171,7 @@ export function QuickEntryBoard({
   const [vehicles, setVehicles] = useState<VehicleDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncingGas, setSyncingGas] = useState(false);
 
   // Form state. The realization datetime is `date` (operation day) + `time`.
   const [vehicleId, setVehicleId] = useState('');
@@ -202,6 +204,24 @@ export function QuickEntryBoard({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Pull PTSI gasification records for the day currently shown in the recap (the
+  // "rekap tanggal"), match them to disposal trips, then reload so the Tujuan badge
+  // + photo appear. Lets an operator fill yesterday's data by moving the date first.
+  const syncGasifikasi = useCallback(async (): Promise<void> => {
+    setSyncingGas(true);
+    try {
+      const result = await gasificationApi.syncNow({ date });
+      notify.success(
+        `Sinkron gasifikasi ${date}: ${result.upserted} catatan, ${result.matched} tercocok baru.`,
+      );
+      await load();
+    } catch {
+      notify.error('Sinkronisasi gasifikasi gagal. Pastikan kredensial PTSI sudah diatur.');
+    } finally {
+      setSyncingGas(false);
+    }
+  }, [date, load]);
 
   // Routes & vehicles are date-independent master data — fetch once. Routes use
   // the slim board endpoint (one small request) rather than paging the full table.
@@ -432,6 +452,33 @@ export function QuickEntryBoard({
               enableColumnFilter: false,
               meta: { label: 'CCTV TPA' },
               cell: ({ row }) => <CctvTpaCell reference={row.original.cctvReference} />,
+            },
+            // Gasification detail — hidden by default; toggle on via the column menu.
+            {
+              id: 'Tanggal Gasifikasi',
+              accessorFn: (r) =>
+                r.gasificationEnteredAt ? formatDateDisplay(r.gasificationEnteredAt) : '',
+              header: 'Tanggal Gasifikasi',
+              enableSorting: false,
+              enableColumnFilter: false,
+              meta: { label: 'Tanggal Gasifikasi', defaultHidden: true },
+            },
+            {
+              id: 'Jam Gasifikasi',
+              accessorFn: (r) =>
+                r.gasificationEnteredAt ? formatTime(r.gasificationEnteredAt) : '',
+              header: 'Jam Gasifikasi',
+              enableSorting: false,
+              enableColumnFilter: false,
+              meta: { label: 'Jam Gasifikasi', defaultHidden: true },
+            },
+            {
+              id: 'Petugas Gasifikasi',
+              accessorFn: (r) => r.gasificationUserTally ?? '',
+              header: 'Petugas Gasifikasi',
+              enableSorting: false,
+              enableColumnFilter: false,
+              meta: { label: 'Petugas Gasifikasi', defaultHidden: true },
             },
           ]
         : kind === 'REFUEL'
@@ -968,21 +1015,37 @@ export function QuickEntryBoard({
         onRefresh={() => void load()}
         refreshing={loading}
         actions={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4" aria-hidden />
-                Ekspor Laporan
-                <ChevronDown className="h-4 w-4" aria-hidden />
+          <>
+            {kind === 'DISPOSAL' && can('gasification:sync') ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void syncGasifikasi()}
+                loading={syncingGas}
+                title="Tarik data armada masuk gasifikasi (PT SI) untuk tanggal rekap ini"
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden />
+                Sinkron Gasifikasi
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => void onExport('xlsx')}>
-                Excel (.xlsx)
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => void onExport('pdf')}>PDF (.pdf)</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            ) : null}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="h-4 w-4" aria-hidden />
+                  Ekspor Laporan
+                  <ChevronDown className="h-4 w-4" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => void onExport('xlsx')}>
+                  Excel (.xlsx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => void onExport('pdf')}>
+                  PDF (.pdf)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         }
       />
 

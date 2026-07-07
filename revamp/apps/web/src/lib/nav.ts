@@ -112,12 +112,6 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         icon: BellRing,
         permission: 'deviation-alert:read',
       },
-      {
-        key: 'gasifikasi',
-        href: '/monitoring/gasifikasi',
-        icon: Flame,
-        permission: 'gasification:read',
-      },
     ],
   },
   {
@@ -179,6 +173,12 @@ export const NAV_GROUPS: readonly NavGroup[] = [
         href: '/disposal-permits',
         icon: Ticket,
         permission: 'disposal-permit:read',
+      },
+      {
+        key: 'gasifikasi',
+        href: '/gasifikasi',
+        icon: Flame,
+        permission: 'gasification:read',
       },
     ],
   },
