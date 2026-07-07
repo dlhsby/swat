@@ -162,6 +162,11 @@ export const PERMISSION_KEYS: readonly string[] = [
   'deviation-alert:read',
   'deviation-alert:acknowledge',
   'tracking:read',
+  // Gasification integration (PT Surveyor Indonesia). Reviewing pulled records +
+  // triggering a sync + manually matching a record to a disposal trip.
+  'gasification:read',
+  'gasification:sync',
+  'gasification:match',
   'system-config:manage',
 ];
 
@@ -179,6 +184,8 @@ const ACTION_LABELS: Readonly<Record<string, string>> = {
   acknowledge: 'acknowledge',
   resolve: 'resolve',
   post: 'post',
+  sync: 'sync',
+  match: 'match',
   'record-pickup': 'record pickup for',
   'record-disposal': 'record disposal for',
   'record-fuel': 'record fuel for',

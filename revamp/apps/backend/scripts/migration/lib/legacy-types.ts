@@ -166,18 +166,6 @@ export interface LegacyNameMapRow {
   swat: string | null;
 }
 
-export interface LegacyTpaInbound {
-  id: number;
-  tgltitle: string | null;
-  tgl: number | null;
-  nopol: string | null;
-  lpsdepo: string | null;
-  trukasal: string | null;
-  bkotor: number | null;
-  bkosong: number | null;
-  bbersih: number | null;
-}
-
 // --- Transactional history (the `--include-transactions` phase) ------------
 
 /** `haritransaksi` → TransactionDay. */

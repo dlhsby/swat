@@ -64,7 +64,6 @@ describe('Weighbridge API (e2e)', () => {
 
   afterAll(async () => {
     if (fx) {
-      await prisma.tpaInboundLog.deleteMany({ where: { plateNumber: fx.plateNumber } });
       if (createdTripIds.length > 0) {
         await prisma.trip.deleteMany({ where: { id: { in: createdTripIds } } });
       }
@@ -128,7 +127,7 @@ describe('Weighbridge API (e2e)', () => {
       .expect(404);
   });
 
-  it('posts a weighing: 201, server-computed net, Trip DONE, TpaInboundLog created', async () => {
+  it('posts a weighing: 201, server-computed net, Trip DONE, cctvReference on Trip', async () => {
     if (!fx) {
       return;
     }
@@ -153,9 +152,8 @@ describe('Weighbridge API (e2e)', () => {
     expect(trip?.netWeight).toBe(2000);
     // The kitir→trip link (legacy jatahKitir) is persisted for audit.
     expect(trip?.disposalPermitId).toBe(fx.permitId);
-
-    const log = await prisma.tpaInboundLog.findFirst({ where: { tripId: res.body.data.tripId } });
-    expect(log?.netWeight).toBe(2000);
+    // CCTV evidence is stored directly on the Trip (no separate inbound log).
+    expect(trip?.cctvReference).toBe('CCTV-E2E-001');
   });
 
   it('422 when gross < tare', async () => {
@@ -192,7 +190,7 @@ describe('Weighbridge API (e2e)', () => {
       .expect(409);
   });
 
-  it('is idempotent: same Idempotency-Key returns the same result with no duplicate log', async () => {
+  it('is idempotent: same Idempotency-Key returns the same result with no duplicate trip', async () => {
     if (!fx) {
       return;
     }
@@ -221,10 +219,9 @@ describe('Weighbridge API (e2e)', () => {
       .expect(201);
     expect(second.body.data.tripId).toBe(first.body.data.tripId);
 
-    const logs = await prisma.tpaInboundLog.count({
-      where: { tripId: first.body.data.tripId, netWeight: 2800 },
-    });
-    expect(logs).toBe(1);
+    // No duplicate disposal trip was created for the retried post.
+    const trip = await prisma.trip.findUnique({ where: { id: first.body.data.tripId } });
+    expect(trip?.netWeight).toBe(2800);
   });
 
   it('lists weighings (200) and patches/verifies one (200)', async () => {

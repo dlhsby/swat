@@ -1,7 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { MapPin, Navigation, RotateCcw, Scale, Undo2 } from 'lucide-react';
+import { MapPin, Navigation, Plug, RotateCcw, Scale, Undo2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -13,7 +13,16 @@ import {
 } from '@/components/settings/deviation-rules-control';
 import { SettingsNavButton } from '@/components/settings/settings-nav-button';
 import { SettingsSaveBar } from '@/components/settings/settings-save-bar';
-import { Button, Card, CardContent, InfoHint, Input, Spinner, Switch, notify } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  InfoHint,
+  Input,
+  Spinner,
+  Switch,
+  notify,
+} from '@/components/ui';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useSystemConfig } from '@/hooks/use-system-config';
 import { useDeviationRules } from '@/hooks/use-tracking';
@@ -70,11 +79,37 @@ const GROUPS: readonly GroupDef[] = [
       { id: 'deviation', requires: 'deviation', deviation: true },
     ],
   },
-  { id: 'maps', icon: MapPin, cards: [{ id: 'maps', requires: 'config', keys: ['maps.serverKey', 'maps.browserKey'] }] },
+  {
+    id: 'maps',
+    icon: MapPin,
+    cards: [{ id: 'maps', requires: 'config', keys: ['maps.serverKey', 'maps.browserKey'] }],
+  },
   {
     id: 'weighbridge',
     icon: Scale,
     cards: [{ id: 'weighbridge', requires: 'config', keys: ['weighbridge.rateLimitPerMin'] }],
+  },
+  {
+    id: 'thirdParty',
+    icon: Plug,
+    cards: [
+      {
+        id: 'gasifikasi',
+        requires: 'config',
+        keys: [
+          'gasification.enabled',
+          'gasification.baseUrl',
+          'gasification.apiKey',
+          'gasification.photoBaseUrl',
+          'gasification.pullIntervalMin',
+          'gasification.lookbackDays',
+          'gasification.matchBeforeMin',
+          'gasification.matchAfterMin',
+          'gasification.maxRequestsPerMin',
+          'gasification.requeryCooldownMin',
+        ],
+      },
+    ],
   },
 ];
 
@@ -110,7 +145,9 @@ interface ConfigRowProps {
  * the API's catalog label as a fallback for keys not yet translated. */
 function ConfigRow({ item, staged, onStage, onRevert, onUndo }: ConfigRowProps): JSX.Element {
   const t = useTranslations('settings');
-  const label = t.has(`sys.fields.${item.key}.label`) ? t(`sys.fields.${item.key}.label`) : item.label;
+  const label = t.has(`sys.fields.${item.key}.label`)
+    ? t(`sys.fields.${item.key}.label`)
+    : item.label;
   const help = t.has(`sys.fields.${item.key}.help`) ? t(`sys.fields.${item.key}.help`) : item.help;
 
   const isStaged = staged !== undefined;
@@ -263,10 +300,14 @@ export function SystemConfigSection(): JSX.Element | null {
   const groupHasDeviation = (g: GroupDef): boolean =>
     canDeviation && g.cards.some((c) => c.requires === 'deviation');
   const groupDirtyCount = (g: GroupDef): number =>
-    configKeysOf(g).filter((k) => pending.has(k)).length + (groupHasDeviation(g) ? pendingRules.size : 0);
+    configKeysOf(g).filter((k) => pending.has(k)).length +
+    (groupHasDeviation(g) ? pendingRules.size : 0);
 
   const groups = useMemo(
-    () => GROUPS.filter((g) => g.cards.some((c) => (c.requires === 'config' ? canConfig : canDeviation))),
+    () =>
+      GROUPS.filter((g) =>
+        g.cards.some((c) => (c.requires === 'config' ? canConfig : canDeviation)),
+      ),
     [canConfig, canDeviation],
   );
 
@@ -366,89 +407,92 @@ export function SystemConfigSection(): JSX.Element | null {
           aria-label={t('systemTitle')}
           className="h-fit overflow-hidden rounded-lg border border-neutral-200 bg-neutral-0"
         >
-        {groups.map((group) => {
-          const isActive = active?.id === group.id;
-          const keys = configKeysOf(group);
-          const dirty = groupDirtyCount(group);
-          return (
-            <SettingsNavButton
-              key={group.id}
-              icon={group.icon}
-              label={t(`sys.groups.${group.id}.label`)}
-              help={t(`sys.groups.${group.id}.help`)}
-              active={isActive}
-              right={
-                dirty > 0 ? (
-                  <span
-                    className="shrink-0 rounded-full bg-amber-500 px-1.5 text-[11px] font-semibold text-white"
-                    title={t('sys.unsavedCount', { count: dirty })}
-                  >
-                    {dirty}
-                  </span>
-                ) : keys.length > 0 ? (
-                  <span
-                    className={cn(
-                      'shrink-0 whitespace-nowrap font-mono text-[11px]',
-                      isActive ? 'text-white/75' : 'text-neutral-400',
-                    )}
-                  >
-                    {t('sys.settingsCount', { count: keys.length })}
-                  </span>
-                ) : undefined
-              }
-              onSelect={() => setSelected(group.id)}
-            />
-          );
-        })}
-      </nav>
+          {groups.map((group) => {
+            const isActive = active?.id === group.id;
+            const keys = configKeysOf(group);
+            const dirty = groupDirtyCount(group);
+            return (
+              <SettingsNavButton
+                key={group.id}
+                icon={group.icon}
+                label={t(`sys.groups.${group.id}.label`)}
+                help={t(`sys.groups.${group.id}.help`)}
+                active={isActive}
+                right={
+                  dirty > 0 ? (
+                    <span
+                      className="shrink-0 rounded-full bg-amber-500 px-1.5 text-[11px] font-semibold text-white"
+                      title={t('sys.unsavedCount', { count: dirty })}
+                    >
+                      {dirty}
+                    </span>
+                  ) : keys.length > 0 ? (
+                    <span
+                      className={cn(
+                        'shrink-0 whitespace-nowrap font-mono text-[11px]',
+                        isActive ? 'text-white/75' : 'text-neutral-400',
+                      )}
+                    >
+                      {t('sys.settingsCount', { count: keys.length })}
+                    </span>
+                  ) : undefined
+                }
+                onSelect={() => setSelected(group.id)}
+              />
+            );
+          })}
+        </nav>
 
-      {/* Detail: one card per sub-section + a per-group save bar */}
-      <div className="space-y-4">
-        {hasConfigCard ? (
-          <p className="rounded-base bg-neutral-50 px-3 py-2 text-tiny text-neutral-500">
-            {t.rich('sys.legend', { b: (c) => <b className="text-neutral-700">{c}</b> })}
-          </p>
-        ) : null}
+        {/* Detail: one card per sub-section + a per-group save bar */}
+        <div className="space-y-4">
+          {hasConfigCard ? (
+            <p className="rounded-base bg-neutral-50 px-3 py-2 text-tiny text-neutral-500">
+              {t.rich('sys.legend', { b: (c) => <b className="text-neutral-700">{c}</b> })}
+            </p>
+          ) : null}
 
-        {cards.map((card) => (
-          <Card key={card.id}>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="text-h3 text-neutral-900">{t(`sys.cards.${card.id}.title`)}</h3>
-                <p className="mt-1 text-body-sm text-neutral-500">{t(`sys.cards.${card.id}.help`)}</p>
-              </div>
-              <div className="space-y-2">
-                {card.requires === 'deviation' ? (
-                  <DeviationRulesControl
-                    rules={rules}
-                    isLoading={rulesLoading}
-                    isError={rulesError}
-                    staged={pendingRules}
-                    onStage={stageRule}
-                  />
-                ) : (
-                  card.keys
-                    .map((k) => byKey.get(k))
-                    .filter((item): item is ConfigDescription => item !== undefined)
-                    .map((item) => (
-                      <ConfigRow
-                        key={item.key}
-                        item={item}
-                        staged={
-                          pending.has(item.key) ? (pending.get(item.key) as string | null) : undefined
-                        }
-                        onStage={stage}
-                        onRevert={revert}
-                        onUndo={undo}
-                      />
-                    ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-      </div>
+          {cards.map((card) => (
+            <Card key={card.id}>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="text-h3 text-neutral-900">{t(`sys.cards.${card.id}.title`)}</h3>
+                  <p className="mt-1 text-body-sm text-neutral-500">
+                    {t(`sys.cards.${card.id}.help`)}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {card.requires === 'deviation' ? (
+                    <DeviationRulesControl
+                      rules={rules}
+                      isLoading={rulesLoading}
+                      isError={rulesError}
+                      staged={pendingRules}
+                      onStage={stageRule}
+                    />
+                  ) : (
+                    card.keys
+                      .map((k) => byKey.get(k))
+                      .filter((item): item is ConfigDescription => item !== undefined)
+                      .map((item) => (
+                        <ConfigRow
+                          key={item.key}
+                          item={item}
+                          staged={
+                            pending.has(item.key)
+                              ? (pending.get(item.key) as string | null)
+                              : undefined
+                          }
+                          onStage={stage}
+                          onRevert={revert}
+                          onUndo={undo}
+                        />
+                      ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {saveable && active ? (

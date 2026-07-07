@@ -29,10 +29,17 @@ export interface TripDto {
   readonly destinationSiteName: string | null;
   readonly name: string;
   readonly notes: string | null;
-  /** CCTV reference from the TPA weighbridge log (disposal only); null otherwise.
-   *  Sourced from `TpaInboundLog` (no Prisma relation on the partitioned Trip), so
-   *  it is filled by the read path, not this mapper. */
+  /** CCTV/photo reference for a disposal weighing (disposal only); null otherwise.
+   *  A scalar on the Trip, filled by this mapper. */
   readonly cctvReference: string | null;
+  /** Where the disposal load went: LANDFILL (default) or GASIFICATION (PTSI match). */
+  readonly disposalDestination: string;
+  /** PTSI gasification capture, when this disposal matched a gasification record.
+   *  Filled by the read path (`withGasification`) since the photo URL is presigned
+   *  and the metadata lives on `GasificationEntry`, not the Trip. */
+  readonly gasificationPhotoUrl: string | null;
+  readonly gasificationEnteredAt: string | null;
+  readonly gasificationUserTally: string | null;
   readonly status: string;
   readonly operationDate: string;
   readonly targetTime: string | null;
@@ -75,7 +82,11 @@ export function toTripDto(trip: TripWithRefs): TripDto {
     destinationSiteName: trip.route?.destinationSite.name ?? null,
     name: trip.name,
     notes: trip.notes,
-    cctvReference: null,
+    cctvReference: trip.cctvReference,
+    disposalDestination: trip.disposalDestination,
+    gasificationPhotoUrl: null,
+    gasificationEnteredAt: null,
+    gasificationUserTally: null,
     status: trip.status,
     operationDate: trip.operationDate.toISOString().slice(0, 10),
     targetTime: trip.targetTime?.toISOString() ?? null,

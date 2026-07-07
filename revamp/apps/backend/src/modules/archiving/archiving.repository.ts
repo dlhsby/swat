@@ -14,7 +14,7 @@ import { type PartitionRef } from './archiving.types';
 const exec = promisify(execFile);
 
 /** Parent partitioned tables whose monthly children are archivable. */
-const PARENT_TABLES = ['Trip', 'Haul', 'HaulAssignment', 'TpaInboundLog'] as const;
+const PARENT_TABLES = ['Trip', 'Haul', 'HaulAssignment'] as const;
 
 /** Resolve a child partition's parent table from its `<lowerparent>_yYYYYmMM` name. */
 function parentOf(childTable: string): string | undefined {
@@ -51,7 +51,7 @@ export class ArchivingRepository {
       FROM pg_inherits
       JOIN pg_class parent ON parent.oid = pg_inherits.inhparent
       JOIN pg_class child  ON child.oid  = pg_inherits.inhrelid
-      WHERE parent.relname IN ('trip', 'haul', 'haul_assignment', 'tpa_inbound_log')
+      WHERE parent.relname IN ('trip', 'haul', 'haul_assignment')
         AND child.relname ~ '_y[0-9]{4}m[0-9]{2}$'
     `;
     return rows

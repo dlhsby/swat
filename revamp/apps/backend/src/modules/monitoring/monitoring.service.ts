@@ -48,20 +48,12 @@ export class MonitoringService {
   async tonnage5Day(query: DateRangeQueryDto): Promise<DailyTonnageRow[]> {
     const { from, to } = this.range(query);
     return this.cached(this.key('tonnage-5day', query), TTL_DEFAULT, async () => {
-      const [daily, tpa] = await Promise.all([
-        this.repo.dailyTonnage(from, to),
-        this.repo.tpaInboundByDate(from, to),
-      ]);
-      const tpaByDate = new Map(tpa.map((row) => [formatDateOnly(row.date), row.tpaInboundKg]));
-      return daily.map((row) => {
-        const dateStr = formatDateOnly(row.date);
-        return {
-          date: dateStr,
-          totalTonnageKg: row.totalTonnageKg,
-          haulCount: row.haulCount,
-          tpaInboundKg: tpaByDate.has(dateStr) ? tpaByDate.get(dateStr)! : null,
-        };
-      });
+      const daily = await this.repo.dailyTonnage(from, to);
+      return daily.map((row) => ({
+        date: formatDateOnly(row.date),
+        totalTonnageKg: row.totalTonnageKg,
+        haulCount: row.haulCount,
+      }));
     });
   }
 

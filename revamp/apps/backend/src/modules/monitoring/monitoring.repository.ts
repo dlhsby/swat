@@ -19,10 +19,6 @@ export interface DailyTonnageRecord {
   totalTonnageKg: number;
   haulCount: number;
 }
-export interface TpaInboundRecord {
-  date: Date;
-  tpaInboundKg: number;
-}
 
 /**
  * Read-only aggregation queries for the monitoring API (Phase 2, Epic 2.2).
@@ -51,17 +47,6 @@ export class MonitoringRepository {
       totalTonnageKg: Number(row.amount),
       haulCount: row.haulCount,
     }));
-  }
-
-  /** Σ TpaInboundLog net weight per date within `[from, to]` (weighbridge truth). */
-  async tpaInboundByDate(from: Date, to: Date): Promise<TpaInboundRecord[]> {
-    const rows = await this.prisma.$queryRaw<Array<{ date: Date; tpaInboundKg: bigint }>>`
-      SELECT "date", COALESCE(SUM("net_weight"), 0)::bigint AS "tpaInboundKg"
-      FROM "tpa_inbound_log"
-      WHERE "date" >= ${from}::date AND "date" <= ${to}::date
-      GROUP BY "date"
-    `;
-    return rows.map((row) => ({ date: row.date, tpaInboundKg: Number(row.tpaInboundKg) }));
   }
 
   /** Monthly tonnage totals (rolled up from DailyTonnage) within `[from, to]`. */

@@ -7,7 +7,6 @@ import { MonitoringService } from './monitoring.service';
 function createRepo(): jest.Mocked<MonitoringRepository> {
   return {
     dailyTonnage: jest.fn().mockResolvedValue([]),
-    tpaInboundByDate: jest.fn().mockResolvedValue([]),
     monthlyTonnage: jest.fn().mockResolvedValue([]),
     tonnageBySource: jest.fn().mockResolvedValue([]),
     tonnageBySite: jest.fn().mockResolvedValue([]),
@@ -90,20 +89,17 @@ describe('MonitoringService', () => {
   });
 
   describe('tonnage5Day', () => {
-    it('merges the informational TPA weighbridge total per day (null when none)', async () => {
+    it('maps the daily tonnage rollup rows to the response shape', async () => {
       repo.dailyTonnage.mockResolvedValue([
         { date: parseDateOnly('2026-06-01'), totalTonnageKg: 4000, haulCount: 3 },
         { date: parseDateOnly('2026-06-02'), totalTonnageKg: 5000, haulCount: 4 },
-      ]);
-      repo.tpaInboundByDate.mockResolvedValue([
-        { date: parseDateOnly('2026-06-01'), tpaInboundKg: 4100 },
       ]);
 
       const result = await service.tonnage5Day(RANGE);
 
       expect(result).toEqual([
-        { date: '2026-06-01', totalTonnageKg: 4000, haulCount: 3, tpaInboundKg: 4100 },
-        { date: '2026-06-02', totalTonnageKg: 5000, haulCount: 4, tpaInboundKg: null },
+        { date: '2026-06-01', totalTonnageKg: 4000, haulCount: 3 },
+        { date: '2026-06-02', totalTonnageKg: 5000, haulCount: 4 },
       ]);
     });
   });

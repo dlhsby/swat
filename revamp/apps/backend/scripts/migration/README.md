@@ -23,7 +23,7 @@ filesystem) into the new PostgreSQL schema. Spec: [`specs/04-migration.md`](../.
 - ✅ **Transactional history** (T-155, the `--include-transactions` phase) — full real
   volume from the per-table dump: `haritransaksi`→TransactionDay, `transaksiangkutsampah`
   →Haul (~4.1M), `detailtransaksiangkutsampah`→HaulAssignment (~4.4M), `trayek`→Trip
-  (~8M), `sampahmasuktpa`→TpaInboundLog, into the monthly partitions. **Every stage is
+  (~8M), into the monthly partitions. **Every stage is
   keyset-batched + watermarked** (`--resume`) with **per-batch FK resolution** (the parent
   legacyId→UUID lookup is scoped to each batch, so memory stays flat at full volume — see
   `lib/pagination.ts` `resolveParents`/`fetchExistingLegacyIds`). Idempotent: Haul dedupes
@@ -35,16 +35,16 @@ filesystem) into the new PostgreSQL schema. Spec: [`specs/04-migration.md`](../.
 
 ## Scripts
 
-| Script                 | npm task            | Purpose                                                                                      |
-| ---------------------- | ------------------- | -------------------------------------------------------------------------------------------- |
-| `migrate-discovery.ts` | `migrate:discovery` | T-151 — read-only profiling → `reports/migration-discovery-report.{json,md}`                 |
-| `migrate-legacy.ts`    | `migrate:legacy`    | T-152–158 — load master/auth/scheduling/aggregates (idempotent, `--force-reset`, `--resume`) |
-| `migrate-images.ts`    | `migrate:images`    | T-156 — filesystem → S3, SHA-256 verify, `Photo` rows, bounded concurrency                   |
-| `verify-migration.ts`  | `migrate:verify`    | T-159 — reconcile counts (≤1%), FK + security checks, report; exit 1 on critical             |
-| `delta-sync.ts`        | `migrate:delta-sync`| T-166 — idempotent re-upsert of masters by `legacyId` + KPI-parity report (re-dump delta)    |
-| `backfill-rollups.ts`  | `rollup:backfill`   | Recompute `daily_tonnage` + monthly monitoring rollups (full or a date range); after a bulk load |
-| `run-archive.ts`       | `archive:run`       | On-demand 13-month partition archiving; pre-flights `pg_dump`/`ARCHIVE_DIR` and no-ops if absent |
-| `corridors/run-backfill.ts` | `corridors:backfill` | Default route corridors (idempotent — skips routes that already have one; Google only for new)|
+| Script                      | npm task             | Purpose                                                                                          |
+| --------------------------- | -------------------- | ------------------------------------------------------------------------------------------------ |
+| `migrate-discovery.ts`      | `migrate:discovery`  | T-151 — read-only profiling → `reports/migration-discovery-report.{json,md}`                     |
+| `migrate-legacy.ts`         | `migrate:legacy`     | T-152–158 — load master/auth/scheduling/aggregates (idempotent, `--force-reset`, `--resume`)     |
+| `migrate-images.ts`         | `migrate:images`     | T-156 — filesystem → S3, SHA-256 verify, `Photo` rows, bounded concurrency                       |
+| `verify-migration.ts`       | `migrate:verify`     | T-159 — reconcile counts (≤1%), FK + security checks, report; exit 1 on critical                 |
+| `delta-sync.ts`             | `migrate:delta-sync` | T-166 — idempotent re-upsert of masters by `legacyId` + KPI-parity report (re-dump delta)        |
+| `backfill-rollups.ts`       | `rollup:backfill`    | Recompute `daily_tonnage` + monthly monitoring rollups (full or a date range); after a bulk load |
+| `run-archive.ts`            | `archive:run`        | On-demand 13-month partition archiving; pre-flights `pg_dump`/`ARCHIVE_DIR` and no-ops if absent |
+| `corridors/run-backfill.ts` | `corridors:backfill` | Default route corridors (idempotent — skips routes that already have one; Google only for new)   |
 
 > The dump reseed (`infra/seed-legacy-from-dump.sh`) auto-runs `rollup:backfill` then `archive:run`
 > after a transactional load, and supports `--resume`/`--reuse-mysql`/`--retry` — see
@@ -159,19 +159,19 @@ pnpm --filter @swat/backend run migrate:verify
 Defaults are unchanged (one-shot `--force-reset`, MySQL torn down on exit). The flags below
 make the dump reseed interruption-safe and are what the production cutover should use:
 
-| Flag                    | Effect                                                                                          |
-| ----------------------- | ----------------------------------------------------------------------------------------------- |
-| `--resume`              | Continue every stream from its watermark; do **not** `--force-reset` (no truncate).             |
-| `--transactions-only`   | Skip master/auth/scheduling/corridor phases; run only the transactional load.                   |
-| `--reuse-mysql`         | Reuse an already-loaded ephemeral MySQL (or a populated `LEGACY_MYSQL_DATADIR`) — no re-import.  |
-| `--keep-mysql`          | Don't tear the MySQL container down on exit, so the next resume reuses it.                       |
-| `--retry[=N]`           | Re-invoke the migrator on failure, resuming from the watermark (self-heals tunnel/RDS blips).    |
-| `--since-year=YYYY`     | Window the 5 transactional tables **and** DisposalPermit to this year onward (masters stay full).|
-| `--skip-corridors`      | Skip the route-corridor backfill (a no-op that still calls ~17k Google Directions when it runs). |
-| `--skip-backfill`       | Don't run the monitoring rollup backfill after the txn load (default: run).                      |
-| `--skip-archive`        | Don't run 13-month partition archiving after the backfill (default: run; no-ops without pg_dump).|
-| `LEGACY_MYSQL_DATADIR`  | Bind-mount MySQL's datadir to a big disk — keeps the ~10-15 GB import off Docker's/`C:` disk and |
-|                         | **persists across a crash** so a resume never re-imports. (env var, not a flag.)                 |
+| Flag                   | Effect                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| `--resume`             | Continue every stream from its watermark; do **not** `--force-reset` (no truncate).               |
+| `--transactions-only`  | Skip master/auth/scheduling/corridor phases; run only the transactional load.                     |
+| `--reuse-mysql`        | Reuse an already-loaded ephemeral MySQL (or a populated `LEGACY_MYSQL_DATADIR`) — no re-import.   |
+| `--keep-mysql`         | Don't tear the MySQL container down on exit, so the next resume reuses it.                        |
+| `--retry[=N]`          | Re-invoke the migrator on failure, resuming from the watermark (self-heals tunnel/RDS blips).     |
+| `--since-year=YYYY`    | Window the 5 transactional tables **and** DisposalPermit to this year onward (masters stay full). |
+| `--skip-corridors`     | Skip the route-corridor backfill (a no-op that still calls ~17k Google Directions when it runs).  |
+| `--skip-backfill`      | Don't run the monitoring rollup backfill after the txn load (default: run).                       |
+| `--skip-archive`       | Don't run 13-month partition archiving after the backfill (default: run; no-ops without pg_dump). |
+| `LEGACY_MYSQL_DATADIR` | Bind-mount MySQL's datadir to a big disk — keeps the ~10-15 GB import off Docker's/`C:` disk and  |
+|                        | **persists across a crash** so a resume never re-imports. (env var, not a flag.)                  |
 
 **Post-load (auto, after a transactional load):** the seed runs `rollup:backfill` (populates the
 `daily_tonnage` + monthly rollups the monitoring dashboards read — the ETL writes only raw
@@ -205,10 +205,10 @@ pnpm --filter @swat/backend run rollup:backfill -- 2026-07-06 2026-07-07
   corridor backfill is idempotent anyway (`repo.hasAny` skips routes that already have a corridor, so
   it only ever calls Google for brand-new routes, never re-snaps existing ones).
 - **Caveat — inserts vs edits:** `--resume` catches newly-**appended** rows (higher `legacyId`); it does
-  **not** re-pull *edits* to an already-loaded row (its id is below the watermark). For an append-heavy
+  **not** re-pull _edits_ to an already-loaded row (its id is below the watermark). For an append-heavy
   daily flow that's fine. To also capture edits to a recent window, reload just that window
   (truncate the recent partitions + `--since-year=<recent>` from watermark 0) rather than a pure resume.
-  `migrate:delta-sync` already re-upserts *master* edits; only transactional edits to old rows are the gap.
+  `migrate:delta-sync` already re-upserts _master_ edits; only transactional edits to old rows are the gap.
 
 ## Legacy data-quality handling
 
@@ -246,20 +246,19 @@ row), and applies these specific, logged cleanses for known 13-year-old issues:
 The transactional phase runs only for `seed:staging` / `seed:production` (the
 `--include-transactions` flag); `seed:legacy` skips it. In FK order:
 
-| Legacy table                  | → SWAT table     | Notes                                                                                                                                                                                                                        |
-| ----------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `haritransaksi`               | `TransactionDay` | keyset-batched + watermarked (`transaction_day`)                                                                                                                                                                             |
-| `transaksiangkutsampah`       | `Haul`           | `operationDate` denormalized from the day; `legacyId`-idempotent                                                                                                                                                             |
-| `detailtransaksiangkutsampah` | `HaulAssignment` | driver + odometer/time rekap; schedule-template FK optional                                                                                                                                                                  |
-| `trayek`                      | `Trip`           | route FK optional; weights/fuel/odometer mapped                                                                                                                                                                              |
-| `sampahmasuktpa`              | `TpaInboundLog`  | keyset-batched **raw insert** (the `operation_date` partition key is absent from the Prisma model); `DD-MM-YYYY` label parsed via `parseDmyDate`; chunked to stay under PG's 32767 bind-var cap; watermark `tpa_inbound_log` |
+| Legacy table                  | → SWAT table     | Notes                                                            |
+| ----------------------------- | ---------------- | ---------------------------------------------------------------- |
+| `haritransaksi`               | `TransactionDay` | keyset-batched + watermarked (`transaction_day`)                 |
+| `transaksiangkutsampah`       | `Haul`           | `operationDate` denormalized from the day; `legacyId`-idempotent |
+| `detailtransaksiangkutsampah` | `HaulAssignment` | driver + odometer/time rekap; schedule-template FK optional      |
+| `trayek`                      | `Trip`           | route FK optional; weights/fuel/odometer mapped                  |
 
 - **Idempotent + resumable:** each stage skips rows already present; `--resume` continues
   every stream from its watermark (`transaction_day`, `haul`, `haul_assignment`, `trip`,
-  `disposal_permit`, `tpa_inbound_log`).
+  `disposal_permit`).
 - **Reusable building blocks:** `keysetBatches` + `readWatermark`/`writeWatermark` +
   `resolveParents`/`fetchExistingLegacyIds`/`distinctKeys` (`lib/pagination.ts`), the
-  `mapTripStatus`/`mapDayStatus` enum maps, `parseDmyDate` (`lib/transforms.ts`), and the
+  `mapTripStatus`/`mapDayStatus` enum maps, and the
   `legacyId → UUID` helpers (`toLegacyMap`/`resolveFk`).
 - **Partitions & archiving:** the partition window 2013-01..2026-12 (+ DEFAULT) is
   pre-created by `20260608000100_partition_transactions`, so a full historical load needs

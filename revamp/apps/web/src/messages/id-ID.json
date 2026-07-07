@@ -58,6 +58,7 @@
     "levy": "Retribusi",
     "efficiency": "Efisiensi",
     "alertHistory": "Riwayat Peringatan",
+    "gasifikasi": "Gasifikasi",
     "reports": "Laporan",
     "masterData": "Data Master",
     "vehicles": "Kendaraan",
@@ -230,6 +231,10 @@
         "weighbridge": {
           "label": "Jembatan Timbang",
           "help": "Integrasi timbangan TPA"
+        },
+        "thirdParty": {
+          "label": "Integrasi Pihak Ketiga",
+          "help": "Integrasi sistem pihak ketiga"
         }
       },
       "cards": {
@@ -256,6 +261,10 @@
         "weighbridge": {
           "title": "Jembatan Timbang",
           "help": "Batas laju permintaan API timbangan TPA."
+        },
+        "gasifikasi": {
+          "title": "Gasifikasi PT. SI",
+          "help": "Kredensial API armada masuk gasifikasi dari PT Surveyor Indonesia (URL + kunci API). Bila aktif, data ditarik berkala dan dicocokkan ke aktivitas pembuangan sampah."
         }
       },
       "fields": {

@@ -1,5 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
+import { type StorageService } from '../../storage/storage.service';
 import { type DailyInitService } from '../daily-init/daily-init.service';
 
 import { type TransactionDaysRepository } from './transaction-days.repository';
@@ -33,9 +34,10 @@ describe('TransactionDaysService', () => {
     updateStatus: jest.Mock;
     countOpenHauls: jest.Mock;
     listSummaries: jest.Mock;
-    cctvByTripIds: jest.Mock;
+    gasificationByTripIds: jest.Mock;
   };
   let dailyInit: { handleManualToday: jest.Mock };
+  let storage: { getPresignedGetUrl: jest.Mock };
   let service: TransactionDaysService;
 
   beforeEach(() => {
@@ -45,12 +47,14 @@ describe('TransactionDaysService', () => {
       updateStatus: jest.fn(),
       countOpenHauls: jest.fn().mockResolvedValue(0),
       listSummaries: jest.fn(),
-      cctvByTripIds: jest.fn().mockResolvedValue([]),
+      gasificationByTripIds: jest.fn().mockResolvedValue([]),
     };
     dailyInit = { handleManualToday: jest.fn() };
+    storage = { getPresignedGetUrl: jest.fn().mockResolvedValue('https://minio/signed') };
     service = new TransactionDaysService(
       repo as unknown as TransactionDaysRepository,
       dailyInit as unknown as DailyInitService,
+      storage as unknown as StorageService,
     );
   });
 
