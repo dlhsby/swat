@@ -309,6 +309,7 @@ export const monitoringApi = {
       })}`,
     ),
 
-  siteDaySummary: (siteId: string, date: string): Promise<SiteDaySummary> =>
+  // Returns null when the site id doesn't exist (mirrors the backend).
+  siteDaySummary: (siteId: string, date: string): Promise<SiteDaySummary | null> =>
     apiClient.get(`/monitoring/sites/${siteId}/day-summary?date=${date}`),
 };

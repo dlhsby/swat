@@ -34,9 +34,15 @@ const IS_GASIFICATION = Prisma.sql`(t."disposal_destination" = 'GASIFICATION' OR
 /** Realized, weighed DISPOSAL trips — the tonnage universe (mirrors the rollup). */
 const DISPOSAL_TRIP = Prisma.sql`t."status" IN ('DONE', 'VERIFIED') AND r."category" = 'DISPOSAL' AND t."net_weight" > 0`;
 
-/** `date_trunc` unit for a validated bucket — safe: `bucket` is whitelisted by the DTO. */
+/**
+ * `date_trunc` unit literal for a bucket. Mapped explicitly (never string-
+ * interpolated) so no caller can push arbitrary text into the SQL, even if the
+ * DTO whitelist is ever bypassed.
+ */
 function truncUnit(bucket: TimeBucket): Prisma.Sql {
-  return Prisma.raw(`'${bucket}'`);
+  if (bucket === 'year') return Prisma.sql`'year'`;
+  if (bucket === 'month') return Prisma.sql`'month'`;
+  return Prisma.sql`'day'`;
 }
 
 export interface DailyTonnageRecord {
@@ -48,10 +54,13 @@ export interface DailyTonnageRecord {
 /**
  * Read-only aggregation queries for the monitoring API (Phase 2, Epic 2.2).
  *
- * Every query reads the rollup tables (never the partitioned trip history) so
- * dashboards stay sub-second across any range. Monthly cross-tabs are summed
- * over the months that intersect the requested date range. Thin Prisma wrapper —
- * exercised by the integration suite, excluded from unit coverage.
+ * The rollup-backed queries read the rollup tables (never the partitioned trip
+ * history) so dashboards stay sub-second across any range. The dashboard-revamp
+ * reads at the bottom of the class instead query the partitioned Trip table
+ * DIRECTLY, date-pruned — they need a gasifikasi/landfill split (and a notes
+ * fallback) the rollups don't carry, and the windows are bounded. Monthly
+ * cross-tabs are summed over the months intersecting the requested range. Thin
+ * Prisma wrapper — exercised by the integration suite, excluded from unit coverage.
  */
 @Injectable()
 export class MonitoringRepository {
@@ -776,8 +785,9 @@ export class MonitoringRepository {
     `;
     if (!site) return null;
     // TPS → match on pickup (origin); everything else (TPA) → drop-off (destination).
+    // Fixed SQL fragments (not string interpolation) so the column can't be injected.
     const sideColumn =
-      site.type === 'TPS' ? Prisma.raw('origin_site_id') : Prisma.raw('destination_site_id');
+      site.type === 'TPS' ? Prisma.sql`r."origin_site_id"` : Prisma.sql`r."destination_site_id"`;
     const rows = await this.prisma.$queryRaw<
       Array<{ plateNumber: string; tonnage: bigint; rit: bigint }>
     >`
@@ -792,7 +802,7 @@ export class MonitoringRepository {
                                 AND h."id" = ha."haul_id"
       JOIN "vehicle" v           ON v."id" = h."vehicle_id"
       WHERE t."operation_date" = ${date}::date
-        AND r."${sideColumn}" = ${siteId}::uuid
+        AND ${sideColumn} = ${siteId}::uuid
         AND ${DISPOSAL_TRIP}
       GROUP BY v."plate_number"
       ORDER BY "tonnage" DESC

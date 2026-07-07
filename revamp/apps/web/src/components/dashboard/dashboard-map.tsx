@@ -128,7 +128,12 @@ export function DashboardMap({ date }: { date: string }): JSX.Element {
         site={selectedSite}
         date={date}
         onOpenChange={(open) => {
-          if (!open) setSelectedSite(null);
+          if (!open) {
+            setSelectedSite(null);
+            // Clear the map focus too, so re-selecting the same site re-pans it
+            // (the focus effect only fires when focusSiteId actually changes).
+            setFocusSiteId(null);
+          }
         }}
       />
     </>

@@ -142,7 +142,9 @@ export function useFuelTrend(range: DateRange, bucket: TimeBucket) {
 export function useFuelDetail(range: DateRange) {
   return useQuery({
     queryKey: [KEY, 'fuel-detail', range],
-    queryFn: () => monitoringApi.fuelDetail(range),
+    // Day-scoped table: pull the whole day (up to the backend's 1000 cap) so refuels
+    // aren't silently truncated; the DataTable paginates client-side.
+    queryFn: () => monitoringApi.fuelDetail(range, 1, 1000),
   });
 }
 
