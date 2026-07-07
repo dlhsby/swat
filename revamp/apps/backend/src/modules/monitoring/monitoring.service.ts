@@ -4,7 +4,10 @@ import { formatDateOnly, parseDateOnly, startOfMonth } from '../../common/dates'
 import { type PaginationMeta } from '../../common/types/api-response';
 import { CacheService } from '../cache/cache.service';
 
+import { type BucketRangeQueryDto, type TimeBucket } from './dto/bucket-range.query.dto';
 import { type DateRangeQueryDto } from './dto/date-range.query.dto';
+import { type DayQueryDto } from './dto/day.query.dto';
+import { type FuelDetailQueryDto } from './dto/fuel-detail.query.dto';
 import { type FuelConsumptionQueryDto } from './dto/fuel.query.dto';
 import { type TonnageBySourceQueryDto } from './dto/tonnage-source.query.dto';
 import { type TripSummaryQueryDto } from './dto/trip-summary.query.dto';
@@ -12,8 +15,11 @@ import { averagePerTransaction, fuelVariance } from './monitoring.math';
 import { MonitoringRepository } from './monitoring.repository';
 import {
   type DailyTonnageRow,
+  type DayStats,
   type FuelByTypeRow,
   type FuelConsumptionRow,
+  type FuelDetailRow,
+  type FuelTrendRow,
   type DayActivityEventRow,
   type KpiOverview,
   type LevyByCategoryMonthRow,
@@ -22,8 +28,12 @@ import {
   type MonthlyTonnageRow,
   type RouteActivityRow,
   type RouteMapResponse,
+  type SiteDaySummary,
+  type TonnageByTpsRow,
+  type TonnageByVehicleRow,
   type TonnageBySiteRow,
   type TonnageBySourceRow,
+  type TonnageDestinationRow,
   type TripSummaryRow,
 } from './monitoring.types';
 
@@ -187,6 +197,72 @@ export class MonitoringService {
         routesActive: routes.length,
       };
     });
+  }
+
+  // ── Dashboard revamp reads ──────────────────────────────────────────────
+
+  /** The four stat-card values for one operation day. Uncached — a small live
+   * single-day read that changes as the day's trips complete. */
+  dayStats(query: DayQueryDto): Promise<DayStats> {
+    return this.repo.dayStats(parseDateOnly(query.date));
+  }
+
+  async tonnageDestination(query: BucketRangeQueryDto): Promise<TonnageDestinationRow[]> {
+    const { from, to } = this.range(query);
+    const bucket = this.bucket(query);
+    return this.cached(this.key('tonnage-destination', query, bucket), TTL_DEFAULT, () =>
+      this.repo.tonnageDestination(from, to, bucket),
+    );
+  }
+
+  async tonnageByTps(query: DateRangeQueryDto): Promise<TonnageByTpsRow[]> {
+    const { from, to } = this.range(query);
+    return this.cached(this.key('tonnage-by-tps', query), TTL_DEFAULT, () =>
+      this.repo.tonnageByTps(from, to),
+    );
+  }
+
+  async tonnageByVehicle(query: DateRangeQueryDto): Promise<TonnageByVehicleRow[]> {
+    const { from, to } = this.range(query);
+    return this.cached(this.key('tonnage-by-vehicle', query), TTL_DEFAULT, () =>
+      this.repo.tonnageByVehicle(from, to),
+    );
+  }
+
+  async fuelTrend(query: BucketRangeQueryDto): Promise<FuelTrendRow[]> {
+    const { from, to } = this.range(query);
+    const bucket = this.bucket(query);
+    return this.cached(this.key('fuel-trend', query, bucket), TTL_DEFAULT, () =>
+      this.repo.fuelTrend(from, to, bucket),
+    );
+  }
+
+  async fuelDetail(query: FuelDetailQueryDto): Promise<{
+    data: FuelDetailRow[];
+    meta: PaginationMeta;
+  }> {
+    const from = parseDateOnly(query.dateFrom);
+    const to = parseDateOnly(query.dateTo);
+    const cacheKey = this.key('fuel-detail', query, `${query.page}:${query.limit}`);
+    return this.cached(cacheKey, TTL_TRIPS, async () => {
+      const { rows, total } = await this.repo.fuelDetail({
+        from,
+        to,
+        page: query.page,
+        limit: query.limit,
+      });
+      return { data: rows, meta: { total, page: query.page, limit: query.limit } };
+    });
+  }
+
+  /** One site's disposal activity for a day (map drill-down). Uncached — live day read. */
+  siteDaySummary(siteId: string, query: DayQueryDto): Promise<SiteDaySummary | null> {
+    return this.repo.siteDaySummary(siteId, parseDateOnly(query.date));
+  }
+
+  /** Bucket granularity, defaulting to `day` (harian) when the client omits it. */
+  private bucket(query: BucketRangeQueryDto): TimeBucket {
+    return query.bucket ?? 'day';
   }
 
   /** Resolve the inclusive day window from a validated query. */

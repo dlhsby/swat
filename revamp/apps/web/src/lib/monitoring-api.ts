@@ -147,6 +147,77 @@ export interface KpiOverview {
   readonly routesActive: number;
 }
 
+/** Time-bucket granularity for the harian/bulanan/tahunan trend tabs. */
+export type TimeBucket = 'day' | 'month' | 'year';
+
+/** The four dashboard stat-card values for one operation day. */
+export interface DayStats {
+  readonly scheduledVehicles: number;
+  readonly disposalTripCount: number;
+  readonly disposalTonnageKg: number;
+  readonly fuelApprovedLiters: number;
+}
+
+/** One time-bucket of disposal tonnage split by destination (stacked-bar point). */
+export interface TonnageDestinationRow {
+  readonly bucket: string;
+  readonly gasificationKg: number;
+  readonly landfillKg: number;
+  readonly totalKg: number;
+}
+
+/** Disposal tonnage + rit (trip count) for one pickup site (TPS). */
+export interface TonnageByTpsRow {
+  readonly siteId: string;
+  readonly name: string;
+  readonly totalTonnageKg: number;
+  readonly rit: number;
+}
+
+/** Disposal rit for one (vehicle, pickup-site) pair. */
+export interface TonnageByVehicleRow {
+  readonly plateNumber: string;
+  readonly siteId: string;
+  readonly siteName: string;
+  readonly totalTonnageKg: number;
+  readonly rit: number;
+}
+
+/** One time-bucket of fuel requested vs approved. */
+export interface FuelTrendRow {
+  readonly bucket: string;
+  readonly approvedLiters: number;
+  readonly requestedLiters: number;
+}
+
+/** One refuel event for the BBM detail table. */
+export interface FuelDetailRow {
+  readonly tripId: string;
+  readonly operationDate: string;
+  readonly plateNumber: string;
+  readonly fuelName: string | null;
+  readonly requestedLiters: number | null;
+  readonly approvedLiters: number | null;
+  readonly odometer: number;
+  readonly filledAt: string | null;
+}
+
+/** A vehicle's contribution to a site on one day. */
+export interface SiteDayVehicleRow {
+  readonly plateNumber: string;
+  readonly tonnageKg: number;
+  readonly rit: number;
+}
+
+/** Map site-click detail for one day (TPS pickups / TPA disposals). */
+export interface SiteDaySummary {
+  readonly siteId: string;
+  readonly type: string;
+  readonly tonnageKg: number;
+  readonly tripCount: number;
+  readonly vehicles: SiteDayVehicleRow[];
+}
+
 /** Build a `?dateFrom=…&dateTo=…&extra=…` query string, omitting empty params. */
 export function monitoringQuery(
   range: DateRange,
@@ -208,4 +279,37 @@ export const monitoringApi = {
 
   kpiOverview: (range: DateRange): Promise<KpiOverview> =>
     apiClient.get(`/monitoring/kpi-overview?${monitoringQuery(range)}`),
+
+  // ── Dashboard revamp ──────────────────────────────────────────────────────
+
+  dayStats: (date: string): Promise<DayStats> =>
+    apiClient.get(`/monitoring/day-stats?date=${date}`),
+
+  tonnageDestination: (range: DateRange, bucket: TimeBucket): Promise<TonnageDestinationRow[]> =>
+    apiClient.get(`/monitoring/tonnage-destination?${monitoringQuery(range, { bucket })}`),
+
+  tonnageByTps: (range: DateRange): Promise<TonnageByTpsRow[]> =>
+    apiClient.get(`/monitoring/tonnage-by-tps?${monitoringQuery(range)}`),
+
+  tonnageByVehicle: (range: DateRange): Promise<TonnageByVehicleRow[]> =>
+    apiClient.get(`/monitoring/tonnage-by-vehicle?${monitoringQuery(range)}`),
+
+  fuelTrend: (range: DateRange, bucket: TimeBucket): Promise<FuelTrendRow[]> =>
+    apiClient.get(`/monitoring/fuel-trend?${monitoringQuery(range, { bucket })}`),
+
+  fuelDetail: (
+    range: DateRange,
+    page = 1,
+    limit = 100,
+  ): Promise<{ data: FuelDetailRow[]; meta: PaginationMeta }> =>
+    apiClient.get(
+      `/monitoring/fuel-detail?${monitoringQuery(range, {
+        page: String(page),
+        limit: String(limit),
+      })}`,
+    ),
+
+  // Returns null when the site id doesn't exist (mirrors the backend).
+  siteDaySummary: (siteId: string, date: string): Promise<SiteDaySummary | null> =>
+    apiClient.get(`/monitoring/sites/${siteId}/day-summary?date=${date}`),
 };

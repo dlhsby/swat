@@ -18,6 +18,18 @@ function createRepo(): jest.Mocked<MonitoringRepository> {
     tripSummary: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
     routeMap: jest.fn().mockResolvedValue({ sites: [], edges: [] }),
     dayActivity: jest.fn().mockResolvedValue([]),
+    dayStats: jest.fn().mockResolvedValue({
+      scheduledVehicles: 0,
+      disposalTripCount: 0,
+      disposalTonnageKg: 0,
+      fuelApprovedLiters: 0,
+    }),
+    tonnageDestination: jest.fn().mockResolvedValue([]),
+    tonnageByTps: jest.fn().mockResolvedValue([]),
+    tonnageByVehicle: jest.fn().mockResolvedValue([]),
+    fuelTrend: jest.fn().mockResolvedValue([]),
+    fuelDetail: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
+    siteDaySummary: jest.fn().mockResolvedValue(null),
   } as unknown as jest.Mocked<MonitoringRepository>;
 }
 
@@ -273,6 +285,79 @@ describe('MonitoringService', () => {
       expect(repo.tonnageBySite).toHaveBeenCalled();
       expect(repo.fuelByType).toHaveBeenCalled();
       expect(repo.routesActive).toHaveBeenCalled();
+    });
+  });
+
+  describe('dashboard revamp reads', () => {
+    it('dayStats reads the day straight from the repo (uncached)', async () => {
+      repo.dayStats.mockResolvedValue({
+        scheduledVehicles: 1392,
+        disposalTripCount: 145,
+        disposalTonnageKg: 182_550,
+        fuelApprovedLiters: 0,
+      });
+
+      const result = await service.dayStats({ date: '2026-07-01' });
+
+      expect(repo.dayStats).toHaveBeenCalledWith(parseDateOnly('2026-07-01'));
+      expect(result.disposalTripCount).toBe(145);
+      expect(cache.get).not.toHaveBeenCalled();
+    });
+
+    it('tonnageDestination defaults to the day bucket when omitted', async () => {
+      await service.tonnageDestination(RANGE);
+      expect(repo.tonnageDestination).toHaveBeenCalledWith(
+        parseDateOnly('2026-06-01'),
+        parseDateOnly('2026-06-05'),
+        'day',
+      );
+    });
+
+    it('tonnageDestination forwards an explicit bucket and keys the cache by it', async () => {
+      await service.tonnageDestination({ ...RANGE, bucket: 'month' });
+      expect(repo.tonnageDestination).toHaveBeenCalledWith(
+        expect.any(Date),
+        expect.any(Date),
+        'month',
+      );
+      expect(cache.set).toHaveBeenCalledWith(
+        'cache:monitoring:tonnage-destination:2026-06-01:2026-06-05:month',
+        [],
+        15 * 60,
+      );
+    });
+
+    it('fuelDetail wraps the repo rows in a paginated envelope', async () => {
+      repo.fuelDetail.mockResolvedValue({
+        rows: [
+          {
+            tripId: 't1',
+            operationDate: '2026-07-01',
+            plateNumber: 'L 1234 AB',
+            fuelName: 'Solar',
+            requestedLiters: 30,
+            approvedLiters: 28,
+            odometer: 12345,
+            filledAt: '2026-07-01T02:00:00.000Z',
+          },
+        ],
+        total: 1,
+      });
+
+      const result = await service.fuelDetail({
+        dateFrom: '2026-07-01',
+        dateTo: '2026-07-01',
+        page: 1,
+        limit: 100,
+      });
+
+      expect(result.data).toHaveLength(1);
+      expect(result.meta).toEqual({ total: 1, page: 1, limit: 100 });
+    });
+
+    it('siteDaySummary delegates to the repo (uncached)', async () => {
+      await service.siteDaySummary('site-1', { date: '2026-07-01' });
+      expect(repo.siteDaySummary).toHaveBeenCalledWith('site-1', parseDateOnly('2026-07-01'));
     });
   });
 });
