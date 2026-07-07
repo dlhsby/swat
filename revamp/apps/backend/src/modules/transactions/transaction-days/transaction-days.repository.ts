@@ -61,20 +61,36 @@ export class TransactionDaysRepository {
   }
 
   /**
-   * CCTV references for the given trips from the TPA weighbridge log. `tripId` is a
-   * plain column on the partitioned-trip-adjacent log (no Prisma relation), so this
-   * is a separate keyed lookup rather than an include.
+   * Matched PTSI gasification records for the given disposal trips. `matchedTripId`
+   * is a plain column (no Prisma relation onto the partitioned Trip), so this is a
+   * separate keyed lookup. The read path presigns `photoObjectKey` into a URL.
    */
-  async cctvByTripIds(ids: string[]): Promise<{ tripId: string; cctvReference: string }[]> {
+  async gasificationByTripIds(ids: string[]): Promise<
+    {
+      tripId: string;
+      photoObjectKey: string | null;
+      enteredAt: Date;
+      userTally: string | null;
+    }[]
+  > {
     if (ids.length === 0) {
       return [];
     }
-    const rows = await this.prisma.tpaInboundLog.findMany({
-      where: { tripId: { in: ids }, cctvReference: { not: null } },
-      select: { tripId: true, cctvReference: true },
+    const rows = await this.prisma.gasificationEntry.findMany({
+      where: { matchedTripId: { in: ids } },
+      select: { matchedTripId: true, photoObjectKey: true, enteredAt: true, userTally: true },
     });
     return rows.flatMap((r) =>
-      r.tripId && r.cctvReference ? [{ tripId: r.tripId, cctvReference: r.cctvReference }] : [],
+      r.matchedTripId
+        ? [
+            {
+              tripId: r.matchedTripId,
+              photoObjectKey: r.photoObjectKey,
+              enteredAt: r.enteredAt,
+              userTally: r.userTally,
+            },
+          ]
+        : [],
     );
   }
 

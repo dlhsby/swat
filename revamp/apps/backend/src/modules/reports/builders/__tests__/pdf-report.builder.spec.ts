@@ -22,7 +22,6 @@ describe('PdfReportBuilder', () => {
             date: '2026-01-01',
             totalTonnageKg: 500,
             haulCount: 5,
-            tpaInboundKg: 480,
           },
         ],
         bySource: [],

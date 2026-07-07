@@ -7,6 +7,7 @@
 export type TripStatus = 'IN_PROGRESS' | 'DONE' | 'VERIFIED';
 export type DayStatus = 'IN_PROGRESS' | 'DONE';
 export type RouteCategory = 'PICKUP' | 'DISPOSAL' | 'REFUEL' | 'DEPART_POOL' | 'RETURN_POOL';
+export type DisposalDestination = 'LANDFILL' | 'GASIFICATION';
 
 export interface TripDto {
   id: string;
@@ -18,8 +19,14 @@ export interface TripDto {
   destinationSiteName: string | null;
   name: string;
   notes: string | null;
-  /** CCTV reference from the TPA weighbridge log (disposal only); null otherwise. */
+  /** CCTV reference for a disposal weighing (disposal only); null otherwise. */
   cctvReference: string | null;
+  /** Where the disposal load went: 'LANDFILL' (default) or 'GASIFICATION'. */
+  disposalDestination: DisposalDestination;
+  /** PTSI gasification capture (matched disposals only); presigned photo URL. */
+  gasificationPhotoUrl: string | null;
+  gasificationEnteredAt: string | null;
+  gasificationUserTally: string | null;
   status: TripStatus;
   operationDate: string;
   targetTime: string | null;

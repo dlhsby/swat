@@ -155,6 +155,21 @@ enum DeviationSeverity {
   CRITICAL
 }
 
+// Where a DISPOSAL trip's load actually went (PTSI gasification integration).
+// Every disposal defaults to LANDFILL; flipped to GASIFICATION when a PTSI
+// (PT Surveyor Indonesia) gasification-gate record matches the trip.
+enum DisposalDestination {
+  LANDFILL
+  GASIFICATION
+}
+
+// Lifecycle of a pulled PTSI gasification record against SWAT disposal trips.
+enum GasificationMatchStatus {
+  UNMATCHED
+  MATCHED
+  IGNORED
+}
+
 // ===========================================================================
 // Auth
 // ===========================================================================
@@ -824,6 +839,13 @@ model Trip {
   grossWeight         Int?           @map("gross_weight")
   netWeight           Int?           @map("net_weight")
   wasteVolume         Int?           @map("waste_volume")
+  // CCTV/photo evidence reference for a disposal weighing. Legacy stored disposal
+  // evidence trip-scoped (dokumentasitrayek → trayek); the new system keeps it on
+  // the Trip (was briefly on TpaInboundLog). Null for non-weighbridge disposals.
+  cctvReference       String?        @map("cctv_reference") @db.VarChar(256)
+  // LANDFILL by default; GASIFICATION once a PTSI gasification record matches this
+  // disposal trip (see GasificationEntry).
+  disposalDestination DisposalDestination @default(LANDFILL) @map("disposal_destination")
   fuelRequestedLiters Decimal?       @map("fuel_requested_liters") @db.Decimal(8, 2)
   fuelApprovedLiters  Decimal?       @map("fuel_approved_liters") @db.Decimal(8, 2)
   scheduledEntryAt    DateTime?      @map("scheduled_entry_at") @db.Timestamptz(6)
@@ -979,27 +1001,33 @@ model InspectionItem {
 // ===========================================================================
 // External / aggregates
 // ===========================================================================
-model TpaInboundLog {
-  id            String    @id @default(uuid(7)) @db.Uuid
-  legacyId      Int?      @map("legacy_id")
-  dateLabel     String?   @map("date_label") @db.VarChar(50)
-  date          DateTime? @db.Date
-  plateNumber   String?   @map("plate_number") @db.VarChar(20)
-  depot         String?   @db.VarChar(200)
-  sourceTruck   String?   @map("source_truck") @db.VarChar(200)
-  grossWeight   Int?      @map("gross_weight")
-  tareWeight    Int?      @map("tare_weight")
-  netWeight     Int?      @map("net_weight")
-  cctvReference String?   @map("cctv_reference") @db.VarChar(256)
-  tripId        String?   @map("trip_id") @db.Uuid
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+// A gasification-gate record pulled from PT Surveyor Indonesia (PTSI,
+// tpa.sidigital.co.id). One row per PTSI capture; matched (auto or manual) to a
+// single DISPOSAL Trip by normalized plate + operation date + entry-time window.
+// Low-volume (only trucks diverted to gasification), so NOT partitioned. The Trip
+// link is a plain UUID (no Prisma relation — Trip is partitioned), mirroring
+// TpaInboundLog.tripId.
+model GasificationEntry {
+  id             String                  @id @default(uuid(7)) @db.Uuid
+  plateNumber    String                  @map("plate_number") @db.VarChar(20) // normalized (alnum, upper)
+  vendorNopol    String                  @map("vendor_nopol") @db.VarChar(30) // raw PTSI nopol
+  enteredAt      DateTime                @map("entered_at") @db.Timestamptz(6) // tanggal_masuk + jam_masuk (WIB)
+  operationDate  DateTime                @map("operation_date") @db.Date       // WIB date, for matching
+  userTally      String?                 @map("user_tally") @db.VarChar(100)
+  fotoFilename   String                  @map("foto_filename") @db.VarChar(256)
+  photoObjectKey String?                 @map("photo_object_key") @db.VarChar(512) // MinIO key once downloaded
+  rawPayload     Json                    @map("raw_payload")
+  status         GasificationMatchStatus @default(UNMATCHED)
+  matchedTripId  String?                 @unique @map("matched_trip_id") @db.Uuid // one-to-one: a trip is claimed once
+  matchedAt      DateTime?               @map("matched_at") @db.Timestamptz(6)
+  matchedById    String?                 @map("matched_by_id") @db.Uuid            // set on manual match
+  createdAt      DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  @@index([date])
-  @@index([plateNumber])
-  @@index([tripId])
-  @@index([legacyId])
-  @@map("tpa_inbound_log")
+  @@unique([plateNumber, enteredAt, fotoFilename]) // dedup key for idempotent polling
+  @@index([operationDate])
+  @@index([status])
+  @@map("gasification_entry")
 }
 
 // ---------------------------------------------------------------------------

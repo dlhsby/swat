@@ -108,6 +108,30 @@ export const envSchema = z
       .default('false')
       .transform((v) => v === 'true'),
     GPSID_VEHICLE_SYNC_INTERVAL_MIN: z.coerce.number().int().positive().default(1440),
+    // Gasification integration (PT Surveyor Indonesia / PTSI). When enabled AND the
+    // API key is set, a background job polls the PTSI gasification-gate API per date
+    // every GASIFICATION_PULL_INTERVAL_MIN minutes and matches records to disposal
+    // trips. Both PTSI hosts use self-signed TLS. Default off; the job no-ops when the
+    // key is unset. All fields are DB-overridable via system_config.
+    GASIFICATION_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((v) => v === 'true'),
+    GASIFICATION_BASE_URL: z.string().min(1).default('https://tpa.sidigital.co.id'),
+    GASIFICATION_API_KEY: z.string().min(1).optional(),
+    GASIFICATION_PHOTO_BASE_URL: z
+      .string()
+      .min(1)
+      .default('https://fotoarmada.sidigital.co.id/gasifikasi/'),
+    GASIFICATION_PULL_INTERVAL_MIN: z.coerce.number().int().positive().default(10),
+    // How many days back (including today, WIB) each poll cycle re-scans, to catch
+    // records that arrive after the disposal was recorded.
+    GASIFICATION_LOOKBACK_DAYS: z.coerce.number().int().positive().default(2),
+    // Match window: a PTSI entry matches a disposal trip whose time is within
+    // [entry - BEFORE_MIN, entry + AFTER_MIN]. The gate scan is usually AFTER the dump.
+    GASIFICATION_MATCH_BEFORE_MIN: z.coerce.number().int().nonnegative().default(30),
+    GASIFICATION_MATCH_AFTER_MIN: z.coerce.number().int().nonnegative().default(120),
+
     // Server-side Google Directions key (NOT the referrer-restricted browser key)
     // for snapping a route's auto-default corridor to roads. Optional: unset → the
     // default falls back to a straight line. Restrict by IP + enable Directions API.

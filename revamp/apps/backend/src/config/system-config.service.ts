@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  type OnModuleDestroy,
+  type OnModuleInit,
+} from '@nestjs/common';
 import Redis from 'ioredis';
 
 import { EncryptionService } from '../common/crypto/encryption.service';
@@ -196,6 +202,41 @@ export class SystemConfigService implements OnModuleInit, OnModuleDestroy {
 
   getWeighbridgeRateLimitPerMin(): number {
     return this.getNumber('weighbridge.rateLimitPerMin');
+  }
+
+  // --- Gasification (PT Surveyor Indonesia) ----------------------------------
+
+  getGasificationEnabled(): boolean {
+    return this.getBoolean('gasification.enabled');
+  }
+
+  /** API base URL + key; null when the key is unset (the job then no-ops). */
+  getGasificationCredentials(): { baseUrl: string; apiKey: string } | null {
+    const baseUrl = this.getString('gasification.baseUrl');
+    const apiKey = this.getString('gasification.apiKey');
+    return baseUrl && apiKey ? { baseUrl, apiKey } : null;
+  }
+
+  getGasificationPhotoBaseUrl(): string {
+    return (
+      this.getString('gasification.photoBaseUrl') ??
+      'https://fotoarmada.sidigital.co.id/gasifikasi/'
+    );
+  }
+
+  getGasificationPullIntervalMinutes(): number {
+    return this.getNumber('gasification.pullIntervalMin');
+  }
+
+  getGasificationLookbackDays(): number {
+    return this.getNumber('gasification.lookbackDays');
+  }
+
+  getGasificationMatchWindow(): { beforeMin: number; afterMin: number } {
+    return {
+      beforeMin: this.getNumber('gasification.matchBeforeMin'),
+      afterMin: this.getNumber('gasification.matchAfterMin'),
+    };
   }
 
   // --- Admin API surface -----------------------------------------------------

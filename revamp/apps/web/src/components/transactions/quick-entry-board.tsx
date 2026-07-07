@@ -10,6 +10,7 @@ import { RowActions } from '@/components/crud/row-actions';
 import { type CorridorTrip, TripCorridorEditor } from '@/components/tracking/trip-corridor-editor';
 import { ActivityEditDialog } from '@/components/transactions/activity-edit-dialog';
 import { CctvTpaCell } from '@/components/transactions/cctv-tpa-cell';
+import { GasificationPhotoCell } from '@/components/transactions/gasification-photo-cell';
 import {
   Button,
   Card,
@@ -391,6 +392,39 @@ export function QuickEntryBoard({
             measureCol('tareWeight', 'Berat Kosong'),
             measureCol('netWeight', 'Berat Bersih'),
             {
+              id: 'Tujuan',
+              accessorFn: (r) =>
+                r.disposalDestination === 'GASIFICATION' ? 'Gasifikasi' : 'Landfill',
+              header: 'Tujuan',
+              enableSorting: false,
+              meta: { label: 'Tujuan' },
+              cell: ({ row }) =>
+                row.original.disposalDestination === 'GASIFICATION' ? (
+                  <span className="inline-flex rounded-base bg-primary-700 px-2 py-0.5 text-tiny font-medium text-white">
+                    Gasifikasi
+                  </span>
+                ) : (
+                  <span className="inline-flex rounded-base bg-neutral-100 px-2 py-0.5 text-tiny font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                    Landfill
+                  </span>
+                ),
+            },
+            {
+              id: 'Foto Gasifikasi',
+              accessorFn: (r) => r.gasificationPhotoUrl ?? '',
+              header: 'Foto Gasifikasi',
+              enableSorting: false,
+              enableColumnFilter: false,
+              meta: { label: 'Foto Gasifikasi' },
+              cell: ({ row }) => (
+                <GasificationPhotoCell
+                  photoUrl={row.original.gasificationPhotoUrl}
+                  enteredAt={row.original.gasificationEnteredAt}
+                  userTally={row.original.gasificationUserTally}
+                />
+              ),
+            },
+            {
               id: 'CCTV TPA',
               accessorFn: (r) => r.cctvReference ?? '',
               header: 'CCTV TPA',
@@ -570,6 +604,10 @@ export function QuickEntryBoard({
             { header: 'Berat Kotor', value: (r) => r.grossWeight ?? '', numeric: true },
             { header: 'Berat Kosong', value: (r) => r.tareWeight, numeric: true },
             { header: 'Berat Bersih', value: (r) => r.netWeight ?? '', numeric: true, total: true },
+            {
+              header: 'Tujuan',
+              value: (r) => (r.disposalDestination === 'GASIFICATION' ? 'Gasifikasi' : 'Landfill'),
+            },
             { header: 'CCTV TPA', value: (r) => r.cctvReference ?? '' },
           ]
         : kind === 'REFUEL'

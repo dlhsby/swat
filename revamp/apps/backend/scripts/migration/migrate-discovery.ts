@@ -16,7 +16,6 @@ const TRANSACTIONAL = [
   { table: 'trayek', dateExpr: 'DATE(TRAYEK_WAKTUTARGET)' },
   { table: 'transaksiangkutsampah', dateExpr: null },
   { table: 'detailtransaksiangkutsampah', dateExpr: null },
-  { table: 'sampahmasuktpa', dateExpr: 'FROM_UNIXTIME(tgl)' },
   { table: 'jatahkitir', dateExpr: 'JATAHKITIR_MASABERLAKUAWAL' },
   { table: 'haritransaksi', dateExpr: 'HARITRANSAKSI_TANGGAL' },
 ] as const;
@@ -43,7 +42,6 @@ const ALL_TABLES = [
   'transaksiangkutsampah',
   'detailtransaksiangkutsampah',
   'trayek',
-  'sampahmasuktpa',
   'tonase',
   'retribusi',
   'konversi_si_swat',

@@ -51,8 +51,8 @@ beforeEach(() => {
 describe('VolumePage', () => {
   it('renders KPIs, the source donut legend, the daily table, and the by-site recap', async () => {
     api.tonnage5Day.mockResolvedValue([
-      { date: '2026-06-01', totalTonnageKg: 4000, haulCount: 3, tpaInboundKg: 4000 },
-      { date: '2026-06-02', totalTonnageKg: 6000, haulCount: 5, tpaInboundKg: null },
+      { date: '2026-06-01', totalTonnageKg: 4000, haulCount: 3 },
+      { date: '2026-06-02', totalTonnageKg: 6000, haulCount: 5 },
     ]);
     api.tonnageBySource.mockResolvedValue([
       { wasteSourceId: 1, code: 'D', name: 'Dinas', totalTonnageKg: 7000, haulCount: 5 },

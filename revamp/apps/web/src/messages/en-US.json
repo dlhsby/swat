@@ -58,6 +58,7 @@
     "levy": "Levy",
     "efficiency": "Efficiency",
     "alertHistory": "Alert History",
+    "gasifikasi": "Gasification",
     "reports": "Reports",
     "masterData": "Master Data",
     "vehicles": "Vehicles",
@@ -230,6 +231,10 @@
         "weighbridge": {
           "label": "Weighbridge",
           "help": "TPA weighbridge integration"
+        },
+        "thirdParty": {
+          "label": "Third Party Integration",
+          "help": "Third-party system integrations"
         }
       },
       "cards": {
@@ -256,6 +261,10 @@
         "weighbridge": {
           "title": "Weighbridge",
           "help": "Rate limit for TPA weighbridge API requests."
+        },
+        "gasifikasi": {
+          "title": "Gasification PT. SI",
+          "help": "PT Surveyor Indonesia gasification-intake API credentials (URL + API key). When enabled, records are pulled periodically and matched to disposal activities."
         }
       },
       "fields": {

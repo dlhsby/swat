@@ -70,7 +70,7 @@ export interface Flags {
   confirmProduction: boolean;
   /**
    * Only load date-scoped data from this year onward (`--since-year=2025`) —
-   * windows TransactionDay/Haul/HaulAssignment/Trip/TpaInboundLog + DisposalPermit
+   * windows TransactionDay/Haul/HaulAssignment/Trip + DisposalPermit
    * so a constrained target (e.g. AWS free-tier RDS) holds a recent subset. Null =
    * all history. Masters are always loaded in full.
    */
@@ -132,7 +132,9 @@ export function progressLogger(
   let nextThreshold = everyRows;
   return (count, lastId) => {
     if (count < nextThreshold) return;
-    log(`${label}: ${count.toLocaleString('en-US')} so far${lastId != null ? ` (last id ${lastId})` : ''}…`);
+    log(
+      `${label}: ${count.toLocaleString('en-US')} so far${lastId != null ? ` (last id ${lastId})` : ''}…`,
+    );
     nextThreshold = (Math.floor(count / everyRows) + 1) * everyRows;
   };
 }

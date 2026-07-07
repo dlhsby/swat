@@ -19,8 +19,6 @@ export interface DailyTonnageRow {
   readonly date: string;
   readonly totalTonnageKg: number;
   readonly haulCount: number;
-  /** Landfill weighbridge total for the day (informational); null if none posted. */
-  readonly tpaInboundKg: number | null;
 }
 
 export interface MonthlyTonnageRow {

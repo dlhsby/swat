@@ -6,7 +6,7 @@ import { getActor } from './actor-context';
  * Master/config models that carry the audit columns (`deletedAt`, `createdById`,
  * `updatedById`, `deletedById`) and participate in soft-delete + AuditLog. Names
  * are Prisma model names. Append-only/partitioned tables (Trip, Haul,
- * HaulAssignment, TpaInboundLog), rollups, and log tables are deliberately
+ * HaulAssignment), rollups, and log tables are deliberately
  * excluded — they are immutable operational records.
  */
 export const AUDITED_MODELS: ReadonlySet<string> = new Set<string>([
