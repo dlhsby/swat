@@ -131,6 +131,12 @@ export const envSchema = z
     // [entry - BEFORE_MIN, entry + AFTER_MIN]. The gate scan is usually AFTER the dump.
     GASIFICATION_MATCH_BEFORE_MIN: z.coerce.number().int().nonnegative().default(30),
     GASIFICATION_MATCH_AFTER_MIN: z.coerce.number().int().nonnegative().default(120),
+    // Vendor protection. PTSI has no bulk endpoint (needs nopol+tanggal), so a sync
+    // queries once per plate. MAX_REQUESTS_PER_MIN caps calls/min (a run stops early +
+    // resumes next tick); REQUERY_COOLDOWN_MIN skips a (plate,date) queried within the
+    // window on scheduled runs so landfill trucks aren't re-hit every tick.
+    GASIFICATION_MAX_REQUESTS_PER_MIN: z.coerce.number().int().positive().default(60),
+    GASIFICATION_REQUERY_COOLDOWN_MIN: z.coerce.number().int().nonnegative().default(60),
 
     // Server-side Google Directions key (NOT the referrer-restricted browser key)
     // for snapping a route's auto-default corridor to roads. Optional: unset → the

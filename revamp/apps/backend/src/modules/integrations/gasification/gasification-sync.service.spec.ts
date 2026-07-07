@@ -1,6 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
 import { type SystemConfigService } from '../../../config';
+import { type CacheService } from '../../cache/cache.service';
 import { type StorageService } from '../../storage/storage.service';
 
 import { type GasificationClientService } from './gasification-client.service';
@@ -53,9 +54,12 @@ describe('GasificationSyncService', () => {
     list: jest.Mock;
   };
   let storage: { uploadObject: jest.Mock; getPresignedGetUrl: jest.Mock };
+  let cache: { get: jest.Mock; set: jest.Mock; increment: jest.Mock };
   let systemConfig: {
     getGasificationMatchWindow: jest.Mock;
     getGasificationLookbackDays: jest.Mock;
+    getGasificationMaxRequestsPerMin: jest.Mock;
+    getGasificationRequeryCooldownMinutes: jest.Mock;
   };
   let service: GasificationSyncService;
 
@@ -80,15 +84,23 @@ describe('GasificationSyncService', () => {
       uploadObject: jest.fn().mockResolvedValue(undefined),
       getPresignedGetUrl: jest.fn().mockResolvedValue('https://minio/signed'),
     };
+    cache = {
+      get: jest.fn().mockResolvedValue(null), // never in cooldown
+      set: jest.fn().mockResolvedValue(undefined),
+      increment: jest.fn().mockResolvedValue(1), // under the rate cap
+    };
     systemConfig = {
       getGasificationMatchWindow: jest.fn().mockReturnValue({ beforeMin: 30, afterMin: 120 }),
       getGasificationLookbackDays: jest.fn().mockReturnValue(2),
+      getGasificationMaxRequestsPerMin: jest.fn().mockReturnValue(60),
+      getGasificationRequeryCooldownMinutes: jest.fn().mockReturnValue(60),
     };
     service = new GasificationSyncService(
       client as unknown as GasificationClientService,
       repo as unknown as GasificationRepository,
       storage as unknown as StorageService,
       systemConfig as unknown as SystemConfigService,
+      cache as unknown as CacheService,
     );
   });
 
@@ -174,6 +186,47 @@ describe('GasificationSyncService', () => {
       await service.syncDate('2026-05-07', 'L 9647 CM');
       expect(client.fetchByDate).toHaveBeenCalledTimes(1);
       expect(client.fetchByDate).toHaveBeenCalledWith('2026-05-07', 'L9647CM');
+    });
+  });
+
+  describe('rate limiting + requery cooldown', () => {
+    beforeEach(() => {
+      repo.disposalTripsForDate.mockResolvedValue([
+        trip('t1', 'AA1', '2026-05-07T06:00:00Z'),
+        trip('t2', 'BB2', '2026-05-07T06:00:00Z'),
+        trip('t3', 'CC3', '2026-05-07T06:00:00Z'),
+      ]);
+    });
+
+    it('stops early once the per-minute rate cap is hit', async () => {
+      // 1st + 2nd calls under cap, 3rd over → only 2 plates queried.
+      cache.increment.mockResolvedValueOnce(1).mockResolvedValueOnce(2).mockResolvedValueOnce(61);
+      systemConfig.getGasificationMaxRequestsPerMin.mockReturnValue(60);
+
+      await service.syncDate('2026-05-07', undefined, true);
+
+      expect(client.fetchByDate).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips a plate still within its requery cooldown on a scheduled run', async () => {
+      cache.get.mockImplementation((key: string) =>
+        Promise.resolve(key.endsWith(':BB2') ? 1 : null),
+      );
+
+      await service.syncDate('2026-05-07', undefined, true);
+
+      const queried = client.fetchByDate.mock.calls.map((c) => c[1]).sort();
+      expect(queried).toEqual(['AA1', 'CC3']); // BB2 skipped
+      expect(cache.set).toHaveBeenCalled(); // marks queried plates
+    });
+
+    it('ignores the cooldown on a manual (non-scheduled) sync', async () => {
+      cache.get.mockResolvedValue(1); // everything "recently queried"
+
+      await service.syncDate('2026-05-07'); // scheduled defaults false
+
+      expect(client.fetchByDate).toHaveBeenCalledTimes(3);
+      expect(cache.set).not.toHaveBeenCalled(); // manual runs don't mark cooldown
     });
   });
 

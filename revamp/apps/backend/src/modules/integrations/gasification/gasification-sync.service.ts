@@ -4,6 +4,7 @@ import { addDays, formatDateOnly, parseDateOnly, wibDateKey } from '../../../com
 import { paginated } from '../../../common/pagination';
 import { type PaginationMeta } from '../../../common/types/api-response';
 import { SystemConfigService } from '../../../config';
+import { CacheService } from '../../cache/cache.service';
 import { StorageService } from '../../storage/storage.service';
 
 import { type ListGasificationQueryDto } from './dto/list-gasification.query.dto';
@@ -47,6 +48,7 @@ export class GasificationSyncService {
     private readonly repo: GasificationRepository,
     private readonly storage: StorageService,
     private readonly systemConfig: SystemConfigService,
+    private readonly cache: CacheService,
   ) {}
 
   /** Re-scan the last `gasification.lookbackDays` WIB days (the scheduled tick). */
@@ -59,7 +61,9 @@ export class GasificationSyncService {
     const results: GasificationSyncResult[] = [];
     for (let i = 0; i < days; i += 1) {
       const dateKey = formatDateOnly(addDays(parseDateOnly(todayKey), -i));
-      results.push(await this.syncDate(dateKey));
+      // Scheduled run: honor the per-plate requery cooldown so settled/landfill
+      // plates aren't re-hit every tick.
+      results.push(await this.syncDate(dateKey, undefined, true));
     }
     return results;
   }
@@ -73,8 +77,18 @@ export class GasificationSyncService {
    * nothing — so we query per plate: the one requested, or (auto) every plate that
    * still has an unmatched (LANDFILL) disposal trip that day. Matched plates drop out,
    * so the call volume shrinks as the day's disposals resolve.
+   *
+   * Vendor protection: a per-minute call cap (Redis) stops a run early if the fleet is
+   * huge; the remaining plates are picked up next tick (still unmatched). On a scheduled
+   * run, a per-(plate,date) cooldown skips plates queried recently so landfill trucks
+   * aren't re-hit every tick. A manual/`nopol` sync ignores the cooldown (operator wants
+   * it now) but still respects the rate cap.
    */
-  async syncDate(dateKey: string, nopol?: string): Promise<GasificationSyncResult> {
+  async syncDate(
+    dateKey: string,
+    nopol?: string,
+    scheduled = false,
+  ): Promise<GasificationSyncResult> {
     const operationDate = parseDateOnly(dateKey);
     const trips = await this.repo.disposalTripsForDate(operationDate);
     const plates = nopol
@@ -90,8 +104,19 @@ export class GasificationSyncService {
 
     let fetched = 0;
     let upserted = 0;
+    let rateLimited = false;
     for (const plate of plates) {
+      if (scheduled && (await this.recentlyQueried(dateKey, plate))) {
+        continue;
+      }
+      if (!(await this.underRateLimit())) {
+        rateLimited = true;
+        break; // remaining plates resume next tick
+      }
       const records = await this.client.fetchByDate(dateKey, plate);
+      if (scheduled) {
+        await this.markQueried(dateKey, plate);
+      }
       fetched += records.length;
       for (const record of records) {
         const entry = await this.repo.upsert(record);
@@ -101,11 +126,34 @@ export class GasificationSyncService {
         }
       }
     }
+    if (rateLimited) {
+      this.logger.warn(
+        `Gasification sync for ${dateKey} hit the per-minute rate cap; will resume.`,
+      );
+    }
 
     const matched = await this.matchDate(operationDate, trips);
     // `skipped` = records the client dropped as malformed before they reached us.
     const skipped = 0;
     return { date: dateKey, fetched, upserted, matched, skipped };
+  }
+
+  /** True if this (plate, date) was queried within the requery-cooldown window. */
+  private async recentlyQueried(dateKey: string, plate: string): Promise<boolean> {
+    return (await this.cache.get(`gasif:q:${dateKey}:${plate}`)) !== null;
+  }
+
+  private async markQueried(dateKey: string, plate: string): Promise<void> {
+    const ttl = this.systemConfig.getGasificationRequeryCooldownMinutes() * 60;
+    await this.cache.set(`gasif:q:${dateKey}:${plate}`, 1, ttl);
+  }
+
+  /** Rolling per-minute counter of PTSI calls; false once the configured cap is hit. */
+  private async underRateLimit(): Promise<boolean> {
+    const max = this.systemConfig.getGasificationMaxRequestsPerMin();
+    const bucket = Math.floor(Date.now() / 60_000);
+    const count = await this.cache.increment(`gasif:rl:${bucket}`, 65);
+    return count <= max;
   }
 
   /** Paginated review list, each entry with a short-lived presigned photo URL. */

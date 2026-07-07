@@ -288,6 +288,26 @@ export const CONFIG_CATALOG: readonly ConfigCatalogEntry[] = [
     help: 'Selisih waktu maksimum bila catatan gasifikasi terjadi SESUDAH waktu pembuangan tercatat (umumnya begini). Bawaan 120.',
     validate: intInRange(0, 1440),
   },
+  {
+    key: 'gasification.maxRequestsPerMin',
+    envKey: 'GASIFICATION_MAX_REQUESTS_PER_MIN',
+    group: 'gasification',
+    valueType: 'number',
+    isSecret: false,
+    label: 'Batas permintaan API (per menit)',
+    help: 'Batas jumlah panggilan ke API PTSI per menit (PTSI tidak punya endpoint massal, jadi tiap plat ditarik satu per satu). Bila tercapai, sinkron berhenti dan dilanjutkan pada siklus berikutnya. Bawaan 60.',
+    validate: intInRange(1, 100000),
+  },
+  {
+    key: 'gasification.requeryCooldownMin',
+    envKey: 'GASIFICATION_REQUERY_COOLDOWN_MIN',
+    group: 'gasification',
+    valueType: 'number',
+    isSecret: false,
+    label: 'Jeda tarik ulang per plat (menit)',
+    help: 'Pada sinkron terjadwal, satu plat+tanggal tidak ditarik ulang selama menit ini — agar armada landfill (mayoritas) tidak dipanggil tiap siklus. Sinkron manual mengabaikan jeda ini. Bawaan 60.',
+    validate: intInRange(0, 44640),
+  },
 ];
 
 export const CONFIG_BY_KEY: ReadonlyMap<string, ConfigCatalogEntry> = new Map(

@@ -105,6 +105,8 @@ const GROUPS: readonly GroupDef[] = [
           'gasification.lookbackDays',
           'gasification.matchBeforeMin',
           'gasification.matchAfterMin',
+          'gasification.maxRequestsPerMin',
+          'gasification.requeryCooldownMin',
         ],
       },
     ],

@@ -239,6 +239,14 @@ export class SystemConfigService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  getGasificationMaxRequestsPerMin(): number {
+    return this.getNumber('gasification.maxRequestsPerMin');
+  }
+
+  getGasificationRequeryCooldownMinutes(): number {
+    return this.getNumber('gasification.requeryCooldownMin');
+  }
+
   // --- Admin API surface -----------------------------------------------------
 
   /** Catalog + current resolution state; secret values are never included. */
