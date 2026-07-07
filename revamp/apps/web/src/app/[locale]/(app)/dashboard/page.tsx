@@ -12,7 +12,6 @@ import { FuelTrendChart } from '@/components/dashboard/fuel-trend-chart';
 import { OpenMonitoring } from '@/components/dashboard/open-monitoring';
 import { TonnageDestinationChart } from '@/components/dashboard/tonnage-destination-chart';
 import { TonnageTables } from '@/components/dashboard/tonnage-tables';
-import { PageHead } from '@/components/shell/page-head';
 import {
   Alert,
   Button,
@@ -114,28 +113,37 @@ export default function DashboardPage(): JSX.Element {
 
   return (
     <>
-      <PageHead
-        title={`${t(greetingKey())}, ${user?.name ?? ''}`.trim()}
-        description={t('subtitle')}
-      />
-
-      {/* Date picker (+ optional initializer) — right-aligned below the subtitle. */}
-      <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-        {showInitDay ? (
-          <ProtectedAction permission="transaction-day:manage">
-            <Button onClick={() => void onInitialize()} loading={initializing}>
-              {t('initDay')}
-            </Button>
-          </ProtectedAction>
-        ) : null}
-        <div className="w-44">
-          <DatePicker value={date} onValueChange={(v) => v && setDate(v)} disableFuture nav />
+      {/* Sticky header: greeting + date picker on one row, pinned so the active
+          date (which every section below reflects) stays visible while scrolling. */}
+      <div className="sticky top-0 z-20 -mx-6 mb-6 border-b border-neutral-200 bg-neutral-100/85 px-6 py-4 backdrop-blur dark:bg-neutral-50/85 xl:-mx-8 xl:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-h2 font-bold text-neutral-900">
+              {`${t(greetingKey())}, ${user?.name ?? ''}`.trim()}
+            </h1>
+            <p className="mt-0.5 text-body-sm text-neutral-500">
+              {t('subtitle')} ·{' '}
+              <span className="font-medium text-neutral-700">{formatDateDisplay(date)}</span>
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {showInitDay ? (
+              <ProtectedAction permission="transaction-day:manage">
+                <Button onClick={() => void onInitialize()} loading={initializing}>
+                  {t('initDay')}
+                </Button>
+              </ProtectedAction>
+            ) : null}
+            <div className="w-44">
+              <DatePicker value={date} onValueChange={(v) => v && setDate(v)} disableFuture nav />
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Stat cards for the picked day. From the live records (day-stats) when the
           user can monitor; otherwise fall back to the transaction-day tree. */}
-      <div className="mt-6">
+      <div>
         {canMonitor ? (
           <DashboardStats date={date} />
         ) : (

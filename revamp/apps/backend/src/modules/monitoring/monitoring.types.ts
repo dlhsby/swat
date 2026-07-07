@@ -180,6 +180,7 @@ export interface TonnageByTpsRow {
 
 /** Disposal rit for one (vehicle, pickup-site) pair — a vehicle serving 2 TPS yields 2 rows. */
 export interface TonnageByVehicleRow {
+  readonly vehicleId: string;
   readonly plateNumber: string;
   readonly siteId: string;
   readonly siteName: string;

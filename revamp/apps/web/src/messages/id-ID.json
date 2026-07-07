@@ -465,7 +465,11 @@
     "searchClearAll": "Hapus semua",
     "searchRecentEmpty": "Belum ada pencarian.",
     "searchNoResults": "Tidak ada hasil.",
-    "searchClear": "Bersihkan"
+    "searchClear": "Bersihkan",
+    "totalLabel": "Total",
+    "vsPrevDay": "vs hari sebelumnya",
+    "vsPrevMonth": "vs bulan sebelumnya",
+    "vsPrevYear": "vs tahun sebelumnya"
   },
   "monitoring": {
     "range": {

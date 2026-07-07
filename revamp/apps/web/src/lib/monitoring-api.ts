@@ -176,6 +176,7 @@ export interface TonnageByTpsRow {
 
 /** Disposal rit for one (vehicle, pickup-site) pair. */
 export interface TonnageByVehicleRow {
+  readonly vehicleId: string;
   readonly plateNumber: string;
   readonly siteId: string;
   readonly siteName: string;

@@ -103,6 +103,7 @@ export function DashboardMap({ date }: { date: string }): JSX.Element {
           onSelectVehicle={canTrack ? selectVehicle : undefined}
           onSelectSite={selectSite}
           focusSiteId={focusSiteId}
+          fitToSurabaya
           trail={showTrail ? (trail.data ?? NO_TRAIL) : NO_TRAIL}
         />
       </ChartCard>
