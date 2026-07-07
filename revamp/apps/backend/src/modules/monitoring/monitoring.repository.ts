@@ -665,9 +665,17 @@ export class MonitoringRepository {
   /** Disposal rit per (vehicle, pickup site) — ranked by rit then plate. */
   async tonnageByVehicle(from: Date, to: Date): Promise<TonnageByVehicleRow[]> {
     const rows = await this.prisma.$queryRaw<
-      Array<{ plateNumber: string; siteId: string; siteName: string; total: bigint; rit: bigint }>
+      Array<{
+        vehicleId: string;
+        plateNumber: string;
+        siteId: string;
+        siteName: string;
+        total: bigint;
+        rit: bigint;
+      }>
     >`
-      SELECT v."plate_number"                         AS "plateNumber",
+      SELECT v."id"                                   AS "vehicleId",
+             v."plate_number"                         AS "plateNumber",
              r."origin_site_id"                       AS "siteId",
              s."name"                                 AS "siteName",
              COALESCE(SUM(t."net_weight"), 0)::bigint AS "total",
@@ -682,10 +690,11 @@ export class MonitoringRepository {
       JOIN "vehicle" v           ON v."id" = h."vehicle_id"
       WHERE t."operation_date" >= ${from}::date AND t."operation_date" <= ${to}::date
         AND ${DISPOSAL_TRIP}
-      GROUP BY v."plate_number", r."origin_site_id", s."name"
+      GROUP BY v."id", v."plate_number", r."origin_site_id", s."name"
       ORDER BY "rit" DESC, "plateNumber" ASC
     `;
     return rows.map((row) => ({
+      vehicleId: row.vehicleId,
       plateNumber: row.plateNumber,
       siteId: row.siteId,
       siteName: row.siteName,
