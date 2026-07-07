@@ -465,7 +465,11 @@
     "searchClearAll": "Clear all",
     "searchRecentEmpty": "No searches yet.",
     "searchNoResults": "No results.",
-    "searchClear": "Clear"
+    "searchClear": "Clear",
+    "totalLabel": "Total",
+    "vsPrevDay": "vs previous day",
+    "vsPrevMonth": "vs previous month",
+    "vsPrevYear": "vs previous year"
   },
   "monitoring": {
     "range": {

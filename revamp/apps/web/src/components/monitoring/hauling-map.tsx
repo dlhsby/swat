@@ -3,7 +3,7 @@
 import { APIProvider, Map as GoogleMap, useMap } from '@vis.gl/react-google-maps';
 import { LocateFixed, MapPinned } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { Button } from '@/components/ui';
@@ -35,6 +35,53 @@ export function siteStyle(type: string): { color: string; letter: string; label:
   );
 }
 
+/** Format an ISO instant as a short WIB `dd Mmm HH:mm` for the map tooltip. */
+function fmtWhen(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Jakarta',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+/**
+ * Build an InfoWindow content node: an info block plus, when a drill-down handler
+ * is given, a "detail" button that opens the side sheet (so a marker click shows a
+ * gps.id-style tooltip first, not the sheet immediately). The DOM node lets us wire
+ * a real click listener the string-content form can't.
+ */
+function infoContent(html: string, detail?: { label: string; onClick: () => void }): HTMLElement {
+  const el = document.createElement('div');
+  el.style.font = '13px system-ui';
+  el.style.minWidth = '180px';
+  el.style.lineHeight = '1.4';
+  el.innerHTML = html;
+  if (detail) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = detail.label;
+    btn.style.cssText =
+      'margin-top:8px;width:100%;padding:6px 10px;border:0;border-radius:6px;background:#15803d;color:#fff;font-weight:600;cursor:pointer';
+    btn.addEventListener('click', detail.onClick);
+    el.appendChild(btn);
+  }
+  return el;
+}
+
+/** Surabaya-wide default view (approx city bounds), so the map opens on the whole city. */
+function surabayaBounds(): google.maps.LatLngBounds {
+  const b = new google.maps.LatLngBounds();
+  b.extend({ lat: -7.35, lng: 112.6 });
+  b.extend({ lat: -7.16, lng: 112.85 });
+  return b;
+}
+
 /**
  * Draws the site + vehicle markers imperatively via the Maps JS API. Using the
  * core `maps` library directly (rather than AdvancedMarker) keeps it working
@@ -47,6 +94,7 @@ function MapOverlays({
   onSelectVehicle,
   onSelectSite,
   focusSiteId,
+  fitToSurabaya,
   trail,
 }: {
   sites: readonly RouteMapSite[];
@@ -55,9 +103,13 @@ function MapOverlays({
   onSelectVehicle?: (vehicleId: string) => void;
   onSelectSite?: (siteId: string, type: string) => void;
   focusSiteId?: string | null;
+  fitToSurabaya?: boolean;
   trail?: readonly TrackPoint[];
 }): null {
   const map = useMap();
+  // Fit the Surabaya-wide view only once, so the poll-driven re-render doesn't
+  // keep yanking the map back after the operator pans/zooms.
+  const fittedRef = useRef(false);
 
   useEffect(() => {
     if (!map || typeof google === 'undefined') return;
@@ -83,18 +135,27 @@ function MapOverlays({
         },
       });
       marker.addListener('click', () => {
-        // A consumer that wants rich per-day detail (dashboard/hauling drill-down)
-        // gets the click; otherwise fall back to the lightweight coord InfoWindow.
-        if (onSelectSite) {
-          onSelectSite(site.id, site.type);
-          return;
-        }
+        // Focus the site, then show a tooltip. When a drill-down handler is given
+        // (dashboard/hauling), the tooltip carries a "detail" button that opens the
+        // side sheet — the click itself no longer opens it directly.
+        map.panTo({ lat: site.latitude, lng: site.longitude });
+        const html =
+          `<strong>${site.name}</strong><br/>` +
+          `<span style="color:#64748b">${style.label}</span><br/>` +
+          `<span style="color:#94a3b8">${site.latitude.toFixed(5)}, ${site.longitude.toFixed(5)}</span>`;
         infoWindow.setContent(
-          `<div style="font:13px system-ui;padding:2px 0">` +
-            `<strong>${site.name}</strong><br/>` +
-            `${style.label}<br/>` +
-            `<span style="color:#64748b">${site.latitude.toFixed(6)}, ${site.longitude.toFixed(6)}</span>` +
-            `</div>`,
+          infoContent(
+            html,
+            onSelectSite
+              ? {
+                  label: 'Lihat detail →',
+                  onClick: () => {
+                    infoWindow.close();
+                    onSelectSite(site.id, site.type);
+                  },
+                }
+              : undefined,
+          ),
         );
         infoWindow.open({ map, anchor: marker });
       });
@@ -143,15 +204,51 @@ function MapOverlays({
           strokeWeight: selected ? 3 : 2,
         },
       });
-      if (onSelectVehicle) {
-        marker.addListener('click', () => onSelectVehicle(v.vehicleId));
-      }
+      // Click → focus + a gps.id-style tooltip (plate, status, last update, speed).
+      // The "detail" button (when a handler is given) opens the day's pengangkutan.
+      marker.addListener('click', () => {
+        map.panTo({ lat: v.latitude, lng: v.longitude });
+        const statusText =
+          v.source === 'recorded-activity'
+            ? (v.legLabel ?? 'Aktivitas tercatat')
+            : v.status === 'online'
+              ? 'Online'
+              : 'Offline';
+        const html =
+          `<strong>${v.plate}</strong><br/>` +
+          `<span style="color:#64748b">${statusText}</span><br/>` +
+          `<span style="color:#94a3b8">Diperbarui: ${fmtWhen(v.asOf)}</span>` +
+          (v.speedKmh != null
+            ? `<br/><span style="color:#94a3b8">Kecepatan: ${Math.round(v.speedKmh)} km/j</span>`
+            : '');
+        infoWindow.setContent(
+          infoContent(
+            html,
+            onSelectVehicle
+              ? {
+                  label: 'Lihat detail pengangkutan →',
+                  onClick: () => {
+                    infoWindow.close();
+                    onSelectVehicle(v.vehicleId);
+                  },
+                }
+              : undefined,
+          ),
+        );
+        infoWindow.open({ map, anchor: marker });
+      });
       return marker;
     });
 
-    // Only auto-fit when nothing is focused, so selecting a vehicle (which pans +
-    // zooms in a separate effect) isn't yanked back on the next positions poll.
-    if (!selectedVehicleId && (sites.length > 0 || vehicles.length > 0)) {
+    if (fitToSurabaya) {
+      // Fixed whole-Surabaya view (once), regardless of where the markers cluster.
+      if (!fittedRef.current) {
+        map.fitBounds(surabayaBounds(), 24);
+        fittedRef.current = true;
+      }
+    } else if (!selectedVehicleId && (sites.length > 0 || vehicles.length > 0)) {
+      // Auto-fit to the data; skip when a vehicle is focused (a separate effect pans
+      // + zooms to it) so it isn't yanked back on the next positions poll.
       const bounds = new google.maps.LatLngBounds();
       sites.forEach((s) => bounds.extend({ lat: s.latitude, lng: s.longitude }));
       vehicles.forEach((v) => bounds.extend({ lat: v.latitude, lng: v.longitude }));
@@ -170,7 +267,16 @@ function MapOverlays({
       });
       trailLine?.setMap(null);
     };
-  }, [map, sites, vehicles, selectedVehicleId, onSelectVehicle, onSelectSite, trail]);
+  }, [
+    map,
+    sites,
+    vehicles,
+    selectedVehicleId,
+    onSelectVehicle,
+    onSelectSite,
+    fitToSurabaya,
+    trail,
+  ]);
 
   // Pan/zoom to the selected vehicle once when the selection changes.
   useEffect(() => {
@@ -284,6 +390,7 @@ export function HaulingMap({
   onSelectVehicle,
   onSelectSite,
   focusSiteId,
+  fitToSurabaya,
   trail,
 }: {
   sites: readonly RouteMapSite[];
@@ -293,6 +400,8 @@ export function HaulingMap({
   onSelectVehicle?: (vehicleId: string) => void;
   onSelectSite?: (siteId: string, type: string) => void;
   focusSiteId?: string | null;
+  /** Open on a fixed whole-Surabaya view instead of auto-fitting to the markers. */
+  fitToSurabaya?: boolean;
   trail?: readonly TrackPoint[];
 }): JSX.Element {
   const t = useTranslations('monitoring.hauling');
@@ -324,6 +433,7 @@ export function HaulingMap({
             onSelectVehicle={onSelectVehicle}
             onSelectSite={onSelectSite}
             focusSiteId={focusSiteId}
+            fitToSurabaya={fitToSurabaya}
             trail={trail}
           />
           <CurrentLocationControl />

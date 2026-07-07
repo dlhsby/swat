@@ -44,6 +44,8 @@ export interface VehicleDetailSheetProps {
   showTrail: boolean;
   onToggleTrail: (show: boolean) => void;
   onOpenChange: (open: boolean) => void;
+  /** Hide the map-only "show trail" toggle when opened outside the map (e.g. a table). */
+  showTrailToggle?: boolean;
 }
 
 /**
@@ -59,6 +61,7 @@ export function VehicleDetailSheet({
   showTrail,
   onToggleTrail,
   onOpenChange,
+  showTrailToggle = true,
 }: VehicleDetailSheetProps): JSX.Element {
   const trips = useTripSummary({ dateFrom: date, dateTo: date }, vehicleId ? { vehicleId } : {});
   const activity = useVehicleDayActivity(vehicleId, date);
@@ -80,16 +83,24 @@ export function VehicleDetailSheet({
             </span>
             <span
               className={`rounded-full px-2.5 py-1 text-tiny ${
-                openAlertCount > 0 ? 'bg-danger-50 text-danger-700' : 'bg-neutral-100 text-neutral-600'
+                openAlertCount > 0
+                  ? 'bg-danger-50 text-danger-700'
+                  : 'bg-neutral-100 text-neutral-600'
               }`}
             >
               {openAlertCount} penyimpangan aktif
             </span>
-            <label className="ml-auto flex items-center gap-2 text-body-sm text-neutral-700">
-              <Radio className="h-4 w-4 text-primary-600" aria-hidden />
-              Tampilkan jejak
-              <Switch checked={showTrail} onCheckedChange={onToggleTrail} aria-label="Tampilkan jejak GPS" />
-            </label>
+            {showTrailToggle ? (
+              <label className="ml-auto flex items-center gap-2 text-body-sm text-neutral-700">
+                <Radio className="h-4 w-4 text-primary-600" aria-hidden />
+                Tampilkan jejak
+                <Switch
+                  checked={showTrail}
+                  onCheckedChange={onToggleTrail}
+                  aria-label="Tampilkan jejak GPS"
+                />
+              </label>
+            ) : null}
           </div>
 
           <section className="space-y-2">
@@ -97,7 +108,9 @@ export function VehicleDetailSheet({
             {trips.isLoading ? (
               <Skeleton className="h-24" />
             ) : tripRows.length === 0 ? (
-              <p className="text-body-sm text-neutral-500">Belum ada perjalanan tercatat hari ini.</p>
+              <p className="text-body-sm text-neutral-500">
+                Belum ada perjalanan tercatat hari ini.
+              </p>
             ) : (
               <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200">
                 {tripRows.map((trip) => {
@@ -135,7 +148,8 @@ export function VehicleDetailSheet({
               <Skeleton className="h-24" />
             ) : events.length === 0 ? (
               <p className="text-body-sm text-neutral-500">
-                Belum ada aktivitas GPS hari ini (kendaraan belum terlacak melewati geofence lokasi).
+                Belum ada aktivitas GPS hari ini (kendaraan belum terlacak melewati geofence
+                lokasi).
               </p>
             ) : (
               <ol className="space-y-3">
