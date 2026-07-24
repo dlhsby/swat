@@ -182,6 +182,22 @@ jobs:
             --db-snapshot-identifier "$SNAP" >/dev/null
           echo "Snapshot initiated: $SNAP"
 
+          # Retention: keep only the newest RETAIN pre-deploy snapshots, delete the
+          # rest — runs every deploy so they can't pile up (manual RDS snapshot
+          # storage is billed beyond the free 20 GB). Automated daily backups remain
+          # the point-in-time recovery path. Scoped to swat-staging-* only (never the
+          # co-tenant sekar-* snapshots). Failures are swallowed so a missing
+          # permission can't break a deploy — the role needs rds:DeleteDBSnapshot.
+          RETAIN=1
+          OLD=$(aws rds describe-db-snapshots \
+                  --snapshot-type manual \
+                  --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier, 'swat-staging-')], &SnapshotCreateTime))[${RETAIN}:].DBSnapshotIdentifier" \
+                  --output text)
+          for s in $OLD; do
+            echo "Pruning old pre-deploy snapshot: $s"
+            aws rds delete-db-snapshot --db-snapshot-identifier "$s" >/dev/null || true
+          done
+
       - name: Deploy via SSM (install Caddy drop-in, seed env, pull, migrate, up --wait)
         run: |
           set -euo pipefail
