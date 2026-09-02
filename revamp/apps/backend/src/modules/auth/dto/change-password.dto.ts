@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 /**
- * Password policy per specs/06-auth-rbac.md §1.4 (≥12 chars, upper + lower +
+ * Password policy per specs/06-auth-rbac.md §1.4 (≥8 chars, upper + lower +
  * digit + symbol). The new/confirm match is enforced in the service so the
  * mismatch maps to a clear 400 rather than a field-validation 422.
  */
@@ -19,7 +19,7 @@ export class ChangePasswordDto {
 
   @ApiProperty()
   @IsString()
-  @MinLength(12, { message: 'Kata sandi baru minimal 12 karakter' })
+  @MinLength(8, { message: 'Kata sandi baru minimal 8 karakter' })
   @MaxLength(200)
   @Matches(/[A-Z]/, { message: 'Kata sandi baru harus mengandung huruf besar' })
   @Matches(/[a-z]/, { message: 'Kata sandi baru harus mengandung huruf kecil' })
