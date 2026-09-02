@@ -165,6 +165,7 @@ jobs:
       SHA: ${{ needs.build-push.outputs.sha }}
       ECR_BACKEND: ${{ vars.ECR_BACKEND }}
       ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
       EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
       RDS_INSTANCE_ID: ${{ vars.RDS_INSTANCE_ID }}
     steps:
@@ -233,6 +234,12 @@ jobs:
           # keeps the issued TLS certs in the 'caddy-data' volume alive.
           docker image prune -af
           docker builder prune -af
+          # Authenticate to ECR. The instance role authorizes the pull, but Docker
+          # itself still needs a registry credential — without this the pull fails
+          # with "no basic auth credentials" even though the image and the role are
+          # both correct. The token is short-lived (12h) and fetched per deploy.
+          aws ecr get-login-password --region $AWS_REGION \
+            | docker login --username AWS --password-stdin $ECR_REGISTRY
           docker compose -f compose.staging.yml pull --quiet
           # -T: no TTY/stdin (compose run would otherwise consume the rest of the script).
           # Apply Prisma migrations (deploy — never migrate dev on partitioned tables),
