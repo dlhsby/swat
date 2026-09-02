@@ -118,8 +118,16 @@ echo "==> pg_dump → ${OUT}…"
 # DISABLE the FK *system* triggers it would emit. The restore instead sets
 # `session_replication_role = replica` (which rds_superuser CAN) to skip FK checks
 # during the COPY. --no-owner/--no-privileges keep it portable across roles.
+# --schema=public is REQUIRED, not tidiness. The build database runs the
+# postgis/postgis image, whose initdb also enables postgis_topology and
+# postgis_tiger_geocoder — creating `topology` and `tiger` schemas full of
+# reference tables. A plain --data-only dump includes them, and restoring that
+# onto a target where only `CREATE EXTENSION postgis` was run dies with
+# `ERROR: schema "tiger" does not exist`, rolling back the whole load. The
+# application only ever uses `public`.
 docker exec "$PG_CONTAINER" pg_dump -U swat -d "$PG_DB" \
   --data-only --no-owner --no-privileges \
+  --schema=public \
   --exclude-table='_prisma_migrations' \
   | gzip > "$OUT"
 
