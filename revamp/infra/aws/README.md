@@ -1,180 +1,179 @@
-# SWAT staging on AWS (reuses the sekar pattern)
+# SWAT staging on AWS
 
-Staging runs on AWS; **on-prem production stays platform-agnostic** via the
-unchanged `infra/docker-compose.prod.yml`. SWAT is a **co-tenant** on the shared
-`dlhsby` EC2 host alongside sekar — same box, same Caddy, same RDS instance.
+Staging runs in **SWAT's own AWS account** (`732343865225`, `ap-southeast-3`);
+**on-prem production stays platform-agnostic** via the unchanged
+`infra/docker-compose.prod.yml`.
 
-| Concern        | Staging (AWS)                                                        | Reused from          |
-| -------------- | -------------------------------------------------------------------- | -------------------- |
-| Compute        | EC2 `i-08edccdc966c0985e` (t3.micro, EIP `16.79.124.63`)             | sekar box            |
-| TLS edge       | the box's Caddy (sekar-owned); SWAT blocks merged in at deploy       | sekar                |
-| Database       | RDS instance `dlhsby` (PG 15), SWAT database `swat_staging`, SSL     | shared instance      |
-| Object storage | S3 `swat-photos-staging` + `swat-reports-staging`, EC2 instance role | new                  |
-| Registry       | ECR `swat-backend`, `swat-web`                                       | account 659828096624 |
-| Secrets        | dotenvx-encrypted env in repo + key in SSM / GitHub secret           | sekar pattern        |
-| Deploy         | GitHub OIDC → ECR → SSM Run Command (no SSH)                         | sekar workflow       |
+> **History.** Until 2026-09 SWAT was a *co-tenant* on a shared `dlhsby` EC2 box in
+> account `659828096624` — sharing that box's Caddy and RDS instance with a sibling
+> project. That account was closed and is deleted on 2026-11-21. SWAT now owns every
+> resource it uses, so the Caddy drop-in merge, the shared RDS and the cross-project
+> `/sekar/staging/*` SSM parameters are all gone. Nothing was migrated out of the old
+> account: staging is rebuilt from the committed legacy dump (see _First-run data_).
 
-Domains: web `https://swat.wahyutrip.com`, API `https://api.swat.wahyutrip.com`.
+| Concern        | Staging (AWS)                                                              |
+| -------------- | -------------------------------------------------------------------------- |
+| Compute        | EC2 `swat-staging` (t3.small, Amazon Linux 2023, Elastic IP), SSM-only access |
+| TLS edge       | **SWAT's own Caddy** (`caddy` service in `compose.staging.yml`)              |
+| Database       | RDS `swat-staging` (PG 15, db.t4g.micro, 20 GB), database `swat_staging`, SSL |
+| Object storage | S3 `swat-photos-staging-id` + `swat-reports-staging-id`, via the instance role |
+| Registry       | ECR `swat-backend`, `swat-web`, `swat-docs`                                 |
+| Secrets        | dotenvx-encrypted env in the repo + the private key in SSM / a GitHub secret |
+| Deploy         | GitHub OIDC → ECR → SSM Run Command (no SSH)                                |
+
+Domains: web `https://swat.wahyutrip.com`, API `https://api.swat.wahyutrip.com`,
+docs `https://docs.swat.wahyutrip.com`.
+
+**Everything account-scoped lives in [`staging.config.sh`](staging.config.sh)** — one
+file, overridable from the environment. Scattering ids across scripts is what made the
+last account move slow.
 
 ## One-time setup
 
-1. **Provision AWS resources** (idempotent; uses the `sekar` profile):
+```bash
+cd revamp/infra/aws
+aws login --profile dlhsby-swat-staging   # root browser session — used ONCE, below
+./bootstrap-cli-user.sh                   # enables the opt-in region + creates the IAM user
+./provision-staging.sh                    # idempotent; runs the three provisioners in order
+./bootstrap-db.sh                         # app role + database + PostGIS, as the RDS master
+```
 
-   ```bash
-   cd revamp/infra/aws && ./provision-staging.sh
-   ```
+**Root is used for exactly one thing**: `bootstrap-cli-user.sh` creates the
+`dlhsby-swat-staging-cli` IAM user, writes its profile, and hands off. Every other
+script refuses to run as root. Root credentials can't be scoped or rotated
+independently, so they have no place in day-to-day work — enable MFA on root and leave
+it alone.
 
-   Then do the printed MANUAL steps: RDS rename (if needed), create the `dlhsby`
-   database + `swat` role, DNS A records, GitHub Variables/secret.
+`provision-staging.sh` prints the remaining manual steps (DNS, env re-encryption, the
+SSM key, the GitHub Variables). The pieces:
 
-2. **Encrypt the runtime env** (dotenvx; keys never leave your machine / SSM):
+| Script | Creates |
+| --- | --- |
+| `bootstrap-cli-user.sh` | (root, once) the opt-in region, the `dlhsby-swat-staging-cli` IAM user + access key + local profile |
+| `provision-registry-iam.sh` | zero-spend budget + SNS topic, ECR ×3 (+ lifecycle), S3 ×2 (+ lifecycle, encryption, public-access block), the EC2 instance role/profile, the GitHub OIDC provider, the `swat-gha-deploy` role |
+| `provision-network-compute.sh` | security groups, S3 gateway endpoint, the EC2 instance (`user-data.sh`), the Elastic IP |
+| `provision-data.sh` | RDS parameter group, DB subnet group, the RDS instance, SSM parameters, CloudWatch alarms |
+| `bootstrap-db.sh` | the `swat` role, `swat_staging`, PostGIS, SRID 4326 — over SSM, as the master |
+| `user-data.sh` | box bootstrap: swap, Docker + compose plugin, log rotation, the nightly backup timer |
 
-   ```bash
-   cd swat
-   cp infra/env/backend/.env.staging.example infra/env/backend/.env.staging   # fill REAL values
-   cp infra/env/web/.env.staging.example     infra/env/web/.env.staging        # fill REAL values
-   pnpm dlx @dotenvx/dotenvx encrypt -f infra/env/backend/.env.staging
-   pnpm dlx @dotenvx/dotenvx encrypt -f infra/env/web/.env.staging
-   ```
-   - Push the **backend** key to SSM:
-     ```bash
-     aws ssm put-parameter --profile sekar --region ap-southeast-3 --type SecureString \
-       --name /swat/staging/BE_DOTENV_PRIVATE_KEY \
-       --value "$(grep DOTENV_PRIVATE_KEY_STAGING infra/env/backend/.env.keys | cut -d= -f2- | tr -d '\"')"
-     ```
-   - Add the **web** key (`DOTENV_PRIVATE_KEY_STAGING` from `infra/env/web/.env.keys`)
-     as the GitHub **staging** Environment secret `WEB_DOTENV_PRIVATE_KEY`.
-   - Commit the now-encrypted `infra/env/{backend,web}/.env.staging` (ciphertext is
-     safe). `.env.keys` is gitignored — never commit it.
+### Runtime env (dotenvx)
 
-3. **Set GitHub repo Variables** (Actions → Variables): `AWS_REGION`, `AWS_ROLE_ARN`,
-   `ECR_BACKEND`, `ECR_WEB`, `EC2_INSTANCE_ID`, `RDS_INSTANCE_ID` — values in the
-   `deploy-staging.yml` header.
+Only the **account-scoped** values change on an account move. Keep the existing
+keypair and set them in place, so nothing else needs re-encrypting and the private key
+already in `.env.keys` stays valid:
 
-4. **Branches, protection & approval** (mirrors sekar):
-   - Create a long-lived `staging` branch off `main`.
-   - Branch protection on **both** `main` and `staging`: require a PR, require the
-     status check **`gate`** (from `pr-gate.yml`), enforce linear history, block
-     force-push/deletion.
-   - Create a **`staging` GitHub Environment** with a **Required reviewer** (repo
-     owner). The deploy halts at `build-push` until approved.
-   - Repo is currently **public** (temporary — `dlhsby` org Actions billing); all
-     committed env files are dotenvx ciphertext, so this is safe. `.env.keys` stays
-     gitignored.
+```bash
+cd revamp
+pnpm dlx @dotenvx/dotenvx set DATABASE_URL '<from bootstrap-db.sh>' -f infra/env/backend/.env.staging --encrypt
+pnpm dlx @dotenvx/dotenvx set S3_BUCKET swat-photos-staging-id      -f infra/env/backend/.env.staging --encrypt
+pnpm dlx @dotenvx/dotenvx set S3_REPORTS_BUCKET swat-reports-staging-id -f infra/env/backend/.env.staging --encrypt
+```
+
+`infra/env/web/.env.staging` needs **no change** (the domains are unchanged). Push the
+backend key to SSM and keep the web key as the GitHub Environment secret:
+
+```bash
+aws ssm put-parameter --profile dlhsby-swat-staging-cli --region ap-southeast-3 \
+  --type SecureString --overwrite --name /swat/staging/BE_DOTENV_PRIVATE_KEY \
+  --value "$(grep DOTENV_PRIVATE_KEY_STAGING infra/env/backend/.env.keys | cut -d= -f2- | tr -d '"')"
+```
+
+Commit the re-encrypted `.env.staging` (ciphertext is safe). `.env.keys` is gitignored —
+never commit it.
+
+### GitHub
+
+Repo Variables: `AWS_REGION`, `AWS_ROLE_ARN`, **`ECR_REGISTRY`**, `ECR_BACKEND`,
+`ECR_WEB`, `ECR_DOCS`, `EC2_INSTANCE_ID`, `RDS_INSTANCE_ID` — exact values are printed
+by `provision-staging.sh`. Environment secret `WEB_DOTENV_PRIVATE_KEY` on the `staging`
+Environment (unchanged across the account move).
+
+Branch protection on `main` and `staging` requires the **`gate`** check from
+`pr-gate.yml`, linear history, no force-push/deletion. The `staging` Environment has a
+**Required reviewer**, which is the single approval per release.
 
 ## Release / deploy flow
 
-Pushing to `main` never deploys (saves Actions minutes). The flow:
+Pushing to `main` never deploys (saves Actions minutes).
 
-1. Feature branch → **PR into `main`** → `pr-gate` runs lint/typecheck/test/build;
-   the `gate` check must pass → merge.
-2. When `main` is UAT-ready → open a **PR `main` → `staging`** and merge it (or run
-   the **Deploy staging (AWS)** workflow via _Run workflow_).
-3. The push to `staging` triggers `deploy-staging.yml`: it re-runs the quality gate
-   (the reusable `quality.yml`), then pauses **once** at `build-push` for `staging`
-   Environment approval — **one approval per release**. The `deploy` job is not
-   environment-scoped (only repo Variables + OIDC), so on approval it builds + pushes
-   both images to ECR, snapshots RDS, and via SSM merges SWAT's Caddy blocks,
-   materializes the dotenvx key, runs `prisma migrate deploy`, recreates the stack
-   `--wait`, verifies the running image SHA, and smoke-tests both domains — straight
-   through.
+1. Feature branch → **PR into `main`** → the `gate` check must pass → merge.
+2. When `main` is UAT-ready → **PR `main` → `staging`** and merge (or _Run workflow_).
+3. `deploy-staging.yml` re-runs the quality gate, pauses **once** at `build-push` for
+   the `staging` Environment approval, then builds and pushes all three images,
+   snapshots RDS (pruning all but the newest pre-deploy snapshot), and via SSM writes
+   the compose file + Caddyfile, materializes the dotenvx key, runs
+   `prisma migrate deploy`, recreates the stack `--wait`, verifies the running image
+   SHA, and smoke-tests all three domains.
 
-## First-run data (legacy master seed)
+## First-run data (legacy seed)
 
-Staging is seeded with the **real legacy SWAT master data** — users,
-roles/permissions (reconciled to the current app's permission catalog), sites,
-routes, vehicles, drivers, schedule + trip templates — and **no transactions**
-(real transactional history is imported later). This replaces the old synthetic
-demo seed, which manufactured a year of dummy `DONE` scheduling days.
+Staging is seeded from the **committed legacy MySQL dump** (`legacy/db/dump/`) — real
+master data plus a windowed slice of real transactional history. Nothing comes from the
+old AWS account.
 
-The migrator (`migrate:legacy`) needs `ts-node` (omitted from the slim runtime
-image) plus a legacy MySQL source. Since we run no legacy MySQL in the cloud, the
-committed dump (`legacy/web/db_backup/`) is replayed through a throwaway MySQL by
-`infra/seed-legacy-from-dump.sh`. Run it from a **full checkout** with Docker. The helper is
-**self-cleaning** — it `--force-reset`s the master tables AND truncates the transaction tables —
-so it's safe to re-run on a dirty staging (it clears the old synthetic `DONE` days).
-
-**Reaching the private RDS.** Staging RDS is `PubliclyAccessible=false`. From a laptop, open an
-SSM port-forward through the box (needs `session-manager-plugin`):
+**Preferred: tunnel-free (`reseed-via-ssm.sh`).** RDS is `PubliclyAccessible=false` and
+an SSM *port-forward* tunnel is fragile (it dies on IPv6/NAT64 networks), while the box
+is too small to host the ETL's ephemeral MySQL. So the work splits: build the artifact
+locally where there is RAM, restore it on the box where the DB is local.
 
 ```bash
-aws ssm start-session --profile sekar --region ap-southeast-3 \
-  --target i-08edccdc966c0985e \
-  --document-name AWS-StartPortForwardingSessionToRemoteHost \
-  --parameters host=dlhsby.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com,portNumber=5432,localPortNumber=15433
-```
-
-Use local port **15433** — NOT 5432 (local swat-postgres) or 15432 (local sekar-postgres). Then:
-
-```bash
-cd swat
-# Decrypt the password: pnpm dlx @dotenvx/dotenvx get DATABASE_URL -f infra/env/backend/.env.staging
-# Master + users only, NO transactions. Keep &uselibpqcompat=true (pg 8.16 vs the RDS CA chain):
-STAGING_DATABASE_URL='postgresql://swat:PASS@127.0.0.1:15433/swat_staging?schema=public&sslmode=require&uselibpqcompat=true' \
-  bash infra/seed-legacy-from-dump.sh
-
-# Later — import the real legacy transactional history:
-STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh --with-transactions
-```
-
-**Preferred: tunnel-free reseed (`reseed-via-ssm.sh`).** The SSM *port-forward* tunnel is fragile (it
-dies on IPv6/NAT64 networks) and the t3.micro box is too small to run the ETL's ephemeral MySQL — so
-split the work: build the seed artifact **locally**, then restore it **on the box** via SSM *Run
-Command* (a plain API call that works over NAT64; RDS is local to the box, so the bulk COPY is fast
-in-VPC and needs no tunnel). One command does build → S3 → send-command → poll:
-
-```bash
+cd revamp
 bash infra/reseed-via-ssm.sh --since-year=2026
 ```
 
-It restores as the **RDS master** (superuser, needed for the TRUNCATE + FK-trigger-disable), read on
-the box from SSM `/sekar/staging/RDS_MASTER_*`. The schema must already match the artifact's
-migrations (deploys keep staging current). This is the recommended path; the tunnel flow below is the
-fallback when you must drive it from your laptop against RDS directly.
+That runs `build-seed-dump.sh` (throwaway MySQL 5.7 + PostGIS 15 → `migrate:legacy
+--force-reset --include-transactions --since-year=2026` → `rollup:backfill` → a
+data-only `pg_dump`), uploads it to `s3://swat-reports-staging-id/seed/`, then restores
+it in-VPC via SSM Run Command as the **RDS master** (superuser-ish rights are needed for
+the TRUNCATE and to set `session_replication_role = replica`). Masters load in full;
+only the five transactional tables + `DisposalPermit` are windowed.
 
-**Fallback — over a flaky tunnel, load resumably** (the SSM tunnel can drop mid-load; `--retry` + the
-watermark make that a non-event — re-running continues from where it stopped rather than restarting):
+Set `GOOGLE_MAPS_SERVER_KEY` in the build shell so route corridors are road-snapped into
+the artifact.
+
+**The schema must already match the artifact's migrations** — deploy first, then reseed.
+
+Watch progress from anywhere (it reads the DB, not a log):
 
 ```bash
-STAGING_DATABASE_URL=... bash infra/seed-legacy-from-dump.sh staging --with-transactions \
-  --transactions-only --resume --reuse-mysql --keep-mysql --retry
-# watch from anywhere (reads the DB, not the log):
 STAGING_DATABASE_URL=... bash infra/reseed-progress.sh staging --watch
 ```
 
-After a transactional load the seed auto-runs `rollup:backfill` (so the monitoring dashboards read
-non-empty) then `archive:run` (retention; no-ops without `pg_dump`). A **fresh dump the next day** can
-be applied as a delta — `migrate:delta-sync` for masters, then `--transactions-only --resume` for the
-newly-appended transactions, then `rollup:backfill -- <from> <to>` for the affected days (no corridor
-backfill, no Google calls). See `apps/backend/scripts/migration/README.md` §"Incremental re-dump".
+> Don't reach for `prisma migrate reset` to wipe first: Prisma 7 has no `--skip-seed`
+> (so it would re-run the demo seed), and `DROP SCHEMA … CASCADE` overflows
+> `max_locks_per_transaction` on the partitioned tables.
 
-(Or run the helper **on the box**, where RDS is directly reachable — but it spins up MySQL, so
-mind the t3.micro's memory.) The helper decrypts the target `DATABASE_URL` from the encrypted
-`infra/env/backend/.env.staging` when `STAGING_DATABASE_URL` is unset, so there's no separate seed
-env file. To seed from a live legacy MySQL instead of the dump, `export DATABASE_URL` +
-`LEGACY_DB_*` yourself and run `pnpm --filter @swat/backend run seed:staging`.
-
-> Don't reach for `prisma migrate reset` to wipe first: Prisma 7 has no `--skip-seed` (so it would
-> re-run the demo seed), and `DROP SCHEMA … CASCADE` overflows `max_locks_per_transaction` on the
-> partitioned tables. The helper's `--force-reset` + TRUNCATE is the supported clean reseed.
-
-Migrations themselves need no full deps and are applied automatically on every deploy
-(`prisma migrate deploy` from the runtime image).
+A **fresh dump later** can be applied as a delta — `migrate:delta-sync` for masters, then
+`--transactions-only --resume`, then `rollup:backfill -- <from> <to>`. See
+`apps/backend/scripts/migration/README.md` §"Incremental re-dump".
 
 ## Notes / gotchas
 
-- **Shared Caddy coupling**: SWAT's two blocks live between `# === SWAT-BEGIN`/`-END`
-  markers in `infra/Caddyfile.staging` and are merged into the box's served Caddyfile
-  (`~/sekar/infra/Caddyfile`) by the deploy, which restarts `sekar-caddy` (inode swap).
-- **Split-domain cookies**: the backend sets the session cookie with
-  `Domain=.swat.wahyutrip.com`, `SameSite=Lax`, `Secure` (from the encrypted env), and
-  CORS is pinned to `https://swat.wahyutrip.com` — required because web and API are on
-  different subdomains. On-prem prod keeps the same-origin defaults unchanged.
-- **Capacity**: t3.micro is tight even with KPI gone — add a swapfile on the box and
-  keep the per-container `mem_limit`s in `compose.staging.yml`.
-- **Legacy seed**: staging is seeded with real legacy master data + users (no
-  transactions) via `infra/seed-legacy-from-dump.sh` (replays the committed dump through an
-  ephemeral MySQL) — see _First-run data_ above. There's a **single** `.env.staging`: the
-  encrypted, committed `infra/env/backend/.env.staging` (runtime). The seed reuses it for the
-  target `DATABASE_URL` (decrypted), and gets `LEGACY_DB_*` from the throwaway MySQL — no separate
-  seed env file, nothing written to disk.
+- **`max_locks_per_transaction=2048`** — the transactional tables are monthly
+  RANGE-partitioned (~676 child partitions). Creating them in one migration transaction
+  needs far more lock slots than Postgres' default 64, so the RDS instance uses the
+  custom parameter group `swat-pg15`. Without it the **first** `prisma migrate deploy`
+  fails with "out of shared memory / max_locks_per_transaction".
+- **PostGIS on RDS** — `CREATE EXTENSION postgis` needs the master role, and RDS leaves
+  `spatial_ref_sys` unpopulated, which breaks every `::geography` cast with
+  `Cannot find SRID (4326) in spatial_ref_sys`. `bootstrap-db.sh` does both.
+- **Registry is never hardcoded** — `compose.staging.yml` interpolates `${ECR_REGISTRY}`.
+  Pinning an account id there is what broke the sibling project's account migration
+  (images pushed to the new account, pulled from the closed one: `no basic auth
+  credentials`).
+- **Single AZ** — the EC2 and the RDS are both pinned to `ap-southeast-3a`. Cross-AZ
+  traffic is billed in both directions and the backend queries the DB on every request.
+- **Split-domain cookies** — the backend sets the session cookie with
+  `Domain=.swat.wahyutrip.com`, `SameSite=Lax`, `Secure`, and CORS is pinned to
+  `https://swat.wahyutrip.com`, because web and API are on different subdomains. On-prem
+  prod keeps the same-origin defaults.
+- **TLS certs live in the `caddy-data` volume.** The deploy prunes images, never volumes
+  — pruning that volume would re-request certs every release and trip Let's Encrypt rate
+  limits.
+- **Backups** — RDS automated retention is 1 day and cross-account snapshot restore is
+  blocked, so the real recovery path is the nightly `pg_dump` to
+  `s3://swat-reports-staging-id/backups/` (14-day lifecycle), run by a **systemd timer**
+  — Amazon Linux 2023 ships no cron.
+- **Cost floor** — one public IPv4 (~$3.60/mo) is unavoidable; everything else is inside
+  the free allowances. No NAT gateway, no interface VPC endpoints, no Multi-AZ, no
+  Performance Insights, no Enhanced Monitoring, no Route 53 hosted zone.

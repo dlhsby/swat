@@ -1,17 +1,22 @@
-# SWAT — AWS staging stack (co-tenant on the shared dlhsby EC2 host with sekar).
+# SWAT — AWS staging stack (SWAT-owned EC2 host; account 483272865959).
 #
 # This is NOT the self-hosted on-prem stack (see docker-compose.prod.yml for that,
 # which keeps its own Postgres/Redis/MinIO/Nginx and stays platform-agnostic).
-# Staging reuses the box's existing Caddy (owned by sekar's compose) as the TLS
-# edge and AWS RDS as the database; only the two app containers + a small Redis
-# run here.
+# Staging runs its OWN Caddy as the TLS edge and uses AWS RDS as the database.
+# (Historically SWAT was a co-tenant on sekar's box and borrowed sekar's Caddy;
+#  after the 2026-09 account migration SWAT owns the whole box, so the drop-in
+#  merge into a foreign Caddyfile is gone.)
 #
-#   - Postgres        -> AWS RDS  (managed; instance `dlhsby`, database `swat_staging`)
+#   - Postgres        -> AWS RDS  (managed; instance `swat-staging`, database `swat_staging`)
 #   - Object storage  -> AWS S3   (via the EC2 instance role; no keys on the host)
-#   - TLS / 80,443    -> the box's shared Caddy on the external `edge` network
-#                        (SWAT's blocks live in infra/Caddyfile.staging; the deploy
-#                         merges them into the served box Caddyfile)
+#   - TLS / 80,443    -> the `caddy` service below (infra/Caddyfile.staging), on the
+#                        `edge` network with the app containers
 #   - Redis           -> small in-stack container (sessions + BullMQ report jobs)
+#
+# The image registry is NOT hardcoded: `ECR_REGISTRY` is exported by the deploy
+# (from the repo Variable of the same name). Pinning the account id here is what
+# broke the sibling project's account migration — images pushed to the new account
+# were pulled from the old one, failing with `no basic auth credentials`.
 #
 # Runtime env is materialized to /opt/swat/.env by infra/seed-env-from-ssm.sh
 # (the single dotenvx private key, pulled from SSM at deploy time); everything else
@@ -19,8 +24,9 @@
 # backend image and decrypted at boot via `dotenvx run`.
 #
 # Usage on the box:
-#   IMAGE_TAG=<git-sha> docker compose -f compose.staging.yml pull
-#   IMAGE_TAG=<git-sha> docker compose -f compose.staging.yml up -d --wait
+#   ECR_REGISTRY=<acct>.dkr.ecr.<region>.amazonaws.com IMAGE_TAG=<git-sha> \
+#     docker compose -f compose.staging.yml pull
+#   ECR_REGISTRY=... IMAGE_TAG=<git-sha> docker compose -f compose.staging.yml up -d --wait
 
 name: swat-staging
 
@@ -32,7 +38,7 @@ x-logging: &default-logging
 
 services:
   backend:
-    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-backend:${IMAGE_TAG:-staging}
+    image: ${ECR_REGISTRY}/swat-backend:${IMAGE_TAG:-staging}
     container_name: swat-backend
     # Decrypt the baked .env.staging (key from env_file) into process.env, then boot.
     command: ['sh', '-c', 'dotenvx run -f .env.staging -- node dist/main.js']
@@ -44,7 +50,7 @@ services:
       BE_PORT: '3000'
       REDIS_URL: redis://redis:6379
     expose:
-      - '3000' # internal only; reached via the shared Caddy on the edge network
+      - '3000' # internal only; reached via the caddy service on the edge network
     depends_on:
       redis:
         condition: service_healthy
@@ -61,14 +67,14 @@ services:
     networks: [edge, internal]
 
   web:
-    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-web:${IMAGE_TAG:-staging}
+    image: ${ECR_REGISTRY}/swat-web:${IMAGE_TAG:-staging}
     container_name: swat-web
     environment:
       NODE_ENV: production
       PORT: '3001'
       HOSTNAME: '0.0.0.0'
     expose:
-      - '3001' # internal only; reached via the shared Caddy on the edge network
+      - '3001' # internal only; reached via the caddy service on the edge network
     depends_on:
       backend:
         condition: service_healthy
@@ -85,12 +91,12 @@ services:
     networks: [edge]
 
   # Public user manual (Docusaurus static site → nginx). No DB/secrets. Reached via
-  # the shared Caddy at docs.swat.wahyutrip.com (see infra/Caddyfile.staging).
+  # the caddy service at docs.swat.wahyutrip.com (see infra/Caddyfile.staging).
   docs:
-    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-docs:${IMAGE_TAG:-staging}
+    image: ${ECR_REGISTRY}/swat-docs:${IMAGE_TAG:-staging}
     container_name: swat-docs
     expose:
-      - '80' # internal only; reached via the shared Caddy on the edge network
+      - '80' # internal only; reached via the caddy service on the edge network
     healthcheck:
       test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:80/']
       interval: 30s
@@ -99,6 +105,32 @@ services:
       start_period: 10s
     mem_limit: 64m
     mem_reservation: 32m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [edge]
+
+  # TLS edge — SWAT owns it now (the box is no longer shared). Terminates 80/443,
+  # auto-provisions Let's Encrypt certs for the three hostnames in Caddyfile.staging,
+  # and reverse-proxies to the app containers by name over the `edge` network.
+  # caddy_data holds the issued certs + ACME account key — NEVER prune this volume,
+  # or every redeploy re-requests certs and hits Let's Encrypt rate limits.
+  caddy:
+    image: caddy:2-alpine
+    container_name: swat-caddy
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+      docs:
+        condition: service_healthy
+    mem_limit: 96m
+    mem_reservation: 48m
     restart: unless-stopped
     logging: *default-logging
     networks: [edge]
@@ -123,13 +155,17 @@ services:
     networks: [internal]
 
 networks:
-  # Shared bridge so the box's Caddy reaches swat-backend/swat-web by container name.
-  # Created on the box (`docker network create edge`) and declared external here.
+  # Bridge joining caddy to the app containers, which it reaches by container name.
+  # Owned by this compose file (it used to be an externally-created network shared
+  # with the co-tenant project) — one less box-side prerequisite.
   edge:
-    external: true
+    driver: bridge
   # Private to SWAT; isolates Redis from the edge.
   internal:
     driver: bridge
 
 volumes:
   redis-data:
+  # Issued TLS certs + the ACME account key. Must survive redeploys.
+  caddy-data:
+  caddy-config:
