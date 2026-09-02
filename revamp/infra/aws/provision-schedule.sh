@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Office-hours start/stop schedule for the SWAT staging stack.
 #
-# Staging is only useful while someone is testing it, so it runs 09:00-17:00 WIB
-# and is stopped the rest of the time. That removes ~67% of the compute bill:
-# EC2 $19.27 -> $6.42 and RDS $18.25 -> $6.08 per month at Jakarta on-demand rates.
+# Staging is only useful while someone is testing it, so it runs 09:00-16:00 WIB
+# and is stopped the rest of the time. That removes ~71% of the compute bill:
+# EC2 $19.27 -> $5.62 and RDS $18.25 -> $5.32 per month at Jakarta on-demand rates.
 #
 #   ./provision-schedule.sh            # install / update the schedules
 #   ./provision-schedule.sh --disable  # pause them (stack then runs 24/7)
@@ -32,7 +32,7 @@ source "$HERE/staging.config.sh"
 
 TZ_NAME="${SWAT_SCHEDULE_TZ:-Asia/Jakarta}"
 START_HOUR="${SWAT_START_HOUR:-9}"     # EC2 up at 09:00 local
-STOP_HOUR="${SWAT_STOP_HOUR:-17}"      # EC2 down at 17:00 local
+STOP_HOUR="${SWAT_STOP_HOUR:-16}"      # EC2 down at 16:00 local
 ROLE_NAME="swat-scheduler"
 GROUP="default"
 
