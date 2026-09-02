@@ -35,3 +35,30 @@ docs.swat.wahyutrip.com {
 	encode gzip
 	reverse_proxy swat-docs:80
 }
+
+# Adminer — database UI for staging support work.
+#
+# PUBLIC hostname, so basic auth is mandatory in front of it. The bcrypt hash is
+# injected from SSM at deploy time via /opt/swat/.env (seed-env-from-ssm.sh); it is
+# NOT committed, because this repo is public and a committed hash is an offline
+# cracking target. Basic auth is the outer gate only — Adminer itself still demands
+# the database credentials, so this is two independent secrets, not one.
+#
+# Retrieve the password with:
+#   aws ssm get-parameter --profile dlhsby-swat-staging-cli --region ap-southeast-3 \
+#     --name /swat/staging/ADMINER_BASIC_AUTH_PASSWORD --with-decryption \
+#     --query Parameter.Value --output text
+adminer.swatz.wahyutrip.com {
+	encode gzip
+	basic_auth {
+		swat {env.ADMINER_BASIC_AUTH_HASH}
+	}
+	# Adminer is a database console: never let it be framed, indexed, or referred out.
+	header {
+		X-Frame-Options DENY
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		X-Robots-Tag "noindex, nofollow"
+	}
+	reverse_proxy swat-adminer:8080
+}

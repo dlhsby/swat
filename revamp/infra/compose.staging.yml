@@ -109,6 +109,36 @@ services:
     logging: *default-logging
     networks: [edge]
 
+  # Database UI for staging support work. PUBLICLY REACHABLE, so it is deliberately
+  # constrained: Caddy enforces HTTP basic auth in front of it (the bcrypt hash comes
+  # from SSM at deploy time, never from the repo), it holds no credentials of its own
+  # — whoever opens it still needs the database password — and it is pinned to a
+  # digest-free but explicit major so an upstream :latest cannot silently change what
+  # is exposed. Adminer has a history of RCE/SSRF advisories; if this stops being
+  # needed, delete the service and the Caddy block rather than leaving it running.
+  adminer:
+    image: adminer:5
+    container_name: swat-adminer
+    # ADMINER_DEFAULT_SERVER prefills the RDS endpoint (written by
+    # seed-env-from-ssm.sh, since it is only known after provisioning).
+    env_file:
+      - /opt/swat/.env
+    environment:
+      ADMINER_DESIGN: dracula
+    expose:
+      - '8080' # internal only; reached via caddy on the edge network
+    healthcheck:
+      test: ['CMD', 'php', '-r', "exit(@file_get_contents('http://127.0.0.1:8080/')===false?1:0);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    mem_limit: 128m
+    mem_reservation: 64m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [edge]
+
   # TLS edge — SWAT owns it now (the box is no longer shared). Terminates 80/443,
   # auto-provisions Let's Encrypt certs for the three hostnames in Caddyfile.staging,
   # and reverse-proxies to the app containers by name over the `edge` network.
@@ -117,6 +147,9 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: swat-caddy
+    # Supplies {env.ADMINER_BASIC_AUTH_HASH} to the Caddyfile.
+    env_file:
+      - /opt/swat/.env
     ports:
       - '80:80'
       - '443:443'
@@ -128,6 +161,8 @@ services:
       web:
         condition: service_healthy
       docs:
+        condition: service_healthy
+      adminer:
         condition: service_healthy
     mem_limit: 96m
     mem_reservation: 48m
