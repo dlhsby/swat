@@ -104,6 +104,23 @@ fi
 aws iam attach-role-policy --role-name "$EC2_ROLE_NAME" \
   --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore >/dev/null
 
+# The box must PULL the app images. Without this the deploy dies at `compose pull`
+# with "no basic auth credentials" — the registry URL is right, but the instance has
+# no ECR identity at all. (GetAuthorizationToken is an account-level virtual action
+# and cannot be resource-scoped; the layer/manifest reads are scoped to our repos.)
+aws iam put-role-policy --role-name "$EC2_ROLE_NAME" --policy-name swat-staging-ecr-pull \
+  --policy-document "$(cat <<JSON
+{"Version":"2012-10-17","Statement":[
+  {"Sid":"EcrAuth","Effect":"Allow","Action":"ecr:GetAuthorizationToken","Resource":"*"},
+  {"Sid":"EcrPull","Effect":"Allow",
+   "Action":["ecr:BatchCheckLayerAvailability","ecr:BatchGetImage","ecr:GetDownloadUrlForLayer"],
+   "Resource":["arn:aws:ecr:${REGION}:${ACCOUNT_ID}:repository/swat-backend",
+     "arn:aws:ecr:${REGION}:${ACCOUNT_ID}:repository/swat-web",
+     "arn:aws:ecr:${REGION}:${ACCOUNT_ID}:repository/swat-docs"]}
+]}
+JSON
+)" >/dev/null
+
 aws iam put-role-policy --role-name "$EC2_ROLE_NAME" --policy-name swat-staging-s3 \
   --policy-document "$(cat <<JSON
 {"Version":"2012-10-17","Statement":[
@@ -137,7 +154,7 @@ JSON
 # iam simulate-principal-policy, which returned "allowed" for an unrelated
 # parameter until this statement was added. An explicit Deny always wins.
 # /aws/service/* stays readable: those are AWS's public parameters (AMI ids etc).
-echo "attached: swat-staging-s3, swat-staging-ssm-read, AmazonSSMManagedInstanceCore"
+echo "attached: swat-staging-ecr-pull, swat-staging-s3, swat-staging-ssm-read, AmazonSSMManagedInstanceCore"
 
 if have aws iam get-instance-profile --instance-profile-name "$EC2_ROLE_NAME"; then
   echo "exists: instance profile $EC2_ROLE_NAME"
