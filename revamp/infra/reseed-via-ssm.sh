@@ -11,10 +11,10 @@
 # that works over NAT64, unlike the port-forward.
 #
 # Prereqs (all already true for staging):
-#   - aws cli authenticated for the `sekar` profile (the shared box's account)
+#   - aws cli authenticated for the `dlhsby-swat-staging-cli` profile (SWAT's account)
 #   - docker locally (build-seed-dump.sh stands up throwaway MySQL + Postgres)
 #   - the box's instance role can: read the artifact S3 bucket, read the RDS master SSM
-#     params (/sekar/staging/RDS_MASTER_*), and run docker
+#     params (/swat/staging/RDS_MASTER_*), and run docker
 #
 # Usage (from revamp/):
 #   bash infra/reseed-via-ssm.sh                     # full history
@@ -22,21 +22,23 @@
 #   bash infra/reseed-via-ssm.sh --since-year=2026 --keep-artifact
 #
 # Overridable via env: SEED_PROFILE, SEED_REGION, SEED_INSTANCE_ID, SEED_RDS_HOST,
-#   SEED_TARGET_DB, SEED_S3_BUCKET, SEED_S3_PREFIX, SEED_MASTER_USER_PARAM,
+#   SEED_RDS_ID, SEED_TARGET_DB, SEED_S3_BUCKET, SEED_S3_PREFIX, SEED_MASTER_USER_PARAM,
 #   SEED_MASTER_PW_PARAM, SEED_CMD_TIMEOUT.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-PROFILE="${SEED_PROFILE:-sekar}"
+# Defaults target SWAT's own account (732343865225). SEED_INSTANCE_ID and
+# SEED_RDS_HOST are resolved from the AWS API when unset, so this script keeps
+# working if the box or the DB is ever replaced.
+PROFILE="${SEED_PROFILE:-dlhsby-swat-staging-cli}"
 REGION="${SEED_REGION:-ap-southeast-3}"
-INSTANCE_ID="${SEED_INSTANCE_ID:-i-08edccdc966c0985e}"
-RDS_HOST="${SEED_RDS_HOST:-dlhsby.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com}"
+RDS_ID="${SEED_RDS_ID:-swat-staging}"
 TARGET_DB="${SEED_TARGET_DB:-swat_staging}"
-S3_BUCKET="${SEED_S3_BUCKET:-swat-reports-staging}"
+S3_BUCKET="${SEED_S3_BUCKET:-swat-reports-staging-id}"
 S3_PREFIX="${SEED_S3_PREFIX:-seed}"
-MASTER_USER_PARAM="${SEED_MASTER_USER_PARAM:-/sekar/staging/RDS_MASTER_USERNAME}"
-MASTER_PW_PARAM="${SEED_MASTER_PW_PARAM:-/sekar/staging/RDS_MASTER_PASSWORD}"
+MASTER_USER_PARAM="${SEED_MASTER_USER_PARAM:-/swat/staging/RDS_MASTER_USERNAME}"
+MASTER_PW_PARAM="${SEED_MASTER_PW_PARAM:-/swat/staging/RDS_MASTER_PASSWORD}"
 CMD_TIMEOUT="${SEED_CMD_TIMEOUT:-3600}"
 
 SINCE_ARG=""
@@ -50,6 +52,17 @@ for arg in "$@"; do
 done
 
 aws() { command aws --profile "$PROFILE" --region "$REGION" "$@"; }
+
+# Resolve the box + the DB endpoint from tags/identifiers rather than pinning ids —
+# an id pinned in a script is exactly what goes stale when an account changes.
+INSTANCE_ID="${SEED_INSTANCE_ID:-$(aws ec2 describe-instances \
+  --filters 'Name=tag:Name,Values=swat-staging' 'Name=instance-state-name,Values=running' \
+  --query 'Reservations[0].Instances[0].InstanceId' --output text)}"
+RDS_HOST="${SEED_RDS_HOST:-$(aws rds describe-db-instances --db-instance-identifier "$RDS_ID" \
+  --query 'DBInstances[0].Endpoint.Address' --output text)}"
+[[ -n "$INSTANCE_ID" && "$INSTANCE_ID" != "None" ]] || { echo "ERROR: could not resolve the staging EC2 instance (set SEED_INSTANCE_ID)." >&2; exit 1; }
+[[ -n "$RDS_HOST" && "$RDS_HOST" != "None" ]] || { echo "ERROR: could not resolve the RDS endpoint (set SEED_RDS_HOST)." >&2; exit 1; }
+echo "==> Target: instance $INSTANCE_ID, RDS $RDS_HOST, db $TARGET_DB"
 
 label="${SINCE_ARG#--since-year=}"; label="${label:-full}"
 ARTIFACT="/tmp/swat-seed-${label}-$(date +%Y%m%d%H%M%S).sql.gz"

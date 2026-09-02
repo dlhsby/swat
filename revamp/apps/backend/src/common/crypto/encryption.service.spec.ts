@@ -42,8 +42,13 @@ describe('EncryptionService', () => {
     const svc = withKey(KEY_B64);
     expect(() => svc.decrypt('not-valid')).toThrow(/Malformed/);
     const [iv, tag, data] = svc.encrypt('hello').split(':') as [string, string, string];
-    // Flip a byte in the ciphertext → GCM auth tag must fail.
-    const tampered = `${iv}:${tag}:${data.slice(0, -2)}ff`;
+    // Flip a byte in the ciphertext → GCM auth tag must fail. XOR rather than
+    // overwrite with a fixed 0xff: when the final byte already WAS 0xff the
+    // "tampered" value was byte-identical to the original, GCM verified it, and
+    // nothing threw — a 1-in-256 flake.
+    const flipped = ((parseInt(data.slice(-2), 16) ^ 0xff) & 0xff).toString(16).padStart(2, '0');
+    const tampered = `${iv}:${tag}:${data.slice(0, -2)}${flipped}`;
+    expect(tampered).not.toBe(`${iv}:${tag}:${data}`);
     expect(() => svc.decrypt(tampered)).toThrow();
   });
 });

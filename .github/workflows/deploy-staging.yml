@@ -1,13 +1,11 @@
 name: Deploy staging (AWS)
 
 # Builds the SWAT backend + web + docs production images, pushes them to ECR,
-# snapshots the shared RDS, then deploys to the shared EC2 host via SSM Run Command
-# (no SSH).
-# Auth uses GitHub OIDC — no long-lived AWS keys in GitHub. Mirrors the sekar
-# pattern: staging on AWS, on-prem prod stays platform-agnostic (docker-compose.prod.yml).
+# snapshots RDS, then deploys to SWAT's EC2 host via SSM Run Command (no SSH).
+# Auth uses GitHub OIDC — no long-lived AWS keys in GitHub. Staging on AWS,
+# on-prem prod stays platform-agnostic (docker-compose.prod.yml).
 #
-# Release flow (mirrors sekar — pushing to `main` NEVER deploys, to conserve
-# Actions minutes):
+# Release flow (pushing to `main` NEVER deploys, to conserve Actions minutes):
 #   feature branch → PR into `main` → pr-gate.yml `gate` check must pass → merge.
 #   When `main` is UAT-ready, open a PR `main` → `staging` and merge it (or run this
 #   workflow via "Run workflow"). A push to `staging` triggers THIS workflow: it
@@ -19,15 +17,19 @@ name: Deploy staging (AWS)
 #
 # Required repo Variables (Settings → Secrets and variables → Actions → Variables):
 #   AWS_REGION        ap-southeast-3
-#   AWS_ROLE_ARN      arn:aws:iam::659828096624:role/swat-gha-deploy
-#   ECR_BACKEND       659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-backend
-#   ECR_WEB           659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-web
-#   ECR_DOCS          659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/swat-docs
-#                     (docs user-manual image — the `swat-docs` ECR repo must be created
-#                      once, like swat-backend/swat-web; the deploy role has push-only ECR
-#                      perms, not CreateRepository. Created 2026-07 via the admin CLI.)
-#   EC2_INSTANCE_ID   i-08edccdc966c0985e
-#   RDS_INSTANCE_ID   dlhsby
+#   AWS_ROLE_ARN      arn:aws:iam::732343865225:role/swat-gha-deploy
+#   ECR_REGISTRY      732343865225.dkr.ecr.ap-southeast-3.amazonaws.com
+#                     (compose.staging.yml interpolates this — the registry is NEVER
+#                      hardcoded there; pinning an account id in compose is what broke
+#                      the sibling project's account migration)
+#   ECR_BACKEND       $ECR_REGISTRY/swat-backend
+#   ECR_WEB           $ECR_REGISTRY/swat-web
+#   ECR_DOCS          $ECR_REGISTRY/swat-docs
+#                     (docs user-manual image — all three ECR repos are created by
+#                      infra/aws/provision-staging.sh; the deploy role has push-only
+#                      ECR perms, not CreateRepository)
+#   EC2_INSTANCE_ID   the SWAT staging box (see infra/aws/README.md)
+#   RDS_INSTANCE_ID   swat-staging
 # Required Environment Secret (staging environment):
 #   WEB_DOTENV_PRIVATE_KEY   dotenvx key decrypting infra/env/web/.env.staging at build
 # The `staging` Environment must have a Required reviewer (repo owner) so deploys are
@@ -162,6 +164,7 @@ jobs:
     env:
       SHA: ${{ needs.build-push.outputs.sha }}
       ECR_BACKEND: ${{ vars.ECR_BACKEND }}
+      ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
       EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
       RDS_INSTANCE_ID: ${{ vars.RDS_INSTANCE_ID }}
     steps:
@@ -182,7 +185,23 @@ jobs:
             --db-snapshot-identifier "$SNAP" >/dev/null
           echo "Snapshot initiated: $SNAP"
 
-      - name: Deploy via SSM (install Caddy drop-in, seed env, pull, migrate, up --wait)
+          # Retention: keep only the newest RETAIN pre-deploy snapshots, delete the
+          # rest — runs every deploy so they can't pile up (manual RDS snapshot
+          # storage is billed beyond the free 20 GB). Automated daily backups remain
+          # the point-in-time recovery path. Scoped to swat-staging-* only (a habit
+          # kept from the shared-account days). Failures are swallowed so a missing
+          # permission can't break a deploy — the role needs rds:DeleteDBSnapshot.
+          RETAIN=1
+          OLD=$(aws rds describe-db-snapshots \
+                  --snapshot-type manual \
+                  --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier, 'swat-staging-')], &SnapshotCreateTime))[${RETAIN}:].DBSnapshotIdentifier" \
+                  --output text)
+          for s in $OLD; do
+            echo "Pruning old pre-deploy snapshot: $s"
+            aws rds delete-db-snapshot --db-snapshot-identifier "$s" >/dev/null || true
+          done
+
+      - name: Deploy via SSM (seed env, pull, migrate, up --wait)
         run: |
           set -euo pipefail
           COMPOSE_B64=$(base64 -w0 infra/compose.staging.yml)
@@ -195,31 +214,23 @@ jobs:
           echo $COMPOSE_B64 | base64 -d > ~/swat/infra/compose.staging.yml
           echo $SEED_B64 | base64 -d > ~/swat/infra/seed-env-from-ssm.sh
           echo $CADDY_B64 | base64 -d > ~/swat/infra/Caddyfile.staging
-          docker network create edge 2>/dev/null || true
-
-          # Write SWAT's Caddy site blocks as a DROP-IN that sekar's box Caddyfile
-          # imports (`import /etc/caddy/conf.d/*.caddy`). sekar owns the box Caddyfile
-          # and the conf.d bind-mount but NEVER overwrites this file, so a sekar
-          # redeploy can't clobber SWAT (the old append-into-the-box-Caddyfile merge
-          # did — it was wiped whenever sekar regenerated its Caddyfile). Restart the
-          # caddy container (bind-mounted file → inode swap; a plain reload misses it).
-          CONFD=~/sekar/infra/conf.d
-          if [ -d ~/sekar/infra ]; then
-            mkdir -p "\$CONFD"
-            cp ~/swat/infra/Caddyfile.staging "\$CONFD/swat.caddy"
-            docker restart sekar-caddy || true
-          else
-            echo "WARN: ~/sekar/infra not found — SWAT drop-in not installed; check the box"
-          fi
-
+          # SWAT owns the whole box now: the 'caddy' service in compose.staging.yml
+          # binds 80/443 and reads the Caddyfile written above (bind-mounted, so a
+          # 'up --force-recreate' picks up changes). The old drop-in-into-a-foreign-
+          # Caddyfile merge and the externally-created 'edge' network are both gone —
+          # the compose file owns the network.
           bash ~/swat/infra/seed-env-from-ssm.sh
           cd ~/swat/infra
           export IMAGE_TAG=$SHA
+          # Registry is a repo Variable, never hardcoded in compose.staging.yml —
+          # pinning an account id there is what broke the sibling project's account
+          # migration (pull from the dead account: "no basic auth credentials").
+          export ECR_REGISTRY=$ECR_REGISTRY
           # Reclaim disk BEFORE the pull: per-SHA images + build cache accumulate
-          # across deploys on the shared box and once filled '/' the pull fails with
-          # "no space left on device". Prune all images not used by a RUNNING container
-          # (so the live swat/sekar stacks are safe) + the builder cache. Volumes and
-          # issued certs (caddy_data) are untouched. Mirrors sekar's deploy.
+          # across deploys and once they fill '/' the pull fails with "no space left
+          # on device". Prune all images not used by a RUNNING container (so the live
+          # stack is safe) + the builder cache. Volumes are untouched, which is what
+          # keeps the issued TLS certs in the 'caddy-data' volume alive.
           docker image prune -af
           docker builder prune -af
           docker compose -f compose.staging.yml pull --quiet
