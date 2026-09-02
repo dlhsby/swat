@@ -148,8 +148,13 @@ services:
     image: caddy:2-alpine
     container_name: swat-caddy
     # Supplies {env.ADMINER_BASIC_AUTH_HASH} to the Caddyfile.
+    # format: raw is REQUIRED. Compose v2.30+ interpolates variables inside env_file
+    # values, and a bcrypt hash ("$$2a$$14$$Oy1H...") looks like variable references —
+    # Compose warns "variable is not set" and substitutes blanks, corrupting the hash
+    # so basic auth can never match. raw disables that interpolation.
     env_file:
-      - /opt/swat/.env
+      - path: /opt/swat/caddy.env
+        format: raw
     ports:
       - '80:80'
       - '443:443'
