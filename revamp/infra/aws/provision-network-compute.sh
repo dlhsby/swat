@@ -142,3 +142,8 @@ echo "issue Let's Encrypt certs; if Cloudflare-proxied, set them to DNS-only/gre
 echo "  swat.wahyutrip.com       A  $EIP"
 echo "  api.swat.wahyutrip.com   A  $EIP"
 echo "  docs.swat.wahyutrip.com  A  $EIP"
+echo "  adminer.swat.wahyutrip.com A  $EIP"
+echo
+echo "Wait for ALL authoritative nameservers to agree before deploying — Let's Encrypt"
+echo "queries one at random, and a stale one sends the HTTP-01 challenge to the old host:"
+echo "  for ns in \$(dig +short NS wahyutrip.com); do dig +short A swat.wahyutrip.com @\$ns; done"

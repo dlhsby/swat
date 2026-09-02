@@ -22,7 +22,9 @@ Staging runs in **SWAT's own AWS account** (`732343865225`, `ap-southeast-3`);
 | Deploy         | GitHub OIDC → ECR → SSM Run Command (no SSH)                                |
 
 Domains: web `https://swat.wahyutrip.com`, API `https://api.swat.wahyutrip.com`,
-docs `https://docs.swat.wahyutrip.com`.
+docs `https://docs.swat.wahyutrip.com`, database console
+`https://adminer.swat.wahyutrip.com` (Caddy basic auth, user `swat`; password in SSM
+`/swat/staging/ADMINER_BASIC_AUTH_PASSWORD`).
 
 **Everything account-scoped lives in [`staging.config.sh`](staging.config.sh)** — one
 file, overridable from the environment. Scattering ids across scripts is what made the

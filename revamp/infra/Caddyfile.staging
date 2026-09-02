@@ -48,7 +48,7 @@ docs.swat.wahyutrip.com {
 #   aws ssm get-parameter --profile dlhsby-swat-staging-cli --region ap-southeast-3 \
 #     --name /swat/staging/ADMINER_BASIC_AUTH_PASSWORD --with-decryption \
 #     --query Parameter.Value --output text
-adminer.swatz.wahyutrip.com {
+adminer.swat.wahyutrip.com {
 	encode gzip
 	basic_auth {
 		swat {env.ADMINER_BASIC_AUTH_HASH}
