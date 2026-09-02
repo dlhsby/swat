@@ -50,6 +50,22 @@ if [[ -z "$OUT" ]]; then
 fi
 [[ -f "$STRUCTURE_GZ" ]] || { echo "ERROR: dump not found: $STRUCTURE_GZ" >&2; exit 1; }
 
+# The auth stage of migrate:legacy seeds the superadmin and refuses to invent a
+# password. Check it HERE: otherwise the failure lands ~10 minutes in, after two
+# containers are up and the 192 MB dump has been imported, and the cleanup trap
+# throws that work away. There is no default on purpose — the artifact is restored
+# into an environment whose SUPERADMIN_PASSWORD must match.
+if [[ -z "${SUPERADMIN_PASSWORD:-}" ]]; then
+  cat >&2 <<'MSG'
+ERROR: SUPERADMIN_PASSWORD is not set.
+
+It must match the target environment, so take it from the encrypted env:
+  export SUPERADMIN_PASSWORD="$(pnpm dlx @dotenvx/dotenvx get SUPERADMIN_PASSWORD \
+    -f infra/env/backend/.env.staging)"
+MSG
+  exit 1
+fi
+
 cleanup() {
   echo "==> Tearing down throwaway MySQL + Postgres…"
   docker rm -f "$MYSQL_CONTAINER" "$PG_CONTAINER" >/dev/null 2>&1 || true
@@ -87,6 +103,7 @@ echo "==> ETL: migrate:legacy --force-reset --include-transactions ${SINCE_YEAR_
   DATABASE_URL="$PG_URL" LEGACY_DB_HOST=127.0.0.1 LEGACY_DB_PORT="$MYSQL_PORT" LEGACY_DB_USER=root \
   LEGACY_DB_PASSWORD="$MYSQL_ROOT_PW" LEGACY_DB_NAME="$MYSQL_DB" LEGACY_SEED_PASSWORD="${LEGACY_SEED_PASSWORD:-Password123!}" \
   GOOGLE_MAPS_SERVER_KEY="${GOOGLE_MAPS_SERVER_KEY:-}" \
+  SUPERADMIN_PASSWORD="${SUPERADMIN_PASSWORD}" \
   NODE_OPTIONS=--max-old-space-size=4096 \
   pnpm --filter @swat/backend run migrate:legacy -- --force-reset --include-transactions --batch=20000 ${SINCE_YEAR_ARG} )
 # ↑ migrate:legacy also runs the default-corridor backfill (road-snapped iff
