@@ -214,10 +214,10 @@ jobs:
           echo $COMPOSE_B64 | base64 -d > ~/swat/infra/compose.staging.yml
           echo $SEED_B64 | base64 -d > ~/swat/infra/seed-env-from-ssm.sh
           echo $CADDY_B64 | base64 -d > ~/swat/infra/Caddyfile.staging
-          # SWAT owns the whole box now: the `caddy` service in compose.staging.yml
+          # SWAT owns the whole box now: the 'caddy' service in compose.staging.yml
           # binds 80/443 and reads the Caddyfile written above (bind-mounted, so a
-          # `up --force-recreate` picks up changes). The old drop-in-into-a-foreign-
-          # Caddyfile merge and the externally-created `edge` network are both gone —
+          # 'up --force-recreate' picks up changes). The old drop-in-into-a-foreign-
+          # Caddyfile merge and the externally-created 'edge' network are both gone —
           # the compose file owns the network.
           bash ~/swat/infra/seed-env-from-ssm.sh
           cd ~/swat/infra
@@ -230,7 +230,7 @@ jobs:
           # across deploys and once they fill '/' the pull fails with "no space left
           # on device". Prune all images not used by a RUNNING container (so the live
           # stack is safe) + the builder cache. Volumes are untouched, which is what
-          # keeps the issued TLS certs in the `caddy-data` volume alive.
+          # keeps the issued TLS certs in the 'caddy-data' volume alive.
           docker image prune -af
           docker builder prune -af
           docker compose -f compose.staging.yml pull --quiet
