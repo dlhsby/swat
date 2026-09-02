@@ -45,8 +45,23 @@ PSQL "$URL" -v ON_ERROR_STOP=1 -tAc "SELECT 'connected to '||current_database();
   echo "ERROR: cannot connect (is the DB reachable + the role a superuser?)." >&2; exit 1; }
 
 echo "==> TRUNCATE all migrated tables (clean slate; keeps _prisma_migrations)…"
+# Skip tables OWNED BY AN EXTENSION (pg_depend deptype='e') — on PostGIS that is
+# spatial_ref_sys. It is not application data and pg_dump does not carry it in the
+# artifact, so truncating it empties the SRID catalogue permanently: the TRUNCATE
+# below is its own committed statement, so even a rolled-back load leaves it wiped.
+# Every ::geography cast then fails with `Cannot find SRID (4326) in
+# spatial_ref_sys`, silently, while health checks still pass.
 TABLES="$(PSQL "$URL" -tAc \
-  "SELECT string_agg(format('%I', tablename), ', ') FROM pg_tables WHERE schemaname='public' AND tablename <> '_prisma_migrations'")"
+  "SELECT string_agg(format('%I', t.tablename), ', ')
+     FROM pg_tables t
+    WHERE t.schemaname = 'public'
+      AND t.tablename <> '_prisma_migrations'
+      AND NOT EXISTS (
+        SELECT 1 FROM pg_depend d
+          JOIN pg_class c ON c.oid = d.objid
+         WHERE d.deptype = 'e'
+           AND c.relname = t.tablename
+           AND c.relnamespace = 'public'::regnamespace)")"
 [[ -n "$TABLES" ]] || { echo "ERROR: no tables found in target (run prisma migrate deploy first)." >&2; exit 1; }
 PSQL "$URL" -v ON_ERROR_STOP=1 -c "SET session_replication_role = replica; TRUNCATE TABLE ${TABLES} CASCADE;"
 
@@ -58,5 +73,13 @@ echo "==> Restoring artifact (FK triggers disabled)…"
   | PSQL "$URL" -v ON_ERROR_STOP=1 --single-transaction -f -
 
 echo "==> Done. Verifying a few counts…"
+# Guard the invariant this script previously destroyed.
+SRS="$(PSQL "$URL" -tAc "SELECT count(*) FROM spatial_ref_sys WHERE srid = 4326" | tr -d '[:space:]')"
+if [[ "$SRS" != "1" ]]; then
+  echo "ERROR: spatial_ref_sys is missing SRID 4326 — every ::geography cast will fail." >&2
+  echo "       Repopulate it as the database owner before using this database." >&2
+  exit 1
+fi
+echo "    spatial_ref_sys SRID 4326: present"
 PSQL "$URL" -tAc "SELECT 'site='||(SELECT count(*) FROM site)||' route='||(SELECT count(*) FROM route)||' trip='||(SELECT count(*) FROM trip)||' haul='||(SELECT count(*) FROM haul)||' permit='||(SELECT count(*) FROM disposal_permit);"
 echo "==> Restore complete."
