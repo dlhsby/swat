@@ -5,17 +5,18 @@ platform-agnostic.** The same container images run in both places — every envi
 driven by config/env, never baked in. The operational runbook (exact commands, one-time setup) lives
 beside the code at [`../revamp/infra/aws/README.md`](../revamp/infra/aws/README.md).
 
-The pattern is shared with the sibling **sekar** project, which co-tenants the same AWS box.
+The deployment pattern originated on a box shared with a sibling project; SWAT has run in its own
+AWS account since 2026-09 and no longer shares any resource with it.
 
 ## Environments
 
 | | Staging | Production |
 |---|---|---|
-| Where | AWS (shared `dlhsby` EC2 host) | On-premise / any Docker host |
-| Stack file | `infra/compose.staging.yml` (backend + web + redis) | `infra/docker-compose.prod.yml` (self-contained: +postgres +minio +nginx) |
-| Database | AWS RDS instance `dlhsby`, database `swat_staging`, SSL | bundled `postgres:15` |
-| Object storage | AWS S3 (`swat-photos-staging`, `swat-reports-staging`) via EC2 instance role | bundled MinIO |
-| TLS edge | shared Caddy on the box (Let's Encrypt) | bundled nginx |
+| Where | AWS, SWAT's own account (EC2 `swat-staging`) | On-premise / any Docker host |
+| Stack file | `infra/compose.staging.yml` (caddy + backend + web + docs + redis) | `infra/docker-compose.prod.yml` (self-contained: +postgres +minio +nginx) |
+| Database | AWS RDS instance `swat-staging`, database `swat_staging`, SSL | bundled `postgres:15` |
+| Object storage | AWS S3 (`swat-photos-staging-id`, `swat-reports-staging-id`) via EC2 instance role | bundled MinIO |
+| TLS edge | SWAT's own Caddy in the stack (Let's Encrypt) | bundled nginx |
 | Secrets | dotenvx-encrypted `infra/env/{backend,web}/.env.staging` + key in SSM/GitHub | `.env`/`--env-file` on the host |
 | Deploy | GitHub Actions → ECR → SSM Run Command (no SSH) | manual `docker compose ... up -d --build` |
 
@@ -28,19 +29,43 @@ from a small nginx container. The split-domain layout requires the session cooki
 (`SESSION_COOKIE_DOMAIN`, `SESSION_COOKIE_SAMESITE`, `CORS_ORIGIN`) so on-prem same-origin defaults
 (`Strict`, host-only) stay unchanged.
 
-## AWS resources (account 659828096624, region ap-southeast-3)
+## AWS resources (account 732343865225, region ap-southeast-3)
 
-- **EC2** `i-08edccdc966c0985e` (shared box, Elastic IP 16.79.124.63), reached via SSM Run Command.
-- **RDS** instance `dlhsby` (Postgres 15) — SWAT uses database `swat_staging`, role `swat`.
-- **ECR** `swat-backend`, `swat-web`, `swat-docs` (tags `:staging` + `:<sha>`). New repos must be
-  created once (the deploy role is push-only — no `ecr:CreateRepository`) and added to the role's
-  `EcrPush` resource list.
-- **S3** `swat-photos-staging` (photos/thumbnails), `swat-reports-staging` (7-day TTL) — accessed via
-  the EC2 instance IAM role (no static keys); the backend's `S3_USE_INSTANCE_ROLE=true` selects this.
-- **SSM Parameter Store** `/swat/staging/BE_DOTENV_PRIVATE_KEY` (SecureString) — the dotenvx key the
-  box uses to decrypt the baked backend env at boot.
-- **IAM** OIDC role `swat-gha-deploy` (trust `repo:dlhsby/swat:*`) with ECR push, RDS `CreateDBSnapshot`,
-  and SSM `SendCommand`/`GetCommandInvocation`.
+SWAT owns this account outright. Until 2026-09 it was a **co-tenant** on a shared box in
+account `659828096624` (deleted 2026-11-21), borrowing that box's Caddy and RDS instance;
+nothing was migrated out — staging is rebuilt from the committed legacy dump. Every
+account-scoped value now lives in **one** file, `infra/aws/staging.config.sh`.
+
+- **EC2** `swat-staging` (t3.small, Amazon Linux 2023, Elastic IP), reached via SSM Run Command
+  — no SSH key exists. Bootstrapped by `infra/aws/user-data.sh` (swap, Docker + compose,
+  nightly-backup systemd timer — AL2023 ships no cron).
+- **RDS** instance `swat-staging` (Postgres 15, db.t4g.micro, 20 GB, single-AZ, private),
+  database `swat_staging`, app role `swat`, master `swatmaster`. Uses the custom parameter
+  group **`swat-pg15` with `max_locks_per_transaction=2048`** — the partition migration
+  creates ~676 child partitions in one transaction and fails on Postgres' default 64.
+- **Availability zone** — the EC2 and the RDS are both pinned to `ap-southeast-3a`. Cross-AZ
+  traffic is billed in both directions and the backend queries the DB on every request.
+- **ECR** `swat-backend`, `swat-web`, `swat-docs` (tags `:staging` + `:<sha>`), lifecycle
+  keeping the newest 5 images each. Repos are created by the provisioner (the deploy role is
+  push-only — no `ecr:CreateRepository`). The registry is passed to `compose.staging.yml` as
+  **`${ECR_REGISTRY}`** and is never hardcoded there.
+- **S3** `swat-photos-staging-id` (photos/thumbnails), `swat-reports-staging-id` (exports and
+  reseed artifacts 7-day TTL, nightly `pg_dump` backups under `backups/` 14-day) — accessed via
+  the EC2 instance IAM role (no static keys); the backend's `S3_USE_INSTANCE_ROLE=true` selects
+  this. The `-id` suffix is required: bucket names are global and the unsuffixed ones are still
+  held by the closed account.
+- **SSM Parameter Store** `/swat/staging/` — `BE_DOTENV_PRIVATE_KEY` (the dotenvx key the box
+  uses to decrypt the baked backend env at boot), `RDS_HOST`, `RDS_MASTER_USERNAME`,
+  `RDS_MASTER_PASSWORD`, `APP_DB_PASSWORD`, `BACKUP_BUCKET`.
+- **IAM** OIDC role `swat-gha-deploy` (trust scoped to `repo:dlhsby/swat:ref:refs/heads/staging`
+  and `:environment:staging`) with ECR push to all three repos, RDS
+  `CreateDBSnapshot`/`DeleteDBSnapshot`/`DescribeDBSnapshots`, and SSM
+  `SendCommand`/`GetCommandInvocation`. Instance role `swat-ec2` with S3 access to the two
+  buckets, read on `/swat/staging/*`, and `AmazonSSMManagedInstanceCore`.
+- **Guardrails** a zero-spend Budget (created before any resource) and CloudWatch alarms on RDS
+  `FreeStorageSpace` + `FreeableMemory`. Deliberately absent, all for cost: NAT gateway,
+  interface VPC endpoints (the S3 **gateway** endpoint is free and is used), Multi-AZ,
+  Performance Insights, Enhanced Monitoring, Route 53 hosted zone.
 
 ## Secrets (dotenvx)
 
@@ -95,23 +120,21 @@ The GPS/geography features (route **corridors**, `ST_DWithin` matching, corridor
 PostGIS **with SRID 4326 (WGS84) present in `spatial_ref_sys`**. The dev/CI/prod containers run the
 `postgis/postgis:15-*` image whose `spatial_ref_sys` ships fully populated, so this is automatic there.
 
-**On managed Postgres (the staging AWS RDS `dlhsby`) it is NOT automatic.** PostGIS can be enabled
+**On managed Postgres (the staging AWS RDS `swat-staging`) it is NOT automatic.** PostGIS can be enabled
 (functions present) while `spatial_ref_sys` is left unpopulated — every `::geography` cast then fails
 with `Cannot find SRID (4326) in spatial_ref_sys`, silently breaking corridor generation and GPS
 matching. Migration `20260706000000_ensure_spatial_ref_sys_4326` inserts the row idempotently, **but
 `spatial_ref_sys` is owned by the PostGIS extension**, so the app role (`swat`) usually lacks INSERT —
-the migration then warns and skips (non-fatal, so it never blocks `migrate deploy`). In that case run
-the INSERT once as the **RDS master** (`kpi`, password in SSM `/sekar/staging/RDS_MASTER_PASSWORD`).
-Since RDS is private, do it on the box (no tunnel needed):
+the migration then warns and skips (non-fatal, so it never blocks `migrate deploy`).
+
+**This is handled at provisioning time, before the first deploy**, by
+`infra/aws/bootstrap-db.sh`: it runs `CREATE EXTENSION postgis` and the SRID 4326 INSERT as the
+**RDS master** (credentials read from SSM `/swat/staging/RDS_MASTER_*`), over SSM Run Command on
+the box — RDS is private, and no tunnel is involved. It also verifies the result:
 
 ```bash
-# via SSM Run Command on the shared instance (i-…), master reaches RDS directly:
-docker run --rm -e PGPASSWORD="$RDS_MASTER_PASSWORD" postgres:15 \
-  psql -h dlhsby.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com -U kpi -d swat_staging \
-  -c "INSERT INTO spatial_ref_sys (srid,auth_name,auth_srid,proj4text,srtext)
-      SELECT 4326,'EPSG',4326,'+proj=longlat +datum=WGS84 +no_defs ',
-        'GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433],AUTHORITY[\"EPSG\",\"4326\"]]'
-      WHERE NOT EXISTS (SELECT 1 FROM spatial_ref_sys WHERE srid=4326);"
+cd revamp/infra/aws && ./bootstrap-db.sh
+# prints: postgis=<version>  srid4326=1  max_locks=2048  owner=swat
 ```
 
 **On-prem production:** verify `SELECT count(*) FROM spatial_ref_sys WHERE srid=4326` returns 1 after
@@ -136,8 +159,16 @@ and sets `LEGACY_DB_*` itself. **Later**, import real transactions with `--with-
 
 ## Capacity & coupling notes
 
-- The shared box is a t3.micro; SWAT's per-container `mem_limit`s + a host swapfile keep it within
-  free tier alongside sekar.
-- The box's Caddy is sekar-owned; SWAT's two route blocks (`infra/Caddyfile.staging`, between
-  `SWAT-BEGIN`/`SWAT-END` markers) are merged into the served Caddyfile by the deploy, which restarts
-  the caddy container (bind-mount inode swap).
+- The box is a t3.small with a 2 GB swapfile (`infra/aws/user-data.sh`); the per-container
+  `mem_limit`s in `compose.staging.yml` keep the whole stack inside it. It used to be a t3.micro
+  shared with another project — sole tenancy is what bought the headroom.
+- **SWAT owns its Caddy.** `infra/Caddyfile.staging` is mounted straight into the `caddy` service
+  and binds 80/443. The old arrangement — shipping those blocks as a drop-in merged into a
+  co-tenant's Caddyfile, then restarting that project's container — is gone. TLS certs live in the
+  `caddy-data` volume; the deploy prunes images but never volumes, which is what stops every
+  release from re-requesting certs and hitting Let's Encrypt rate limits.
+- **Cost floor.** One public IPv4 (~$3.60/mo) is unavoidable; everything else sits inside the free
+  allowances. Deliberately absent: NAT gateway, interface VPC endpoints (the S3 *gateway* endpoint
+  is free and is used), Multi-AZ, Performance Insights, Enhanced Monitoring, Route 53 hosted zone.
+  ECR keeps only the newest 5 images per repo and the deploy prunes all but the newest pre-deploy
+  RDS snapshot — both were unbounded before and would have left the free tier on their own.

@@ -162,8 +162,18 @@ From inner `revamp/`:
   `staging`/dispatch → AWS deploy, one approval). **Flow: PR branch → `main` → `staging`** (pushing
   to `main` never deploys). On-prem prod stays platform-agnostic.
 - **Deployment**: canonical spec [`specs/15-deployment.md`](specs/15-deployment.md); operational
-  runbook `revamp/infra/aws/README.md`. Staging = AWS (shared `dlhsby` box, RDS db `swat_staging`, ECR,
-  S3+instance-role, Caddy, OIDC→SSM); prod = `infra/docker-compose.prod.yml`. Three staging subdomains
-  behind the shared Caddy drop-in (`infra/Caddyfile.staging`): `swat.` (web), `api.swat.` (backend),
+  runbook `revamp/infra/aws/README.md`. Staging = AWS in **SWAT's own account `732343865225`**
+  (`ap-southeast-3`): EC2 `swat-staging` + RDS `swat-staging`/db `swat_staging` (both pinned to AZ
+  `ap-southeast-3a` — cross-AZ transfer is billed), ECR ×3, S3 `swat-*-staging-id` + instance role,
+  **SWAT's own Caddy**, OIDC→SSM. Prod = `infra/docker-compose.prod.yml`. Three staging subdomains
+  served by that Caddy (`infra/Caddyfile.staging`): `swat.` (web), `api.swat.` (backend),
   `docs.swat.` (Docusaurus user manual — image `swat-docs`, repo Variable `ECR_DOCS`). On-prem prod docs
   is a commented stub in `docker-compose.prod.yml` (enable when the `docs.` vhost is provisioned).
+  **Every account-scoped value lives in `revamp/infra/aws/staging.config.sh`** — one file, so an
+  account move is not a repo-wide grep. Provision with `infra/aws/bootstrap-cli-user.sh` (root, once)
+  → `provision-staging.sh` → `bootstrap-db.sh`. Until 2026-09 SWAT was a co-tenant on a sibling
+  project's box in account `659828096624` (deleted 2026-11-21); nothing was migrated out of it —
+  staging is rebuilt from `legacy/db/dump/` via `infra/reseed-via-ssm.sh --since-year=2026`.
+  Two RDS preconditions that fail the FIRST `prisma migrate deploy` if missing:
+  `max_locks_per_transaction=2048` (parameter group `swat-pg15`; ~676 partitions in one txn) and
+  PostGIS + SRID 4326 in `spatial_ref_sys` (`bootstrap-db.sh` does both as the RDS master).
