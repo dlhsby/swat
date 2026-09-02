@@ -110,11 +110,17 @@ aws cloudwatch put-metric-alarm --alarm-name swat-staging-rds-low-storage \
   --period 300 --evaluation-periods 2 --threshold 2147483648 \
   --comparison-operator LessThanThreshold --treat-missing-data missing \
   --alarm-actions "$TOPIC_ARN" >/dev/null
+# Threshold calibrated against the observed baseline, NOT a round number. On a
+# 1 GB db.t4g.micro, Postgres keeps most RAM in shared buffers and the page cache,
+# so FreeableMemory sits at a steady ~55 MB with the stack healthy and new
+# connections succeeding. The original 100 MB was unreachable: it fired
+# permanently, which is worse than no alarm because it trains you to ignore it.
+# 35 MB is below the working baseline but still well above exhaustion.
 aws cloudwatch put-metric-alarm --alarm-name swat-staging-rds-low-memory \
-  --alarm-description 'SWAT staging RDS freeable memory below 100 MB' \
+  --alarm-description 'SWAT staging RDS freeable memory below 35 MB (baseline ~55 MB)' \
   --namespace AWS/RDS --metric-name FreeableMemory --statistic Average \
   --dimensions "Name=DBInstanceIdentifier,Value=$RDS_ID" \
-  --period 300 --evaluation-periods 2 --threshold 104857600 \
+  --period 300 --evaluation-periods 3 --threshold 36700160 \
   --comparison-operator LessThanThreshold --treat-missing-data missing \
   --alarm-actions "$TOPIC_ARN" >/dev/null
 echo "alarms: swat-staging-rds-low-storage, swat-staging-rds-low-memory"
