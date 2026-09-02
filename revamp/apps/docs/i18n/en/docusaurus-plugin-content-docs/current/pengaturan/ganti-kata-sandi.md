@@ -26,7 +26,7 @@ If successful, you'll return to the [dashboard](/memulai/dashboard) and see a co
 
 Your new password must:
 
-- **Be at least 12 characters long**
+- **Be at least 8 characters long**
 - Contain **uppercase letters** (A–Z)
 - Contain **lowercase letters** (a–z)
 - Contain **numbers** (0–9)

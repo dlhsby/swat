@@ -79,7 +79,8 @@ Enforce at the `/api/v1/auth/login` endpoint: return 429 (Too Many Requests) if 
 ### 1.4 Password policy & forced reset
 
 **Requirements:**
-- Minimum 12 characters (prevent cracking via brute force).
+- Minimum 8 characters. (Lowered from 12 on 2026-09-02 at the operator's request; the four
+  character-class rules below are unchanged and still carry most of the strength.)
 - Must include: uppercase letter (A–Z), lowercase letter (a–z), digit (0–9), symbol (!@#$%^&*).
 - Reject common/dictionary words (e.g., 'password123').
 - Must differ from the immediately previous password (the new password is checked against the current hash; full history is intentionally not retained).
@@ -89,7 +90,7 @@ Enforce at the `/api/v1/auth/login` endpoint: return 429 (Too Many Requests) if 
 export class PasswordValidator {
   validate(password: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    if (password.length < 12) errors.push('Minimal 12 karakter');
+    if (password.length < 8) errors.push('Minimal 8 karakter');
     if (!/[A-Z]/.test(password)) errors.push('Harus mengandung huruf besar');
     if (!/[a-z]/.test(password)) errors.push('Harus mengandung huruf kecil');
     if (!/[0-9]/.test(password)) errors.push('Harus mengandung angka');
