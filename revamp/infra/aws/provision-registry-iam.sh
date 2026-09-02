@@ -123,10 +123,20 @@ aws iam put-role-policy --role-name "$EC2_ROLE_NAME" --policy-name swat-staging-
   {"Effect":"Allow","Action":["ssm:GetParameter","ssm:GetParameters","ssm:GetParametersByPath"],
    "Resource":"arn:aws:ssm:${REGION}:${ACCOUNT_ID}:parameter${SSM_PREFIX}/*"},
   {"Effect":"Allow","Action":["kms:Decrypt"],"Resource":"*",
-   "Condition":{"StringEquals":{"kms:ViaService":"ssm.${REGION}.amazonaws.com"}}}
+   "Condition":{"StringEquals":{"kms:ViaService":"ssm.${REGION}.amazonaws.com"}}},
+  {"Sid":"DenyParametersOutsideOurNamespace","Effect":"Deny",
+   "Action":["ssm:GetParameter","ssm:GetParameters","ssm:GetParametersByPath"],
+   "NotResource":["arn:aws:ssm:${REGION}:${ACCOUNT_ID}:parameter${SSM_PREFIX}/*",
+     "arn:aws:ssm:${REGION}::parameter/aws/service/*"]}
 ]}
 JSON
 )" >/dev/null
+# The Deny above is load-bearing. AmazonSSMManagedInstanceCore (AWS-managed, and
+# required for Session Manager / Run Command) grants ssm:GetParameter on "*", so
+# the Allow alone does NOT scope the box to its own namespace — verified with
+# iam simulate-principal-policy, which returned "allowed" for an unrelated
+# parameter until this statement was added. An explicit Deny always wins.
+# /aws/service/* stays readable: those are AWS's public parameters (AMI ids etc).
 echo "attached: swat-staging-s3, swat-staging-ssm-read, AmazonSSMManagedInstanceCore"
 
 if have aws iam get-instance-profile --instance-profile-name "$EC2_ROLE_NAME"; then
