@@ -157,6 +157,75 @@ transaction-free master. It pulls the target `DATABASE_URL` from the encrypted
 and sets `LEGACY_DB_*` itself. **Later**, import real transactions with `--with-transactions`.
 `seed:demo` remains for synthetic data. See [`../revamp/infra/aws/README.md`](../revamp/infra/aws/README.md).
 
+## Cost & the office-hours schedule
+
+Staging runs **09:00–17:00 WIB daily and is stopped otherwise** — it is only useful while
+someone is testing it. Installed by `infra/aws/provision-schedule.sh` using EventBridge
+Scheduler *universal targets* (direct EC2/RDS API calls; no Lambda, and the free tier covers
+the ~120 invocations a month).
+
+```
+08:45 RDS start · 09:00 EC2 start · 17:00 EC2 stop · 17:10 RDS stop   (Asia/Jakarta)
+```
+
+RDS leads on the way up and trails on the way down so the backend never boots against a
+database that is still starting. Nothing needs redeploying after a restart: every service is
+`restart: unless-stopped` and docker is systemd-enabled, so the stack returns on boot.
+Pause with `./provision-schedule.sh --disable`.
+
+| Item | Rate (Jakarta on-demand) | Always-on | Scheduled 8h/day |
+| --- | --- | --- | --- |
+| EC2 t3.small | $0.0264/hr | $19.27 | **$6.42** |
+| RDS db.t4g.micro Single-AZ | $0.0250/hr | $18.25 | **$6.08** |
+| Public IPv4 × 1 | $0.005/hr | $3.65 | $3.65 |
+| EBS gp3 root, 30 GB | $0.096/GB-mo | $2.88 | $2.88 |
+| RDS gp3 storage, 20 GB | $0.138/GB-mo | $2.76 | $2.76 |
+| S3 · ECR · data transfer | — | ~$0.86 | ~$0.86 |
+| **Total** | | **~$47.70** | **~$22.30** |
+
+The account is on the credit-based **FREE plan** (expires 2027-03-02), so actual spend is $0
+until the credits run out; the table is what it costs afterwards.
+
+Two things that do **not** stop with the schedule: the Elastic IP and both storage volumes.
+That is the ~$9.30/month floor. `t3.micro` was considered and rejected — once scheduled it
+saves only $2.81/month, and the box uses ~660 MB of 1909 MB, so ~950 MB usable would push
+report exports into swap during UAT.
+
+**The EBS root volume cannot be shrunk** (EBS grows only, like RDS storage). Going 30 GB →
+20 GB would mean rebuilding the volume or the instance for ~$0.96/month; not worth it. The box
+is stateless, though — all state is in RDS/S3/SSM — so re-provisioning with
+`SWAT_ROOT_VOLUME_GB=20` is a clean path if ever wanted (it re-issues the TLS certs).
+
+## Refreshing staging with a newer legacy dump
+
+The usual reason to reseed is a fresh `mysqldump` from the live legacy system.
+
+1. Replace the contents of `legacy/db/dump/` with the new dump (same file layout —
+   `_structure.sql.gz` plus one `*.sql.gz` per table).
+2. **Make sure the stack is running.** The reseed drives the box over SSM and loads into RDS,
+   so outside 09:00–17:00 both are stopped and it will fail. Either run it inside the window or
+   start them first:
+   ```bash
+   aws ec2 start-instances --instance-ids <id> --profile dlhsby-swat-staging-cli --region ap-southeast-3
+   aws rds start-db-instance --db-instance-identifier swat-staging --profile dlhsby-swat-staging-cli --region ap-southeast-3
+   ```
+3. Build and restore in one step, windowed to the current year:
+   ```bash
+   cd revamp
+   export SUPERADMIN_PASSWORD="$(pnpm dlx @dotenvx/dotenvx get SUPERADMIN_PASSWORD -f infra/env/backend/.env.staging)"
+   export GOOGLE_MAPS_SERVER_KEY="$(pnpm dlx @dotenvx/dotenvx get GOOGLE_MAPS_SERVER_KEY -f infra/env/backend/.env.staging)"
+   bash infra/reseed-via-ssm.sh --since-year=2026
+   ```
+   Both variables are required: the ETL refuses to invent a superadmin password, and without
+   the Maps key the route corridors are straight lines instead of road-snapped.
+4. The restore **TRUNCATEs first and that TRUNCATE commits separately** from the load, so a
+   failure leaves the database empty rather than half-loaded. It is destructive by design —
+   never point it at production without `--confirm-production`.
+5. It finishes by printing row counts and asserting SRID 4326 survived. If that assertion
+   fails, stop: every `::geography` cast is broken even though `/health` will still say ok.
+
+Expect roughly 25–30 minutes end to end, most of it the local ETL.
+
 ## Capacity & coupling notes
 
 - The box is a t3.small with a 2 GB swapfile (`infra/aws/user-data.sh`); the per-container
