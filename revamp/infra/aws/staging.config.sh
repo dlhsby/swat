@@ -39,7 +39,7 @@ REPORTS_BUCKET="${SWAT_REPORTS_BUCKET:-swat-reports-staging-id}"
 
 # ECR + IAM
 ECR_REPOS=(swat-backend swat-web swat-docs)
-ECR_KEEP_IMAGES="${SWAT_ECR_KEEP_IMAGES:-5}"   # 500 MB free-tier allowance
+ECR_KEEP_IMAGES="${SWAT_ECR_KEEP_IMAGES:-3}"   # 500 MB free-tier allowance
 GITHUB_REPO="dlhsby/swat"
 GHA_ROLE_NAME="swat-gha-deploy"
 CLI_USER_NAME="${SWAT_CLI_USER:-dlhsby-swat-staging-cli}"

@@ -26,7 +26,7 @@ Jika berhasil, Anda akan kembali ke [dasbor](/memulai/dashboard) dan menerima pe
 
 Kata sandi baru harus:
 
-- **Minimal 12 karakter**
+- **Minimal 8 karakter**
 - Mengandung **huruf besar** (A–Z)
 - Mengandung **huruf kecil** (a–z)
 - Mengandung **angka** (0–9)

@@ -20,6 +20,7 @@ Staging runs in **SWAT's own AWS account** (`732343865225`, `ap-southeast-3`);
 | Registry       | ECR `swat-backend`, `swat-web`, `swat-docs`                                 |
 | Secrets        | dotenvx-encrypted env in the repo + the private key in SSM / a GitHub secret |
 | Deploy         | GitHub OIDC → ECR → SSM Run Command (no SSH)                                |
+| Uptime         | **09:00–16:00 WIB daily**, stopped otherwise (`provision-schedule.sh`)       |
 
 Domains: web `https://swat.wahyutrip.com`, API `https://api.swat.wahyutrip.com`,
 docs `https://docs.swat.wahyutrip.com`, database console
@@ -148,6 +149,60 @@ STAGING_DATABASE_URL=... bash infra/reseed-progress.sh staging --watch
 A **fresh dump later** can be applied as a delta — `migrate:delta-sync` for masters, then
 `--transactions-only --resume`, then `rollup:backfill -- <from> <to>`. See
 `apps/backend/scripts/migration/README.md` §"Incremental re-dump".
+
+## Office-hours schedule
+
+Staging runs **09:00–16:00 WIB and is stopped the rest of the time**, which takes the stack
+from ~$47.70 to ~$21.10 a month.
+
+```bash
+cd revamp/infra/aws
+./provision-schedule.sh             # install / update
+./provision-schedule.sh --disable   # pause (runs 24/7 again)
+./provision-schedule.sh --enable    # resume
+```
+
+```
+08:45 RDS start · 09:00 EC2 start · 16:00 EC2 stop · 16:10 RDS stop   (Asia/Jakarta)
+```
+
+- **The site is DOWN outside the window** — that is intended, tell UAT users.
+- **Nothing needs redeploying after a restart.** Every service is `restart: unless-stopped`
+  and docker is systemd-enabled, so the stack returns on boot.
+- **Storage still bills while stopped** (Elastic IP + EBS + RDS storage): ~$9.30/month floor.
+- AWS auto-starts an RDS instance stopped for 7 days. The daily stop keeps resetting that
+  clock — but `--disable` while the DB is stopped will let it fire.
+- Anything that drives the box or the database — a **reseed**, a deploy, `psql` over SSM —
+  needs both running. Outside the window, start them first (see below).
+
+## Refreshing with a newer legacy dump
+
+1. Replace `legacy/db/dump/` with the new dump (`_structure.sql.gz` + one `*.sql.gz` per table).
+2. If outside 09:00–16:00, start the stack first:
+   ```bash
+   aws ec2 start-instances --instance-ids "$(aws ec2 describe-instances \
+     --filters Name=tag:Name,Values=swat-staging Name=instance-state-name,Values=stopped \
+     --query 'Reservations[0].Instances[0].InstanceId' --output text)" \
+     --profile dlhsby-swat-staging-cli --region ap-southeast-3
+   aws rds start-db-instance --db-instance-identifier swat-staging \
+     --profile dlhsby-swat-staging-cli --region ap-southeast-3
+   ```
+   Wait for the RDS to report `available` before step 3.
+3. Build + restore, windowed to the current year:
+   ```bash
+   cd revamp
+   export SUPERADMIN_PASSWORD="$(pnpm dlx @dotenvx/dotenvx get SUPERADMIN_PASSWORD -f infra/env/backend/.env.staging)"
+   export GOOGLE_MAPS_SERVER_KEY="$(pnpm dlx @dotenvx/dotenvx get GOOGLE_MAPS_SERVER_KEY -f infra/env/backend/.env.staging)"
+   bash infra/reseed-via-ssm.sh --since-year=2026
+   ```
+   Both are required: the ETL refuses to invent a superadmin password, and without the Maps
+   key corridors are straight lines rather than road-snapped. Needs local Docker and ~4 GB free.
+4. It prints row counts and asserts SRID 4326 survived. **If that assertion fails, stop** —
+   every `::geography` cast is broken even though `/health` still reports ok.
+
+Roughly 25–30 minutes end to end, most of it the local ETL. The restore TRUNCATEs first, and
+that TRUNCATE commits separately from the load, so a failure leaves the database empty rather
+than half-loaded — destructive by design.
 
 ## Notes / gotchas
 
