@@ -159,13 +159,13 @@ and sets `LEGACY_DB_*` itself. **Later**, import real transactions with `--with-
 
 ## Cost & the office-hours schedule
 
-Staging runs **09:00–17:00 WIB daily and is stopped otherwise** — it is only useful while
+Staging runs **09:00–16:00 WIB daily and is stopped otherwise** — it is only useful while
 someone is testing it. Installed by `infra/aws/provision-schedule.sh` using EventBridge
 Scheduler *universal targets* (direct EC2/RDS API calls; no Lambda, and the free tier covers
 the ~120 invocations a month).
 
 ```
-08:45 RDS start · 09:00 EC2 start · 17:00 EC2 stop · 17:10 RDS stop   (Asia/Jakarta)
+08:45 RDS start · 09:00 EC2 start · 16:00 EC2 stop · 16:10 RDS stop   (Asia/Jakarta)
 ```
 
 RDS leads on the way up and trails on the way down so the backend never boots against a
@@ -173,15 +173,15 @@ database that is still starting. Nothing needs redeploying after a restart: ever
 `restart: unless-stopped` and docker is systemd-enabled, so the stack returns on boot.
 Pause with `./provision-schedule.sh --disable`.
 
-| Item | Rate (Jakarta on-demand) | Always-on | Scheduled 8h/day |
+| Item | Rate (Jakarta on-demand) | Always-on | Scheduled 7h/day |
 | --- | --- | --- | --- |
-| EC2 t3.small | $0.0264/hr | $19.27 | **$6.42** |
-| RDS db.t4g.micro Single-AZ | $0.0250/hr | $18.25 | **$6.08** |
+| EC2 t3.small | $0.0264/hr | $19.27 | **$5.62** |
+| RDS db.t4g.micro Single-AZ | $0.0250/hr | $18.25 | **$5.32** |
 | Public IPv4 × 1 | $0.005/hr | $3.65 | $3.65 |
 | EBS gp3 root, 30 GB | $0.096/GB-mo | $2.88 | $2.88 |
 | RDS gp3 storage, 20 GB | $0.138/GB-mo | $2.76 | $2.76 |
 | S3 · ECR · data transfer | — | ~$0.86 | ~$0.86 |
-| **Total** | | **~$47.70** | **~$22.30** |
+| **Total** | | **~$47.70** | **~$21.10** |
 
 The account is on the credit-based **FREE plan** (expires 2027-03-02), so actual spend is $0
 until the credits run out; the table is what it costs afterwards.
@@ -203,7 +203,7 @@ The usual reason to reseed is a fresh `mysqldump` from the live legacy system.
 1. Replace the contents of `legacy/db/dump/` with the new dump (same file layout —
    `_structure.sql.gz` plus one `*.sql.gz` per table).
 2. **Make sure the stack is running.** The reseed drives the box over SSM and loads into RDS,
-   so outside 09:00–17:00 both are stopped and it will fail. Either run it inside the window or
+   so outside 09:00–16:00 both are stopped and it will fail. Either run it inside the window or
    start them first:
    ```bash
    aws ec2 start-instances --instance-ids <id> --profile dlhsby-swat-staging-cli --region ap-southeast-3

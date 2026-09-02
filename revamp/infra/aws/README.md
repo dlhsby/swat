@@ -20,7 +20,7 @@ Staging runs in **SWAT's own AWS account** (`732343865225`, `ap-southeast-3`);
 | Registry       | ECR `swat-backend`, `swat-web`, `swat-docs`                                 |
 | Secrets        | dotenvx-encrypted env in the repo + the private key in SSM / a GitHub secret |
 | Deploy         | GitHub OIDC → ECR → SSM Run Command (no SSH)                                |
-| Uptime         | **09:00–17:00 WIB daily**, stopped otherwise (`provision-schedule.sh`)       |
+| Uptime         | **09:00–16:00 WIB daily**, stopped otherwise (`provision-schedule.sh`)       |
 
 Domains: web `https://swat.wahyutrip.com`, API `https://api.swat.wahyutrip.com`,
 docs `https://docs.swat.wahyutrip.com`, database console
@@ -152,8 +152,8 @@ A **fresh dump later** can be applied as a delta — `migrate:delta-sync` for ma
 
 ## Office-hours schedule
 
-Staging runs **09:00–17:00 WIB and is stopped the rest of the time**, which takes the stack
-from ~$47.70 to ~$22.30 a month.
+Staging runs **09:00–16:00 WIB and is stopped the rest of the time**, which takes the stack
+from ~$47.70 to ~$21.10 a month.
 
 ```bash
 cd revamp/infra/aws
@@ -163,7 +163,7 @@ cd revamp/infra/aws
 ```
 
 ```
-08:45 RDS start · 09:00 EC2 start · 17:00 EC2 stop · 17:10 RDS stop   (Asia/Jakarta)
+08:45 RDS start · 09:00 EC2 start · 16:00 EC2 stop · 16:10 RDS stop   (Asia/Jakarta)
 ```
 
 - **The site is DOWN outside the window** — that is intended, tell UAT users.
@@ -178,7 +178,7 @@ cd revamp/infra/aws
 ## Refreshing with a newer legacy dump
 
 1. Replace `legacy/db/dump/` with the new dump (`_structure.sql.gz` + one `*.sql.gz` per table).
-2. If outside 09:00–17:00, start the stack first:
+2. If outside 09:00–16:00, start the stack first:
    ```bash
    aws ec2 start-instances --instance-ids "$(aws ec2 describe-instances \
      --filters Name=tag:Name,Values=swat-staging Name=instance-state-name,Values=stopped \
