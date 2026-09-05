@@ -20,7 +20,7 @@ Staging runs in **SWAT's own AWS account** (`732343865225`, `ap-southeast-3`);
 | Registry       | ECR `swat-backend`, `swat-web`, `swat-docs`                                 |
 | Secrets        | dotenvx-encrypted env in the repo + the private key in SSM / a GitHub secret |
 | Deploy         | GitHub OIDC → ECR → SSM Run Command (no SSH)                                |
-| Uptime         | **09:00–16:00 WIB daily**, stopped otherwise (`provision-schedule.sh`)       |
+| Uptime         | **09:00–16:00 WIB, Mon–Fri**, stopped otherwise (`provision-schedule.sh`)   |
 
 Domains: web `https://swat.wahyutrip.com`, API `https://api.swat.wahyutrip.com`,
 docs `https://docs.swat.wahyutrip.com`, database console
@@ -152,8 +152,8 @@ A **fresh dump later** can be applied as a delta — `migrate:delta-sync` for ma
 
 ## Office-hours schedule
 
-Staging runs **09:00–16:00 WIB and is stopped the rest of the time**, which takes the stack
-from ~$47.70 to ~$21.10 a month.
+Staging runs **09:00–16:00 WIB on weekdays** and is stopped the rest of the time, which takes
+the stack from ~$47.70 to ~$18.10 a month.
 
 ```bash
 cd revamp/infra/aws
@@ -163,7 +163,8 @@ cd revamp/infra/aws
 ```
 
 ```
-08:45 RDS start · 09:00 EC2 start · 16:00 EC2 stop · 16:10 RDS stop   (Asia/Jakarta)
+08:45 RDS start · 09:00 EC2 start   — Mon-Fri only
+16:00 EC2 stop  · 16:10 RDS stop   — EVERY day (safety net)   (Asia/Jakarta)
 ```
 
 - **The site is DOWN outside the window** — that is intended, tell UAT users.
