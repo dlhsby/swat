@@ -174,9 +174,9 @@ From inner `revamp/`:
   → `provision-staging.sh` → `bootstrap-db.sh`. Until 2026-09 SWAT was a co-tenant on a sibling
   project's box in account `659828096624` (deleted 2026-11-21); nothing was migrated out of it —
   staging is rebuilt from `legacy/db/dump/` via `infra/reseed-via-ssm.sh --since-year=2026`.
-  **Staging runs 09:00–16:00 WIB only** (EventBridge Scheduler, `infra/aws/provision-schedule.sh`;
+  **Staging runs 09:00–16:00 WIB, Mon–Fri only** (stop fires daily as a safety net) (EventBridge Scheduler, `infra/aws/provision-schedule.sh`;
   `--disable` to pause) — anything driving the box or DB (deploy, reseed, psql-over-SSM) needs both
-  started first outside that window. ~$21.10/mo scheduled vs ~$47.70 always-on; the ~$9.30 floor
+  started first outside that window. ~$18.10/mo scheduled vs ~$47.70 always-on; the ~$9.30 floor
   (EIP + EBS + RDS storage) bills even when stopped. EBS/RDS storage can only GROW, never shrink.
   Two RDS preconditions that fail the FIRST `prisma migrate deploy` if missing:
   `max_locks_per_transaction=2048` (parameter group `swat-pg15`; ~676 partitions in one txn) and
