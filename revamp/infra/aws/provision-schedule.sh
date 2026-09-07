@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
 # Office-hours start/stop schedule for the SWAT staging stack.
 #
-# Staging is only useful while someone is testing it, so it runs 09:00-16:00 WIB
-# and is stopped the rest of the time. That removes ~71% of the compute bill:
-# EC2 $19.27 -> $5.62 and RDS $18.25 -> $5.32 per month at Jakarta on-demand rates.
+# Staging is only useful while someone is testing it:
+#   START  09:00, weekdays only.
+#   STOP   16:00, EVERY day — a safety net, not just the other half of the pair.
+# The asymmetry is the point. Anyone can start the stack by hand at any time (for
+# a reseed, a weekend fix); the daily stop guarantees it cannot then be left
+# running for days. Stopping an already stopped instance is a no-op, so the
+# weekend firings cost nothing.
+# ~154 h/month instead of 730: EC2 $19.27 -> $4.07, RDS $18.25 -> $3.85.
 #
 #   ./provision-schedule.sh            # install / update the schedules
 #   ./provision-schedule.sh --disable  # pause them (stack then runs 24/7)
 #   ./provision-schedule.sh --enable   # resume
+#
+# Manual starts are expected and supported — the stack simply gets stopped at the
+# next 17:00. To keep it up overnight, --disable first.
 #
 # Uses EventBridge Scheduler *universal targets*, which call the EC2/RDS APIs
 # directly — no Lambda to maintain and nothing to pay for (the free tier covers
@@ -32,7 +40,10 @@ source "$HERE/staging.config.sh"
 
 TZ_NAME="${SWAT_SCHEDULE_TZ:-Asia/Jakarta}"
 START_HOUR="${SWAT_START_HOUR:-9}"     # EC2 up at 09:00 local
-STOP_HOUR="${SWAT_STOP_HOUR:-16}"      # EC2 down at 16:00 local
+STOP_HOUR="${SWAT_STOP_HOUR:-16}"      # EC2 down at 16:00 local, EVERY day
+# Weekdays only. EventBridge cron cannot take both day-of-month and day-of-week,
+# so the day-of-month field is "?" in the start expressions below.
+START_DAYS="${SWAT_START_DAYS:-MON-FRI}"
 ROLE_NAME="swat-scheduler"
 GROUP="default"
 
@@ -112,12 +123,17 @@ sched() { # name, cron, target-arn, input
   fi
 }
 
-say "Schedules (${START_HOUR}:00-${STOP_HOUR}:00 $TZ_NAME, every day)"
+say "Schedules (${START_HOUR}:00-${STOP_HOUR}:00 $TZ_NAME, ${START_DAYS})"
 # RDS first on the way up, last on the way down — the backend must never boot
 # against a database that is still starting.
-sched swat-rds-start "cron(45 $((START_HOUR-1)) * * ? *)" \
+#
+# START runs on weekdays only; STOP stays DAILY on purpose. The asymmetry is
+# deliberate: a stop that only fires Mon-Fri would leave the stack running all
+# weekend if anyone started it by hand on a Saturday. A stop against an already
+# stopped instance is a harmless no-op, so daily costs nothing and closes that gap.
+sched swat-rds-start "cron(45 $((START_HOUR-1)) ? * ${START_DAYS} *)" \
   "arn:aws:scheduler:::aws-sdk:rds:startDBInstance" "{\"DbInstanceIdentifier\":\"${RDS_ID}\"}"
-sched swat-ec2-start "cron(0 ${START_HOUR} * * ? *)" \
+sched swat-ec2-start "cron(0 ${START_HOUR} ? * ${START_DAYS} *)" \
   "arn:aws:scheduler:::aws-sdk:ec2:startInstances" "{\"InstanceIds\":[\"${INSTANCE_ID}\"]}"
 sched swat-ec2-stop  "cron(0 ${STOP_HOUR} * * ? *)" \
   "arn:aws:scheduler:::aws-sdk:ec2:stopInstances" "{\"InstanceIds\":[\"${INSTANCE_ID}\"]}"
@@ -126,7 +142,7 @@ sched swat-rds-stop  "cron(10 ${STOP_HOUR} * * ? *)" \
 
 cat <<NOTE
 
-Staging now runs ${START_HOUR}:00-${STOP_HOUR}:00 $TZ_NAME daily and is stopped otherwise.
+Staging now runs ${START_HOUR}:00-${STOP_HOUR}:00 $TZ_NAME on ${START_DAYS} and is stopped otherwise.
   RDS starts 15 min early and stops 10 min late, so the app never races the database.
   Outside the window the site is DOWN — that is intended.
   Storage keeps billing while stopped (EIP + EBS + RDS storage, ~\$9.30/month floor).
